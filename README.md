@@ -9,13 +9,17 @@
 
 [Requirements](#requirements) • [Install](#install) • [Usage](#usage)
 
-</div>
+<p></p>
 
 A minimal REST-Client Interface for Neovim.
 
 Kulala is swahili for "rest" or "relax".
 
 It allows you to make HTTP requests from within Neovim.
+
+<p></p>
+
+</div>
 
 ## Requirements
 
