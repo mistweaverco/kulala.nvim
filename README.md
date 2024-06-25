@@ -3,8 +3,6 @@
 # kulala.nvim
 
 ![Lua](https://img.shields.io/badge/Made%20with%20Lua-blueviolet.svg?style=for-the-badge&logo=lua)
-![License](https://img.shields.io/github/license/mistweaverco/kulala.nvim?style=for-the-badge)
-![Made with Neovim](https://img.shields.io/badge/Made%20with%20Neovim-blue?style=for-the-badge&logo=neovim)
 ![Project Status](https://img.shields.io/badge/Alpha%20Status-green?style=for-the-badge&logo=github)
 
 [Requirements](#requirements) • [Install](#install) • [Usage](#usage)
