@@ -316,6 +316,7 @@ function M.parse()
     headers = {},
     body = {},
     script = "",
+    cmd = "",
   }
   local document_variables = {}
   local req_node = get_request_node()
@@ -330,6 +331,7 @@ function M.parse()
   ast.request = parse_request(request_children_nodes, document_variables)
   ast.headers = parse_headers(request_header_nodes, document_variables)
   ast.body = parse_body(request_children_nodes, document_variables)
+
   -- We need to append the contents of the file to
   -- the body if it is a POST request,
   -- or to the URL itself if it is a GET request
@@ -342,7 +344,6 @@ function M.parse()
       if ast.request.method == "POST" then
         ast.body = graphql_query
       else
-
         graphql_query = STRING_UTILS.url_encode(STRING_UTILS.remove_extra_space(STRING_UTILS.remove_newline(graphql_query)))
         ast.graphql_query = STRING_UTILS.url_decode(graphql_query)
         ast.request.url = ast.request.url .. "?query=" .. graphql_query
@@ -350,6 +351,16 @@ function M.parse()
     end
   end
   -- ast.script = M.parse_script(req_node)
+
+  -- build the command to exectute the request
+  local headers = ""
+  for key, value in pairs(ast.headers) do
+    headers = headers .. " -H '".. key ..": ".. value .."'"
+  end
+  ast.cmd = "curl -s -X ".. ast.request.method .." " .. headers .. " \'".. ast.request.url .."\'"
+  if ast.headers['accept'] == "application/json" then
+    ast.cmd = ast.cmd .. " | jq ."
+  end
 
   -- Request node range
   ast.start = req_node:start()

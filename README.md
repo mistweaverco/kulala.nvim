@@ -71,12 +71,12 @@ Run the current request.
 ```http
 
 GET https://pokeapi.co/api/v2/pokemon/ditto
-content-type: application/json
+accept: application/json
 
 ###
 
 GET https://swapi-graphql.netlify.app/.netlify/functions/index
-content-type: application/json
+accept: application/json
 
 < ./starwars.graphql
 
@@ -100,4 +100,3 @@ Place the cursor on the first or the second item
 in the `examples.http` and
 run `:lua require('kulala').run()`.
 
-For the 
