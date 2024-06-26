@@ -4,7 +4,6 @@ local M = {}
 
 M.open = function()
   local ast = Parser:parse()
-  vim.print(vim.inspect(ast))
   if ast.headers['content-type'] == "application/json" then
     Term.run("curl -s -X ".. ast.request.method .." \'".. ast.request.url .."\' | jq .")
     return
