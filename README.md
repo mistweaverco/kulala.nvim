@@ -7,7 +7,7 @@
 ![Lua](https://img.shields.io/badge/Made%20with%20Lua-blueviolet.svg?style=for-the-badge&logo=lua)
 ![Project Status](https://img.shields.io/badge/Alpha%20Status-green?style=for-the-badge&logo=github)
 
-[Requirements](#requirements) • [Install](#install) • [Usage](#usage) • [HTTP File Spec](https://kulala.mwco.app/#!/http_file_spec)
+[Requirements](#requirements) • [Install](#install) • [Usage](#usage) • [HTTP File Spec](https://kulala.mwco.app/#/http_file_spec)
 
 <p></p>
 

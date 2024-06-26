@@ -1,0 +1,9 @@
+{
+  "name": "kulala.nvim",
+  "scripts": {
+    "docs": "docsify serve docs"
+  },
+  "devDependencies": {
+    "docsify-cli": "4.4.4"
+  }
+}
