@@ -26,3 +26,16 @@ vim.filetype.add({
 ```
 
 This will make Neovim recognize files with the `.http` extension as HTTP files.
+
+> A custom keymapping will make your life easier.
+> Here is an example of how you can set it up.
+
+- Create `ftplugin` directory inside `~/.config/nvim`.
+- Inside `ftplugin` directory create a file `http.lua`.
+- Inside `http.lua` define a key mapping for running kulala.
+
+```lua
+vim.api.nvim_set_keymap("n", "<C-j>", ":lua require('kulala').run()<CR>", { noremap = true, silent = true })
+```
+
+This will allow you to run `kulala` by pressing `Ctrl + j` in normal mode.
