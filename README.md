@@ -7,7 +7,7 @@
 ![Lua](https://img.shields.io/badge/Made%20with%20Lua-blueviolet.svg?style=for-the-badge&logo=lua)
 ![Project Status](https://img.shields.io/badge/Alpha%20Status-green?style=for-the-badge&logo=github)
 
-[Requirements](#requirements) • [Install](#install) • [Usage](#usage)
+[Requirements](#requirements) • [Install](#install) • [Usage](#usage) • [HTTP File Spec](https://kulala.mwco.app/#!/http_file_spec)
 
 <p></p>
 
@@ -70,15 +70,32 @@ Run the current request.
 
 ```http
 
-GET https://pokeapi.co/api/v2/pokemon/ditto
+# Make a request to the PokeAPI to get information about ditto
+# Use HTTP/1.0 and the application/json content type as headers
+GET https://pokeapi.co/api/v2/pokemon/ditto HTTP/1.0
 accept: application/json
 
 ###
 
+# Make a request to the Star Wars API to get information about all films
+# Use a GraphQL query to get the title and episodeID of each film
+# Use the application/json content type as the header and omit the HTTP version
+# so it defaults to HTTP/1.1
 GET https://swapi-graphql.netlify.app/.netlify/functions/index
 accept: application/json
 
 < ./starwars.graphql
+
+###
+
+POST https://swapi-graphql.netlify.app/.netlify/functions/index
+accept: application/json
+content-type: application/json
+
+{
+  "query": "{ allFilms { films { title } } }",
+  "variables": {}
+}
 
 ###
 ```
@@ -96,7 +113,7 @@ query {
 }
 ```
 
-Place the cursor on the first or the second item
+Place the cursor on any item
 in the `examples.http` and
 run `:lua require('kulala').run()`.
 
