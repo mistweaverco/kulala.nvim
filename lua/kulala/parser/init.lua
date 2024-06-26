@@ -342,7 +342,7 @@ function M.parse()
       local graphql_query = graphql_file:read("*a")
       graphql_file:close()
       if ast.request.method == "POST" then
-        ast.body = graphql_query
+        ast.body = "{ \"query\": \"" .. graphql_query .."\" }"
       else
         graphql_query = STRING_UTILS.url_encode(STRING_UTILS.remove_extra_space(STRING_UTILS.remove_newline(graphql_query)))
         ast.graphql_query = STRING_UTILS.url_decode(graphql_query)
@@ -354,10 +354,28 @@ function M.parse()
 
   -- build the command to exectute the request
   local headers = ""
+  local body = ""
+  local http_version = ""
+  if ast.request.http_version ~= nil then
+    http_version = "--http" .. ast.request.http_version
+  end
   for key, value in pairs(ast.headers) do
     headers = headers .. " -H '".. key ..": ".. value .."'"
   end
-  ast.cmd = "curl -s -X ".. ast.request.method .." " .. headers .. " \'".. ast.request.url .."\'"
+  if type(ast.body) == "string" then
+    body = " --data-raw '".. ast.body .."'"
+  elseif ast.body.__TYPE == "json" then
+    body = " --data-raw '".. vim.json.encode(ast.body) .."'"
+  elseif ast.body.__TYPE == "form" then
+    for key, value in pairs(ast.body) do
+      body = body .. " --data-raw '".. key .."=".. value .."'"
+    end
+  end
+  ast.cmd = "curl -s -X ".. ast.request.method .." "..
+    body .." " ..
+    headers .. " " ..
+    http_version .. " " ..
+    "\'".. ast.request.url .."\'"
   if ast.headers['accept'] == "application/json" then
     ast.cmd = ast.cmd .. " | jq ."
   end
