@@ -66,6 +66,10 @@ Run the current request.
 
 ## Usage
 
+The syntax highlighting for HTTP files on GitHub is not perfect.
+
+It shows errors where there are none.
+
 `examples.http`
 
 ```http
