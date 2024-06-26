@@ -1,20 +1,13 @@
-local UI = require("kulala.ui")
+local Ui = require("kulala.ui")
+local Config = require("kulala.config")
 local M = {}
 
-KULALA_CONFIG = {
-}
-
 M.setup = function(config)
-  config = config or {}
-  KULALA_CONFIG = vim.tbl_deep_extend("force", KULALA_CONFIG, config)
-end
-
-M.get_config = function()
-  return KULALA_CONFIG
+  Config.set_config(config)
 end
 
 M.run = function()
-  UI:open()
+  Ui:open()
 end
 
 return M
