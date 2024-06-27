@@ -256,18 +256,7 @@ local function parse_body(children_nodes, variables)
       -- This is some metadata to be used later on
       body.__TYPE = "json"
     elseif node_type == "xml_body" then
-      local found_xml2lua, xml2lua = pcall(require, "xml2lua")
-      if found_xml2lua then
-        local xml_handler = require("xmlhandler.tree")
-
-        local body_handler = xml_handler:new()
-        local xml_parser = xml2lua.parser(body_handler)
-        local xml_body_text = assert(get_node_text(node, 0))
-        xml_parser:parse(xml_body_text)
-        body = traverse_body(body_handler.root, variables)
-      end
-      -- This is some metadata to be used later on
-      body.__TYPE = "xml"
+      vim.notify("XML body is not supported yet")
     elseif node_type == "external_body" then
       -- < @ (identifier) (file_path name: (path))
       -- 0 1      2                 3
