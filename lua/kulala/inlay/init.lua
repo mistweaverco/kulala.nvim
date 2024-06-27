@@ -16,7 +16,6 @@ M.show_loading = function()
 end
 
 M.show_done = function(self, elapsed_time)
-  vim.notify(vim.inspect(elapsed_time))
   M.show('✅ ' .. elapsed_time)
 end
 
