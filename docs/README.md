@@ -15,7 +15,7 @@ It allows you to make HTTP requests from within Neovim.
 
 <p></p>
 
-![demo](https://github.com/mistweaverco/kulala.nvim/assets/1384938/5bf843c8-95f2-4939-ac46-f99a8613cd90)
+![demo](https://github.com/mistweaverco/kulala.nvim/assets/1384938/a71a23b4-f809-442e-9071-37942bf1acfb)
 
 <p></p>
 
