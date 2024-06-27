@@ -3,44 +3,44 @@ local Config = require("kulala.config")
 local M = {}
 
 local UI_ID = "kulala://ui"
-local PREV_BUF = nil
-local PREV_WIN = nil
-local UI_BUF = nil
-local UI_WIN = nil
 
 local config = Config.get_config()
 
--- checks if the buffer exists with the given name (UI_ID)
-local function buffer_exists()
-  if vim.fn.bufwinnr(UI_ID) > 0 then
-    return true
+local get_buffer = function()
+  -- Iterate through all buffers
+  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+    -- Get the buffer name
+    local name = vim.api.nvim_buf_get_name(buf)
+    -- Check if the name matches
+    if name == UI_ID then
+      return buf
+    end
   end
-  return false
+  -- Return nil if no buffer is found with the given name
+  return nil
+end
+
+local function buffer_exists()
+  return get_buffer() ~= nil
 end
 
 local function clear_buffer()
-  if buffer_exists() then
-    vim.api.nvim_buf_set_lines(UI_BUF, 0, -1, false, {})
-  end
-end
-
-local function kill_buffer()
-  if buffer_exists() then
-    vim.api.nvim_buf_delete(UI_BUF, { force = true })
-    UI_BUF = nil
-    UI_WIN = nil
+  local buf = get_buffer()
+  if buf then
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, {})
   end
 end
 
 local function set_buffer_contents(contents, formatter)
   if buffer_exists() then
+    local buf = get_buffer()
     clear_buffer()
     local lines = vim.split(contents, "\n")
-    vim.api.nvim_buf_set_lines(UI_BUF, 0, -1, false, lines)
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
     if formatter ~= nil then
-      vim.api.nvim_buf_set_option(UI_BUF, "filetype", formatter)
+      vim.api.nvim_buf_set_option(buf, "filetype", formatter)
     else
-      vim.api.nvim_buf_set_option(UI_BUF, "filetype", "plaintext")
+      vim.api.nvim_buf_set_option(buf, "filetype", "plaintext")
     end
   end
 end
@@ -57,6 +57,13 @@ local function exec_cmd(cmd)
   return vim.system(cmd, { text = true }):wait().stdout
 end
 
+local open_buffer = function()
+  local prev_win = vim.api.nvim_get_current_win()
+  vim.cmd("vsplit " .. UI_ID)
+  vim.cmd("setlocal buftype=nofile")
+  vim.api.nvim_set_current_win(prev_win)
+end
+
 M.run = function(ast)
   if buffer_exists() then
     if ast.formatter then
@@ -65,15 +72,7 @@ M.run = function(ast)
       set_buffer_contents(exec_cmd(ast.cmd), ast.formatter)
     end
   else
-    PREV_BUF = vim.api.nvim_get_current_buf()
-    PREV_WIN = vim.api.nvim_get_current_win()
-    vim.cmd("vsplit kulala://ui")
-    vim.cmd("setlocal nobuflisted")
-    vim.cmd("setlocal bufhidden=hide")
-    vim.cmd("setlocal buftype=nofile")
-    UI_BUF = vim.api.nvim_get_current_buf()
-    UI_WIN = vim.api.nvim_get_current_win()
-    vim.api.nvim_set_current_win(PREV_WIN)
+    open_buffer()
     if ast.formatter then
       set_buffer_contents(format_result(ast.formatter, exec_cmd(ast.cmd)), ast.formatter)
     else
