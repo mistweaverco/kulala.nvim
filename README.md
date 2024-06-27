@@ -19,6 +19,10 @@ It allows you to make HTTP requests from within Neovim.
 
 <p></p>
 
+![demo](https://github.com/mistweaverco/kulala.nvim/assets/1384938/5bf843c8-95f2-4939-ac46-f99a8613cd90)
+
+<p></p>
+
 </div>
 
 ## Requirements
