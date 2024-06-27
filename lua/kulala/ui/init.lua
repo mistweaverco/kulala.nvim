@@ -13,9 +13,6 @@ end
 M.open = function()
   Inlay:show_loading()
   local ast = Parser:parse()
-  if config.debug then
-    vim.print(vim.inspect(ast))
-  end
   vim.schedule(function()
     local start = vim.loop.hrtime()
     Cmd.run(ast)

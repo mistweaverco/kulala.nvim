@@ -1,6 +1,9 @@
-local DYNAMIC_VARS = require("kulala.parser.dynamic_vars")
-local STRING_UTILS = require("kulala.utils.string")
+local Config = require("kulala.config")
+local Dynamic_vars = require("kulala.parser.dynamic_vars")
+local String_utils = require("kulala.utils.string")
 local M = {}
+
+local config = Config.get_config()
 
 ---Small wrapper around `vim.treesitter.get_node_text`
 ---@see vim.treesitter.get_node_text
@@ -35,7 +38,7 @@ local function parse_variables(node, tree, text, variables)
 
     -- If the variable name contains a `$` symbol then try to parse it as a dynamic variable
     if variable_name:find("^%$") then
-      variable_value = DYNAMIC_VARS.read(variable_name)
+      variable_value = Dynamic_vars.read(variable_name)
       if variable_value then
         return variable_value
       end
@@ -123,6 +126,26 @@ local function traverse_headers(req_node)
   return headers
 end
 
+---Traverse the document tree-sitter node and retrieve all the `variable_declaration` nodes
+---@param document_node TSNode Tree-sitter document node
+---@return Variables
+local function traverse_variables(document_node)
+  local variables = {}
+  for child, _ in document_node:iter_children() do
+    local child_type = child:type()
+    if child_type == "variable_declaration" then
+      local var_name = assert(get_node_text(child:field("name")[1], 0))
+      local var_value = child:field("value")[1]
+      local var_type = var_value:type()
+      variables[var_name] = {
+        type_ = var_type,
+        value = assert(get_node_text(var_value, 0)),
+      }
+    end
+  end
+  return variables
+end
+
 ---Parse request headers tree-sitter nodes
 ---@param header_nodes NodesList Tree-sitter nodes
 ---@param variables Variables HTTP document variables list
@@ -167,7 +190,7 @@ local function parse_request(children_nodes, variables)
   -- Parse the request nodes again as a single string converted into a new AST Tree to expand the variables
   local request_text = request.method .. " " .. request.url .. "\n"
   local request_tree = vim.treesitter.get_string_parser(request_text, "http"):parse()[1]
-  -- request.url = parse_variables(request_tree:root(), request_text, request.url, variables)
+  request.url = parse_variables(request_tree:root(), request_text, request.url, variables)
 
   return request
 end
@@ -186,7 +209,7 @@ local function traverse_body(tbl, variables)
 
     -- If the variable name contains a `$` symbol then try to parse it as a dynamic variable
     if variable_name:find("^%$") then
-      variable_value = DYNAMIC_VARS.read(variable_name)
+      variable_value = Dynamic_vars.read(variable_name)
       if variable_value then
         return variable_value
       end
@@ -316,7 +339,7 @@ function M.parse()
   local request_header_nodes = traverse_headers(req_node)
 
   ---@cast document_node TSNode
-  -- local document_variables = traverse_variables(document_node)
+  local document_variables = traverse_variables(document_node)
 
   ast.request = parse_request(request_children_nodes, document_variables)
   ast.headers = parse_headers(request_header_nodes, document_variables)
@@ -334,8 +357,8 @@ function M.parse()
       if ast.request.method == "POST" then
         ast.body = "{ \"query\": \"" .. graphql_query .."\" }"
       else
-        graphql_query = STRING_UTILS.url_encode(STRING_UTILS.remove_extra_space(STRING_UTILS.remove_newline(graphql_query)))
-        ast.graphql_query = STRING_UTILS.url_decode(graphql_query)
+        graphql_query = String_utils.url_encode(String_utils.remove_extra_space(String_utils.remove_newline(graphql_query)))
+        ast.graphql_query = String_utils.url_decode(graphql_query)
         ast.request.url = ast.request.url .. "?query=" .. graphql_query
       end
     end
@@ -371,6 +394,8 @@ function M.parse()
   if ast.request.http_version ~= nil then
     table.insert(ast.cmd, "--http" .. ast.request.http_version)
   end
+  table.insert(ast.cmd, "-A")
+  table.insert(ast.cmd, "kulala.nvim/alpha")
   table.insert(ast.cmd, ast.request.url)
   if ast.headers['accept'] == "application/json" then
     ast.formatter = "json"
