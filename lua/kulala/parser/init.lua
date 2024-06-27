@@ -365,9 +365,11 @@ function M.parse()
     table.insert(ast.cmd, "--data-raw")
     table.insert(ast.cmd, ast.body)
   elseif ast.body.__TYPE == "json" then
+    ast.body.__TYPE = nil
     table.insert(ast.cmd, "--data-raw")
     table.insert(ast.cmd, vim.json.encode(ast.body))
   elseif ast.body.__TYPE == "form" then
+    ast.body.__TYPE = nil
     for key, value in pairs(ast.body) do
       table.insert(ast.cmd, "--data-raw")
       table.insert(ast.cmd, key .."=".. value)
