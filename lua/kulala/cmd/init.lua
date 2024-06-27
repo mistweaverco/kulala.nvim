@@ -54,7 +54,7 @@ local format_result = function(formatter, contents)
 end
 
 local function exec_cmd(cmd)
-  return vim.system(cmd):wait().stdout
+  return vim.system(cmd, { text = true }):wait().stdout
 end
 
 M.run = function(ast)

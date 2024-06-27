@@ -363,19 +363,19 @@ function M.parse()
   table.insert(ast.cmd, ast.request.method)
   if type(ast.body) == "string" then
     table.insert(ast.cmd, "--data-raw")
-    table.insert(ast.cmd, "'".. ast.body .."'")
+    table.insert(ast.cmd, ast.body)
   elseif ast.body.__TYPE == "json" then
     table.insert(ast.cmd, "--data-raw")
-    table.insert(ast.cmd, "'".. vim.json.encode(ast.body) .."'")
+    table.insert(ast.cmd, vim.json.encode(ast.body))
   elseif ast.body.__TYPE == "form" then
     for key, value in pairs(ast.body) do
       table.insert(ast.cmd, "--data-raw")
-      table.insert(ast.cmd, "'".. key .."=".. value .."'")
+      table.insert(ast.cmd, key .."=".. value)
     end
   end
   for key, value in pairs(ast.headers) do
     table.insert(ast.cmd, "-H")
-    table.insert(ast.cmd, "'".. key ..":".. value .."'")
+    table.insert(ast.cmd, key ..":".. value)
   end
   if ast.request.http_version ~= nil then
     table.insert(ast.cmd, "--http" .. ast.request.http_version)
