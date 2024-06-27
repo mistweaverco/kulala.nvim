@@ -1,6 +1,6 @@
 local Config = require("kulala.config")
 local Parser = require("kulala.parser")
-local Term = require("kulala.term")
+local Cmd = require("kulala.cmd")
 local M = {}
 
 local config = Config.get_config()
@@ -10,7 +10,7 @@ M.open = function()
   if config.debug then
     vim.print(vim.inspect(ast))
   end
-  Term.run(ast.cmd)
+  Cmd.run(ast)
 end
 
 return M

@@ -316,7 +316,8 @@ function M.parse()
     headers = {},
     body = {},
     script = "",
-    cmd = "",
+    cmd = {},
+    formatter = nil,
   }
   local document_variables = {}
   local req_node = get_request_node()
@@ -356,28 +357,32 @@ function M.parse()
   local headers = ""
   local body = ""
   local http_version = ""
-  if ast.request.http_version ~= nil then
-    http_version = "--http" .. ast.request.http_version
-  end
-  for key, value in pairs(ast.headers) do
-    headers = headers .. " -H '".. key ..": ".. value .."'"
-  end
+  table.insert(ast.cmd, "curl")
+  table.insert(ast.cmd, "-s")
+  table.insert(ast.cmd, "-X")
+  table.insert(ast.cmd, ast.request.method)
   if type(ast.body) == "string" then
-    body = " --data-raw '".. ast.body .."'"
+    table.insert(ast.cmd, "--data-raw")
+    table.insert(ast.cmd, "'".. ast.body .."'")
   elseif ast.body.__TYPE == "json" then
-    body = " --data-raw '".. vim.json.encode(ast.body) .."'"
+    table.insert(ast.cmd, "--data-raw")
+    table.insert(ast.cmd, "'".. vim.json.encode(ast.body) .."'")
   elseif ast.body.__TYPE == "form" then
     for key, value in pairs(ast.body) do
-      body = body .. " --data-raw '".. key .."=".. value .."'"
+      table.insert(ast.cmd, "--data-raw")
+      table.insert(ast.cmd, "'".. key .."=".. value .."'")
     end
   end
-  ast.cmd = "curl -s -X ".. ast.request.method .." "..
-    body .." " ..
-    headers .. " " ..
-    http_version .. " " ..
-    "\'".. ast.request.url .."\'"
+  for key, value in pairs(ast.headers) do
+    table.insert(ast.cmd, "-H")
+    table.insert(ast.cmd, "'".. key ..":".. value .."'")
+  end
+  if ast.request.http_version ~= nil then
+    table.insert(ast.cmd, "--http" .. ast.request.http_version)
+  end
+  table.insert(ast.cmd, ast.request.url)
   if ast.headers['accept'] == "application/json" then
-    ast.cmd = ast.cmd .. " | jq ."
+    ast.formatter = "json"
   end
 
   -- Request node range
