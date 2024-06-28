@@ -6,6 +6,7 @@
 
 ![Lua](https://img.shields.io/badge/Made%20with%20Lua-blueviolet.svg?style=for-the-badge&logo=lua)
 ![Project Status](https://img.shields.io/badge/Alpha%20Status-green?style=for-the-badge&logo=github)
+[![Discord](https://img.shields.io/badge/discord-join-7289da?style=for-the-badge&logo=discord)](https://discord.gg/QyVQmfY4Rt)
 
 [Requirements](#requirements) • [Install](#install) • [Usage](#usage) • [HTTP File Spec](https://kulala.mwco.app/#/http_file_spec)
 
