@@ -24,6 +24,18 @@ local function buffer_exists()
   return get_buffer() ~= nil
 end
 
+-- Create an autocmd to delete the buffer when the window is closed
+-- This is necessary to prevent the buffer from being left behind
+-- when the window is closed
+vim.api.nvim_create_autocmd("WinClosed", {
+  callback = function(args)
+    -- if the window path is the same as the UI_ID and the buffer exists
+    if args.buf == get_buffer() then
+      vim.api.nvim_buf_delete(get_buffer(), { force = true })
+    end
+  end,
+})
+
 local function clear_buffer()
   local buf = get_buffer()
   if buf then
