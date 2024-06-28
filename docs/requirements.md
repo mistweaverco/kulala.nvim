@@ -37,11 +37,11 @@ This will make Neovim recognize files with the `.http` extension as HTTP files.
 ```lua
 vim.api.nvim_set_keymap("n", "<C-k>", ":lua require('kulala').jump_prev()<CR>", { noremap = true, silent = true })
 vim.api.nvim_set_keymap("n", "<C-j>", ":lua require('kulala').jump_next()<CR>", { noremap = true, silent = true })
-vim.api.nvim_set_keymap("n", "<C-x>", ":lua require('kulala').run()<CR>", { noremap = true, silent = true })
+vim.api.nvim_set_keymap("n", "<C-l>", ":lua require('kulala').run()<CR>", { noremap = true, silent = true })
 ```
 
 This will allow you to:
 
-- run `kulala` by pressing `Ctrl + x` in normal mode.
+- run `kulala` by pressing `Ctrl + l` in normal mode.
 - jump to the previous request by pressing `Ctrl + j` in normal mode.
 - jump to the next request by pressing `Ctrl + k` in normal mode.
