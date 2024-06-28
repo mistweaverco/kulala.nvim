@@ -11,7 +11,11 @@
 
 ### jq
 
-- [jq](https://stedolan.github.io/jq/) (tested with 1.7)
+- [jq](https://stedolan.github.io/jq/) (tested with 1.7) (Only required for JSON responses)
+
+### xmllint
+
+- [xmllint](https://packages.ubuntu.com/noble/libxml2-utils) (tested with libxml v20914) (Only required for XML/HTML responses)
 
 #### Optional Requirements
 
