@@ -7,27 +7,29 @@ local config = Config.get_config()
 
 local function parse_string_variables(str, variables)
   local function replace_placeholder(variable_name)
-    local value = "{{" .. variable_name .. "}}"
+    local value = ""
     -- If the variable name contains a `$` symbol then try to parse it as a dynamic variable
     if variable_name:find("^%$") then
       local variable_value = Dynamic_vars.read(variable_name)
       if variable_value then
         value = variable_value
       end
-    end
-    if variables[variable_name] then
+    elseif variables[variable_name] then
       value = variables[variable_name].value
     elseif vim.env[variable_name] then
       value = vim.env[variable_name]
     else
+      value = "{{" .. variable_name .. "}}"
       vim.notify(
         "The variable '"
           .. variable_name
           .. "' was not found in the document or in the environment. Returning the string as received ..."
       )
     end
-    ---@cast variable_value string
-    value = value:gsub('"', "")
+    if type(value) == "string" then
+      ---@cast variable_value string
+      value = value:gsub('"', "")
+    end
     return value
   end
   local result = str:gsub("{{(.-)}}", replace_placeholder)
