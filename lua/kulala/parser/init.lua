@@ -185,6 +185,7 @@ local function parse_headers(header_nodes, variables)
   local headers = {}
   for _, header_node in ipairs(header_nodes) do
     local header_name = assert(get_node_text(header_node:field("name")[1], 0))
+    header_name = header_name:lower()
     -- everything after the first colon
     -- fixes various tree-sitter bugs
     local header_string = get_node_text(header_node, 0)
