@@ -447,6 +447,10 @@ function M.parse()
   table.insert(res.cmd, res.request.url)
   if res.headers['accept'] == "application/json" then
     res.formatter = "json"
+  elseif res.headers['accept'] == "application/xml" then
+    res.formatter = "xml"
+  elseif res.headers['accept'] == "text/html" then
+    res.formatter = "html"
   end
   if config.debug then
     print(vim.inspect(res))

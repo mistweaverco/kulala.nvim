@@ -61,6 +61,10 @@ local format_result = function(formatter, contents)
   local cmd = {}
   if formatter == "json" then
     cmd = { "jq", "." }
+  elseif formatter == "xml" then
+    cmd = { "xmllint", "--format", "-" }
+  elseif formatter == "html" then
+    cmd = { "xmllint", "--format", "-" }
   end
   return vim.system(cmd, { stdin = contents, text = true }):wait().stdout
 end
@@ -76,19 +80,19 @@ local open_buffer = function()
   vim.api.nvim_set_current_win(prev_win)
 end
 
-M.run = function(ast)
+M.run = function(result)
   if buffer_exists() then
-    if ast.formatter then
-      set_buffer_contents(format_result(ast.formatter, exec_cmd(ast.cmd)), ast.formatter)
+    if result.formatter then
+      set_buffer_contents(format_result(result.formatter, exec_cmd(result.cmd)), result.formatter)
     else
-      set_buffer_contents(exec_cmd(ast.cmd), ast.formatter)
+      set_buffer_contents(exec_cmd(result.cmd), result.formatter)
     end
   else
     open_buffer()
-    if ast.formatter then
-      set_buffer_contents(format_result(ast.formatter, exec_cmd(ast.cmd)), ast.formatter)
+    if result.formatter then
+      set_buffer_contents(format_result(result.formatter, exec_cmd(result.cmd)), result.formatter)
     else
-      set_buffer_contents(exec_cmd(ast.cmd), ast.formatter)
+      set_buffer_contents(exec_cmd(result.cmd), result.formatter)
     end
   end
 end

@@ -12,10 +12,10 @@ end
 
 M.open = function()
   Inlay:show_loading()
-  local ast = Parser:parse()
+  local result = Parser:parse()
   vim.schedule(function()
     local start = vim.loop.hrtime()
-    Cmd.run(ast)
+    Cmd.run(result)
     local elapsed = vim.loop.hrtime() - start
     local elapsed_ms = pretty_ms(elapsed / 1e6)
     Inlay:show_done(elapsed_ms)
