@@ -1,5 +1,11 @@
 local M = {}
 
+M.trim = function(str)
+  str = string.gsub(str, "^%s+", "")
+  str = string.gsub(str, "%s+$", "")
+  return str
+end
+
 M.remove_extra_space = function(str)
   str = string.gsub(str, "%s+", " ")
   str = string.gsub(str, "^%s+", "")

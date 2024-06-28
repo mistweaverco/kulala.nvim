@@ -5,6 +5,35 @@ local M = {}
 
 local config = Config.get_config()
 
+local function parse_string_variables(str, variables)
+  local function replace_placeholder(variable_name)
+    local value = "{{" .. variable_name .. "}}"
+    -- If the variable name contains a `$` symbol then try to parse it as a dynamic variable
+    if variable_name:find("^%$") then
+      local variable_value = Dynamic_vars.read(variable_name)
+      if variable_value then
+        value = variable_value
+      end
+    end
+    if variables[variable_name] then
+      value = variables[variable_name].value
+    elseif vim.env[variable_name] then
+      value = vim.env[variable_name]
+    else
+      vim.notify(
+        "The variable '"
+          .. variable_name
+          .. "' was not found in the document or in the environment. Returning the string as received ..."
+      )
+    end
+    ---@cast variable_value string
+    value = value:gsub('"', "")
+    return value
+  end
+  local result = str:gsub("{{(.-)}}", replace_placeholder)
+  return result
+end
+
 ---Small wrapper around `vim.treesitter.get_node_text`
 ---@see vim.treesitter.get_node_text
 ---@param node TSNode Tree-sitter node
@@ -152,17 +181,14 @@ end
 ---@return table A table containing the headers in a key-value style
 local function parse_headers(header_nodes, variables)
   local headers = {}
-  for _, node in ipairs(header_nodes) do
-    local name = assert(get_node_text(node:field("name")[1], 0))
-    local value = vim.trim(assert(get_node_text(node:field("value")[1], 0)))
-
-    -- This dummy request is just for the parser to be able to recognize the header node
-    -- so we can iterate over it to parse the variables
-    local dummy_request = "GET http://localhost:8884\n"
-    local header_text = name .. ": " .. value
-    local header_tree = vim.treesitter.get_string_parser(dummy_request .. header_text, "http"):parse()[1]
-
-    headers[name] = parse_variables(header_tree:root(), dummy_request .. header_text, value, variables)
+  for _, header_node in ipairs(header_nodes) do
+    local header_name = assert(get_node_text(header_node:field("name")[1], 0))
+    -- everything after the first colon
+    -- fixes various tree-sitter bugs
+    local header_string = get_node_text(header_node, 0)
+    local header_value = header_string:sub(header_string:find(":") + 1)
+    header_value = String_utils.trim(header_value)
+    headers[header_name] = parse_string_variables(header_value, variables)
   end
 
   return headers
@@ -186,35 +212,6 @@ local function parse_url(url)
     return url .. "?" .. query_params:sub(2)
   end
   return url
-end
-
-local function parse_string_variables(str, variables)
-  local function replace_placeholder(variable_name)
-    local value = "{{" .. variable_name .. "}}"
-    -- If the variable name contains a `$` symbol then try to parse it as a dynamic variable
-    if variable_name:find("^%$") then
-      local variable_value = Dynamic_vars.read(variable_name)
-      if variable_value then
-        value = variable_value
-      end
-    end
-    if variables[variable_name] then
-      value = variables[variable_name].value
-    elseif vim.env[variable_name] then
-      value = vim.env[variable_name]
-    else
-      vim.notify(
-        "The variable '"
-          .. variable_name
-          .. "' was not found in the document or in the environment. Returning the string as received ..."
-      )
-    end
-    ---@cast variable_value string
-    value = value:gsub('"', "")
-    return value
-  end
-  local result = str:gsub("{{(.-)}}", replace_placeholder)
-  return result
 end
 
 ---Parse a request tree-sitter node
