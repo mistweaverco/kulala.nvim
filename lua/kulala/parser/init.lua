@@ -188,6 +188,35 @@ local function parse_url(url)
   return url
 end
 
+local function parse_string_variables(str, variables)
+  local function replace_placeholder(variable_name)
+    local value = "{{" .. variable_name .. "}}"
+    -- If the variable name contains a `$` symbol then try to parse it as a dynamic variable
+    if variable_name:find("^%$") then
+      local variable_value = Dynamic_vars.read(variable_name)
+      if variable_value then
+        value = variable_value
+      end
+    end
+    if variables[variable_name] then
+      value = variables[variable_name].value
+    elseif vim.env[variable_name] then
+      value = vim.env[variable_name]
+    else
+      vim.notify(
+        "The variable '"
+          .. variable_name
+          .. "' was not found in the document or in the environment. Returning the string as received ..."
+      )
+    end
+    ---@cast variable_value string
+    value = value:gsub('"', "")
+    return value
+  end
+  local result = str:gsub("{{(.-)}}", replace_placeholder)
+  return result
+end
+
 ---Parse a request tree-sitter node
 ---@param children_nodes NodesList Tree-sitter nodes
 ---@param variables Variables HTTP document variables list
@@ -199,7 +228,6 @@ local function parse_request(children_nodes, variables)
       request.method = assert(get_node_text(node, 0))
     elseif node_type == "target_url" then
       request.url = assert(get_node_text(node, 0))
-      request.url = parse_url(request.url)
     elseif node_type == "http_version" then
       local http_version = assert(get_node_text(node, 0))
       request.http_version = http_version:gsub("HTTP/", "")
@@ -211,8 +239,10 @@ local function parse_request(children_nodes, variables)
   -- Parse the request nodes again as a single string converted into a new AST Tree to expand the variables
   local request_text = request.method .. " " .. request.url .. "\n"
   local request_tree = vim.treesitter.get_string_parser(request_text, "http"):parse()[1]
-  request.url = parse_variables(request_tree:root(), request_text, request.url, variables)
-
+  request.url = parse_string_variables(request.url, variables)
+  request.url = parse_url(request.url)
+  ---@cast variable_value string
+  request.url = request.url:gsub('"', "")
   return request
 end
 
