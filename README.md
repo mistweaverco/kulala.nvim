@@ -68,6 +68,14 @@ require('lazy').setup({
 
 Run the current request.
 
+### `require('kulala').jump_prev()`
+
+Jump to the previous request.
+
+### `require('kulala').jump_next()`
+
+Jump to the next request.
+
 ## Usage
 
 The syntax highlighting for HTTP files on GitHub is not perfect.
