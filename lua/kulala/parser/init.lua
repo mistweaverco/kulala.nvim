@@ -1,6 +1,9 @@
 local Config = require("kulala.config")
 local Dynamic_vars = require("kulala.parser.dynamic_vars")
 local String_utils = require("kulala.utils.string")
+local ENV = require("kulala.parser.env")
+local env = ENV.get_env()
+
 local M = {}
 
 local config = Config.get_config()
@@ -16,8 +19,8 @@ local function parse_string_variables(str, variables)
       end
     elseif variables[variable_name] then
       value = variables[variable_name].value
-    elseif vim.env[variable_name] then
-      value = vim.env[variable_name]
+    elseif env[variable_name] then
+      value = env[variable_name]
     else
       value = "{{" .. variable_name .. "}}"
       vim.notify(
@@ -82,7 +85,7 @@ local function parse_variables(node, tree, text, variables)
       vim.notify(
         "The variable '" .. variable_name .. "' was not found in the document, falling back to the environment ..."
       )
-      local env_var = vim.env[variable_name]
+      local env_var = env[variable_name]
       if not env_var then
         ---@diagnostic disable-next-line need-check-nil
         vim.notify(
@@ -273,7 +276,7 @@ local function traverse_body(tbl, variables)
       vim.notify(
         "The variable '" .. variable_name .. "' was not found in the document, falling back to the environment ..."
       )
-      local env_var = vim.env[variable_name]
+      local env_var = env[variable_name]
       if not env_var then
         ---@diagnostic disable-next-line need-check-nil
         vim.notify(
