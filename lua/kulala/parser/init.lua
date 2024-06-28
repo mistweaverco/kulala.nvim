@@ -168,6 +168,26 @@ local function parse_headers(header_nodes, variables)
   return headers
 end
 
+local function parse_url(url)
+  local url_parts = {}
+  local url_parts = vim.split(url, "?")
+  local url = url_parts[1]
+  local query = url_parts[2]
+  local query_parts = {}
+  if query then
+    query_parts = vim.split(query, "&")
+  end
+  local query_params = ""
+  for _, query_part in ipairs(query_parts) do
+    local query_param = vim.split(query_part, "=")
+    query_params = query_params .. "&" .. String_utils.url_encode(query_param[1]) .. "=" .. String_utils.url_encode(query_param[2])
+  end
+  if query_params ~= "" then
+    return url .. "?" .. query_params:sub(2)
+  end
+  return url
+end
+
 ---Parse a request tree-sitter node
 ---@param children_nodes NodesList Tree-sitter nodes
 ---@param variables Variables HTTP document variables list
@@ -179,6 +199,7 @@ local function parse_request(children_nodes, variables)
       request.method = assert(get_node_text(node, 0))
     elseif node_type == "target_url" then
       request.url = assert(get_node_text(node, 0))
+      request.url = parse_url(request.url)
     elseif node_type == "http_version" then
       local http_version = assert(get_node_text(node, 0))
       request.http_version = http_version:gsub("HTTP/", "")
@@ -322,7 +343,7 @@ end
 ---Parse a request and return the request on itself, its headers and body
 ---@return Request Table containing the request data
 function M.parse()
-  local ast = {
+  local res = {
     type = "rest",
     request = {},
     headers = {},
@@ -341,71 +362,66 @@ function M.parse()
   ---@cast document_node TSNode
   local document_variables = traverse_variables(document_node)
 
-  ast.request = parse_request(request_children_nodes, document_variables)
-  ast.headers = parse_headers(request_header_nodes, document_variables)
-  ast.body = parse_body(request_children_nodes, document_variables)
+  res.request = parse_request(request_children_nodes, document_variables)
+  res.headers = parse_headers(request_header_nodes, document_variables)
+  res.body = parse_body(request_children_nodes, document_variables)
 
   -- We need to append the contents of the file to
   -- the body if it is a POST request,
   -- or to the URL itself if it is a GET request
-  if ast.body.path ~= nil then
-    if ast.body.path:match("%.graphql$") or ast.body.path:match("%.gql$") then
-      ast.type = "graphql"
-      local graphql_file = io.open(ast.body.path, "r")
+  if res.body.path ~= nil then
+    if res.body.path:match("%.graphql$") or res.body.path:match("%.gql$") then
+      res.type = "graphql"
+      local graphql_file = io.open(res.body.path, "r")
       local graphql_query = graphql_file:read("*a")
       graphql_file:close()
-      if ast.request.method == "POST" then
-        ast.body = "{ \"query\": \"" .. graphql_query .."\" }"
+      if res.request.method == "POST" then
+        res.body = "{ \"query\": \"" .. graphql_query .."\" }"
       else
         graphql_query = String_utils.url_encode(String_utils.remove_extra_space(String_utils.remove_newline(graphql_query)))
-        ast.graphql_query = String_utils.url_decode(graphql_query)
-        ast.request.url = ast.request.url .. "?query=" .. graphql_query
+        res.graphql_query = String_utils.url_decode(graphql_query)
+        res.request.url = res.request.url .. "?query=" .. graphql_query
       end
     end
   end
-  -- ast.script = M.parse_script(req_node)
+  -- res.script = M.parse_script(req_node)
 
   -- build the command to exectute the request
-  local headers = ""
-  local body = ""
-  local http_version = ""
-  table.insert(ast.cmd, "curl")
-  table.insert(ast.cmd, "-s")
-  table.insert(ast.cmd, "-X")
-  table.insert(ast.cmd, ast.request.method)
-  if type(ast.body) == "string" then
-    table.insert(ast.cmd, "--data-raw")
-    table.insert(ast.cmd, ast.body)
-  elseif ast.body.__TYPE == "json" then
-    ast.body.__TYPE = nil
-    table.insert(ast.cmd, "--data-raw")
-    table.insert(ast.cmd, vim.json.encode(ast.body))
-  elseif ast.body.__TYPE == "form" then
-    ast.body.__TYPE = nil
-    for key, value in pairs(ast.body) do
-      table.insert(ast.cmd, "--data-raw")
-      table.insert(ast.cmd, key .."=".. value)
+  table.insert(res.cmd, "curl")
+  table.insert(res.cmd, "-s")
+  table.insert(res.cmd, "-X")
+  table.insert(res.cmd, res.request.method)
+  if type(res.body) == "string" then
+    table.insert(res.cmd, "--data-raw")
+    table.insert(res.cmd, res.body)
+  elseif res.body.__TYPE == "json" then
+    res.body.__TYPE = nil
+    table.insert(res.cmd, "--data-raw")
+    table.insert(res.cmd, vim.json.encode(res.body))
+  elseif res.body.__TYPE == "form" then
+    res.body.__TYPE = nil
+    for key, value in pairs(res.body) do
+      table.insert(res.cmd, "--data-raw")
+      table.insert(res.cmd, key .."=".. value)
     end
   end
-  for key, value in pairs(ast.headers) do
-    table.insert(ast.cmd, "-H")
-    table.insert(ast.cmd, key ..":".. value)
+  for key, value in pairs(res.headers) do
+    table.insert(res.cmd, "-H")
+    table.insert(res.cmd, key ..":".. value)
   end
-  if ast.request.http_version ~= nil then
-    table.insert(ast.cmd, "--http" .. ast.request.http_version)
+  if res.request.http_version ~= nil then
+    table.insert(res.cmd, "--http" .. res.request.http_version)
   end
-  table.insert(ast.cmd, "-A")
-  table.insert(ast.cmd, "kulala.nvim/alpha")
-  table.insert(ast.cmd, ast.request.url)
-  if ast.headers['accept'] == "application/json" then
-    ast.formatter = "json"
+  table.insert(res.cmd, "-A")
+  table.insert(res.cmd, "kulala.nvim/alpha")
+  table.insert(res.cmd, res.request.url)
+  if res.headers['accept'] == "application/json" then
+    res.formatter = "json"
   end
-
-  -- Request node range
-  ast.start = req_node:start()
-  ast.end_ = req_node:end_()
-
-  return ast
+  if config.debug then
+    print(vim.inspect(res))
+  end
+  return res
 end
 
 return M
