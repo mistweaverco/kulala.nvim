@@ -64,7 +64,7 @@ local format_result = function(formatter, contents)
   elseif formatter == "xml" then
     cmd = { "xmllint", "--format", "-" }
   elseif formatter == "html" then
-    cmd = { "xmllint", "--format", "-" }
+    cmd = { "xmllint", "--format", "--html", "-" }
   end
   return vim.system(cmd, { stdin = contents, text = true }):wait().stdout
 end
