@@ -1,11 +1,11 @@
-local Config = require("kulala.config")
+local CONFIG = require("kulala.config")
 local FS = require("kulala.utils.fs")
 
 local M = {}
 
 local UI_ID = "kulala://ui"
 
-local config = Config.get_config()
+local config = CONFIG.get_config()
 
 local get_buffer = function()
   -- Iterate through all buffers

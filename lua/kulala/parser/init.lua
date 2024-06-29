@@ -1,26 +1,28 @@
-local Config = require("kulala.config")
-local Dynamic_vars = require("kulala.parser.dynamic_vars")
-local String_utils = require("kulala.utils.string")
-local ENV = require("kulala.parser.env")
-local env = ENV.get_env()
+local FS = require("kulala.utils.fs")
+local CONFIG = require("kulala.config")
+local DYNAMIC_VARS = require("kulala.parser.dynamic_vars")
+local STRING_UTILS = require("kulala.utils.string")
+local ENV_PARSER = require("kulala.parser.env")
+local ENV = ENV_PARSER.get_env()
+local CFG = CONFIG.get_config()
+local PLUGIN_TMP_DIR = FS.get_plugin_tmp_dir()
 
 local M = {}
 
-local config = Config.get_config()
 
 local function parse_string_variables(str, variables)
   local function replace_placeholder(variable_name)
     local value = ""
     -- If the variable name contains a `$` symbol then try to parse it as a dynamic variable
     if variable_name:find("^%$") then
-      local variable_value = Dynamic_vars.read(variable_name)
+      local variable_value = DYNAMIC_VARS.read(variable_name)
       if variable_value then
         value = variable_value
       end
     elseif variables[variable_name] then
       value = variables[variable_name].value
-    elseif env[variable_name] then
-      value = env[variable_name]
+    elseif ENV[variable_name] then
+      value = ENV[variable_name]
     else
       value = "{{" .. variable_name .. "}}"
       vim.notify(
@@ -72,7 +74,7 @@ local function parse_variables(node, tree, text, variables)
 
     -- If the variable name contains a `$` symbol then try to parse it as a dynamic variable
     if variable_name:find("^%$") then
-      variable_value = Dynamic_vars.read(variable_name)
+      variable_value = DYNAMIC_VARS.read(variable_name)
       if variable_value then
         return variable_value
       end
@@ -85,7 +87,7 @@ local function parse_variables(node, tree, text, variables)
       vim.notify(
         "The variable '" .. variable_name .. "' was not found in the document, falling back to the environment ..."
       )
-      local env_var = env[variable_name]
+      local env_var = ENV[variable_name]
       if not env_var then
         ---@diagnostic disable-next-line need-check-nil
         vim.notify(
@@ -193,7 +195,7 @@ local function parse_headers(header_nodes, variables)
     -- fixes various tree-sitter bugs
     local header_string = get_node_text(header_node, 0)
     local header_value = header_string:sub(header_string:find(":") + 1)
-    header_value = String_utils.trim(header_value)
+    header_value = STRING_UTILS.trim(header_value)
     headers[header_name] = parse_string_variables(header_value, variables)
   end
 
@@ -212,7 +214,7 @@ local function parse_url(url)
   local query_params = ""
   for _, query_part in ipairs(query_parts) do
     local query_param = vim.split(query_part, "=")
-    query_params = query_params .. "&" .. String_utils.url_encode(query_param[1]) .. "=" .. String_utils.url_encode(query_param[2])
+    query_params = query_params .. "&" .. STRING_UTILS.url_encode(query_param[1]) .. "=" .. STRING_UTILS.url_encode(query_param[2])
   end
   if query_params ~= "" then
     return url .. "?" .. query_params:sub(2)
@@ -263,7 +265,7 @@ local function traverse_body(tbl, variables)
 
     -- If the variable name contains a `$` symbol then try to parse it as a dynamic variable
     if variable_name:find("^%$") then
-      variable_value = Dynamic_vars.read(variable_name)
+      variable_value = DYNAMIC_VARS.read(variable_name)
       if variable_value then
         return variable_value
       end
@@ -276,7 +278,7 @@ local function traverse_body(tbl, variables)
       vim.notify(
         "The variable '" .. variable_name .. "' was not found in the document, falling back to the environment ..."
       )
-      local env_var = env[variable_name]
+      local env_var = ENV[variable_name]
       if not env_var then
         ---@diagnostic disable-next-line need-check-nil
         vim.notify(
@@ -411,17 +413,19 @@ function M.parse()
       if res.request.method == "POST" then
         res.body = "{ \"query\": \"" .. graphql_query .."\" }"
       else
-        graphql_query = String_utils.url_encode(String_utils.remove_extra_space(String_utils.remove_newline(graphql_query)))
-        res.graphql_query = String_utils.url_decode(graphql_query)
+        graphql_query = STRING_UTILS.url_encode(STRING_UTILS.remove_extra_space(STRING_UTILS.remove_newline(graphql_query)))
+        res.graphql_query = STRING_UTILS.url_decode(graphql_query)
         res.request.url = res.request.url .. "?query=" .. graphql_query
       end
     end
   end
-  -- res.script = M.parse_script(req_node)
 
   -- build the command to exectute the request
   table.insert(res.cmd, "curl")
   table.insert(res.cmd, "-s")
+  -- dump headers to tmp file
+  table.insert(res.cmd, "-D")
+  table.insert(res.cmd, PLUGIN_TMP_DIR .. "/headers.txt")
   table.insert(res.cmd, "-X")
   table.insert(res.cmd, res.request.method)
   if type(res.body) == "string" then
@@ -455,7 +459,7 @@ function M.parse()
   elseif res.headers['accept'] == "text/html" then
     res.formatter = "html"
   end
-  if config.debug then
+  if CFG.debug then
     print(vim.inspect(res))
   end
   return res

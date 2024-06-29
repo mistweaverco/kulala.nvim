@@ -16,6 +16,17 @@ M.find_file_in_parent_dirs = function(filename)
   return nil
 end
 
+-- Get plugin tmp directory
+-- @return string
+-- @usage local p = fs.get_plugin_tmp_dir()
+M.get_plugin_tmp_dir = function()
+  local dir = vim.fn.stdpath('data') .. '/tmp/kulala'
+  if vim.fn.isdirectory(dir) == 0 then
+    vim.fn.mkdir(dir, 'p')
+  end
+  return dir
+end
+
 -- Check if a command is available
 -- @param cmd: string
 -- @return boolean
