@@ -78,6 +78,12 @@ require('lazy').setup({
 
 Run the current request.
 
+### `require('kulala').toggle_view()`
+
+Toggles between the `body` and `headers` view of the last run request.
+
+Persists across restarts.
+
 ### `require('kulala').jump_prev()`
 
 Jump to the previous request.
