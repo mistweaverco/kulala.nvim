@@ -1,4 +1,5 @@
 local Config = require("kulala.config")
+local FS = require("kulala.utils.fs")
 
 local M = {}
 
@@ -59,12 +60,19 @@ end
 
 local format_result = function(formatter, contents)
   local cmd = {}
+  local cmd_exists = false
   if formatter == "json" then
     cmd = { "jq", "." }
+    cmd_exists = FS.command_exists("jq")
   elseif formatter == "xml" then
     cmd = { "xmllint", "--format", "-" }
+    cmd_exists = FS.command_exists("xmllint")
   elseif formatter == "html" then
     cmd = { "xmllint", "--format", "--html", "-" }
+    cmd_exists = FS.command_exists("xmllint")
+  end
+  if not cmd_exists then
+    return contents
   end
   return vim.system(cmd, { stdin = contents, text = true }):wait().stdout
 end

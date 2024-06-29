@@ -16,4 +16,12 @@ M.find_file_in_parent_dirs = function(filename)
   return nil
 end
 
+-- Check if a command is available
+-- @param cmd: string
+-- @return boolean
+-- @usage local p = fs.command_exists('ls')
+M.command_exists = function(cmd)
+  return vim.fn.executable(cmd) == 1
+end
+
 return M
