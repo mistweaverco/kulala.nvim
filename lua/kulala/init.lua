@@ -8,6 +8,7 @@ local M = {}
 M.setup = function(config)
   CONFIG.set_config(config)
   GLOBAL_STORE.set("selected_env", CONFIG.get_config().default_env)
+  vim.g.kulala_selected_env = CONFIG.get_config().default_env
   ENV_PARSER.load_envs()
 end
 

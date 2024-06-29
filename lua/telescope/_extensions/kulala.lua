@@ -38,6 +38,7 @@ local function kulala_env_select(_)
             return
           end
           GLOBAL_STORE.set("selected_env", selection.value)
+          vim.g.kulala_selected_env = selection.value
         end)
         return true
       end,
