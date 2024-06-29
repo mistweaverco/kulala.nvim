@@ -386,7 +386,7 @@ function M.parse()
     body = {},
     script = "",
     cmd = {},
-    ft = nil,
+    ft = "text",
   }
   local document_variables = {}
   local req_node = get_request_node()
