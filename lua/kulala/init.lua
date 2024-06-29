@@ -1,22 +1,26 @@
-local Ui = require("kulala.ui")
-local Config = require("kulala.config")
-local Jumps = require("kulala.jumps")
+local UI = require("kulala.ui")
+local CONFIG = require("kulala.config")
+local JUMPS = require("kulala.jumps")
 local M = {}
 
 M.setup = function(config)
-  Config.set_config(config)
+  CONFIG.set_config(config)
 end
 
 M.run = function()
-  Ui:open()
+  UI:open()
 end
 
 M.jump_next = function()
-  Jumps.jump_next()
+  JUMPS.jump_next()
 end
 
 M.jump_prev = function()
-  Jumps.jump_prev()
+  JUMPS.jump_prev()
+end
+
+M.toggle_headers = function()
+  UI:toggle_headers()
 end
 
 return M

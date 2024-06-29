@@ -1,4 +1,5 @@
 KULALA_CONFIG = KULALA_CONFIG or {
+  default_view = "body", -- body or headers
   debug = false,
 }
 

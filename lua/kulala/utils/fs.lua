@@ -16,6 +16,30 @@ M.find_file_in_parent_dirs = function(filename)
   return nil
 end
 
+-- Writes string to file
+-- @param filename: string
+-- @param content: string
+-- @usage fs.write_file('Makefile', 'all: \n\t@echo "Hello World"')
+-- @return boolean
+-- @usage local p = fs.write_file('Makefile', 'all: \n\t@echo "Hello World"')
+M.write_file = function(filename, content)
+  local f = io.open(filename, 'w')
+  if f == nil then
+    return false
+  end
+  f:write(content)
+  f:close()
+  return true
+end
+
+-- Check if a file exists
+-- @param filename: string
+-- @return boolean
+-- @usage local p = fs.file_exists('Makefile')
+M.file_exists = function(filename)
+  return vim.fn.filereadable(filename) == 1
+end
+
 -- Get plugin tmp directory
 -- @return string
 -- @usage local p = fs.get_plugin_tmp_dir()
@@ -33,6 +57,20 @@ end
 -- @usage local p = fs.command_exists('ls')
 M.command_exists = function(cmd)
   return vim.fn.executable(cmd) == 1
+end
+
+-- Read a file
+-- @param filename: string
+-- @return string
+-- @usage local p = fs.read_file('Makefile')
+M.read_file = function(filename)
+  local f = io.open(filename, 'r')
+  if f == nil then
+    return nil
+  end
+  local content = f:read('*a')
+  f:close()
+  return content
 end
 
 return M

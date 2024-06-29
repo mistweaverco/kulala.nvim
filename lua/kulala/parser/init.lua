@@ -6,9 +6,7 @@ local ENV_PARSER = require("kulala.parser.env")
 local ENV = ENV_PARSER.get_env()
 local CFG = CONFIG.get_config()
 local PLUGIN_TMP_DIR = FS.get_plugin_tmp_dir()
-
 local M = {}
-
 
 local function parse_string_variables(str, variables)
   local function replace_placeholder(variable_name)
@@ -385,7 +383,7 @@ function M.parse()
     body = {},
     script = "",
     cmd = {},
-    formatter = nil,
+    ft = nil,
   }
   local document_variables = {}
   local req_node = get_request_node()
@@ -423,9 +421,10 @@ function M.parse()
   -- build the command to exectute the request
   table.insert(res.cmd, "curl")
   table.insert(res.cmd, "-s")
-  -- dump headers to tmp file
   table.insert(res.cmd, "-D")
   table.insert(res.cmd, PLUGIN_TMP_DIR .. "/headers.txt")
+  table.insert(res.cmd, "-o")
+  table.insert(res.cmd, PLUGIN_TMP_DIR .. "/body.txt")
   table.insert(res.cmd, "-X")
   table.insert(res.cmd, res.request.method)
   if type(res.body) == "string" then
@@ -453,14 +452,15 @@ function M.parse()
   table.insert(res.cmd, "kulala.nvim/alpha")
   table.insert(res.cmd, res.request.url)
   if res.headers['accept'] == "application/json" then
-    res.formatter = "json"
+    res.ft = "json"
   elseif res.headers['accept'] == "application/xml" then
-    res.formatter = "xml"
+    res.ft = "xml"
   elseif res.headers['accept'] == "text/html" then
-    res.formatter = "html"
+    res.ft = "html"
   end
+  FS.write_file(PLUGIN_TMP_DIR .. "/ft.txt", res.ft)
   if CFG.debug then
-    print(vim.inspect(res))
+    FS.write_file(PLUGIN_TMP_DIR .. "/request.txt", table.concat(res.cmd, " "))
   end
   return res
 end
