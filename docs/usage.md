@@ -51,7 +51,6 @@ Place the cursor on any item
 in the `examples.http` and
 run `:lua require('kulala').run()`.
 
-> [!TIP]
 > Want to see the response headers instead of the response body?
 
 With `require('kulala').toggle_view()` you can switch between the `body` and `headers` view of the last run request.

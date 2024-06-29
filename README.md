@@ -92,6 +92,22 @@ Jump to the previous request.
 
 Jump to the next request.
 
+### `require('kulala').set_selected_env(env_key)`
+
+> [!NOTE]
+> If you are using a dotenv (`.env`) file,
+> this function has no effect.
+>
+> It is only for setting the selected environment of
+> a `http-client.env.json` file.
+
+Set the selected environment.
+
+See: https://learn.microsoft.com/en-us/aspnet/core/test/http-files?view=aspnetcore-8.0#environment-files
+
+If you omit the `env_key`,
+it will try to load up a telescope prompt to select an environment.
+
 ## Usage
 
 The syntax highlighting for HTTP files on GitHub is not perfect.
@@ -149,3 +165,9 @@ Place the cursor on any item
 in the `examples.http` and
 run `:lua require('kulala').run()`.
 
+> [!TIP]
+> Want to see the response headers instead of the response body?
+
+With `require('kulala').toggle_view()` you can switch between the `body` and `headers` view of the last run request.
+
+This persists across restarts.

@@ -4,12 +4,12 @@ local CONFIG = require("kulala.config")
 local DYNAMIC_VARS = require("kulala.parser.dynamic_vars")
 local STRING_UTILS = require("kulala.utils.string")
 local ENV_PARSER = require("kulala.parser.env")
-local ENV = ENV_PARSER.get_env()
 local CFG = CONFIG.get_config()
 local PLUGIN_TMP_DIR = FS.get_plugin_tmp_dir()
 local M = {}
 
 local function parse_string_variables(str, variables)
+  local env = ENV_PARSER.get_env()
   local function replace_placeholder(variable_name)
     local value = ""
     -- If the variable name contains a `$` symbol then try to parse it as a dynamic variable
@@ -20,8 +20,8 @@ local function parse_string_variables(str, variables)
       end
     elseif variables[variable_name] then
       value = variables[variable_name].value
-    elseif ENV[variable_name] then
-      value = ENV[variable_name]
+    elseif env[variable_name] then
+      value = env[variable_name]
     else
       value = "{{" .. variable_name .. "}}"
       vim.notify(
@@ -65,6 +65,7 @@ end
 ---@param variables Variables HTTP document variables list
 ---@return string|nil The given `text` with expanded variables
 local function parse_variables(node, tree, text, variables)
+  local env = ENV_PARSER.get_env()
   local variable_query = vim.treesitter.query.parse("http", "(variable name: (_) @name)")
   ---@diagnostic disable-next-line missing-parameter
   for _, nod, _ in variable_query:iter_captures(node:root(), tree) do
@@ -86,7 +87,7 @@ local function parse_variables(node, tree, text, variables)
       vim.notify(
         "The variable '" .. variable_name .. "' was not found in the document, falling back to the environment ..."
       )
-      local env_var = ENV[variable_name]
+      local env_var = env[variable_name]
       if not env_var then
         ---@diagnostic disable-next-line need-check-nil
         vim.notify(
@@ -254,6 +255,7 @@ end
 ---@param tbl table Request body
 ---@return table
 local function traverse_body(tbl, variables)
+  local env = ENV_PARSER.get_env()
   ---Expand a variable in the given string
   ---@param str string String where the variables are going to be expanded
   ---@param vars Variables HTTP document variables list
@@ -277,7 +279,7 @@ local function traverse_body(tbl, variables)
       vim.notify(
         "The variable '" .. variable_name .. "' was not found in the document, falling back to the environment ..."
       )
-      local env_var = ENV[variable_name]
+      local env_var = env[variable_name]
       if not env_var then
         ---@diagnostic disable-next-line need-check-nil
         vim.notify(
