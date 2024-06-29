@@ -1,4 +1,5 @@
 local FS = require("kulala.utils.fs")
+local GLOBALS = require("kulala.globals")
 local CONFIG = require("kulala.config")
 local DYNAMIC_VARS = require("kulala.parser.dynamic_vars")
 local STRING_UTILS = require("kulala.utils.string")
@@ -449,7 +450,7 @@ function M.parse()
     table.insert(res.cmd, "--http" .. res.request.http_version)
   end
   table.insert(res.cmd, "-A")
-  table.insert(res.cmd, "kulala.nvim/alpha")
+  table.insert(res.cmd, "kulala.nvim/".. GLOBALS.VERSION)
   table.insert(res.cmd, res.request.url)
   if res.headers['accept'] == "application/json" then
     res.ft = "json"
