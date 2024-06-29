@@ -8,7 +8,7 @@
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/mistweaverco/kulala.nvim?style=for-the-badge)](https://github.com/mistweaverco/kulala.nvim/releases/latest)
 [![Discord](https://img.shields.io/badge/discord-join-7289da?style=for-the-badge&logo=discord)](https://discord.gg/QyVQmfY4Rt)
 
-[Requirements](#requirements) • [Install](#install) • [Usage](#usage) • [HTTP File Spec](https://kulala.mwco.app/#/http_file_spec)
+[Requirements](https://kulala.mwco.app/#/requirements) • [Install](#install) • [Usage](https://kulala.mwco.app/#/usage) • [HTTP File Spec](https://kulala.mwco.app/#/http_file_spec)
 
 <p></p>
 
@@ -26,36 +26,11 @@ It allows you to make HTTP requests from within Neovim.
 
 </div>
 
-## Requirements
-
-- [Neovim](https://github.com/neovim/neovim) (tested with 0.10.0)
-  - [Treesitter for HTTP](https://github.com/nvim-treesitter/nvim-treesitter?tab=readme-ov-file#supported-languages) (`:TSInstall http`)
-- [cURL](https://curl.se/) (tested with 8.5.0)
-- [jq](https://stedolan.github.io/jq/) (tested with 1.7) (Only required for formatted JSON responses)
-- [xmllint](https://packages.ubuntu.com/noble/libxml2-utils) (tested with libxml v20914) (Only required for formatted XML/HTML responses)
-
-### Optional requirements
-
-To make things a lot easier,
-you can put this lua snippet somewhere in your configuration:
-
-```lua
-vim.filetype.add({
-  extension = {
-    ['http'] = 'http',
-  },
-})
-```
-
-This will make Neovim recognize files
-with the `.http` extension as HTTP files.
-
 ## Install
 
 Via [lazy.nvim](https://github.com/folke/lazy.nvim):
 
-
-### Simple configuration
+### Configuration
 
 ```lua
 require('lazy').setup({
@@ -63,6 +38,7 @@ require('lazy').setup({
   {
     'mistweaverco/kulala.nvim'
     config = function()
+      -- Setup is required, even if you don't pass any options
       require('kulala').setup({
         -- default_view, body or headers
         default_view = "body",
@@ -76,103 +52,3 @@ require('lazy').setup({
   },
 })
 ```
-
-## Public methods
-
-### `require('kulala').run()`
-
-Run the current request.
-
-### `require('kulala').toggle_view()`
-
-Toggles between the `body` and `headers` view of the last run request.
-
-Persists across restarts.
-
-### `require('kulala').jump_prev()`
-
-Jump to the previous request.
-
-### `require('kulala').jump_next()`
-
-Jump to the next request.
-
-### `require('kulala').set_selected_env(env_key)`
-
-> [!NOTE]
-> If you are using a dotenv (`.env`) file,
-> this function has no effect.
->
-> It is only for setting the selected environment of
-> a `http-client.env.json` file.
-
-Set the selected environment.
-
-See: https://learn.microsoft.com/en-us/aspnet/core/test/http-files?view=aspnetcore-8.0#environment-files
-
-If you omit the `env_key`,
-it will try to load up a telescope prompt to select an environment.
-
-## Usage
-
-The syntax highlighting for HTTP files on GitHub is not perfect.
-
-It shows errors where there are none.
-
-`examples.http`
-
-```http
-
-# Make a request to the PokeAPI to get information about ditto
-# Use HTTP/1.0 and the application/json content type as headers
-GET https://pokeapi.co/api/v2/pokemon/ditto HTTP/1.0
-accept: application/json
-
-###
-
-# Make a request to the Star Wars API to get information about all films
-# Use a GraphQL query to get the title and episodeID of each film
-# Use the application/json content type as the header and omit the HTTP version
-# so it defaults to HTTP/1.1
-GET https://swapi-graphql.netlify.app/.netlify/functions/index
-accept: application/json
-
-< ./starwars.graphql
-
-###
-
-POST https://swapi-graphql.netlify.app/.netlify/functions/index
-accept: application/json
-content-type: application/json
-
-{
-  "query": "{ allFilms { films { title } } }",
-  "variables": {}
-}
-
-###
-```
-
-`starwars.graphql`
-
-```graphql
-query {
-  allFilms {
-    films {
-      title
-      episodeID
-    }
-  }
-}
-```
-
-Place the cursor on any item
-in the `examples.http` and
-run `:lua require('kulala').run()`.
-
-> [!TIP]
-> Want to see the response headers instead of the response body?
-
-With `require('kulala').toggle_view()` you can switch between the `body` and `headers` view of the last run request.
-
-This persists across restarts.
