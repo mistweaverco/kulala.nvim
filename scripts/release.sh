@@ -14,9 +14,7 @@ do_gh_release() {
 }
 
 boot() {
-  update_lua_globals_version
-  update_package_json_version
-  update_docsify_version
+  set_version
   check_git_dirty
   do_gh_release
 }
