@@ -31,8 +31,8 @@ It allows you to make HTTP requests from within Neovim.
 - [Neovim](https://github.com/neovim/neovim) (tested with 0.10.0)
   - [Treesitter for HTTP](https://github.com/nvim-treesitter/nvim-treesitter?tab=readme-ov-file#supported-languages) (`:TSInstall http`)
 - [cURL](https://curl.se/) (tested with 8.5.0)
-- [jq](https://stedolan.github.io/jq/) (tested with 1.7) (Only required for JSON responses)
-- [xmllint](https://packages.ubuntu.com/noble/libxml2-utils) (tested with libxml v20914) (Only required for XML/HTML responses)
+- [jq](https://stedolan.github.io/jq/) (tested with 1.7) (Only required for formatted JSON responses)
+- [xmllint](https://packages.ubuntu.com/noble/libxml2-utils) (tested with libxml v20914) (Only required for formatted XML/HTML responses)
 
 ### Optional requirements
 
