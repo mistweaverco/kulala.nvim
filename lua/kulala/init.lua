@@ -19,7 +19,7 @@ M.jump_prev = function()
   JUMPS.jump_prev()
 end
 
-M.toggle_headers = function()
+M.toggle_view = function()
   UI:toggle_headers()
 end
 
