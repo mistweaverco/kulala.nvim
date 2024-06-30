@@ -443,6 +443,10 @@ function M.parse()
       table.insert(res.cmd, "--data-raw")
       table.insert(res.cmd, key .."=".. value)
     end
+  elseif res.body.__TYPE == "external_file" and res.type ~= "graphql" then
+    res.body.__TYPE = nil
+    table.insert(res.cmd, "-d")
+    table.insert(res.cmd, "@".. res.body.path)
   end
   for key, value in pairs(res.headers) do
     table.insert(res.cmd, "-H")
