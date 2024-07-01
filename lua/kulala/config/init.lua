@@ -6,6 +6,12 @@ KULALA_CONFIG = KULALA_CONFIG or {
   default_env = "dev",
   -- enable/disable debug mode
   debug = false,
+  -- formatters
+  formatters = {
+    json = { "jq", "." },
+    xml = { "xmllint", "--format", "-" },
+    html = { "xmllint", "--format", "--html", "-" },
+  }
 }
 
 local M = {}

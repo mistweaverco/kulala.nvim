@@ -1,17 +1,19 @@
+local CONFIG = require("kulala.config")
 local FS = require("kulala.utils.fs")
+local CFG = CONFIG.get_config()
 local M = {}
 
 M.format = function(ft, contents)
   local cmd = {}
   local cmd_exists = false
   if ft == "json" then
-    cmd = { "jq", "." }
+    cmd = CFG.formatters.json
     cmd_exists = FS.command_exists("jq")
   elseif ft == "xml" then
-    cmd = { "xmllint", "--format", "-" }
+    cmd = CFG.formatters.xml
     cmd_exists = FS.command_exists("xmllint")
   elseif ft == "html" then
-    cmd = { "xmllint", "--format", "--html", "-" }
+    cmd = CFG.formatters.html
     cmd_exists = FS.command_exists("xmllint")
   end
   if not cmd_exists then

@@ -30,7 +30,9 @@ M.get_env = function()
     local dotenv_env = vim.fn.readfile(dotenv)
     for _, line in ipairs(dotenv_env) do
       local key, value = line:match('([^=]+)=(.*)')
-      env[key] = value
+      if key and value then
+        env[key] = value
+      end
     end
   end
   return env
