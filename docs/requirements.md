@@ -2,7 +2,7 @@
 
 ### Neovim
 
-- [Neovim](https://github.com/neovim/neovim) (tested with 0.10.0)
+- [Neovim](https://github.com/neovim/neovim) 0.10.0+
   - [Treesitter for HTTP](https://github.com/nvim-treesitter/nvim-treesitter?tab=readme-ov-file#supported-languages) (`:TSInstall http`)
 
 ### cURL

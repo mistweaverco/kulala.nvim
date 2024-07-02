@@ -52,3 +52,6 @@ require('lazy').setup({
   },
 })
 ```
+
+> [!WARNING]
+> Requires Neovim 0.10.0+
