@@ -33,4 +33,4 @@ sets the selected environment.
 See: https://learn.microsoft.com/en-us/aspnet/core/test/http-files?view=aspnetcore-8.0#environment-files
 
 If you omit the `env_key`,
-it will try to load up a telescope prompt to select an environment.
+it will try to load up a telescope prompt to select an environment or fallback to using `vim.ui.select`.
