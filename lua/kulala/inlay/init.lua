@@ -1,6 +1,5 @@
 local NS = vim.api.nvim_create_namespace('jest.nvim')
 local CONFIG = require("kulala.config")
-local CFG = CONFIG.get_config()
 
 local M = {}
 
@@ -14,11 +13,11 @@ M.clear = function()
 end
 
 M.show_loading = function()
-  M.show(CFG.inlay.loading_icon)
+  M.show(CONFIG.get_config().icons.inlay.loading)
 end
 
 M.show_done = function(self, elapsed_time)
-  M.show(CFG.inlay.done_icon .. elapsed_time)
+  M.show(CONFIG.get_config().icons.inlay.done .. elapsed_time)
 end
 
 

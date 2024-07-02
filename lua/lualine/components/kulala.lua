@@ -4,7 +4,7 @@ local CONFIG = require("kulala.config")
 
 local default_options = {
   fg = "#10B1FE",
-  icon = CONFIG.get_config().lualine.icon,
+  icon = CONFIG.get_config().icons.lualine,
 }
 
 function M:init(options)

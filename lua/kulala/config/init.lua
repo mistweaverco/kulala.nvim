@@ -12,12 +12,12 @@ KULALA_CONFIG = KULALA_CONFIG or {
     xml = { "xmllint", "--format", "-" },
     html = { "xmllint", "--format", "--html", "-" },
   },
-  inlay = {
-    loading_icon = "⏳",
-    done_icon = "✅ "
-  },
-  lualine = {
-    icon = "🐼"
+  icons = {
+    inlay = {
+      loading = "⏳",
+      done = "✅ "
+    },
+    lualine = "🐼"
   }
 }
 
