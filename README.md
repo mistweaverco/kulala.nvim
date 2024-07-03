@@ -36,7 +36,7 @@ Via [lazy.nvim](https://github.com/folke/lazy.nvim):
 require('lazy').setup({
   -- HTTP REST-Client Interface
   {
-    'mistweaverco/kulala.nvim'
+    'mistweaverco/kulala.nvim',
     config = function()
       -- Setup is required, even if you don't pass any options
       require('kulala').setup({
@@ -47,6 +47,13 @@ require('lazy').setup({
         default_env = "dev",
         -- enable/disable debug mode
         debug = false,
+        inlay = {
+          loading_icon = "⏳",
+          done_icon = "✅ "
+        },
+        lualine = {
+          icon = "🐼"
+        },
       })
     end
   },
