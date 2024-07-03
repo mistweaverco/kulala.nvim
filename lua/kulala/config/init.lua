@@ -11,6 +11,13 @@ KULALA_CONFIG = KULALA_CONFIG or {
     json = { "jq", "." },
     xml = { "xmllint", "--format", "-" },
     html = { "xmllint", "--format", "--html", "-" },
+  },
+  icons = {
+    inlay = {
+      loading = "⏳",
+      done = "✅ "
+    },
+    lualine = "🐼"
   }
 }
 

@@ -1,9 +1,10 @@
 local lualine_require = require("lualine_require")
 local M = lualine_require.require("lualine.component"):extend()
+local CONFIG = require("kulala.config")
 
 local default_options = {
   fg = "#10B1FE",
-  icon = "🐼",
+  icon = CONFIG.get_config().icons.lualine,
 }
 
 function M:init(options)
