@@ -1,4 +1,5 @@
 local UI = require("kulala.ui")
+local SELECTOR = require("kulala.ui.selector")
 local ENV_PARSER = require("kulala.parser.env")
 local GLOBAL_STORE = require("kulala.global_store")
 local CONFIG = require("kulala.config")
@@ -29,14 +30,16 @@ M.toggle_view = function()
 end
 
 M.set_selected_env = function(env)
-  if not pcall(require, "telescope") and env == nil then
-    vim.notify("Telescope is not installed and env was not supplied..", vim.log.levels.ERROR)
-    return
-  elseif env == nil then
-    require("telescope").extensions.kulala.select_env()
-    return
-  end
-  GLOBAL_STORE.set("selected_env", env)
+	if env == nil then
+		local has_telescope, telescope = pcall(require, "telescope")
+		if has_telescope then
+			telescope.extensions.kulala.select_env()
+		else
+			SELECTOR.select_env()
+		end
+		return
+	end
+	GLOBAL_STORE.set("selected_env", env)
 end
 
 return M
