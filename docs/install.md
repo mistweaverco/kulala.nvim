@@ -1,7 +1,9 @@
 ## Install
 
-Via [lazy.nvim](https://github.com/folke/lazy.nvim):
+> [!WARNING]
+> Requires Neovim 0.10.0+
 
+Via [lazy.nvim](https://github.com/folke/lazy.nvim):
 
 ### Simple configuration
 
@@ -19,6 +21,20 @@ require('lazy').setup({
         default_env = "dev",
         -- enable/disable debug mode
         debug = false,
+        -- default formatters for different content types
+        formatters = {
+          json = { "jq", "." },
+          xml = { "xmllint", "--format", "-" },
+          html = { "xmllint", "--format", "--html", "-" },
+        },
+        -- default icons
+        icons = {
+          inlay = {
+            loading = "⏳",
+            done = "✅ "
+          },
+          lualine = "🐼",
+        }
       })
     end
   },
