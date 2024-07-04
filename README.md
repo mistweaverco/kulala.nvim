@@ -28,6 +28,9 @@ It allows you to make HTTP requests from within Neovim.
 
 ## Install
 
+> [!WARNING]
+> Requires Neovim 0.10.0+
+
 Via [lazy.nvim](https://github.com/folke/lazy.nvim):
 
 ### Configuration
@@ -47,18 +50,22 @@ require('lazy').setup({
         default_env = "dev",
         -- enable/disable debug mode
         debug = false,
-        inlay = {
-          loading_icon = "⏳",
-          done_icon = "✅ "
+        -- default formatters for different content types
+        formatters = {
+          json = { "jq", "." },
+          xml = { "xmllint", "--format", "-" },
+          html = { "xmllint", "--format", "--html", "-" },
         },
-        lualine = {
-          icon = "🐼"
-        },
+        -- default icons
+        icons = {
+          inlay = {
+            loading = "⏳",
+            done = "✅ "
+          },
+          lualine = "🐼",
+        }
       })
     end
   },
 })
 ```
-
-> [!WARNING]
-> Requires Neovim 0.10.0+

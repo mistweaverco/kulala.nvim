@@ -6,18 +6,19 @@ KULALA_CONFIG = KULALA_CONFIG or {
   default_env = "dev",
   -- enable/disable debug mode
   debug = false,
-  -- formatters
+  -- default formatters for different content types
   formatters = {
     json = { "jq", "." },
     xml = { "xmllint", "--format", "-" },
     html = { "xmllint", "--format", "--html", "-" },
   },
+  -- default icons
   icons = {
     inlay = {
       loading = "⏳",
       done = "✅ "
     },
-    lualine = "🐼"
+    lualine = "🐼",
   }
 }
 
