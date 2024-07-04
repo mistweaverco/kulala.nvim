@@ -19,7 +19,10 @@ KULALA_CONFIG = KULALA_CONFIG or {
       done = "✅ "
     },
     lualine = "🐼",
-  }
+  },
+  -- additional cURL options
+  -- see: https://curl.se/docs/manpage.html
+  additional_curl_options = {},
 }
 
 local M = {}
