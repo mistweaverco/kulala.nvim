@@ -6,7 +6,7 @@ local M = {}
 -- @usage local p = fs.find_file_in_parent_dirs('Makefile')
 M.find_file_in_parent_dirs = function(filename)
   local dir = vim.fn.expand('%:p:h')
-  while dir ~= '/' do
+  while dir ~= '/' and dir ~= '' do
     local parent = dir .. '/' .. filename
     if vim.fn.filereadable(parent) == 1 then
       return parent
