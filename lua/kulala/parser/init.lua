@@ -457,6 +457,9 @@ function M.parse()
   end
   table.insert(res.cmd, "-A")
   table.insert(res.cmd, "kulala.nvim/".. GLOBALS.VERSION)
+  for _, additional_curl_option in pairs(CFG.additional_curl_options) do
+    table.insert(res.cmd, additional_curl_option)
+  end
   table.insert(res.cmd, res.request.url)
   if res.headers['accept'] == "application/json" then
     res.ft = "json"

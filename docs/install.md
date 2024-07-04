@@ -34,7 +34,10 @@ require('lazy').setup({
             done = "✅ "
           },
           lualine = "🐼",
-        }
+        },
+        -- additional cURL options
+        -- e.g. { "--insecure", "-A", "Mozilla/5.0" }
+        additional_curl_options = {},
       })
     end
   },
