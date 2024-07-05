@@ -6,7 +6,12 @@ local M = {}
 -- @usage local p = fs.find_file_in_parent_dirs('Makefile')
 M.find_file_in_parent_dirs = function(filename)
   local dir = vim.fn.expand('%:p:h')
-  while dir ~= '/' and dir ~= '' do
+  -- make sure we don't go into an infinite loop
+  -- if the file is in the root directory of windows or unix
+  -- we should stop at the root directory
+  -- for linux, the root directory is '/'
+  -- for windows, the root directory is '[SOME_LETTER]:\'
+  while dir ~= '/' and dir:match('[A-Z]:\\') == nil do
     local parent = dir .. '/' .. filename
     if vim.fn.filereadable(parent) == 1 then
       return parent
