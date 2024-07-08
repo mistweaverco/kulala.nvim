@@ -13,11 +13,15 @@ M.clear = function()
 end
 
 M.show_loading = function()
-  M.show(CONFIG.get_config().icons.inlay.loading)
+  M.show(CONFIG.get().icons.inlay.loading)
 end
 
 M.show_done = function(self, elapsed_time)
-  M.show(CONFIG.get_config().icons.inlay.done .. elapsed_time)
+  icon = ""
+  if string.len(CONFIG.get().icons.inlay.done) > 0 then
+    icon = CONFIG.get().icons.inlay.done .. " "
+  end
+  M.show(icon .. elapsed_time)
 end
 
 
