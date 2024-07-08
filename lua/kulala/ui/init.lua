@@ -1,6 +1,5 @@
 local GLOBALS = require("kulala.globals")
 local CONFIG = require("kulala.config")
-local CFG = CONFIG.get_config()
 local INLAY = require("kulala.inlay")
 local PARSER = require("kulala.parser")
 local CMD = require("kulala.cmd")
@@ -81,7 +80,7 @@ M.open = function()
     if not buffer_exists() then
       open_buffer()
     end
-    if CFG.default_view == "body" then
+    if CONFIG.get().default_view == "body" then
       M.show_body()
     else
       M.show_headers()
@@ -116,13 +115,14 @@ M.show_headers = function()
 end
 
 M.toggle_headers = function()
-  if CFG.default_view == "headers" then
-    CFG.default_view = "body"
+  cfg = CONFIG.get()
+  if cfg.default_view == "headers" then
+    cfg.default_view = "body"
   else
-    CFG.default_view = "headers"
+    cfg.default_view = "headers"
   end
-  CONFIG.set_config(CFG)
-  if CFG.default_view == "body" then
+  CONFIG.set(cfg)
+  if cfg.default_view == "body" then
     M.show_body()
   else
     M.show_headers()

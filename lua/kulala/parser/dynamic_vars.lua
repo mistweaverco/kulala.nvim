@@ -1,7 +1,6 @@
-local Config = require("kulala.config")
+local CONFIG = require("kulala.config")
 local M = {}
 
-local config = Config.get_config()
 local random = math.random
 math.randomseed(os.time())
 
@@ -20,7 +19,7 @@ end
 ---the user on his configuration
 ---@return { [string]: fun():string }[] An array-like table of tables which contains dynamic variables definition
 function M.retrieve_all()
-  local user_variables = config.custom_dynamic_variables or {}
+  local user_variables = CONFIG.get().custom_dynamic_variables or {}
   local rest_variables = {
     ["$uuid"] = uuid,
     ["$date"] = function()

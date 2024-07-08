@@ -1,4 +1,6 @@
-KULALA_CONFIG = KULALA_CONFIG or {
+local M = {}
+
+M.defaults = {
   -- default_view, body or headers
   default_view = "body",
   -- dev, test, prod, can be anything
@@ -16,7 +18,7 @@ KULALA_CONFIG = KULALA_CONFIG or {
   icons = {
     inlay = {
       loading = "⏳",
-      done = "✅ "
+      done = "✅"
     },
     lualine = "🐼",
   },
@@ -25,15 +27,18 @@ KULALA_CONFIG = KULALA_CONFIG or {
   additional_curl_options = {},
 }
 
-local M = {}
+M.options = {}
 
-M.set_config = function(config)
-  config = config or {}
-  KULALA_CONFIG = vim.tbl_deep_extend("force", KULALA_CONFIG, config)
+M.setup = function(config)
+  M.options = vim.tbl_deep_extend("force", M.defaults, config or {})
 end
 
-M.get_config = function()
-  return KULALA_CONFIG
+M.set = function(config)
+  M.options = vim.tbl_deep_extend("force", M.options, config or {})
+end
+
+M.get = function()
+  return M.options
 end
 
 return M

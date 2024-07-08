@@ -4,7 +4,6 @@ local CONFIG = require("kulala.config")
 local DYNAMIC_VARS = require("kulala.parser.dynamic_vars")
 local STRING_UTILS = require("kulala.utils.string")
 local ENV_PARSER = require("kulala.parser.env")
-local CFG = CONFIG.get_config()
 local PLUGIN_TMP_DIR = FS.get_plugin_tmp_dir()
 local M = {}
 
@@ -457,7 +456,7 @@ function M.parse()
   end
   table.insert(res.cmd, "-A")
   table.insert(res.cmd, "kulala.nvim/".. GLOBALS.VERSION)
-  for _, additional_curl_option in pairs(CFG.additional_curl_options) do
+  for _, additional_curl_option in pairs(CONFIG.get().additional_curl_options) do
     table.insert(res.cmd, additional_curl_option)
   end
   table.insert(res.cmd, res.request.url)
@@ -469,7 +468,7 @@ function M.parse()
     res.ft = "html"
   end
   FS.write_file(PLUGIN_TMP_DIR .. "/ft.txt", res.ft)
-  if CFG.debug then
+  if CONFIG.get().debug then
     FS.write_file(PLUGIN_TMP_DIR .. "/request.txt", table.concat(res.cmd, " "))
   end
   return res
