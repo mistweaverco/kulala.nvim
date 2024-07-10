@@ -423,6 +423,8 @@ function M.parse()
   -- build the command to exectute the request
   table.insert(res.cmd, "curl")
   table.insert(res.cmd, "-s")
+  table.insert(res.cmd, "--show-error")
+  table.insert(res.cmd, "--fail")
   table.insert(res.cmd, "-D")
   table.insert(res.cmd, PLUGIN_TMP_DIR .. "/headers.txt")
   table.insert(res.cmd, "-o")
@@ -467,6 +469,8 @@ function M.parse()
   elseif res.headers['accept'] == "text/html" then
     res.ft = "html"
   end
+  FS.delete_file(PLUGIN_TMP_DIR .. "/headers.txt")
+  FS.delete_file(PLUGIN_TMP_DIR .. "/body.txt")
   FS.write_file(PLUGIN_TMP_DIR .. "/ft.txt", res.ft)
   if CONFIG.get().debug then
     FS.write_file(PLUGIN_TMP_DIR .. "/request.txt", table.concat(res.cmd, " "))

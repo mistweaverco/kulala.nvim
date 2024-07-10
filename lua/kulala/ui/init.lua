@@ -69,22 +69,29 @@ local function pretty_ms(ms)
 end
 
 M.open = function()
-  INLAY:show_loading()
+  local linenr = INLAY.get_current_line_number()
+  INLAY:show_loading(linenr)
   local result = PARSER:parse()
   vim.schedule(function()
     local start = vim.loop.hrtime()
-    local result_body = CMD.run(result)
-    local elapsed = vim.loop.hrtime() - start
-    local elapsed_ms = pretty_ms(elapsed / 1e6)
-    INLAY:show_done(elapsed_ms)
-    if not buffer_exists() then
-      open_buffer()
-    end
-    if CONFIG.get().default_view == "body" then
-      M.show_body()
-    else
-      M.show_headers()
-    end
+    CMD.run(result, function(success)
+      if not success then
+        INLAY:show_error(linenr)
+        return
+      else
+        local elapsed = vim.loop.hrtime() - start
+        local elapsed_ms = pretty_ms(elapsed / 1e6)
+        INLAY:show_done(linenr, elapsed_ms)
+        if not buffer_exists() then
+          open_buffer()
+        end
+        if CONFIG.get().default_view == "body" then
+          M.show_body()
+        else
+          M.show_headers()
+        end
+      end
+    end)
   end)
 end
 

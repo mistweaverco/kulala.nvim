@@ -3,7 +3,7 @@ local CONFIG = require("kulala.config")
 
 local M = {}
 
-local function get_current_line_number()
+M.get_current_line_number = function()
   local linenr = vim.api.nvim_win_get_cursor(0)[1]
   return linenr
 end
@@ -12,22 +12,24 @@ M.clear = function()
   vim.api.nvim_buf_clear_namespace(0, NS, 0, -1)
 end
 
-M.show_loading = function()
-  M.show(CONFIG.get().icons.inlay.loading)
+M.show_loading = function(self, linenr)
+  M.show(CONFIG.get().icons.inlay.loading, linenr)
 end
 
-M.show_done = function(self, elapsed_time)
+M.show_error = function(self, linenr)
+  M.show(CONFIG.get().icons.inlay.error, linenr)
+end
+
+M.show_done = function(self, linenr, elapsed_time)
   icon = ""
   if string.len(CONFIG.get().icons.inlay.done) > 0 then
     icon = CONFIG.get().icons.inlay.done .. " "
   end
-  M.show(icon .. elapsed_time)
+  M.show(icon .. elapsed_time, linenr)
 end
 
-
-M.show = function(t)
+M.show = function(t, linenr)
   M.clear()
-  local linenr = get_current_line_number()
   local bufnr = vim.api.nvim_get_current_buf()
   vim.api.nvim_buf_set_extmark(bufnr, NS, linenr - 1, 0, {
     virt_text = { { t } }

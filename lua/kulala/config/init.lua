@@ -18,7 +18,8 @@ M.defaults = {
   icons = {
     inlay = {
       loading = "⏳",
-      done = "✅"
+      done = "✅",
+      error = "❌",
     },
     lualine = "🐼",
   },
