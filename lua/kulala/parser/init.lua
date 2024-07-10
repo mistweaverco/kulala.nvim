@@ -82,10 +82,6 @@ local function parse_variables(node, tree, text, variables)
     local variable = variables[variable_name]
     -- If the variable was not found in the document then fallback to the shell environment
     if not variable then
-      ---@diagnostic disable-next-line need-check-nil
-      vim.notify(
-        "The variable '" .. variable_name .. "' was not found in the document, falling back to the environment ..."
-      )
       local env_var = env[variable_name]
       if not env_var then
         ---@diagnostic disable-next-line need-check-nil
@@ -274,10 +270,6 @@ local function traverse_body(tbl, variables)
     local variable = vars[variable_name]
     -- If the variable was not found in the document then fallback to the shell environment
     if not variable then
-      ---@diagnostic disable-next-line need-check-nil
-      vim.notify(
-        "The variable '" .. variable_name .. "' was not found in the document, falling back to the environment ..."
-      )
       local env_var = env[variable_name]
       if not env_var then
         ---@diagnostic disable-next-line need-check-nil
@@ -436,7 +428,7 @@ function M.parse()
     table.insert(res.cmd, res.body)
   elseif res.body.__TYPE == "json" then
     res.body.__TYPE = nil
-    table.insert(res.cmd, "--data-raw")
+    table.insert(res.cmd, "--data")
     table.insert(res.cmd, vim.json.encode(res.body))
   elseif res.body.__TYPE == "form" then
     res.body.__TYPE = nil

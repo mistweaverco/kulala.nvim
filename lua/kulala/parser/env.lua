@@ -23,13 +23,14 @@ M.get_env = function()
     local selected_env = f[selected_env_name]
     if selected_env then
       env = vim.tbl_extend('force', env, selected_env)
-    else
-      vim.notify('Selected environment ('.. selected_env_name ..') not found in http-client.env.json', vim.log.levels.ERROR)
     end
   elseif dotenv then
     local dotenv_env = vim.fn.readfile(dotenv)
     for _, line in ipairs(dotenv_env) do
-      local key, value = line:match('([^=]+)=(.*)')
+      if line:match('^%s*$') or line:match('^%s*#') then
+          return
+      end
+      local key, value = line:match('^%s*([^=]+)%s*=%s*(.*)%s*$')
       if key and value then
         env[key] = value
       end

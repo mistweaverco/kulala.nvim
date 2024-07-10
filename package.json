@@ -1,6 +1,6 @@
 {
   "name": "kulala.nvim",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "scripts": {
     "docs": "docsify serve docs"
   },
