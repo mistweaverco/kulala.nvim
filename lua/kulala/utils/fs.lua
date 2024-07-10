@@ -37,6 +37,17 @@ M.write_file = function(filename, content)
   return true
 end
 
+-- Delete a file
+-- @param filename: string
+-- @return boolean
+-- @usage local p = fs.delete_file('Makefile')
+M.delete_file = function(filename)
+  if vim.fn.delete(filename) == 0 then
+    return false
+  end
+  return true
+end
+
 -- Check if a file exists
 -- @param filename: string
 -- @return boolean
