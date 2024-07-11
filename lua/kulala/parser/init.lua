@@ -17,8 +17,6 @@ local function parse_string_variables(str, variables)
       if variable_value then
         value = variable_value
       end
-    elseif variables[variable_name] then
-      value = variables[variable_name].value
     elseif env[variable_name] then
       value = env[variable_name]
     else
