@@ -2,6 +2,7 @@ local UI = require("kulala.ui")
 local SELECTOR = require("kulala.ui.selector")
 local ENV_PARSER = require("kulala.parser.env")
 local GLOBAL_STORE = require("kulala.global_store")
+local GLOBALS = require("kulala.globals")
 local CONFIG = require("kulala.config")
 local JUMPS = require("kulala.jumps")
 local M = {}
@@ -15,6 +16,11 @@ end
 
 M.run = function()
   UI:open()
+end
+
+M.version = function()
+  local neovim_version = vim.fn.execute("version")
+  vim.notify("Kulala version: " .. GLOBALS.VERSION .. "\n\n" .. "Neovim version: " .. neovim_version, "info", { title = "Kulala" })
 end
 
 M.jump_next = function()

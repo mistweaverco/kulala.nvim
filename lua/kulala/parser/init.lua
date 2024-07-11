@@ -3,8 +3,10 @@ local GLOBALS = require("kulala.globals")
 local CONFIG = require("kulala.config")
 local DYNAMIC_VARS = require("kulala.parser.dynamic_vars")
 local STRING_UTILS = require("kulala.utils.string")
+local TABLE_UTILS = require("kulala.utils.table")
 local ENV_PARSER = require("kulala.parser.env")
 local PLUGIN_TMP_DIR = FS.get_plugin_tmp_dir()
+local CLIENT_PIPE = require("kulala.client_pipe")
 local M = {}
 
 local function parse_string_variables(str, variables)
@@ -17,6 +19,8 @@ local function parse_string_variables(str, variables)
       if variable_value then
         value = variable_value
       end
+    elseif variables[variable_name] then
+      value = variables[variable_name]
     elseif env[variable_name] then
       value = env[variable_name]
     else
@@ -37,165 +41,15 @@ local function parse_string_variables(str, variables)
   return result
 end
 
----Small wrapper around `vim.treesitter.get_node_text`
----@see vim.treesitter.get_node_text
----@param node TSNode Tree-sitter node
----@param source integer|string Buffer or string from which the `node` is extracted
----@return string|nil
-local function get_node_text(node, source)
-  source = source or 0
-  return vim.treesitter.get_node_text(node, source)
-end
-
----Get a tree-sitter node at the cursor position
----@return TSNode|nil Tree-sitter node
----@return string|nil Node type
-local function get_node_at_cursor()
-  local node = assert(vim.treesitter.get_node())
-  return node, node:type()
-end
-
----Parse all the variable nodes in the given node and expand them to their values
----@param node TSNode Tree-sitter node
----@param tree string The text where variables should be looked for
----@param text string The text where variables should be expanded
----@param variables Variables HTTP document variables list
----@return string|nil The given `text` with expanded variables
-local function parse_variables(node, tree, text, variables)
-  local env = ENV_PARSER.get_env()
-  local variable_query = vim.treesitter.query.parse("http", "(variable name: (_) @name)")
-  ---@diagnostic disable-next-line missing-parameter
-  for _, nod, _ in variable_query:iter_captures(node:root(), tree) do
-    local variable_name = assert(get_node_text(nod, tree))
-    local variable_value
-
-    -- If the variable name contains a `$` symbol then try to parse it as a dynamic variable
-    if variable_name:find("^%$") then
-      variable_value = DYNAMIC_VARS.read(variable_name)
-      if variable_value then
-        return variable_value
-      end
-    end
-
-    local variable = variables[variable_name]
-    -- If the variable was not found in the document then fallback to the shell environment
-    if not variable then
-      local env_var = env[variable_name]
-      if not env_var then
-        ---@diagnostic disable-next-line need-check-nil
-        vim.notify(
-          "The variable '"
-            .. variable_name
-            .. "' was not found in the document or in the environment. Returning the string as received ..."
-        )
-        return text
-      end
-      variable_value = env_var
-    else
-      variable_value = variable.value
-      if variable.type_ == "string" then
-        ---@cast variable_value string
-        variable_value = variable_value:gsub('"', "")
-      end
-    end
-    text = text:gsub("{{[%s]?" .. variable_name .. "[%s]?}}", variable_value)
+local function parse_headers(headers, variables)
+  local h = {}
+  for key, value in pairs(headers) do
+    h[key] = parse_string_variables(value, variables)
   end
-  return text
+  return h
 end
 
----Recursively look behind `node` until `query` node type is found
----@param node TSNode|nil Tree-sitter node, defaults to the node at the cursor position if not passed
----@param query string The tree-sitter node type that we are looking for
----@return TSNode|nil
-local function look_behind_until(node, query)
-  node = node or get_node_at_cursor()
-
-  -- There are no more nodes behind the `document` one
-  ---@diagnostic disable-next-line need-check-nil
-  if node:type() == "document" then
-    ---@diagnostic disable-next-line need-check-nil
-    vim.notify("Current node is document, which does not have any parent nodes, returning it instead")
-    return node
-  end
-
-  ---@diagnostic disable-next-line need-check-nil
-  local parent = assert(node:parent())
-  if parent:type() ~= query then
-    return look_behind_until(parent, query)
-  end
-
-  return parent
-end
-
----Traverse a request tree-sitter node and retrieve all its children nodes
----@param req_node TSNode Tree-sitter request node
----@return NodesList
-local function traverse_request(req_node)
-  local child_nodes = {}
-  for child, _ in req_node:iter_children() do
-    local child_type = child:type()
-    if child_type ~= "header" then
-      child_nodes[child_type] = child
-    end
-  end
-  return child_nodes
-end
-
----Traverse a request tree-sitter node and retrieve all its children header nodes
----@param req_node TSNode Tree-sitter request node
----@return NodesList An array-like table containing the request header nodes
-local function traverse_headers(req_node)
-  local headers = {}
-  for child, _ in req_node:iter_children() do
-    local child_type = child:type()
-    if child_type == "header" then
-      table.insert(headers, child)
-    end
-  end
-  return headers
-end
-
----Traverse the document tree-sitter node and retrieve all the `variable_declaration` nodes
----@param document_node TSNode Tree-sitter document node
----@return Variables
-local function traverse_variables(document_node)
-  local variables = {}
-  for child, _ in document_node:iter_children() do
-    local child_type = child:type()
-    if child_type == "variable_declaration" then
-      local var_name = assert(get_node_text(child:field("name")[1], 0))
-      local var_value = child:field("value")[1]
-      local var_type = var_value:type()
-      variables[var_name] = {
-        type_ = var_type,
-        value = assert(get_node_text(var_value, 0)),
-      }
-    end
-  end
-  return variables
-end
-
----Parse request headers tree-sitter nodes
----@param header_nodes NodesList Tree-sitter nodes
----@param variables Variables HTTP document variables list
----@return table A table containing the headers in a key-value style
-local function parse_headers(header_nodes, variables)
-  local headers = {}
-  for _, header_node in ipairs(header_nodes) do
-    local header_name = assert(get_node_text(header_node:field("name")[1], 0))
-    header_name = header_name:lower()
-    -- everything after the first colon
-    -- fixes various tree-sitter bugs
-    local header_string = get_node_text(header_node, 0)
-    local header_value = header_string:sub(header_string:find(":") + 1)
-    header_value = STRING_UTILS.trim(header_value)
-    headers[header_name] = parse_string_variables(header_value, variables)
-  end
-
-  return headers
-end
-
-local function parse_url(url)
+local function encode_url_params(url)
   local url_parts = {}
   local url_parts = vim.split(url, "?")
   local url = url_parts[1]
@@ -215,242 +69,247 @@ local function parse_url(url)
   return url
 end
 
----Parse a request tree-sitter node
----@param children_nodes NodesList Tree-sitter nodes
----@param variables Variables HTTP document variables list
----@return table A table containing the request target `url` and `method` to be used
-local function parse_request(children_nodes, variables)
-  local request = {}
-  for node_type, node in pairs(children_nodes) do
-    if node_type == "method" then
-      request.method = assert(get_node_text(node, 0))
-    elseif node_type == "target_url" then
-      request.url = assert(get_node_text(node, 0))
-    elseif node_type == "http_version" then
-      local http_version = assert(get_node_text(node, 0))
-      request.http_version = http_version:gsub("HTTP/", "")
-    elseif node_type == "request" then
-      request = parse_request(traverse_request(node), variables)
-    end
-  end
-
-  -- Parse the request nodes again as a single string converted into a new AST Tree to expand the variables
-  local request_text = request.method .. " " .. request.url .. "\n"
-  local request_tree = vim.treesitter.get_string_parser(request_text, "http"):parse()[1]
-  request.url = parse_string_variables(request.url, variables)
-  request.url = parse_url(request.url)
-  ---@cast variable_value string
-  request.url = request.url:gsub('"', "")
-  return request
+local function parse_url(url, variables)
+  url = parse_string_variables(url, variables)
+  url = encode_url_params(url)
+  url = url:gsub('"', "")
+  return url
 end
 
----Recursively traverse a body table and expand all the variables
----@param tbl table Request body
----@return table
-local function traverse_body(tbl, variables)
-  local env = ENV_PARSER.get_env()
-  ---Expand a variable in the given string
-  ---@param str string String where the variables are going to be expanded
-  ---@param vars Variables HTTP document variables list
-  ---@return string|number|boolean
-  local function expand_variable(str, vars)
-    local variable_name = str:gsub("{{[%s]?", ""):gsub("[%s]?}}", ""):match(".*")
-    local variable_value
-
-    -- If the variable name contains a `$` symbol then try to parse it as a dynamic variable
-    if variable_name:find("^%$") then
-      variable_value = DYNAMIC_VARS.read(variable_name)
-      if variable_value then
-        return variable_value
-      end
-    end
-
-    local variable = vars[variable_name]
-    -- If the variable was not found in the document then fallback to the shell environment
-    if not variable then
-      local env_var = env[variable_name]
-      if not env_var then
-        ---@diagnostic disable-next-line need-check-nil
-        vim.notify(
-          "The variable '"
-            .. variable_name
-            .. "' was not found in the document or in the environment. Returning the string as received ..."
-        )
-        return str
-      end
-      variable_value = env_var
-    else
-      variable_value = variable.value
-      if variable.type_ == "string" then
-        ---@cast variable_value string
-        variable_value = variable_value:gsub('"', "")
-      end
-    end
-    ---@cast variable_value string|number|boolean
-    return variable_value
+local function parse_body(body, variables)
+  if body == nil then
+    return nil
   end
-
-  for k, v in pairs(tbl) do
-    if type(v) == "table" then
-      traverse_body(v, variables)
-    end
-
-    if type(k) == "string" and k:find("{{[%s]?.*[%s]?}}") then
-      local variable_value = expand_variable(k, variables)
-      local key_value = tbl[k]
-      tbl[k] = nil
-      tbl[variable_value] = key_value
-    end
-    if type(v) == "string" and v:find("{{[%s]?.*[%s]?}}") then
-      local variable_value = expand_variable(v, variables)
-      tbl[k] = variable_value
-    end
-  end
-
-  return tbl
+  return parse_string_variables(body, variables)
 end
 
----Parse a request tree-sitter node body
----@param children_nodes NodesList Tree-sitter nodes
----@param variables Variables HTTP document variables list
----@return table Decoded body table
-local function parse_body(children_nodes, variables)
-  local body = {}
-
-  for node_type, node in pairs(children_nodes) do
-    if node_type == "json_body" then
-      local json_body_text = assert(get_node_text(node, 0))
-      local json_body = vim.json.decode(json_body_text)
-      body = traverse_body(json_body, variables)
-      -- This is some metadata to be used later on
-      body.__TYPE = "json"
-    elseif node_type == "xml_body" then
-      vim.notify("XML body is not supported yet")
-    elseif node_type == "external_body" then
-      -- < @ (identifier) (file_path name: (path))
-      -- 0 1      2                 3
-      if node:child_count() > 2 then
-        body.name = assert(get_node_text(node:child(2), 0))
-      end
-      body.path = assert(get_node_text(node:field("file_path")[1], 0))
-      -- This is some metadata to be used later on
-      body.__TYPE = "external_file"
-    elseif node_type == "form_data" then
-      local names = node:field("name")
-      local values = node:field("value")
-      if vim.tbl_count(names) > 1 then
-        for idx, name in ipairs(names) do
-          ---@type string|number|boolean
-          local value = assert(get_node_text(values[idx], 0)):gsub('"', "")
-          body[assert(get_node_text(name, 0))] = value
+M.get_document = function()
+  local content_lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+  local content = table.concat(content_lines, "\n")
+  local variables = {}
+  local requests = {}
+  local blocks = vim.split(content, "\n###\n", { plain = true, trimempty = false })
+  local line_offset = 0
+  for _, block in ipairs(blocks) do
+    local is_request_line = true
+    local is_body_section = false
+    local lines = vim.split(block, "\n", { plain = true, trimempty = false })
+    local block_line_count = #lines
+    local request = {
+      headers = {},
+      body = nil,
+      start_line = line_offset + 1,
+      block_line_count = block_line_count,
+      lines_length = #lines,
+      variables = {},
+    }
+    for _, line in ipairs(lines) do
+      line = vim.trim(line)
+      if line:sub(1, 1) == "#" then
+        -- It's a comment, skip it
+      elseif line == "" and is_body_section == false then
+        -- Skip empty lines
+        if is_request_line == false then
+          is_body_section = true
         end
-      else
-        ---@type string|number|boolean
-        local value = assert(get_node_text(values[1], 0)):gsub('"', "")
-        body[assert(get_node_text(names[1], 0))] = value
+      elseif line:match("^@%w+") then
+        -- Variable
+        -- Variables are defined as `@variable_name=value`
+        -- The value can be a string, a number or boolean
+        local variable_name, variable_value = line:match("^%@(%w+)%s*=%s*(.*)$")
+        if variable_name and variable_value then
+          -- remove the @ symbol from the variable name
+          variable_name = variable_name:sub(1)
+          variables[variable_name] = parse_string_variables(variable_value, variables)
+        end
+      elseif is_body_section == true and #line > 0 then
+        if request.body == nil then
+          request.body = ""
+        end
+        if line:find("^<") then
+          if request.headers["content-type"] ~= nil and request.headers["content-type"]:find("^multipart/form%-data") then
+            request.body = request.body .. line
+          else
+            local file_path = vim.trim(line:sub(2))
+            local contents = FS.read_file(file_path)
+            if contents then
+              request.body = request.body .. contents
+            else
+              vim.notify("The file '" .. file_path .. "' was not found. Skipping ...", "warn")
+            end
+          end
+        else
+          if request.headers["content-type"] ~= nil and request.headers["content-type"]:find("^multipart/form%-data") then
+            request.body = request.body .. line .. "\r\n"
+          else
+            request.body = request.body .. line
+          end
+        end
+      elseif is_request_line == false and line:match("^(.+):%s*(.*)$") then
+        -- Header
+        -- Headers are defined as `key: value`
+        -- The key is case-insensitive
+        -- The key can be anything except a colon
+        -- The value can be a string or a number
+        -- The value can be a variable
+        -- The value can be a dynamic variable
+        -- variables are defined as `{{variable_name}}`
+        -- dynamic variables are defined as `{{$variable_name}}`
+        local key, value = line:match("^(.+):%s*(.*)$")
+        if key and value then
+          request.headers[key:lower()] = value
+        end
+      elseif is_request_line == true then
+        -- Request line (e.g., GET http://example.com HTTP/1.1)
+        -- Split the line into method, URL and HTTP version
+        -- HTTP Version is optional
+        local parts = vim.split(line, " ", true)
+        request.method = parts[1]
+        request.url = parts[2]
+        if parts[3] then
+          request.http_version = parts[3]:gsub("HTTP/", "")
+        end
+        is_request_line = false
       end
-      -- This is some metadata to be used later on
-      body.__TYPE = "form"
     end
+    if request.body ~= nil then
+      request.body = vim.trim(request.body)
+    end
+    request.end_line = line_offset + block_line_count
+    line_offset = request.end_line + 1 -- +1 for the '###' separator line
+    table.insert(requests, request)
   end
-
-  return body
+  return variables, requests
 end
 
----Get the request node from the cursor position
----@return TSNode|nil Tree-sitter node
----@return string|nil Node type
-local function get_request_node()
-  local node = get_node_at_cursor()
-  return look_behind_until(node, "request")
+M.get_request_at_cursor = function(requests)
+  local cursor_pos = vim.api.nvim_win_get_cursor(0) -- {line, col}
+  local cursor_line = cursor_pos[1]
+  for _, request in ipairs(requests) do
+    if cursor_line >= request.start_line and cursor_line <= request.end_line then
+      return request
+    end
+  end
+  return nil
+end
+
+M.get_previous_request = function(requests)
+  local cursor_pos = vim.api.nvim_win_get_cursor(0) -- {line, col}
+  local cursor_line = cursor_pos[1]
+  for i, request in ipairs(requests) do
+    if cursor_line >= request.start_line and cursor_line <= request.end_line then
+      if i > 1 then
+        return requests[i - 1]
+      end
+    end
+  end
+  return nil
+end
+
+M.get_next_request = function(requests)
+  local cursor_pos = vim.api.nvim_win_get_cursor(0) -- {line, col}
+  local cursor_line = cursor_pos[1]
+  for i, request in ipairs(requests) do
+    if cursor_line >= request.start_line and cursor_line <= request.end_line then
+      if i < #requests then
+        return requests[i + 1]
+      end
+    end
+  end
+  return nil
 end
 
 ---Parse a request and return the request on itself, its headers and body
 ---@return Request Table containing the request data
 function M.parse()
   local res = {
-    type = "rest",
-    request = {},
+    method = "GET",
+    url = {},
     headers = {},
     body = {},
-    script = "",
     cmd = {},
+    client_pipe = nil,
     ft = "text",
   }
-  local document_variables = {}
-  local req_node = get_request_node()
-  local document_node = look_behind_until(nil, "document")
 
-  local request_children_nodes = traverse_request(req_node)
-  local request_header_nodes = traverse_headers(req_node)
+  local document_variables, requests = M.get_document()
+  local req = M.get_request_at_cursor(requests)
 
-  ---@cast document_node TSNode
-  local document_variables = traverse_variables(document_node)
-
-  res.request = parse_request(request_children_nodes, document_variables)
-  res.headers = parse_headers(request_header_nodes, document_variables)
-  res.body = parse_body(request_children_nodes, document_variables)
+  res.url = parse_url(req.url, document_variables)
+  res.method = req.method
+  res.http_version = req.http_version
+  res.headers = parse_headers(req.headers, document_variables)
+  res.body = parse_body(req.body, document_variables)
 
   -- We need to append the contents of the file to
   -- the body if it is a POST request,
   -- or to the URL itself if it is a GET request
-  if res.body.path ~= nil then
-    if res.body.path:match("%.graphql$") or res.body.path:match("%.gql$") then
-      res.type = "graphql"
-      local graphql_file = io.open(res.body.path, "r")
+  if req.body_type == "input" then
+    if req.body_path:match("%.graphql$") or req.body_path:match("%.gql$") then
+      local graphql_file = io.open(req.body_path, "r")
       local graphql_query = graphql_file:read("*a")
       graphql_file:close()
-      if res.request.method == "POST" then
+      if res.method == "POST" then
         res.body = "{ \"query\": \"" .. graphql_query .."\" }"
       else
         graphql_query = STRING_UTILS.url_encode(STRING_UTILS.remove_extra_space(STRING_UTILS.remove_newline(graphql_query)))
         res.graphql_query = STRING_UTILS.url_decode(graphql_query)
-        res.request.url = res.request.url .. "?query=" .. graphql_query
+        res.url = res.url .. "?query=" .. graphql_query
       end
+    else
+      local file = io.open(req.body_path, "r")
+      local body = file:read("*a")
+      file:close()
+      res.body = body
     end
   end
+
+  local client_pipe = nil
 
   -- build the command to exectute the request
   table.insert(res.cmd, "curl")
   table.insert(res.cmd, "-s")
-  table.insert(res.cmd, "--show-error")
   table.insert(res.cmd, "-D")
   table.insert(res.cmd, PLUGIN_TMP_DIR .. "/headers.txt")
   table.insert(res.cmd, "-o")
   table.insert(res.cmd, PLUGIN_TMP_DIR .. "/body.txt")
   table.insert(res.cmd, "-X")
-  table.insert(res.cmd, res.request.method)
-  if type(res.body) == "string" then
-    table.insert(res.cmd, "--data-raw")
-    table.insert(res.cmd, res.body)
-  elseif res.body.__TYPE == "json" then
-    res.body.__TYPE = nil
-    table.insert(res.cmd, "--data")
-    table.insert(res.cmd, vim.json.encode(res.body))
-  elseif res.body.__TYPE == "form" then
-    res.body.__TYPE = nil
-    for key, value in pairs(res.body) do
+  table.insert(res.cmd, res.method)
+  if res.headers["content-type"] ~= nil then
+    if res.headers["content-type"] == "text/plain" then
       table.insert(res.cmd, "--data-raw")
-      table.insert(res.cmd, key .."=".. value)
+      table.insert(res.cmd, res.body)
+    elseif res.headers["content-type"] == "application/json" then
+      table.insert(res.cmd, "--data")
+      table.insert(res.cmd, res.body)
+    elseif res.headers["content-type"] == "application/x-www-form-urlencoded" then
+      table.insert(res.cmd, "--data")
+      table.insert(res.cmd, res.body)
+    elseif res.headers["content-type"]:find("^multipart/form%-data") then
+      table.insert(res.cmd, "--data-binary")
+      table.insert(res.cmd, res.body)
     end
-  elseif res.body.__TYPE == "external_file" and res.type ~= "graphql" then
-    res.body.__TYPE = nil
-    table.insert(res.cmd, "-d")
-    table.insert(res.cmd, "@".. res.body.path)
   end
   for key, value in pairs(res.headers) do
-    table.insert(res.cmd, "-H")
-    table.insert(res.cmd, key ..":".. value)
+    -- if key starts with `http-client-` then it is a special header
+    if key:find("^http%-client%-") then
+      if key == "http-client-pipe" then
+        res.client_pipe = value
+      end
+    else
+      table.insert(res.cmd, "-H")
+      table.insert(res.cmd, key ..":".. value)
+    end
   end
-  if res.request.http_version ~= nil then
-    table.insert(res.cmd, "--http" .. res.request.http_version)
+  if res.http_version ~= nil then
+    table.insert(res.cmd, "--http" .. res.http_version)
   end
   table.insert(res.cmd, "-A")
   table.insert(res.cmd, "kulala.nvim/".. GLOBALS.VERSION)
   for _, additional_curl_option in pairs(CONFIG.get().additional_curl_options) do
     table.insert(res.cmd, additional_curl_option)
   end
-  table.insert(res.cmd, res.request.url)
+  table.insert(res.cmd, res.url)
   if res.headers['accept'] == "application/json" then
     res.ft = "json"
   elseif res.headers['accept'] == "application/xml" then
@@ -460,6 +319,7 @@ function M.parse()
   end
   FS.delete_file(PLUGIN_TMP_DIR .. "/headers.txt")
   FS.delete_file(PLUGIN_TMP_DIR .. "/body.txt")
+  FS.delete_file(PLUGIN_TMP_DIR .. "/ft.txt")
   FS.write_file(PLUGIN_TMP_DIR .. "/ft.txt", res.ft)
   if CONFIG.get().debug then
     FS.write_file(PLUGIN_TMP_DIR .. "/request.txt", table.concat(res.cmd, " "))
