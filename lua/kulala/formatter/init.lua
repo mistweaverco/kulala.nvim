@@ -7,6 +7,7 @@ M.format = function(ft, contents)
   local cmd = {}
   local cmd_exists = false
   if ft == "json" then
+    vim.inspect("formatting for json")
     cmd = cfg.formatters.json
     cmd_exists = FS.command_exists("jq")
   elseif ft == "xml" then
