@@ -1,4 +1,4 @@
-# kulala.nvim <small>1.6.1</small>
+# kulala.nvim <small>1.6.2</small>
 
 > A minimal 🤏 HTTP-client 🐼 interface 🖥️ for Neovim ❤️.
 
