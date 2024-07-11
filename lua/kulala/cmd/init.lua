@@ -20,7 +20,7 @@ M.run = function(result, callback)
       end
     end,
     on_exit = function(_, code)
-      success = code == 0
+      local success = code == 0
       if success then
         local body = FS.read_file(GLOBALS.BODY_FILE)
         if result.ft ~= "text" and not result.client_pipe then
