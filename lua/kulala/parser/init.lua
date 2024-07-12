@@ -3,10 +3,8 @@ local GLOBALS = require("kulala.globals")
 local CONFIG = require("kulala.config")
 local DYNAMIC_VARS = require("kulala.parser.dynamic_vars")
 local STRING_UTILS = require("kulala.utils.string")
-local TABLE_UTILS = require("kulala.utils.table")
 local ENV_PARSER = require("kulala.parser.env")
 local PLUGIN_TMP_DIR = FS.get_plugin_tmp_dir()
-local CLIENT_PIPE = require("kulala.client_pipe")
 local M = {}
 
 local function parse_string_variables(str, variables)
@@ -61,7 +59,11 @@ local function encode_url_params(url)
   local query_params = ""
   for _, query_part in ipairs(query_parts) do
     local query_param = vim.split(query_part, "=")
-    query_params = query_params .. "&" .. STRING_UTILS.url_encode(query_param[1]) .. "=" .. STRING_UTILS.url_encode(query_param[2])
+    query_params = query_params
+      .. "&"
+      .. STRING_UTILS.url_encode(query_param[1])
+      .. "="
+      .. STRING_UTILS.url_encode(query_param[2])
   end
   if query_params ~= "" then
     return url .. "?" .. query_params:sub(2)
@@ -127,7 +129,9 @@ M.get_document = function()
           request.body = ""
         end
         if line:find("^<") then
-          if request.headers["content-type"] ~= nil and request.headers["content-type"]:find("^multipart/form%-data") then
+          if
+            request.headers["content-type"] ~= nil and request.headers["content-type"]:find("^multipart/form%-data")
+          then
             request.body = request.body .. line
           else
             local file_path = vim.trim(line:sub(2))
@@ -139,7 +143,9 @@ M.get_document = function()
             end
           end
         else
-          if request.headers["content-type"] ~= nil and request.headers["content-type"]:find("^multipart/form%-data") then
+          if
+            request.headers["content-type"] ~= nil and request.headers["content-type"]:find("^multipart/form%-data")
+          then
             request.body = request.body .. line .. "\r\n"
           else
             request.body = request.body .. line
@@ -250,9 +256,10 @@ function M.parse()
       local graphql_query = graphql_file:read("*a")
       graphql_file:close()
       if res.method == "POST" then
-        res.body = "{ \"query\": \"" .. graphql_query .."\" }"
+        res.body = '{ "query": "' .. graphql_query .. '" }'
       else
-        graphql_query = STRING_UTILS.url_encode(STRING_UTILS.remove_extra_space(STRING_UTILS.remove_newline(graphql_query)))
+        graphql_query =
+          STRING_UTILS.url_encode(STRING_UTILS.remove_extra_space(STRING_UTILS.remove_newline(graphql_query)))
         res.graphql_query = STRING_UTILS.url_decode(graphql_query)
         res.url = res.url .. "?query=" .. graphql_query
       end
@@ -264,8 +271,6 @@ function M.parse()
     end
   end
 
-  local client_pipe = nil
-
   -- build the command to exectute the request
   table.insert(res.cmd, "curl")
   table.insert(res.cmd, "-s")
@@ -276,17 +281,11 @@ function M.parse()
   table.insert(res.cmd, "-X")
   table.insert(res.cmd, res.method)
   if res.headers["content-type"] ~= nil then
-    if res.headers["content-type"] == "text/plain" then
-      table.insert(res.cmd, "--data-raw")
-      table.insert(res.cmd, res.body)
-    elseif res.headers["content-type"]:match("application/[^/]+json") then
-      table.insert(res.cmd, "--data")
-      table.insert(res.cmd, res.body)
-    elseif res.headers["content-type"] == "application/x-www-form-urlencoded" then
-      table.insert(res.cmd, "--data")
-      table.insert(res.cmd, res.body)
-    elseif res.headers["content-type"]:find("^multipart/form%-data") then
+    if res.headers["content-type"]:find("^multipart/form%-data") then
       table.insert(res.cmd, "--data-binary")
+      table.insert(res.cmd, res.body)
+    else
+      table.insert(res.cmd, "--data")
       table.insert(res.cmd, res.body)
     end
   end
@@ -298,23 +297,23 @@ function M.parse()
       end
     else
       table.insert(res.cmd, "-H")
-      table.insert(res.cmd, key ..":".. value)
+      table.insert(res.cmd, key .. ":" .. value)
     end
   end
   if res.http_version ~= nil then
     table.insert(res.cmd, "--http" .. res.http_version)
   end
   table.insert(res.cmd, "-A")
-  table.insert(res.cmd, "kulala.nvim/".. GLOBALS.VERSION)
+  table.insert(res.cmd, "kulala.nvim/" .. GLOBALS.VERSION)
   for _, additional_curl_option in pairs(CONFIG.get().additional_curl_options) do
     table.insert(res.cmd, additional_curl_option)
   end
   table.insert(res.cmd, res.url)
-  if res.headers['accept'] == "application/json" then
+  if res.headers["accept"] == "application/json" then
     res.ft = "json"
-  elseif res.headers['accept'] == "application/xml" then
+  elseif res.headers["accept"] == "application/xml" then
     res.ft = "xml"
-  elseif res.headers['accept'] == "text/html" then
+  elseif res.headers["accept"] == "text/html" then
     res.ft = "html"
   end
   FS.delete_file(PLUGIN_TMP_DIR .. "/headers.txt")
