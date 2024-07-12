@@ -279,7 +279,7 @@ function M.parse()
     if res.headers["content-type"] == "text/plain" then
       table.insert(res.cmd, "--data-raw")
       table.insert(res.cmd, res.body)
-    elseif res.headers["content-type"] == "application/json" then
+    elseif res.headers["content-type"]:match("application/[^/]+json") then
       table.insert(res.cmd, "--data")
       table.insert(res.cmd, res.body)
     elseif res.headers["content-type"] == "application/x-www-form-urlencoded" then
