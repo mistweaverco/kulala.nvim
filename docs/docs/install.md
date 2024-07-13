@@ -7,7 +7,7 @@ Via [lazy.nvim](https://github.com/folke/lazy.nvim):
 
 ### Simple configuration
 
-```lua
+```lua title="init.lua"
 require('lazy').setup({
   -- HTTP REST-Client Interface
   {

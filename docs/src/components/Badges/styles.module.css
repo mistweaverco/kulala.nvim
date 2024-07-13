@@ -1,0 +1,13 @@
+.badges {
+  display: flex;
+  align-items: center;
+  padding: 2rem 0;
+  width: 100%;
+  text-align: center;
+}
+
+.badge {
+  display: inline-block;
+  margin: 0 0.2rem;
+}
+
