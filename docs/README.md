@@ -1,23 +1,26 @@
-<div align="center">
+# Website
 
-![Kulala Logo](logo.svg)
+This website is built using [Docusaurus](https://docusaurus.io/), a modern static website generator.
 
-# kulala.nvim
+### Installation
 
-![Lua](https://img.shields.io/badge/Made%20with%20Lua-blueviolet.svg?style=for-the-badge&logo=lua)
-[![GitHub release (latest by date)](https://img.shields.io/github/v/release/mistweaverco/kulala.nvim?style=for-the-badge)](https://github.com/mistweaverco/kulala.nvim/releases/latest)
-[![Discord](https://img.shields.io/badge/discord-join-7289da?style=for-the-badge&logo=discord)](https://discord.gg/QyVQmfY4Rt)
+```
+$ npm install
+```
 
-A minimal REST-Client Interface for Neovim.
+### Local Development
 
-Kulala is swahili for "rest" or "relax".
+```
+$ npm run start
+```
 
-It allows you to make HTTP requests from within Neovim.
+This command starts a local development server and opens up a browser window. Most changes are reflected live without having to restart the server.
 
-<p></p>
+### Build
 
-![demo](https://github.com/mistweaverco/kulala.nvim/assets/1384938/d3b1e6a6-b91d-4572-a4f0-8a9aa26696d9)
+```
+$ npm run build
+```
 
-<p></p>
+This command generates static content into the `build` directory and can be served using any static contents hosting service.
 
-</div>
