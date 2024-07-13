@@ -1,8 +1,8 @@
 ## Usage
 
-`examples.http`
+Create a file with the `.http` extension and write your HTTP requests in it.
 
-```http
+```http filename="examples.http"
 
 @name=John
 @age=30
