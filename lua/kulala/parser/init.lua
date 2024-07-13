@@ -3,6 +3,7 @@ local GLOBALS = require("kulala.globals")
 local CONFIG = require("kulala.config")
 local DYNAMIC_VARS = require("kulala.parser.dynamic_vars")
 local STRING_UTILS = require("kulala.utils.string")
+local TABLE_UTILS = require("kulala.utils.table")
 local ENV_PARSER = require("kulala.parser.env")
 local PLUGIN_TMP_DIR = FS.get_plugin_tmp_dir()
 local M = {}
@@ -99,6 +100,7 @@ M.get_document = function()
     local block_line_count = #lines
     local request = {
       headers = {},
+      metadata = {},
       body = nil,
       start_line = line_offset + 1,
       block_line_count = block_line_count,
@@ -108,6 +110,14 @@ M.get_document = function()
     for _, line in ipairs(lines) do
       line = vim.trim(line)
       if line:sub(1, 1) == "#" then
+        -- Metadata (e.g., # @this-is-name this is the value)
+        -- See: https://httpyac.github.io/guide/metaData.html
+        if line:sub(1, 3) == "# @" then
+          local meta_name, meta_value = line:match("^# @([%w+%-]+)%s*(.*)$")
+          if meta_name and meta_value then
+            table.insert(request.metadata, { name = meta_name, value = meta_value })
+          end
+        end
         -- It's a comment, skip it
       elseif line == "" and is_body_section == false then
         -- Skip empty lines
@@ -229,12 +239,12 @@ end
 ---@return Request Table containing the request data
 function M.parse()
   local res = {
+    metadata = {},
     method = "GET",
     url = {},
     headers = {},
     body = {},
     cmd = {},
-    client_pipe = nil,
     ft = "text",
   }
 
@@ -246,6 +256,7 @@ function M.parse()
   res.http_version = req.http_version
   res.headers = parse_headers(req.headers, document_variables)
   res.body = parse_body(req.body, document_variables)
+  res.metadata = req.metadata
 
   -- We need to append the contents of the file to
   -- the body if it is a POST request,
@@ -290,15 +301,8 @@ function M.parse()
     end
   end
   for key, value in pairs(res.headers) do
-    -- if key starts with `http-client-` then it is a special header
-    if key:find("^http%-client%-") then
-      if key == "http-client-pipe" then
-        res.client_pipe = value
-      end
-    else
-      table.insert(res.cmd, "-H")
-      table.insert(res.cmd, key .. ":" .. value)
-    end
+    table.insert(res.cmd, "-H")
+    table.insert(res.cmd, key .. ":" .. value)
   end
   if res.http_version ~= nil then
     table.insert(res.cmd, "--http" .. res.http_version)
