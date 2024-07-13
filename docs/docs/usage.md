@@ -2,7 +2,7 @@
 
 Create a file with the `.http` extension and write your HTTP requests in it.
 
-```http filename="examples.http"
+```http title="examples.http"
 
 @name=John
 @age=30
