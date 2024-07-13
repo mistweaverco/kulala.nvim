@@ -1,6 +1,5 @@
 ## Install
 
-> [!WARNING]
 > Requires Neovim 0.10.0+
 
 Via [lazy.nvim](https://github.com/folke/lazy.nvim):

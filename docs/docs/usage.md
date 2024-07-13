@@ -4,47 +4,51 @@
 
 ```http
 
-# Make a request to the PokeAPI to get information about ditto
-# Use HTTP/1.0 and the application/json content type as headers
-GET https://pokeapi.co/api/v2/pokemon/ditto HTTP/1.0
+@name=John
+@age=30
+
+GET https://pokeapi.co/api/v2/pokemon/{{pokemon}} HTTP/1.1
 accept: application/json
 
 ###
 
-# Make a request to the Star Wars API to get information about all films
-# Use a GraphQL query to get the title and episodeID of each film
-# Use the application/json content type as the header and omit the HTTP version
-# so it defaults to HTTP/1.1
-GET https://swapi-graphql.netlify.app/.netlify/functions/index
+POST https://httpbin.org/post HTTP/1.1
+content-type: application/x-www-form-urlencoded
 accept: application/json
 
-< ./starwars.graphql
+name={{name}}
+&age={{age}}
 
 ###
 
-POST https://swapi-graphql.netlify.app/.netlify/functions/index
-accept: application/json
+POST https://httpbin.org/post HTTP/1.1
 content-type: application/json
+accept: application/json
+# @env-stdin-cmd AUTH_TOKEN jq -rcj .json.token
+# @env-stdin-cmd AUTH_USERNAME jq -rcj .json.username
 
 {
-  "query": "{ allFilms { films { title } } }",
-  "variables": {}
+  "username": "{{USERNAME}}",
+  "password": "{{PASSWORD}}",
+  "token": "foobar"
 }
 
 ###
-```
 
-`starwars.graphql`
+POST https://httpbin.org/post HTTP/1.1
+content-type: application/json
+accept: application/json
+authorization: Bearer {{AUTH_TOKEN}}
 
-```graphql
-query {
-  allFilms {
-    films {
-      title
-      episodeID
-    }
-  }
+{
+  "success": true,
+  "username": "{{AUTH_USERNAME}}"
 }
+
+###
+
+POST https://httpbin.org/post?grant_type=password&client_id=here_goes_client_id&client_secret=here_goes_client_secret&username=mysfusername&password=mysfpasswordplustoken HTTP/1.1
+accept: application/json
 ```
 
 Place the cursor on any item
