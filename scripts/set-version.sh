@@ -14,12 +14,5 @@ update_package_json_version() {
   jq --arg v "$VERSION" '.version = $v' package.json > "$tmp" && mv "$tmp" package.json
 }
 
-update_docsify_version() {
-  local tmp
-  tmp=$(mktemp)
-  sed -e "s/<small>.*<\/small>/<small>$VERSION<\/small>/" docs/_coverpage.md > "$tmp" && mv "$tmp" docs/_coverpage.md
-}
-
 update_lua_globals_version
 update_package_json_version
-update_docsify_version
