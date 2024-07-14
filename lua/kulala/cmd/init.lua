@@ -2,6 +2,7 @@ local GLOBALS = require("kulala.globals")
 local FS = require("kulala.utils.fs")
 local FORMATTER = require("kulala.formatter")
 local EXT_PROCESSING = require("kulala.external_processing")
+local INT_PROCESSING = require("kulala.internal_processing")
 
 local M = {}
 
@@ -22,10 +23,11 @@ M.run = function(result, callback)
         if result.ft ~= "text" then
           FS.write_file(GLOBALS.BODY_FILE, FORMATTER.format(result.ft, body))
         end
-        vim.notify(vim.inspect(result.metadata), vim.log.levels.INFO)
         for _, metadata in ipairs(result.metadata) do
           if metadata then
-            if metadata.name == "stdin-cmd" then
+            if metadata.name == "env-json-key" then
+              INT_PROCESSING.env_json_key(metadata.value, body)
+            elseif metadata.name == "stdin-cmd" then
               EXT_PROCESSING.stdin_cmd(metadata.value, body)
             elseif metadata.name == "env-stdin-cmd" then
               EXT_PROCESSING.env_stdin_cmd(metadata.value, body)

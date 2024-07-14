@@ -1,4 +1,4 @@
-## HTTP File Specification
+# HTTP File Specification
 
 - The .http file syntax.
 - How to create an .http file.
