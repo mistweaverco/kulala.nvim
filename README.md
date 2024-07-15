@@ -42,33 +42,29 @@ require('lazy').setup({
     'mistweaverco/kulala.nvim',
     config = function()
       -- Setup is required, even if you don't pass any options
-      require('kulala').setup({
-        -- default_view, body or headers
-        default_view = "body",
-        -- dev, test, prod, can be anything
-        -- see: https://learn.microsoft.com/en-us/aspnet/core/test/http-files?view=aspnetcore-8.0#environment-files
-        default_env = "dev",
-        -- enable/disable debug mode
-        debug = false,
-        -- default formatters for different content types
-        formatters = {
-          json = { "jq", "." },
-          xml = { "xmllint", "--format", "-" },
-          html = { "xmllint", "--format", "--html", "-" },
-        },
-        -- default icons
-        icons = {
-          inlay = {
-            loading = "⏳",
-            done = "✅ "
-          },
-          lualine = "🐼",
-        },
-        -- additional cURL options
-        -- e.g. { "--insecure", "-A", "Mozilla/5.0" }
-        additional_curl_options = {},
-      })
+      require('kulala').setup()
     end
   },
 })
 ```
+
+See [setup options](https://kulala.mwco.app/docs/setup-options) for more information.
+
+## Honorable mentions
+
+### rest.nvim
+
+For getting this project started.
+
+This project was heaviliy inspired by the idea of having a REST client in Neovim.
+
+The actual state of [rest.nvim](https://github.com/rest-nvim/rest.nvim)
+as achieved kicked off the development of kulala.nvim.
+
+### curl.nvim
+
+If you want a simple scratchpad for making HTTP requests,
+check out [curl.nvim](https://github.com/oysandvik94/curl.nvim)
+
+It's very different to this project, but it's a great tool for making
+HTTP requests from within Neovim and maybe just your cup of tea.
