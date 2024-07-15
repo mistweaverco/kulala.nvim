@@ -34,7 +34,9 @@ end
 -- Create an autocmd to delete the buffer when the window is closed
 -- This is necessary to prevent the buffer from being left behind
 -- when the window is closed
+local augroup = vim.api.nvim_create_augroup("kulala_window_closed", { clear = true })
 vim.api.nvim_create_autocmd("WinClosed", {
+  group = augroup,
   callback = function(args)
     -- if the window path is the same as the GLOBALS.UI_ID and the buffer exists
     if args.buf == get_buffer() then
@@ -114,7 +116,7 @@ M.show_headers = function()
       open_buffer()
     end
     local h = FS.read_file(GLOBALS.HEADERS_FILE)
-    h = h:gsub('\r\n', '\n')
+    h = h:gsub("\r\n", "\n")
     set_buffer_contents(h, "plaintext")
   else
     vim.notify("No headers found", vim.log.levels.WARN)
