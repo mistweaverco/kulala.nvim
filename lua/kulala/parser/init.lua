@@ -124,11 +124,11 @@ M.get_document = function()
         if is_request_line == false then
           is_body_section = true
         end
-      elseif line:match("^@%w+") then
+      elseif line:match("^@([%w_]+)") then
         -- Variable
         -- Variables are defined as `@variable_name=value`
         -- The value can be a string, a number or boolean
-        local variable_name, variable_value = line:match("^%@(%w+)%s*=%s*(.*)$")
+        local variable_name, variable_value = line:match("^@([%w_]+)%s*=%s*(.*)$")
         if variable_name and variable_value then
           -- remove the @ symbol from the variable name
           variable_name = variable_name:sub(1)
