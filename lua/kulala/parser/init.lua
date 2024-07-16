@@ -3,10 +3,19 @@ local GLOBALS = require("kulala.globals")
 local CONFIG = require("kulala.config")
 local DYNAMIC_VARS = require("kulala.parser.dynamic_vars")
 local STRING_UTILS = require("kulala.utils.string")
-local TABLE_UTILS = require("kulala.utils.table")
 local ENV_PARSER = require("kulala.parser.env")
+local GRAPHQL_PARSER = require("kulala.parser.graphql")
 local PLUGIN_TMP_DIR = FS.get_plugin_tmp_dir()
 local M = {}
+
+local function contains_meta_tag(request, tag)
+  for _, meta in ipairs(request.metadata) do
+    if meta.name == tag then
+      return true
+    end
+  end
+  return false
+end
 
 local function parse_string_variables(str, variables)
   local env = ENV_PARSER.get_env()
@@ -154,7 +163,8 @@ M.get_document = function()
           end
         else
           if
-            request.headers["content-type"] ~= nil and request.headers["content-type"]:find("^multipart/form%-data")
+            (request.headers["content-type"] ~= nil and request.headers["content-type"]:find("^multipart/form%-data"))
+            or contains_meta_tag(request, "graphql")
           then
             request.body = request.body .. line .. "\r\n"
           else
@@ -298,6 +308,16 @@ function M.parse()
     else
       table.insert(res.cmd, "--data")
       table.insert(res.cmd, res.body)
+    end
+  else -- no content type supplied
+    -- check if we are a graphql query
+    if contains_meta_tag(req, "graphql") then
+      local gql_json = GRAPHQL_PARSER.get_json(res.body)
+      if gql_json then
+        table.insert(res.cmd, "--data")
+        table.insert(res.cmd, gql_json)
+        res.headers["content-type"] = "application/json"
+      end
     end
   end
   for key, value in pairs(res.headers) do
