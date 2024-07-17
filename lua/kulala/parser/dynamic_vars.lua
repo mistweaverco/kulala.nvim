@@ -1,7 +1,4 @@
-local FS = require("kulala.utils.fs")
-local GLOBALS = require("kulala.globals")
 local CONFIG = require("kulala.config")
-local STRING_UTILS = require("kulala.utils.string")
 local M = {}
 
 local random = math.random
@@ -18,14 +15,6 @@ local function uuid()
   end)
 end
 
-local previous_response_body = function()
-  local previous_response = FS.read_file(GLOBALS.BODY_FILE)
-  if not previous_response then
-    return ""
-  end
-  return STRING_UTILS.trim(previous_response)
-end
-
 ---Retrieve all dynamic variables from both rest.nvim and the ones declared by
 ---the user on his configuration
 ---@return { [string]: fun():string }[] An array-like table of tables which contains dynamic variables definition
@@ -37,9 +26,8 @@ function M.retrieve_all()
       return os.date("%Y-%m-%d")
     end,
     ["$timestamp"] = os.time,
-    ["$previousResponseBody"] = previous_response_body,
     ["$randomInt"] = function()
-      return math.random(0, 1000)
+      return math.random(0, 9999999)
     end,
   }
 
