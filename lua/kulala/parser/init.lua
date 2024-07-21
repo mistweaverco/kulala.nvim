@@ -1,5 +1,6 @@
 local FS = require("kulala.utils.fs")
 local GLOBALS = require("kulala.globals")
+local GLOBAL_STORE = require("kulala.global_store")
 local CONFIG = require("kulala.config")
 local DYNAMIC_VARS = require("kulala.parser.dynamic_vars")
 local STRING_UTILS = require("kulala.utils.string")
@@ -289,6 +290,19 @@ function M.parse()
       local body = file:read("*a")
       file:close()
       res.body = body
+    end
+  end
+
+  -- Merge headers from the _base environment if it exists
+  if GLOBAL_STORE.get("http_client_env_base") then
+    local default_headers = GLOBAL_STORE.get("http_client_env_base")["DEFAULT_HEADERS"]
+    if default_headers then
+      for key, value in pairs(default_headers) do
+        key = key:lower()
+        if res.headers[key] == nil then
+          res.headers[key] = value
+        end
+      end
     end
   end
 

@@ -12,15 +12,15 @@ local action_state = require("telescope.actions.state")
 local actions = require("telescope.actions")
 local finders = require("telescope.finders")
 local pickers = require("telescope.pickers")
-local conf = require("telescope.config").values
+local previewers = require("telescope.previewers")
 
 local function kulala_env_select(_)
-  if not GLOBAL_STORE.get("http_client_env_json") then
+  if not GLOBAL_STORE.get("http_client_env") then
     return
   end
 
   local envs = {}
-  for key, _ in pairs(GLOBAL_STORE.get("http_client_env_json")) do
+  for key, _ in pairs(GLOBAL_STORE.get("http_client_env")) do
     table.insert(envs, key)
   end
 
@@ -42,7 +42,20 @@ local function kulala_env_select(_)
         end)
         return true
       end,
-      previewer = conf.grep_previewer({}),
+      previewer = previewers.new_buffer_previewer({
+        title = "Environment",
+        define_preview = function(self, entry)
+          local env = GLOBAL_STORE.get("http_client_env")[entry.value]
+          if env == nil then
+            return
+          end
+          local lines = {}
+          for key, value in pairs(env) do
+            table.insert(lines, string.format("%s: %s", key, value))
+          end
+          vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, lines)
+        end,
+      }),
     })
     :find()
 end
