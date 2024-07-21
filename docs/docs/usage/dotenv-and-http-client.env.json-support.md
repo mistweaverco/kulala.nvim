@@ -88,3 +88,34 @@ Authorization: Bearer {{API_KEY}}
 }
 ```
 
+#### Default http headers
+
+You can define default HTTP headers in the `http-client.env.json` file.
+
+You need to put them in the special `_base` key and
+the `DEFAULT_HEADERS` will be merged with the headers from the HTTP requests.
+
+```json title="http-client.env.json"
+{
+  "_base": {
+    "DEFAULT_HEADERS": {
+      "content-type": "application/json",
+      "accept": "application/json"
+  },
+  "dev": {
+    "API_KEY": "your-api-key"
+  }
+}
+```
+
+Then, they are automatically added to the HTTP requests,
+unless you override them.
+
+```http title="examples.http"
+POST https://httpbin.org/post HTTP/1.1
+Authorization: Bearer {{API_KEY}}
+
+{
+  "name": "John"
+}
+``` 
