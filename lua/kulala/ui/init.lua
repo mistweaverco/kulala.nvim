@@ -70,6 +70,31 @@ local function pretty_ms(ms)
   return string.format("%.2fms", ms)
 end
 
+M.copy = function()
+  local result = PARSER:parse()
+  local cmd_table = {}
+  local skip_arg = false
+  for idx, v in ipairs(result.cmd) do
+    if string.sub(v, 1, 1) == "-" or idx == 1 then
+      -- remove headers and body output to file
+      if v == "-o" or v == "-D" then
+        skip_arg = true
+      else
+        table.insert(cmd_table, v)
+      end
+    else
+      if skip_arg == false then
+        table.insert(cmd_table, vim.fn.shellescape(v))
+      else
+        skip_arg = false
+      end
+    end
+  end
+  local cmd = table.concat(cmd_table, " ")
+  vim.fn.setreg("+", cmd)
+  vim.notify("Copied to clipboard", vim.log.levels.INFO)
+end
+
 M.open = function()
   local linenr = INLAY.get_current_line_number()
   INLAY:show_loading(linenr)
