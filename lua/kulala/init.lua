@@ -18,9 +18,17 @@ M.run = function()
   UI:open()
 end
 
+M.copy = function()
+  UI:copy()
+end
+
 M.version = function()
   local neovim_version = vim.fn.execute("version")
-  vim.notify("Kulala version: " .. GLOBALS.VERSION .. "\n\n" .. "Neovim version: " .. neovim_version, "info", { title = "Kulala" })
+  vim.notify(
+    "Kulala version: " .. GLOBALS.VERSION .. "\n\n" .. "Neovim version: " .. neovim_version,
+    "info",
+    { title = "Kulala" }
+  )
 end
 
 M.jump_next = function()
@@ -36,16 +44,16 @@ M.toggle_view = function()
 end
 
 M.set_selected_env = function(env)
-	if env == nil then
-		local has_telescope, telescope = pcall(require, "telescope")
-		if has_telescope then
-			telescope.extensions.kulala.select_env()
-		else
-			SELECTOR.select_env()
-		end
-		return
-	end
-	GLOBAL_STORE.set("selected_env", env)
+  if env == nil then
+    local has_telescope, telescope = pcall(require, "telescope")
+    if has_telescope then
+      telescope.extensions.kulala.select_env()
+    else
+      SELECTOR.select_env()
+    end
+    return
+  end
+  GLOBAL_STORE.set("selected_env", env)
 end
 
 return M

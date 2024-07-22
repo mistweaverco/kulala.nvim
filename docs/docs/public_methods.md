@@ -4,6 +4,11 @@
 
 `require('kulala').run()` runs the current request.
 
+### copy
+
+`require('kulala').copy()` copies the current request
+(as cURL command) to the clipboard.
+
 ### toggle_view
 
 `require('kulala').toggle_view()` toggles between
