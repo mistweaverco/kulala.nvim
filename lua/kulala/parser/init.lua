@@ -315,7 +315,7 @@ function M.parse()
   table.insert(res.cmd, PLUGIN_TMP_DIR .. "/body.txt")
   table.insert(res.cmd, "-X")
   table.insert(res.cmd, res.method)
-  if res.headers["content-type"] ~= nil then
+  if res.headers["content-type"] ~= nil and res.body ~= nil then
     if res.headers["content-type"]:find("^multipart/form%-data") then
       table.insert(res.cmd, "--data-binary")
       table.insert(res.cmd, res.body)
