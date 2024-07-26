@@ -40,10 +40,6 @@ local function parse_string_variables(str, variables)
           .. "' was not found in the document or in the environment. Returning the string as received ..."
       )
     end
-    if type(value) == "string" then
-      ---@cast variable_value string
-      value = value:gsub('"', "")
-    end
     return value
   end
   local result = str:gsub("{{(.-)}}", replace_placeholder)
@@ -152,7 +148,7 @@ M.get_document = function()
           if
             request.headers["content-type"] ~= nil and request.headers["content-type"]:find("^multipart/form%-data")
           then
-            request.body = request.body .. line
+            request.body = request.body .. line .. "\r\n"
           else
             local file_path = vim.trim(line:sub(2))
             local contents = FS.read_file(file_path)
@@ -168,8 +164,13 @@ M.get_document = function()
             or contains_meta_tag(request, "graphql")
           then
             request.body = request.body .. line .. "\r\n"
-          else
+          elseif
+            request.headers["content-type"] ~= nil
+            and request.headers["content-type"]:find("^application/x%-www%-form%-urlencoded")
+          then
             request.body = request.body .. line
+          else
+            request.body = request.body .. line .. "\r\n"
           end
         end
       elseif is_request_line == false and line:match("^(.+):%s*(.*)$") then
@@ -262,6 +263,22 @@ function M.parse()
   local document_variables, requests = M.get_document()
   local req = M.get_request_at_cursor(requests)
 
+  -- extend the document_variables with the variables defined in the request
+  -- via the # @file-to-variable variable_name file_path metadata syntax
+  for _, metadata in ipairs(req.metadata) do
+    if metadata then
+      if metadata.name == "file-to-variable" then
+        local kv = vim.split(metadata.value, " ")
+        local variable_name = kv[1]
+        local file_path = kv[2]
+        local file_contents = FS.read_file(file_path)
+        if file_contents then
+          document_variables[variable_name] = file_contents
+        end
+      end
+    end
+  end
+
   res.url = parse_url(req.url, document_variables)
   res.method = req.method
   res.http_version = req.http_version
@@ -316,7 +333,18 @@ function M.parse()
   table.insert(res.cmd, "-X")
   table.insert(res.cmd, res.method)
   if res.headers["content-type"] ~= nil and res.body ~= nil then
-    if res.headers["content-type"]:find("^multipart/form%-data") then
+    -- check if we are a graphql query
+    -- we need this here, because the user could have defined the content-type
+    -- as application/json, but the body is a graphql query
+    -- This can happen when the user is using http-client.env.json with DEFAULT_HEADERS.
+    if contains_meta_tag(req, "graphql") then
+      local gql_json = GRAPHQL_PARSER.get_json(res.body)
+      if gql_json then
+        table.insert(res.cmd, "--data")
+        table.insert(res.cmd, gql_json)
+        res.headers["content-type"] = "application/json"
+      end
+    elseif res.headers["content-type"]:find("^multipart/form%-data") then
       table.insert(res.cmd, "--data-binary")
       table.insert(res.cmd, res.body)
     else
