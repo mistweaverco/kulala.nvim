@@ -12,7 +12,6 @@ They all start with a `$` sign.
 To test this feature, create a file with the `.http` extension and write your HTTP requests in it.
 
 ```http title="magic-variables.http"
-
 POST https://httpbin.org/post HTTP/1.1
 content-type: application/json
 accept: application/json
@@ -23,6 +22,4 @@ accept: application/json
   "date": "{{$date}}",
   "randomInt": "{{$randomInt}}",
 }
-
-###
 ```

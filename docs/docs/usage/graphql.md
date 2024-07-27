@@ -5,10 +5,9 @@ Create a file with the `.http` extension and write your GraphQL requests in it.
 ## With variables
 
 ```http title="gql-with-variables.http"
-
-# @graphql 1
 POST https://swapi-graphql.netlify.app/.netlify/functions/index HTTP/1.1
 accept: application/json
+# @graphql 1
 
 query Person($id: ID) {
   person(personID: $id) {
@@ -16,16 +15,14 @@ query Person($id: ID) {
   }
 }
 variables { "id": 1 }
-
 ```
 
 ## Without variables
 
 ```http title="gql-without-variables.http"
-
-# @graphql 1
 POST https://swapi-graphql.netlify.app/.netlify/functions/index HTTP/1.1
 accept: application/json
+# @graphql 1
 
 query Query {
   allFilms {
@@ -45,5 +42,4 @@ query Query {
     }
   }
 }
-
 ```
