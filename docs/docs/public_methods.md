@@ -9,6 +9,12 @@
 `require('kulala').copy()` copies the current request
 (as cURL command) to the clipboard.
 
+### close
+
+`require('kulala').close()` closes the kulala window and also the current buffer.
+
+> (it will not close the current buffer, if it is not a `.http` or `.rest` file)
+
 ### toggle_view
 
 `require('kulala').toggle_view()` toggles between

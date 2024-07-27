@@ -13,6 +13,10 @@ local open_buffer = function()
   vim.api.nvim_set_current_win(prev_win)
 end
 
+local close_buffer = function()
+  vim.cmd("bdelete " .. GLOBALS.UI_ID)
+end
+
 local get_buffer = function()
   -- Iterate through all buffers
   for _, buf in ipairs(vim.api.nvim_list_bufs()) do
@@ -122,6 +126,16 @@ M.open = function()
   end)
 end
 
+M.close = function()
+  if buffer_exists() then
+    close_buffer()
+  end
+  local ext = vim.fn.expand("%:e")
+  if ext == "http" or ext == "rest" then
+    vim.cmd("bdelete")
+  end
+end
+
 M.show_body = function()
   if FS.file_exists(GLOBALS.BODY_FILE) then
     if not buffer_exists() then
@@ -149,7 +163,7 @@ M.show_headers = function()
 end
 
 M.toggle_headers = function()
-  cfg = CONFIG.get()
+  local cfg = CONFIG.get()
   if cfg.default_view == "headers" then
     cfg.default_view = "body"
   else
