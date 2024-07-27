@@ -247,6 +247,25 @@ M.get_next_request = function(requests)
   return nil
 end
 
+-- extend the document_variables with the variables defined in the request
+-- via the # @file-to-variable variable_name file_path metadata syntax
+local function extend_document_variables(document_variables, request)
+  for _, metadata in ipairs(request.metadata) do
+    if metadata then
+      if metadata.name == "file-to-variable" then
+        local kv = vim.split(metadata.value, " ")
+        local variable_name = kv[1]
+        local file_path = kv[2]
+        local file_contents = FS.read_file(file_path)
+        if file_contents then
+          document_variables[variable_name] = file_contents
+        end
+      end
+    end
+  end
+  return document_variables
+end
+
 ---Parse a request and return the request on itself, its headers and body
 ---@return Request Table containing the request data
 function M.parse()
@@ -263,21 +282,7 @@ function M.parse()
   local document_variables, requests = M.get_document()
   local req = M.get_request_at_cursor(requests)
 
-  -- extend the document_variables with the variables defined in the request
-  -- via the # @file-to-variable variable_name file_path metadata syntax
-  for _, metadata in ipairs(req.metadata) do
-    if metadata then
-      if metadata.name == "file-to-variable" then
-        local kv = vim.split(metadata.value, " ")
-        local variable_name = kv[1]
-        local file_path = kv[2]
-        local file_contents = FS.read_file(file_path)
-        if file_contents then
-          document_variables[variable_name] = file_contents
-        end
-      end
-    end
-  end
+  document_variables = extend_document_variables(document_variables, req)
 
   res.url = parse_url(req.url, document_variables)
   res.method = req.method
