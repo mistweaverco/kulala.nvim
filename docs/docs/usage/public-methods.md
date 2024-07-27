@@ -1,5 +1,7 @@
 # Public methods
 
+All public methods are available via the `kulala` module.
+
 ### run
 
 `require('kulala').run()` runs the current request.

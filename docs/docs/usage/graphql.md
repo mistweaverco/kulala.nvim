@@ -1,5 +1,7 @@
 # GraphQL
 
+You can use the `@graphql` directive to send GraphQL requests.
+
 Create a file with the `.http` extension and write your GraphQL requests in it.
 
 ## With variables

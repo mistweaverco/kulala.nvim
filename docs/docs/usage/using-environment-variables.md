@@ -1,5 +1,7 @@
 # Using Environment Variables
 
+You can use environment variables in your HTTP requests.
+
 Create a file with the `.http` extension and write your HTTP requests in it.
 
 ```http title="examples.http"

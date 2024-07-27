@@ -1,7 +1,6 @@
 # Automatic Response Formatting
 
-If you want to automatically format the response of an HTTP request,
-you can use simply add an `accept` header with the desired format.
+You can automatically format the response of an HTTP request using the `accept` header.
 
 For example, if you want to receive the response in JSON format, you can add the `accept: application/json` header.
 

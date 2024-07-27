@@ -1,5 +1,7 @@
 # Authentication
 
+How to handle authentication in Kulala.
+
 See these topics for more information:
 
 - [Sending form data](sending-form-data.md)

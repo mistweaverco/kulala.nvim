@@ -1,5 +1,7 @@
 # Dynamically setting environment variables based on response JSON
 
+You can set environment variables based on the response JSON of an HTTP request.
+
 Create a file with the `.http` extension and write your HTTP requests in it.
 
 ```http title="examples.http"

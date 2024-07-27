@@ -1,5 +1,7 @@
 # Sending Form Data
 
+You can send form data in Kulala by using the `application/x-www-form-urlencoded` content type.
+
 Create a file with the `.http` extension and write your HTTP requests in it.
 
 ```http title="examples.http"

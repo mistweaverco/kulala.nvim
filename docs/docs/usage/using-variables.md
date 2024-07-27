@@ -1,5 +1,7 @@
 # Using Variables
 
+You can use variables in your HTTP requests.
+
 Create a file with the `.http` extension and write your HTTP requests in it.
 
 ```http title="examples.http"

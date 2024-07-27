@@ -1,5 +1,7 @@
 # File to variable
 
+You can use the `@file-to-variable` directive to read the content of a file and assign it to a variable.
+
 Create a file with the `.http` extension and write your JSON request in it.
 
 Then, use the `@file-to-variable` directive to specify the variable name
