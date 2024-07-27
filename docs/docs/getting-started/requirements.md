@@ -1,23 +1,28 @@
 # Requirements
 
-### Neovim
+List of requirements for using kulala.
+
+## Neovim
 
 - [Neovim](https://github.com/neovim/neovim) 0.10.0+
-  - [Treesitter for HTTP](https://github.com/nvim-treesitter/nvim-treesitter?tab=readme-ov-file#supported-languages) (`:TSInstall http`)
 
-### cURL
+### Syntax Highlighting
+
+- [Treesitter for HTTP](https://github.com/nvim-treesitter/nvim-treesitter?tab=readme-ov-file#supported-languages) (`:TSInstall http`)
+
+## cURL
 
 - [cURL](https://curl.se/) (tested with 8.5.0)
 
-### jq
+## jq
 
 - [jq](https://stedolan.github.io/jq/) (tested with 1.7) (Only required for formatted JSON responses)
 
-### xmllint
+## xmllint
 
 - [xmllint](https://packages.ubuntu.com/noble/libxml2-utils) (tested with libxml v20914) (Only required for formatted XML/HTML responses)
 
-#### Optional Requirements
+# Optional Requirements
 
 To make things a lot easier, you can put this lua snippet somewhere in your configuration:
 

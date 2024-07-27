@@ -1,6 +1,6 @@
 # Setup Options
 
-The following options can be set in the setup function:
+The following options can be set in the setup function.
 
 ### Full example
 

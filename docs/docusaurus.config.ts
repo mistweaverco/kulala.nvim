@@ -30,7 +30,7 @@ const config: Config = {
         docs: {
           sidebarPath: './sidebars.ts',
           editUrl:
-            'https://github.com/mistweaverco/kulala.nvim/blob/main',
+            'https://github.com/mistweaverco/kulala.nvim/blob/main/docs',
         },
         theme: {
           customCss: './src/css/custom.css',
@@ -41,6 +41,11 @@ const config: Config = {
 
   themeConfig: {
     image: 'img/kulala-social-card.png',
+    docs: {
+      sidebar: {
+        autoCollapseCategories: true,
+      },
+    },
     navbar: {
       title: 'Kulala.nvim',
       logo: {
@@ -68,7 +73,7 @@ const config: Config = {
           items: [
             {
               label: 'Install',
-              to: '/docs/install',
+              to: '/docs/getting-started/install',
             },
             {
               label: 'Usage',

@@ -1,6 +1,12 @@
 # Install
 
-> Requires Neovim 0.10.0+
+How to install kulala.
+
+:::warning
+
+Requires Neovim 0.10.0+
+
+:::
 
 Via [lazy.nvim](https://github.com/folke/lazy.nvim):
 
