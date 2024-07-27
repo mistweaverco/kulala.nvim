@@ -43,6 +43,10 @@ M.toggle_view = function()
   UI:toggle_headers()
 end
 
+M.close = function()
+  UI:close()
+end
+
 M.set_selected_env = function(env)
   if env == nil then
     local has_telescope, telescope = pcall(require, "telescope")
