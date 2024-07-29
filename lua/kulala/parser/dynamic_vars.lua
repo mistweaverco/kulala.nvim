@@ -17,7 +17,7 @@ end
 
 ---Retrieve all dynamic variables from both rest.nvim and the ones declared by
 ---the user on his configuration
----@return { [string]: fun():string }[] An array-like table of tables which contains dynamic variables definition
+---@return { [string]: fun():string }[] #An array-like table of tables which contains dynamic variables definition
 function M.retrieve_all()
   local user_variables = CONFIG.get().custom_dynamic_variables or {}
   local rest_variables = {
