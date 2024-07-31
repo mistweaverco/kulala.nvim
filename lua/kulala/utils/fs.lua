@@ -5,7 +5,11 @@ local M = {}
 --- @return string|nil
 --- @usage local p = fs.find_file_in_parent_dirs('Makefile')
 M.find_file_in_parent_dirs = function(filename)
-  return vim.fs.find({filename}, {upward=true, limit=1})[1]
+  return vim.fs.find({ filename }, {
+    upward = true,
+    limit = 1,
+    path = vim.fn.expand("%:p:h"),
+  })[1]
 end
 
 -- Writes string to file
@@ -15,7 +19,7 @@ end
 --- @return boolean
 --- @usage local p = fs.write_file('Makefile', 'all: \n\t@echo "Hello World"')
 M.write_file = function(filename, content)
-  local f = io.open(filename, 'w')
+  local f = io.open(filename, "w")
   if f == nil then
     return false
   end
@@ -47,9 +51,9 @@ end
 --- @return string
 --- @usage local p = fs.get_plugin_tmp_dir()
 M.get_plugin_tmp_dir = function()
-  local dir = vim.fn.stdpath('data') .. '/tmp/kulala'
+  local dir = vim.fn.stdpath("data") .. "/tmp/kulala"
   if vim.fn.isdirectory(dir) == 0 then
-    vim.fn.mkdir(dir, 'p')
+    vim.fn.mkdir(dir, "p")
   end
   return dir
 end
@@ -67,11 +71,11 @@ end
 --- @return string
 --- @usage local p = fs.read_file('Makefile')
 M.read_file = function(filename)
-  local f = io.open(filename, 'r')
+  local f = io.open(filename, "r")
   if f == nil then
     return nil
   end
-  local content = f:read('*a')
+  local content = f:read("*a")
   f:close()
   return content
 end
