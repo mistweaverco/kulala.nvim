@@ -27,6 +27,8 @@ M.run = function(result, callback)
           if metadata then
             if metadata.name == "env-json-key" then
               INT_PROCESSING.env_json_key(metadata.value, body)
+            elseif metadata.name == "env-header-key" then
+              INT_PROCESSING.env_header_key(metadata.value)
             elseif metadata.name == "stdin-cmd" then
               EXT_PROCESSING.stdin_cmd(metadata.value, body)
             elseif metadata.name == "env-stdin-cmd" then

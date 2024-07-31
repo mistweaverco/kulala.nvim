@@ -32,6 +32,7 @@ const sidebars: SidebarsConfig = {
         "usage/automatic-response-formatting",
         "usage/dotenv-and-http-client.env.json-support",
         "usage/dynamically-setting-environment-variables-based-on-response-json",
+        "usage/dynamically-setting-environment-variables-based-on-headers",
         "usage/file-to-variable",
         "usage/graphql",
         "usage/magic-variables",
