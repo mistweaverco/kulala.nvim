@@ -1,11 +1,13 @@
+local CONFIG = require("kulala.config")
+local DB = require("kulala.db")
+local DYNAMIC_VARS = require("kulala.parser.dynamic_vars")
+local ENV_PARSER = require("kulala.parser.env")
 local FS = require("kulala.utils.fs")
 local GLOBALS = require("kulala.globals")
 local GLOBAL_STORE = require("kulala.global_store")
-local CONFIG = require("kulala.config")
-local DYNAMIC_VARS = require("kulala.parser.dynamic_vars")
-local STRING_UTILS = require("kulala.utils.string")
-local ENV_PARSER = require("kulala.parser.env")
 local GRAPHQL_PARSER = require("kulala.parser.graphql")
+local REQUEST_VARIABLES = require("kulala.parser.request_variables")
+local STRING_UTILS = require("kulala.utils.string")
 local PLUGIN_TMP_DIR = FS.get_plugin_tmp_dir()
 local M = {}
 
@@ -32,6 +34,8 @@ local function parse_string_variables(str, variables)
       value = variables[variable_name]
     elseif env[variable_name] then
       value = env[variable_name]
+    elseif REQUEST_VARIABLES.parse(variable_name) then
+      value = REQUEST_VARIABLES.parse(variable_name)
     else
       value = "{{" .. variable_name .. "}}"
       vim.notify(
@@ -282,6 +286,8 @@ function M.parse()
   local document_variables, requests = M.get_document()
   local req = M.get_request_at_cursor(requests)
 
+  DB.data.previous_request = DB.data.current_request
+
   document_variables = extend_document_variables(document_variables, req)
 
   res.url = parse_url(req.url, document_variables)
@@ -394,6 +400,7 @@ function M.parse()
   if CONFIG.get().debug then
     FS.write_file(PLUGIN_TMP_DIR .. "/request.txt", table.concat(res.cmd, " "))
   end
+  DB.data.current_request = res
   return res
 end
 

@@ -1,4 +1,5 @@
 local FS = require("kulala.utils.fs")
+local DB = require("kulala.db")
 
 local M = {}
 
@@ -20,7 +21,7 @@ M.env_stdin_cmd = function(cmdstring, contents)
     vim.notify("env_stdin_cmd --> Command failed: " .. cmd[2] .. ".", vim.log.levels.ERROR)
     return
   else
-    vim.env[env_name] = res
+    DB.data.env[env_name] = res
   end
 end
 

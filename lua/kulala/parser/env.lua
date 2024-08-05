@@ -1,6 +1,7 @@
 local FS = require("kulala.utils.fs")
 local GLOBAL_STORE = require("kulala.global_store")
 local DYNAMIC_VARS = require("kulala.parser.dynamic_vars")
+local DB = require("kulala.db")
 
 local M = {}
 
@@ -39,6 +40,9 @@ M.get_env = function()
         end
       end
     end
+  end
+  for key, value in pairs(DB.data.env) do
+    env[key] = value
   end
   return env
 end
