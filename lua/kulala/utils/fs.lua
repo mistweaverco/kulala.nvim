@@ -12,6 +12,12 @@ M.find_file_in_parent_dirs = function(filename)
   })[1]
 end
 
+M.find_all_http_files = function()
+  return vim.fs.find(function(name)
+    return name:match("%.http$") or name:match("%.rest$")
+  end, { path = vim.fn.getcwd(), type = "file", limit = 1000 })
+end
+
 -- Writes string to file
 --- @param filename string
 --- @param content string

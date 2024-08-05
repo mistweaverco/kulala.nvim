@@ -28,6 +28,13 @@ the `body` and `headers` view of the last run request.
 
 Persists across restarts.
 
+### search
+
+`require('kulala').search()` searches for all `.http` and `.rest` files
+in the current working directory.
+
+It tries to load up a telescope prompt to select a file or fallback to using `vim.ui.select`.
+
 ### jump_prev
 
 `require('kulala').jump_prev()` jumps to the previous request.
