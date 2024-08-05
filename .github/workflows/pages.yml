@@ -1,3 +1,4 @@
+---
 name: Deploy docs
 
 on:
@@ -14,8 +15,10 @@ permissions:
   pages: write
   id-token: write
 
-# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
-# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
+# Allow only one concurrent deployment,
+# skipping runs queued between the run in-progress and latest queued.
+# However, do NOT cancel in-progress runs as we want
+# to allow these production deployments to complete.
 concurrency:
   group: "pages"
   cancel-in-progress: false
@@ -34,6 +37,7 @@ jobs:
         with:
           node-version: 20
           cache: 'npm'
+          cache-dependency-path: docs/package-lock.json
       - name: Build
         run: scripts/build-docs.sh
       - name: Setup Pages
