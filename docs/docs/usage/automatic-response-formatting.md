@@ -17,9 +17,12 @@ accept: application/json
 }
 
 ```
+:::info
 
-**NOTE:** You need to have external tools to format the response.
+You need to have external tools to format the response.
 For example, `jq` for JSON, `xmllint` for XML and HTML, etc.
+
+:::
 
 ### Supported Formats
 

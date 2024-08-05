@@ -188,6 +188,13 @@ M.replay = function()
   end)
 end
 
+M.scratchpad = function()
+  vim.cmd("e " .. GLOBALS.SCRATCHPAD_ID)
+  vim.cmd("setlocal buftype=nofile")
+  vim.cmd("setlocal filetype=http")
+  vim.api.nvim_buf_set_lines(0, 0, -1, false, CONFIG.get().scratchpad_default_contents)
+end
+
 M.toggle_headers = function()
   local cfg = CONFIG.get()
   if cfg.default_view == "headers" then

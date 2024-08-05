@@ -14,32 +14,20 @@ The order of the environment variables resolution is as follows:
 2. `http-client.env.json` file
 3. `.env` file
 
-### DotEnv
+:::note
 
-You can create a `.env` file in the root of your `.http` files directory and
-define environment variables in it.
+The usage of environment variables is optional,
+but if you want to use them,
+we would advise you to use the `http-client.env.json` file.
 
-The file should look like this:
+DotEnv is still supported, but it is not recommended,
+because it is not as flexible as the `http-client.env.json` file.
 
-```env title=".env"
-API_KEY=your-api-key
-```
+:::
 
-Then, you can reference the environment variables in your HTTP requests like this:
+### http-client.env.json
 
-```http title="examples.http"
-POST https://httpbin.org/post HTTP/1.1
-content-type: application/json
-Authorization: Bearer {{API_KEY}}
-
-{
-  "name": "John"
-}
-```
-
-### HTTP client environment variables support
-
-You can also define environment variables in the HTTP client settings.
+You can also define environment variables via the `http-client.env.json` file.
 
 Create a file `http-client.env.json` in the root of your `.http` files directory and
 define environment variables in it.
@@ -60,6 +48,7 @@ define environment variables in it.
   }
 }
 ```
+
 The keys like `dev`, `testing`, `staging`, and `prod` are the environment names.
 
 They can be used to switch between different environments.
@@ -72,9 +61,12 @@ This can be overridden by [setting the `default_env` setup option](../getting-st
 
 To change the environment, you can use the `:lua require('kulala').set_selected_env('prod')` command.
 
-> TIP:
-> You can also use the `:lua require('kulala').set_selected_env()`
-> command to select an environment using a telescope prompt.
+:::tip
+
+You can also use the `:lua require('kulala').set_selected_env()`
+command to select an environment using a telescope prompt.
+
+:::
 
 Then, you can reference the environment variables in your HTTP requests like this:
 
@@ -118,4 +110,28 @@ Authorization: Bearer {{API_KEY}}
 {
   "name": "John"
 }
-``` 
+```
+
+### DotEnv
+
+You can create a `.env` file in the root of your `.http` files directory and
+define environment variables in it.
+
+The file should look like this:
+
+```env title=".env"
+API_KEY=your-api-key
+```
+
+Then, you can reference the environment variables in your HTTP requests like this:
+
+```http title="examples.http"
+POST https://httpbin.org/post HTTP/1.1
+content-type: application/json
+Authorization: Bearer {{API_KEY}}
+
+{
+  "name": "John"
+}
+```
+

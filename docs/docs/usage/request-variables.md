@@ -16,10 +16,14 @@ and this kind of requests can be called with Named Request,
 Other requests can use `THIS_IS_AN_EXAMPLE_REQUEST_NAME` as an
 identifier to reference the expected part of the named request or its latest response.
 
-**NOTE:** If you want to refer the response of a named request,
+:::warning
+
+If you want to refer the response of a named request,
 you need to manually trigger the named request to retrieve its response first,
 otherwise the plain text of
 variable reference like `{{THIS_IS_AN_EXAMPLE_REQUEST_NAME.response.body.$.id}}` will be sent instead.
+
+:::
 
 The reference syntax of a request variable is a bit more complex than other kinds of custom variables.
 

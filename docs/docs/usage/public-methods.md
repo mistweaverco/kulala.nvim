@@ -10,6 +10,17 @@ All public methods are available via the `kulala` module.
 
 `require('kulala').replay()` replays the last run request.
 
+### scratchpad
+
+`require('kulala').scratchpad()` opens the scratchpad.
+
+The scratchpad is a (throwaway) buffer where you can write your requests.
+
+It is useful for quick testing. It is useful for requests that you don't want to save.
+
+It's default contents can be configured via the
+[`scratchpad_default_contents`][scratchpad_default_contents] setup option.
+
 ### copy
 
 `require('kulala').copy()` copies the current request
@@ -58,3 +69,5 @@ See: https://learn.microsoft.com/en-us/aspnet/core/test/http-files?view=aspnetco
 
 If you omit the `env_key`,
 it will try to load up a telescope prompt to select an environment or fallback to using `vim.ui.select`.
+
+[scratchpad_default_contents]: ../getting-started/setup-options#scratchpad_default_contents
