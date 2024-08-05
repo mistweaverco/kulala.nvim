@@ -59,7 +59,11 @@ For getting this project started.
 This project was heaviliy inspired by the idea of having a REST client in Neovim.
 
 The actual state of [rest.nvim](https://github.com/rest-nvim/rest.nvim)
-as achieved kicked off the development of kulala.nvim.
+as archived kicked off the development of kulala.nvim.
+
+> [!NOTE]
+> The project has been [un-archived][restnvim-unarchived-post] again,
+> so check it out if you're looking for an alternative.
 
 ### curl.nvim
 
@@ -68,3 +72,12 @@ check out [curl.nvim](https://github.com/oysandvik94/curl.nvim)
 
 It's very different to this project, but it's a great tool for making
 HTTP requests from within Neovim and maybe just your cup of tea.
+
+### httpbin.org
+
+For providing a great service for testing HTTP requests and
+making it in all the kulala examples.
+
+Thanks for making it easy to test and develop this plugin.
+
+[restnvim-unarchived-post]: https://github.com/rest-nvim/rest.nvim/issues/398#issue-2442747909
