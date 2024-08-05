@@ -7,12 +7,40 @@ end
 local GLOBAL_STORE = require("kulala.global_store")
 local FS = require("kulala.utils.fs")
 
-local state = require("telescope.actions.state")
 local action_state = require("telescope.actions.state")
 local actions = require("telescope.actions")
 local finders = require("telescope.finders")
 local pickers = require("telescope.pickers")
 local previewers = require("telescope.previewers")
+
+local function kulala_search(_)
+  -- a list of all the .http/.rest files in the current directory
+  -- and its subdirectories
+  local files = FS.find_all_http_files()
+
+  pickers
+    .new({}, {
+      prompt_title = "Search",
+      finder = finders.new_table({
+        results = files,
+      }),
+      attach_mappings = function(prompt_bufnr)
+        actions.select_default:replace(function()
+          local selection = action_state.get_selected_entry()
+          actions.close(prompt_bufnr)
+          if selection == nil then
+            return
+          end
+          vim.cmd("e " .. selection.value)
+        end)
+        return true
+      end,
+      previewer = previewers.vim_buffer_cat.new({
+        title = "Preview",
+      }),
+    })
+    :find()
+end
 
 local function kulala_env_select(_)
   if not GLOBAL_STORE.get("http_client_env") then
@@ -30,7 +58,7 @@ local function kulala_env_select(_)
       finder = finders.new_table({
         results = envs,
       }),
-      attach_mappings = function(prompt_bufnr, map)
+      attach_mappings = function(prompt_bufnr)
         actions.select_default:replace(function()
           local selection = action_state.get_selected_entry()
           actions.close(prompt_bufnr)
@@ -62,6 +90,7 @@ end
 
 return telescope.register_extension({
   exports = {
+    search = kulala_search,
     select_env = kulala_env_select,
   },
 })

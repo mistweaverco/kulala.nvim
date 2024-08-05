@@ -51,6 +51,15 @@ M.close = function()
   UI:close()
 end
 
+M.search = function()
+  local has_telescope, telescope = pcall(require, "telescope")
+  if has_telescope then
+    telescope.extensions.kulala.search()
+  else
+    SELECTOR.select_env()
+  end
+end
+
 M.set_selected_env = function(env)
   if env == nil then
     local has_telescope, telescope = pcall(require, "telescope")
