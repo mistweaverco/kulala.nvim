@@ -48,7 +48,7 @@ require('lazy').setup({
 })
 ```
 
-See [setup options](https://kulala.mwco.app/docs/setup-options) for more information.
+See [setup options](https://kulala.mwco.app/docs/getting-started/setup-options) for more information.
 
 ## Honorable mentions
 
