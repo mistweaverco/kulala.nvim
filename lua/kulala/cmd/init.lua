@@ -25,7 +25,9 @@ M.run = function(result, callback)
         end
         for _, metadata in ipairs(result.metadata) do
           if metadata then
-            if metadata.name == "env-json-key" then
+            if metadata.name == "name" then
+              INT_PROCESSING.set_env_for_named_request(metadata.value, body)
+            elseif metadata.name == "env-json-key" then
               INT_PROCESSING.env_json_key(metadata.value, body)
             elseif metadata.name == "env-header-key" then
               INT_PROCESSING.env_header_key(metadata.value)

@@ -1,5 +1,6 @@
 local FS = require("kulala.utils.fs")
 local GLOBALS = require("kulala.globals")
+local DB = require("kulala.db")
 local M = {}
 
 -- Function to access a nested key in a table dynamically
@@ -22,18 +23,41 @@ local get_headers_as_table = function()
   for _, header in ipairs(lines) do
     if header:find(":") ~= nil then
       local kv = vim.split(header, ":")
-      local key = kv[1]:lower()
+      local key = kv[1]
       -- the value should be everything after the first colon
       -- but we can't use slice and join because the value might contain colons
       local value = header:sub(#key + 2)
-      headers_table[key] = value
+      headers_table[key] = vim.trim(value)
     end
   end
   return headers_table
 end
 
-M.env_header_key = function(cmd)
+local get_lower_headers_as_table = function()
   local headers = get_headers_as_table()
+  local headers_table = {}
+  for key, value in pairs(headers) do
+    headers_table[key:lower()] = value
+  end
+  return headers_table
+end
+
+M.set_env_for_named_request = function(name, body)
+  local named_request = {
+    response = {
+      headers = get_headers_as_table(),
+      body = body,
+    },
+    request = {
+      headers = DB.data.current_request.headers,
+      body = DB.data.current_request.body,
+    },
+  }
+  DB.data.env[name] = named_request
+end
+
+M.env_header_key = function(cmd)
+  local headers = get_lower_headers_as_table()
   local kv = vim.split(cmd, " ")
   local header_key = kv[2]
   local variable_name = kv[1]
@@ -41,7 +65,7 @@ M.env_header_key = function(cmd)
   if value == nil then
     vim.notify("env-header-key --> Header not found.", vim.log.levels.ERROR)
   else
-    vim.fn.setenv(variable_name, value)
+    DB.data.env[variable_name] = value
   end
 end
 
@@ -52,7 +76,7 @@ M.env_json_key = function(cmd, body)
   else
     local kv = vim.split(cmd, " ")
     local value = get_nested_value(json, kv[2])
-    vim.fn.setenv(kv[1], value)
+    DB.data.env[kv[1]] = value
   end
 end
 

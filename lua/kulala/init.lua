@@ -18,6 +18,10 @@ M.run = function()
   UI:open()
 end
 
+M.replay = function()
+  UI:replay()
+end
+
 M.copy = function()
   UI:copy()
 end

@@ -4,6 +4,7 @@ local INLAY = require("kulala.inlay")
 local PARSER = require("kulala.parser")
 local CMD = require("kulala.cmd")
 local FS = require("kulala.utils.fs")
+local DB = require("kulala.db")
 local M = {}
 
 local open_buffer = function()
@@ -160,6 +161,31 @@ M.show_headers = function()
   else
     vim.notify("No headers found", vim.log.levels.WARN)
   end
+end
+
+M.replay = function()
+  local result = DB.data.current_request
+  if result == nil then
+    vim.notify("No request to replay", vim.log.levels.WARN, { title = "kulala" })
+    return
+  end
+  vim.schedule(function()
+    CMD.run(result, function(success)
+      if not success then
+        vim.notify("Failed to replay request", vim.log.levels.ERROR, { title = "kulala" })
+        return
+      else
+        if not buffer_exists() then
+          open_buffer()
+        end
+        if CONFIG.get().default_view == "body" then
+          M.show_body()
+        else
+          M.show_headers()
+        end
+      end
+    end)
+  end)
 end
 
 M.toggle_headers = function()
