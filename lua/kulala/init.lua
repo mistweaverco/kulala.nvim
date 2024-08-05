@@ -60,6 +60,10 @@ M.search = function()
   end
 end
 
+M.scratchpad = function()
+  UI:scratchpad()
+end
+
 M.set_selected_env = function(env)
   if env == nil then
     local has_telescope, telescope = pcall(require, "telescope")

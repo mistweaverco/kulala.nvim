@@ -26,6 +26,19 @@ M.defaults = {
   -- additional cURL options
   -- see: https://curl.se/docs/manpage.html
   additional_curl_options = {},
+  -- scratchpad default contents
+  scratchpad_default_contents = {
+    "@MY_TOKEN_NAME=my_token_value",
+    "",
+    "POST https://httpbin.org/post HTTP/1.1",
+    "accept: application/json",
+    "content-type: application/json",
+    "# @name scratchpad",
+    "",
+    "{",
+    '  "foo": "bar"',
+    "}",
+  },
 }
 
 M.options = {}

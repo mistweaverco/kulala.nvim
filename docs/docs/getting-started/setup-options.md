@@ -33,6 +33,19 @@ require("kulala").setup({
   -- additional cURL options
   -- see: https://curl.se/docs/manpage.html
   additional_curl_options = {},
+  -- scratchpad default contents
+  scratchpad_default_contents = {
+    "@MY_TOKEN_NAME=my_token_value",
+    "",
+    "POST https://httpbin.org/post HTTP/1.1",
+    "accept: application/json",
+    "content-type: application/json",
+    "# @name scratchpad",
+    "",
+    "{",
+    '  "foo": "bar"',
+    "}",
+  },
 })
 ```
 
@@ -181,3 +194,49 @@ require("kulala").setup({
 })
 ```
 
+### scratchpad_default_contents
+
+Scratchpad default contents.
+
+The contents of the scratchpad when it is opened
+via `:lua require('kulala').scratchpad()` command.
+
+Possible values:
+
+- `[table of strings]` (each string is a line)
+
+Default:
+
+```lua
+scratchpad_default_contents = {
+  "@MY_TOKEN_NAME=my_token_value",
+  "",
+  "POST https://httpbin.org/post HTTP/1.1",
+  "accept: application/json",
+  "content-type: application/json",
+  "# @name scratchpad",
+  "",
+  "{",
+  '  "foo": "bar"',
+  "}",
+}
+```
+
+Example:
+
+```lua
+require("kulala").setup({
+  scratchpad_default_contents = {
+    "@AUTH_USERNAME=my_username",
+    "",
+    "POST https://httpbin.org/post HTTP/1.1",
+    "accept: application/json",
+    "content-type: application/json",
+    "# @name scratchpad_special_name",
+    "",
+    "{",
+    '  "baz": "qux"',
+    "}",
+  },
+})
+```
