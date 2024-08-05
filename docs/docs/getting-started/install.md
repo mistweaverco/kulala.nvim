@@ -16,7 +16,7 @@ Via [lazy.nvim](https://github.com/folke/lazy.nvim):
 require('lazy').setup({
   -- HTTP REST-Client Interface
   {
-    'mistweaverco/kulala.nvim'
+    'mistweaverco/kulala.nvim',
     config = function()
       require('kulala').setup()
     end
