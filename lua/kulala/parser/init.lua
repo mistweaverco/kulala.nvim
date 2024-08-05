@@ -31,7 +31,7 @@ local function parse_string_variables(str, variables)
         value = variable_value
       end
     elseif variables[variable_name] then
-      value = variables[variable_name]
+      value = parse_string_variables(variables[variable_name], variables)
     elseif env[variable_name] then
       value = env[variable_name]
     elseif REQUEST_VARIABLES.parse(variable_name) then
@@ -59,9 +59,8 @@ local function parse_headers(headers, variables)
 end
 
 local function encode_url_params(url)
-  local url_parts = {}
   local url_parts = vim.split(url, "?")
-  local url = url_parts[1]
+  url = url_parts[1]
   local query = url_parts[2]
   local query_parts = {}
   if query then
@@ -142,7 +141,7 @@ M.get_document = function()
         if variable_name and variable_value then
           -- remove the @ symbol from the variable name
           variable_name = variable_name:sub(1)
-          variables[variable_name] = parse_string_variables(variable_value, variables)
+          variables[variable_name] = variable_value
         end
       elseif is_body_section == true and #line > 0 then
         if request.body == nil then
