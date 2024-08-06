@@ -16,7 +16,8 @@ query Person($id: ID) {
     name
   }
 }
-variables { "id": 1 }
+
+{ "id": 1 }
 ```
 
 ## Without variables
