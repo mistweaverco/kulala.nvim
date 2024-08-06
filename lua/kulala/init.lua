@@ -56,7 +56,7 @@ M.search = function()
   if has_telescope then
     telescope.extensions.kulala.search()
   else
-    SELECTOR.select_env()
+    SELECTOR.search()
   end
 end
 
