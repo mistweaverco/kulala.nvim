@@ -20,6 +20,15 @@ local function contains_meta_tag(request, tag)
   return false
 end
 
+local function contains_header(headers, header, value)
+  for k, v in pairs(headers) do
+    if k == header and v == value then
+      return true
+    end
+  end
+  return false
+end
+
 local function parse_string_variables(str, variables)
   local env = ENV_PARSER.get_env()
   local function replace_placeholder(variable_name)
@@ -347,7 +356,7 @@ function M.parse()
     -- we need this here, because the user could have defined the content-type
     -- as application/json, but the body is a graphql query
     -- This can happen when the user is using http-client.env.json with DEFAULT_HEADERS.
-    if contains_meta_tag(req, "graphql") then
+    if contains_meta_tag(req, "graphql") or contains_header(res.headers, "x-request-type", "GraphQL") then
       local gql_json = GRAPHQL_PARSER.get_json(res.body)
       if gql_json then
         table.insert(res.cmd, "--data")
@@ -363,7 +372,7 @@ function M.parse()
     end
   else -- no content type supplied
     -- check if we are a graphql query
-    if contains_meta_tag(req, "graphql") then
+    if contains_meta_tag(req, "graphql") or contains_header(res.headers, "x-request-type", "GraphQL") then
       local gql_json = GRAPHQL_PARSER.get_json(res.body)
       if gql_json then
         table.insert(res.cmd, "--data")
