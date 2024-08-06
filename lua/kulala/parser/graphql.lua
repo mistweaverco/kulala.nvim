@@ -8,7 +8,7 @@ local function parse(body)
   local variables = {}
   local query_matcher = "query"
   local mutation_matcher = "mutation"
-  local variables_matcher = "variables "
+  local variables_matcher = "{"
   local variables_matcher_len = #variables_matcher
 
   for _, line in ipairs(lines) do
@@ -21,7 +21,6 @@ local function parse(body)
     elseif line:find("^" .. variables_matcher) then
       in_query = false
       in_variables = true
-      line = line:sub(variables_matcher_len + 1)
     end
     if in_query then
       table.insert(query, line)
