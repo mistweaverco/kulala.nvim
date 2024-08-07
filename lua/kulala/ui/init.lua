@@ -241,10 +241,14 @@ M.toggle_headers = function()
   CONFIG.set(cfg)
   if cfg.default_view == "body" then
     M.show_body()
-    toggle_winbar_tab("body")
+    if cfg.winbar then
+      toggle_winbar_tab("body")
+    end
   else
     M.show_headers()
-    toggle_winbar_tab("headers")
+    if cfg.winbar then
+      toggle_winbar_tab("headers")
+    end
   end
 end
 
