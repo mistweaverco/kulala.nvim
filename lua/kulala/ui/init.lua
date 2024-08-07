@@ -7,10 +7,46 @@ local FS = require("kulala.utils.fs")
 local DB = require("kulala.db")
 local M = {}
 
+local winbar_sethl = function ()
+  vim.api.nvim_set_hl(0, "KulalaTab", { link = "TabLine" })
+  vim.api.nvim_set_hl(0, "KulalaTabSel", { link = "TabLineSel"})
+end
+
+---@param view string Body or headers
+local toggle_winbar_tab = function(view)
+  if view == "body" then
+    vim.cmd("setlocal winbar=%#KulalaTabSel#\\ Body\\ (B)\\ %*\\ %#KulalaTab#\\ Headers\\ (H)\\ %*\\ ")
+  elseif view == "headers" then
+    vim.cmd("setlocal winbar=%#KulalaTab#\\ Body\\ (B)\\ %*\\ %#KulalaTabSel#\\ Headers\\ (H)\\ %*\\ ")
+  end
+end
+
+local create_winbar = function()
+  winbar_sethl()
+  local default_view = CONFIG.get().default_view
+  if default_view == "body" then
+    vim.cmd("setlocal winbar=%#KulalaTabSel#\\ Body\\ (B)\\ %*\\ %#KulalaTab#\\ Headers\\ (H)\\ %*\\ ")
+  elseif default_view == "headers" then
+    vim.cmd("setlocal winbar=%#KulalaTab#\\ Body\\ (B)\\ %*\\ %#KulalaTabSel#\\ Headers\\ (H)\\ %*\\ ")
+  end
+  -- set local key mapping
+  vim.keymap.set('n', 'B', function ()
+    M.show_body()
+    toggle_winbar_tab("body")
+  end, { silent = true, buffer = true })
+  vim.keymap.set('n', 'H', function ()
+    M.show_headers()
+    toggle_winbar_tab("headers")
+  end, { silent = true, buffer = true })
+end
+
 local open_buffer = function()
   local prev_win = vim.api.nvim_get_current_win()
   vim.cmd("vsplit " .. GLOBALS.UI_ID)
   vim.cmd("setlocal buftype=nofile")
+  if CONFIG.get().winbar then
+    create_winbar()
+  end
   vim.api.nvim_set_current_win(prev_win)
 end
 
@@ -205,8 +241,10 @@ M.toggle_headers = function()
   CONFIG.set(cfg)
   if cfg.default_view == "body" then
     M.show_body()
+    toggle_winbar_tab("body")
   else
     M.show_headers()
+    toggle_winbar_tab("headers")
   end
 end
 
