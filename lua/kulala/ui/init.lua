@@ -155,8 +155,14 @@ M.open = function()
         end
         if CONFIG.get().default_view == "body" then
           M.show_body()
+          if CONFIG.get().winbar then
+            toggle_winbar_tab("body")
+          end
         else
           M.show_headers()
+          if CONFIG.get().winbar then
+            toggle_winbar_tab("headers")
+          end
         end
       end
     end)
@@ -216,8 +222,14 @@ M.replay = function()
         end
         if CONFIG.get().default_view == "body" then
           M.show_body()
+          if CONFIG.get().winbar then
+            toggle_winbar_tab("body")
+          end
         else
           M.show_headers()
+          if CONFIG.get().winbar then
+            toggle_winbar_tab("headers")
+          end
         end
       end
     end)
