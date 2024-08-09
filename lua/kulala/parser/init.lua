@@ -381,6 +381,23 @@ function M.parse()
       end
     end
   end
+
+  if res.headers["authorization"] ~= nil then
+    local authtype, authuser, authpw = res.headers["authorization"]:match("^(%w+)%s+([^%s:]+)%s*[:%s]%s*([^%s]+)%s*$")
+    if authtype == nil then
+      authtype = auth:match("^(%w+)%s*$")
+    end
+    if authtype ~= nil then
+      authtype = authtype:lower()
+      if (authtype == "ntlm") or (authtype == "negotiate") or (authtype == "digest") or (authtype == "basic") then
+        table.insert(res.cmd, "--" .. authtype)
+        table.insert(res.cmd, "-u")
+        table.insert(res.cmd, (authuser or "") .. ":" .. (authpw or ""))
+        res.headers["authorization"] = nil
+      end
+    end
+  end
+
   for key, value in pairs(res.headers) do
     table.insert(res.cmd, "-H")
     table.insert(res.cmd, key .. ":" .. value)
