@@ -203,11 +203,9 @@ M.get_document = function()
         -- Request line (e.g., GET http://example.com HTTP/1.1)
         -- Split the line into method, URL and HTTP version
         -- HTTP Version is optional
-        local parts = vim.split(line, " ", true)
-        request.method = parts[1]
-        request.url = parts[2]
-        if parts[3] then
-          request.http_version = parts[3]:gsub("HTTP/", "")
+        request.method, request.url, request.http_version = line:match("^([A-Z]+)%s+(.+)%s+HTTP/(%d[.%d]*)%s*$")
+        if request.method == nil then
+          request.method, request.url = line:match("^([A-Z]+)%s+(.+)$")
         end
         is_request_line = false
       end
