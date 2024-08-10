@@ -32,7 +32,6 @@ M.toggle_winbar_tab = function (win_id, view)
   end
 end
 
----set local key mapping
 ---@param win_id integer|nil Window id
 ---@param buf integer|nil Buffer
 M.create_winbar = function(win_id, buf)
