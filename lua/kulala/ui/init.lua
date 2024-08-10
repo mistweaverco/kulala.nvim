@@ -1,3 +1,4 @@
+local WINBAR = require("kulala.ui.winbar")
 local GLOBALS = require("kulala.globals")
 local CONFIG = require("kulala.config")
 local INLAY = require("kulala.inlay")
@@ -7,51 +8,18 @@ local FS = require("kulala.utils.fs")
 local DB = require("kulala.db")
 local M = {}
 
-local winbar_sethl = function ()
-  vim.api.nvim_set_hl(0, "KulalaTab", { link = "TabLine" })
-  vim.api.nvim_set_hl(0, "KulalaTabSel", { link = "TabLineSel"})
-end
-
----@param view string Body or headers
-local toggle_winbar_tab = function(view)
-  if view == "body" then
-    vim.cmd("setlocal winbar=%#KulalaTabSel#\\ Body\\ (B)\\ %*\\ %#KulalaTab#\\ Headers\\ (H)\\ %*\\ ")
-  elseif view == "headers" then
-    vim.cmd("setlocal winbar=%#KulalaTab#\\ Body\\ (B)\\ %*\\ %#KulalaTabSel#\\ Headers\\ (H)\\ %*\\ ")
+local get_win = function ()
+  -- Iterate through all windows in current tab
+  for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+    local buf = vim.api.nvim_win_get_buf(win)
+    local name = vim.api.nvim_buf_get_name(buf)
+    -- Check if the name matches
+    if name == GLOBALS.UI_ID then
+      return win
+    end
   end
-end
-
-local create_winbar = function()
-  winbar_sethl()
-  local default_view = CONFIG.get().default_view
-  if default_view == "body" then
-    vim.cmd("setlocal winbar=%#KulalaTabSel#\\ Body\\ (B)\\ %*\\ %#KulalaTab#\\ Headers\\ (H)\\ %*\\ ")
-  elseif default_view == "headers" then
-    vim.cmd("setlocal winbar=%#KulalaTab#\\ Body\\ (B)\\ %*\\ %#KulalaTabSel#\\ Headers\\ (H)\\ %*\\ ")
-  end
-  -- set local key mapping
-  vim.keymap.set('n', 'B', function ()
-    M.show_body()
-    toggle_winbar_tab("body")
-  end, { silent = true, buffer = true })
-  vim.keymap.set('n', 'H', function ()
-    M.show_headers()
-    toggle_winbar_tab("headers")
-  end, { silent = true, buffer = true })
-end
-
-local open_buffer = function()
-  local prev_win = vim.api.nvim_get_current_win()
-  vim.cmd("vsplit " .. GLOBALS.UI_ID)
-  vim.cmd("setlocal buftype=nofile")
-  if CONFIG.get().winbar then
-    create_winbar()
-  end
-  vim.api.nvim_set_current_win(prev_win)
-end
-
-local close_buffer = function()
-  vim.cmd("bdelete " .. GLOBALS.UI_ID)
+  -- Return nil if no windows is found with the given buffer name
+  return nil
 end
 
 local get_buffer = function()
@@ -66,6 +34,20 @@ local get_buffer = function()
   end
   -- Return nil if no buffer is found with the given name
   return nil
+end
+
+local open_buffer = function()
+  local prev_win = vim.api.nvim_get_current_win()
+  vim.cmd("vsplit " .. GLOBALS.UI_ID)
+  vim.cmd("setlocal buftype=nofile")
+  if CONFIG.get().winbar then
+    WINBAR.create_winbar(get_win(), get_buffer())
+  end
+  vim.api.nvim_set_current_win(prev_win)
+end
+
+local close_buffer = function()
+  vim.cmd("bdelete " .. GLOBALS.UI_ID)
 end
 
 local function buffer_exists()
@@ -156,12 +138,12 @@ M.open = function()
         if CONFIG.get().default_view == "body" then
           M.show_body()
           if CONFIG.get().winbar then
-            toggle_winbar_tab("body")
+            WINBAR.toggle_winbar_tab(get_win(), "body")
           end
         else
           M.show_headers()
           if CONFIG.get().winbar then
-            toggle_winbar_tab("headers")
+            WINBAR.toggle_winbar_tab(get_win(), "headers")
           end
         end
       end
@@ -223,12 +205,12 @@ M.replay = function()
         if CONFIG.get().default_view == "body" then
           M.show_body()
           if CONFIG.get().winbar then
-            toggle_winbar_tab("body")
+            WINBAR.toggle_winbar_tab(get_win(), "body")
           end
         else
           M.show_headers()
           if CONFIG.get().winbar then
-            toggle_winbar_tab("headers")
+            WINBAR.toggle_winbar_tab(get_win(), "headers")
           end
         end
       end
@@ -254,12 +236,12 @@ M.toggle_headers = function()
   if cfg.default_view == "body" then
     M.show_body()
     if cfg.winbar then
-      toggle_winbar_tab("body")
+      WINBAR.toggle_winbar_tab(get_win(), "body")
     end
   else
     M.show_headers()
     if cfg.winbar then
-      toggle_winbar_tab("headers")
+      WINBAR.toggle_winbar_tab(get_win(), "headers")
     end
   end
 end
