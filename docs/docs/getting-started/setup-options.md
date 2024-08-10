@@ -46,6 +46,8 @@ require("kulala").setup({
     '  "foo": "bar"',
     "}",
   },
+  -- enable winbar
+  winbar = false;
 })
 ```
 
@@ -240,3 +242,23 @@ require("kulala").setup({
   },
 })
 ```
+
+### winbar
+
+Enable winbar for result buffer
+
+Possible values:
+
+- `true`
+- `false`
+
+Default: `false`
+
+Example:
+
+```lua
+require("kulala").setup({
+  winbar = false,
+})
+```
+
