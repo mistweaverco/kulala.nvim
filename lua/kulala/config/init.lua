@@ -39,6 +39,8 @@ M.defaults = {
     '  "foo": "bar"',
     "}",
   },
+  -- enable winbar
+  winbar = false;
 }
 
 M.options = {}
