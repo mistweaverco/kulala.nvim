@@ -398,9 +398,8 @@ function M.parse()
         res.headers["authorization"] = nil
       end
     end
-  else
-    print("No authorization header found.")
   end
+
   for key, value in pairs(res.headers) do
     table.insert(res.cmd, "-H")
     table.insert(res.cmd, key .. ":" .. value)
