@@ -49,8 +49,8 @@ local function parse_string_variables(str, variables)
       value = "{{" .. variable_name .. "}}"
       vim.notify(
         "The variable '"
-          .. variable_name
-          .. "' was not found in the document or in the environment. Returning the string as received ..."
+        .. variable_name
+        .. "' was not found in the document or in the environment. Returning the string as received ..."
       )
     end
     return value
@@ -79,10 +79,10 @@ local function encode_url_params(url)
   for _, query_part in ipairs(query_parts) do
     local query_param = vim.split(query_part, "=")
     query_params = query_params
-      .. "&"
-      .. STRING_UTILS.url_encode(query_param[1])
-      .. "="
-      .. STRING_UTILS.url_encode(query_param[2])
+        .. "&"
+        .. STRING_UTILS.url_encode(query_param[1])
+        .. "="
+        .. STRING_UTILS.url_encode(query_param[2])
   end
   if query_params ~= "" then
     return url .. "?" .. query_params:sub(2)
@@ -158,7 +158,7 @@ M.get_document = function()
         end
         if line:find("^<") then
           if
-            request.headers["content-type"] ~= nil and request.headers["content-type"]:find("^multipart/form%-data")
+              request.headers["content-type"] ~= nil and request.headers["content-type"]:find("^multipart/form%-data")
           then
             request.body = request.body .. line .. "\r\n"
           else
@@ -172,13 +172,13 @@ M.get_document = function()
           end
         else
           if
-            (request.headers["content-type"] ~= nil and request.headers["content-type"]:find("^multipart/form%-data"))
-            or contains_meta_tag(request, "graphql")
+              (request.headers["content-type"] ~= nil and request.headers["content-type"]:find("^multipart/form%-data"))
+              or contains_meta_tag(request, "graphql")
           then
             request.body = request.body .. line .. "\r\n"
           elseif
-            request.headers["content-type"] ~= nil
-            and request.headers["content-type"]:find("^application/x%-www%-form%-urlencoded")
+              request.headers["content-type"] ~= nil
+              and request.headers["content-type"]:find("^application/x%-www%-form%-urlencoded")
           then
             request.body = request.body .. line
           else
@@ -315,7 +315,7 @@ function M.parse()
         res.body = '{ "query": "' .. graphql_query .. '" }'
       else
         graphql_query =
-          STRING_UTILS.url_encode(STRING_UTILS.remove_extra_space(STRING_UTILS.remove_newline(graphql_query)))
+            STRING_UTILS.url_encode(STRING_UTILS.remove_extra_space(STRING_UTILS.remove_newline(graphql_query)))
         res.graphql_query = STRING_UTILS.url_decode(graphql_query)
         res.url = res.url .. "?query=" .. graphql_query
       end
@@ -380,14 +380,18 @@ function M.parse()
     end
   end
 
-  if res.headers["authorization"] ~= nil then
-    local authtype, authuser, authpw = res.headers["authorization"]:match("^(%w+)%s+([^%s:]+)%s*[:%s]%s*([^%s]+)%s*$")
+  if res.headers["authorization"] then
+    local auth_header = res.headers["authorization"]
+    local authtype, authuser, authpw = auth_header:match("^(%w+)%s+([^%s:]+)%s*[:%s]%s*([^%s]+)%s*$")
+
     if authtype == nil then
-      authtype = auth:match("^(%w+)%s*$")
+      authtype = auth_header:match("^(%w+)%s*$")
     end
+
     if authtype ~= nil then
       authtype = authtype:lower()
-      if (authtype == "ntlm") or (authtype == "negotiate") or (authtype == "digest") or (authtype == "basic") then
+
+      if authtype == "ntlm" or authtype == "negotiate" or authtype == "digest" or authtype == "basic" then
         table.insert(res.cmd, "--" .. authtype)
         table.insert(res.cmd, "-u")
         table.insert(res.cmd, (authuser or "") .. ":" .. (authpw or ""))
