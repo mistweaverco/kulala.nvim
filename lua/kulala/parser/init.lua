@@ -185,7 +185,7 @@ M.get_document = function()
             request.body = request.body .. line .. "\r\n"
           end
         end
-      elseif is_request_line == false and line:match("^(.+):%s*(.*)$") then
+      elseif is_request_line == false and line:match("^([^:]+):%s*(.*)$") then
         -- Header
         -- Headers are defined as `key: value`
         -- The key is case-insensitive
@@ -195,7 +195,7 @@ M.get_document = function()
         -- The value can be a dynamic variable
         -- variables are defined as `{{variable_name}}`
         -- dynamic variables are defined as `{{$variable_name}}`
-        local key, value = line:match("^(.+):%s*(.*)$")
+        local key, value = line:match("^([^:]+):%s*(.*)$")
         if key and value then
           request.headers[key:lower()] = value
         end
