@@ -140,10 +140,15 @@ M.open = function()
           if CONFIG.get().winbar then
             WINBAR.toggle_winbar_tab(get_win(), "body")
           end
-        else
+        elseif CONFIG.get().default_view == "headers" then
           M.show_headers()
           if CONFIG.get().winbar then
             WINBAR.toggle_winbar_tab(get_win(), "headers")
+          end
+        else
+          M.show_headers_body()
+          if CONFIG.get().winbar then
+            WINBAR.toggle_winbar_tab(get_win(), "headers_body")
           end
         end
       end
@@ -184,6 +189,21 @@ M.show_headers = function()
     set_buffer_contents(h, "plaintext")
   else
     vim.notify("No headers found", vim.log.levels.WARN)
+  end
+end
+
+M.show_headers_body = function ()
+  if FS.file_exists(GLOBALS.HEADERS_FILE) and FS.file_exists(GLOBALS.BODY_FILE) then
+    if not buffer_exists() then
+      open_buffer()
+    end
+    local h = FS.read_file(GLOBALS.HEADERS_FILE)
+    local body = FS.read_file(GLOBALS.BODY_FILE)
+    local ft = FS.read_file(GLOBALS.FILETYPE_FILE)
+    h = h:gsub("\r\n", "\n")
+    set_buffer_contents(h .. "\n" .. body, ft)
+  else
+    vim.notify("No headers or body found", vim.log.levels.WARN)
   end
 end
 
