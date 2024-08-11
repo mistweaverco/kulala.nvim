@@ -8,7 +8,7 @@ Here is a full example of setting up the Kulala plugin with the `setup` function
 
 ```lua title="setup.lua"
 require("kulala").setup({
-  -- default_view, body or headers
+  -- default_view, body or headers or headers_body
   default_view = "body",
   -- dev, test, prod, can be anything
   -- see: https://learn.microsoft.com/en-us/aspnet/core/test/http-files?view=aspnetcore-8.0#environment-files
@@ -59,6 +59,7 @@ Possible values:
 
 - `body`
 - `headers`
+- `headers_body`
 
 Default: `body`
 
