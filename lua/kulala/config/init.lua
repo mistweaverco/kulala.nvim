@@ -1,7 +1,7 @@
 local M = {}
 
 M.defaults = {
-  -- default_view, body, headers, or headers_body
+  -- default_view, body or headers or headers_body
   default_view = "body",
   -- dev, test, prod, can be anything
   -- see: https://learn.microsoft.com/en-us/aspnet/core/test/http-files?view=aspnetcore-8.0#environment-files

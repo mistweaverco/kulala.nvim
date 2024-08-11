@@ -193,7 +193,7 @@ M.show_headers = function()
 end
 
 M.show_headers_body = function ()
-  if FS.file_exists(GLOBALS.HEADERS_FILE) or FS.file_exists(GLOBALS.BODY_FILE)then
+  if FS.file_exists(GLOBALS.HEADERS_FILE) and FS.file_exists(GLOBALS.BODY_FILE) then
     if not buffer_exists() then
       open_buffer()
     end
