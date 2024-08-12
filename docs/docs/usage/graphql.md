@@ -58,7 +58,7 @@ You need to have your cursor on a line with a GraphQL request.
 
 The file will be downloaded to the the directory where the current file is located.
 
-The filename will be `[http-file-name-without-extension].schema.graphql`.
+The filename will be `[http-file-name-without-extension].graphql-schema.json`.
 
 This file can be used in conjunction with the [kulala-cmp-graphql][kulala-cmp-graphql]
 plugin to provide autocompletion and type checking.

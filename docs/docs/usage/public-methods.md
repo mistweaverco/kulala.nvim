@@ -54,6 +54,24 @@ It tries to load up a telescope prompt to select a file or fallback to using `vi
 
 `require('kulala').jump_next()` jumps to the next request.
 
+### download_graphql_schema
+
+You can download the schema of a GraphQL server with:
+
+```
+:lua require("kulala").download_graphql_schema()
+```
+
+You need to have your cursor on a line with a GraphQL request.
+
+The file will be downloaded to the the directory where the current file is located.
+
+The filename will be `[http-file-name-without-extension].graphql-schema.json`.
+
+This file can be used in conjunction with
+the [kulala-cmp-graphql][kulala-cmp-graphql] plugin to
+provide autocompletion and type checking.
+
 ### set_selected_env
 
 > If you are using a dotenv (`.env`) file,
@@ -71,3 +89,4 @@ If you omit the `env_key`,
 it will try to load up a telescope prompt to select an environment or fallback to using `vim.ui.select`.
 
 [scratchpad_default_contents]: ../getting-started/setup-options#scratchpad_default_contents
+[kulala-cmp-graphql]: https://github.com/mistweaverco/kulala-cmp-graphql.nvim
