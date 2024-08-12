@@ -5,8 +5,27 @@ local INT_PROCESSING = require("kulala.internal_processing")
 
 local M = {}
 
--- runs the cmd and maybe formats the result
-M.run = function(result, callback)
+---Runs the command and returns the result
+---@param cmd table command to run
+---@param callback function callback function
+M.run = function(cmd, callback)
+  vim.fn.jobstart(cmd, {
+    on_stderr = function(_, datalist)
+      if callback then
+        callback(false, datalist)
+      end
+    end,
+    on_exit = function(_, code)
+      local success = code == 0
+      if callback then
+        callback(success, nil)
+      end
+    end,
+  })
+end
+
+---Runs the parser and returns the result
+M.run_parser = function(result, callback)
   vim.fn.jobstart(result.cmd, {
     on_stderr = function(_, datalist)
       if callback then

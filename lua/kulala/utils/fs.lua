@@ -72,9 +72,24 @@ M.command_exists = function(cmd)
   return vim.fn.executable(cmd) == 1
 end
 
+M.get_path_separator = function()
+  return package.config:sub(1, 1)
+end
+
+M.get_plugin_root_dir = function()
+  return debug.getinfo(1).source:match("@(.*" .. M.get_path_separator() .. ")") .. ".."
+end
+
+---Gets a directory path for the plugin
+---@param paths string[]
+---@return string
+M.get_plugin_path = function(paths)
+  return M.get_plugin_root_dir() .. M.get_path_separator() .. table.concat(paths, M.get_path_separator())
+end
+
 -- Read a file
 --- @param filename string
---- @return string
+--- @return string|nil
 --- @usage local p = fs.read_file('Makefile')
 M.read_file = function(filename)
   local f = io.open(filename, "r")
