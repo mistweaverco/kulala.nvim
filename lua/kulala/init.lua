@@ -5,6 +5,8 @@ local GLOBAL_STORE = require("kulala.global_store")
 local GLOBALS = require("kulala.globals")
 local CONFIG = require("kulala.config")
 local JUMPS = require("kulala.jumps")
+local Graphql = require("kulala.graphql")
+local Logger = require("kulala.logger")
 local M = {}
 
 M.setup = function(config)
@@ -27,12 +29,8 @@ M.copy = function()
 end
 
 M.version = function()
-  local neovim_version = vim.fn.execute("version")
-  vim.notify(
-    "Kulala version: " .. GLOBALS.VERSION .. "\n\n" .. "Neovim version: " .. neovim_version,
-    "info",
-    { title = "Kulala" }
-  )
+  local neovim_version = vim.fn.execute("version") or "Unknown"
+  Logger.info("Kulala version: " .. GLOBALS.VERSION .. "\n\n" .. "Neovim version: " .. neovim_version)
 end
 
 M.jump_next = function()
@@ -58,6 +56,10 @@ M.search = function()
   else
     SELECTOR.search()
   end
+end
+
+M.download_graphql_schema = function()
+  Graphql.download_schema()
 end
 
 M.scratchpad = function()

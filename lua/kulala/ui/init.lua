@@ -10,7 +10,7 @@ local INT_PROCESSING = require("kulala.internal_processing")
 local FORMATTER = require("kulala.formatter")
 local M = {}
 
-local get_win = function ()
+local get_win = function()
   -- Iterate through all windows in current tab
   for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
     local buf = vim.api.nvim_win_get_buf(win)
@@ -126,7 +126,7 @@ M.open = function()
   local result = PARSER:parse()
   vim.schedule(function()
     local start = vim.loop.hrtime()
-    CMD.run(result, function(success)
+    CMD.run_parser(result, function(success)
       if not success then
         INLAY:show_error(linenr)
         return
@@ -197,7 +197,7 @@ M.show_headers = function()
   end
 end
 
-M.show_headers_body = function ()
+M.show_headers_body = function()
   if FS.file_exists(GLOBALS.HEADERS_FILE) and FS.file_exists(GLOBALS.BODY_FILE) then
     if not buffer_exists() then
       open_buffer()
@@ -222,7 +222,7 @@ M.replay = function()
     return
   end
   vim.schedule(function()
-    CMD.run(result, function(success)
+    CMD.run_parser(result, function(success)
       if not success then
         vim.notify("Failed to replay request", vim.log.levels.ERROR, { title = "kulala" })
         return

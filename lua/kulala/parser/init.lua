@@ -8,26 +8,9 @@ local GLOBAL_STORE = require("kulala.global_store")
 local GRAPHQL_PARSER = require("kulala.parser.graphql")
 local REQUEST_VARIABLES = require("kulala.parser.request_variables")
 local STRING_UTILS = require("kulala.utils.string")
+local PARSER_UTILS = require("kulala.parser.utils")
 local PLUGIN_TMP_DIR = FS.get_plugin_tmp_dir()
 local M = {}
-
-local function contains_meta_tag(request, tag)
-  for _, meta in ipairs(request.metadata) do
-    if meta.name == tag then
-      return true
-    end
-  end
-  return false
-end
-
-local function contains_header(headers, header, value)
-  for k, v in pairs(headers) do
-    if k == header and v == value then
-      return true
-    end
-  end
-  return false
-end
 
 local function parse_string_variables(str, variables)
   local env = ENV_PARSER.get_env()
@@ -49,8 +32,8 @@ local function parse_string_variables(str, variables)
       value = "{{" .. variable_name .. "}}"
       vim.notify(
         "The variable '"
-        .. variable_name
-        .. "' was not found in the document or in the environment. Returning the string as received ..."
+          .. variable_name
+          .. "' was not found in the document or in the environment. Returning the string as received ..."
       )
     end
     return value
@@ -79,10 +62,10 @@ local function encode_url_params(url)
   for _, query_part in ipairs(query_parts) do
     local query_param = vim.split(query_part, "=")
     query_params = query_params
-        .. "&"
-        .. STRING_UTILS.url_encode(query_param[1])
-        .. "="
-        .. STRING_UTILS.url_encode(query_param[2])
+      .. "&"
+      .. STRING_UTILS.url_encode(query_param[1])
+      .. "="
+      .. STRING_UTILS.url_encode(query_param[2])
   end
   if query_params ~= "" then
     return url .. "?" .. query_params:sub(2)
@@ -158,7 +141,7 @@ M.get_document = function()
         end
         if line:find("^<") then
           if
-              request.headers["content-type"] ~= nil and request.headers["content-type"]:find("^multipart/form%-data")
+            request.headers["content-type"] ~= nil and request.headers["content-type"]:find("^multipart/form%-data")
           then
             request.body = request.body .. line .. "\r\n"
           else
@@ -172,13 +155,13 @@ M.get_document = function()
           end
         else
           if
-              (request.headers["content-type"] ~= nil and request.headers["content-type"]:find("^multipart/form%-data"))
-              or contains_meta_tag(request, "graphql")
+            (request.headers["content-type"] ~= nil and request.headers["content-type"]:find("^multipart/form%-data"))
+            or PARSER_UTILS.contains_meta_tag(request, "graphql")
           then
             request.body = request.body .. line .. "\r\n"
           elseif
-              request.headers["content-type"] ~= nil
-              and request.headers["content-type"]:find("^application/x%-www%-form%-urlencoded")
+            request.headers["content-type"] ~= nil
+            and request.headers["content-type"]:find("^application/x%-www%-form%-urlencoded")
           then
             request.body = request.body .. line
           else
@@ -276,6 +259,16 @@ local function extend_document_variables(document_variables, request)
   return document_variables
 end
 
+---@class Request
+---@field metadata table
+---@field method string
+---@field url table
+---@field headers table
+---@field body table
+---@field cmd table
+---@field ft string
+---@field http_version string
+
 ---Parse a request and return the request on itself, its headers and body
 ---@return Request Table containing the request data
 function M.parse()
@@ -315,7 +308,7 @@ function M.parse()
         res.body = '{ "query": "' .. graphql_query .. '" }'
       else
         graphql_query =
-            STRING_UTILS.url_encode(STRING_UTILS.remove_extra_space(STRING_UTILS.remove_newline(graphql_query)))
+          STRING_UTILS.url_encode(STRING_UTILS.remove_extra_space(STRING_UTILS.remove_newline(graphql_query)))
         res.graphql_query = STRING_UTILS.url_decode(graphql_query)
         res.url = res.url .. "?query=" .. graphql_query
       end
@@ -354,7 +347,10 @@ function M.parse()
     -- we need this here, because the user could have defined the content-type
     -- as application/json, but the body is a graphql query
     -- This can happen when the user is using http-client.env.json with DEFAULT_HEADERS.
-    if contains_meta_tag(req, "graphql") or contains_header(res.headers, "x-request-type", "GraphQL") then
+    if
+      PARSER_UTILS.contains_meta_tag(req, "graphql")
+      or PARSER_UTILS.contains_header(res.headers, "x-request-type", "GraphQL")
+    then
       local gql_json = GRAPHQL_PARSER.get_json(res.body)
       if gql_json then
         table.insert(res.cmd, "--data")
@@ -370,7 +366,10 @@ function M.parse()
     end
   else -- no content type supplied
     -- check if we are a graphql query
-    if contains_meta_tag(req, "graphql") or contains_header(res.headers, "x-request-type", "GraphQL") then
+    if
+      PARSER_UTILS.contains_meta_tag(req, "graphql")
+      or PARSER_UTILS.contains_header(res.headers, "x-request-type", "GraphQL")
+    then
       local gql_json = GRAPHQL_PARSER.get_json(res.body)
       if gql_json then
         table.insert(res.cmd, "--data")
