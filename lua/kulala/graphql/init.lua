@@ -16,7 +16,7 @@ M.download_schema = function()
     Logger.warn("Not a GraphQL request")
     return
   end
-  local filename = vim.fn.expand("%:t:r") .. ".schema.graphql"
+  local filename = vim.fn.expand("%:t:r") .. ".graphql-schema.json"
   local c = {
     "curl",
     "-s",
