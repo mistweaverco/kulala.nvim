@@ -56,7 +56,7 @@ local function get_body_value_from_path(name, method, subpath)
   if subpath == "*" then
     return base_table[method].body
   end
-  
+
   if not base_table[method].headers then
     return nil
   end
@@ -66,7 +66,7 @@ local function get_body_value_from_path(name, method, subpath)
     return contenttype.pathresolver(base_table[method].body, subpath)
   elseif type(contenttype.pathresolver) == "table" then
     local cmd = {}
-    for k,v in pairs(contenttype.pathresolver) do
+    for k, v in pairs(contenttype.pathresolver) do
       if type(v) == "string" then
         v = string.gsub(v, "{{path}}", subpath)
       end
