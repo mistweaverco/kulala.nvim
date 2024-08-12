@@ -7,7 +7,7 @@ M.jump_next = function()
   local _, reqs = PARSER.get_document()
   local next = PARSER.get_next_request(reqs)
   if next then
-    vim.api.nvim_win_set_cursor(0, {next.start_line + 1, 0})
+    vim.api.nvim_win_set_cursor(0, { next.start_line + 1, 0 })
   end
 end
 
@@ -16,7 +16,7 @@ M.jump_prev = function()
   local _, reqs = PARSER.get_document()
   local prev = PARSER.get_previous_request(reqs)
   if prev then
-    vim.api.nvim_win_set_cursor(0, {prev.start_line + 1, 0})
+    vim.api.nvim_win_set_cursor(0, { prev.start_line + 1, 0 })
   end
 end
 

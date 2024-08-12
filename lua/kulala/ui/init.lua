@@ -176,7 +176,7 @@ M.show_body = function()
     local body = FS.read_file(GLOBALS.BODY_FILE)
     local contenttype = INT_PROCESSING.get_config_contenttype()
     if contenttype.formatter then
-       body = FORMATTER.format(contenttype.formatter, body)
+      body = FORMATTER.format(contenttype.formatter, body)
     end
     set_buffer_contents(body, contenttype.ft)
   else
@@ -207,7 +207,7 @@ M.show_headers_body = function()
     local body = FS.read_file(GLOBALS.BODY_FILE)
     local contenttype = INT_PROCESSING.get_config_contenttype()
     if contenttype.formatter then
-       body = FORMATTER.format(contenttype.formatter, body)
+      body = FORMATTER.format(contenttype.formatter, body)
     end
     set_buffer_contents(h .. "\n" .. body, contenttype.ft)
   else

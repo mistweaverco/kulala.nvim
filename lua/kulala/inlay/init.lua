@@ -1,4 +1,4 @@
-local NS = vim.api.nvim_create_namespace('jest.nvim')
+local NS = vim.api.nvim_create_namespace("jest.nvim")
 local CONFIG = require("kulala.config")
 
 local M = {}
@@ -32,7 +32,7 @@ M.show = function(t, linenr)
   M.clear()
   local bufnr = vim.api.nvim_get_current_buf()
   vim.api.nvim_buf_set_extmark(bufnr, NS, linenr - 1, 0, {
-    virt_text = { { t } }
+    virt_text = { { t } },
   })
 end
 

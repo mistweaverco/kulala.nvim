@@ -20,7 +20,7 @@ M.remove_newline = function(str)
 end
 
 M.url_encode = function(str)
-  if (str) then
+  if str then
     str = string.gsub(str, "\n", "\r\n")
     str = string.gsub(str, "([^%w._~-])", function(c)
       return string.format("%%%02X", string.byte(c))
@@ -30,7 +30,7 @@ M.url_encode = function(str)
 end
 
 M.url_decode = function(str)
-  if (str) then
+  if str then
     str = string.gsub(str, "%%(%x%x)", function(h)
       return string.char(tonumber(h, 16))
     end)

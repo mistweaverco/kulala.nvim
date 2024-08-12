@@ -24,7 +24,7 @@ M.defaults = {
     ["text/html"] = {
       ft = "html",
       formatter = FS.command_exists("xmllint") and { "xmllint", "--format", "--html", "-" } or nil,
-      pathresolver = nil, 
+      pathresolver = nil,
     },
   },
   -- default icons
@@ -53,7 +53,7 @@ M.defaults = {
     "}",
   },
   -- enable winbar
-  winbar = false;
+  winbar = false,
 }
 
 M.default_contenttype = {
