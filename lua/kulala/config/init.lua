@@ -1,3 +1,4 @@
+local FS = require("kulala.utils.fs")
 local M = {}
 
 M.defaults = {
@@ -8,11 +9,23 @@ M.defaults = {
   default_env = "dev",
   -- enable/disable debug mode
   debug = false,
-  -- default formatters for different content types
-  formatters = {
-    json = { "jq", "." },
-    xml = { "xmllint", "--format", "-" },
-    html = { "xmllint", "--format", "--html", "-" },
+  -- default formatters/pathresolver for different content types
+  contenttypes = {
+    ["application/json"] = {
+      ft = "json",
+      formatter = FS.command_exists("jq") and { "jq", "." } or nil,
+      pathresolver = require("kulala.parser.jsonpath").parse,
+    },
+    ["application/xml"] = {
+      ft = "xml",
+      formatter = FS.command_exists("xmllint") and { "xmllint", "--format", "-" } or nil,
+      pathresolver = FS.command_exists("xmllint") and { "xmllint", "--xpath", "{{path}}", "-" } or nil,
+    },
+    ["text/html"] = {
+      ft = "html",
+      formatter = FS.command_exists("xmllint") and { "xmllint", "--format", "--html", "-" } or nil,
+      pathresolver = nil, 
+    },
   },
   -- default icons
   icons = {
@@ -41,6 +54,12 @@ M.defaults = {
   },
   -- enable winbar
   winbar = false;
+}
+
+M.default_contenttype = {
+  ft = "plaintext",
+  formatter = nil,
+  pathresolver = nil,
 }
 
 M.options = {}

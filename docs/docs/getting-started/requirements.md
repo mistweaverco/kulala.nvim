@@ -20,7 +20,7 @@ List of requirements for using kulala.
 
 ## xmllint
 
-- [xmllint](https://packages.ubuntu.com/noble/libxml2-utils) (tested with libxml v20914) (Only required for formatted XML/HTML responses)
+- [xmllint](https://packages.ubuntu.com/noble/libxml2-utils) (tested with libxml v20914) (Only required for formatted XML/HTML responses and resolving XML request variables)
 
 # Optional Requirements
 
