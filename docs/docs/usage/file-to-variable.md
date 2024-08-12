@@ -10,8 +10,8 @@ that you want to use in the request. The second argument is the path to the file
 
 ```http title="file-to-variable.http"
 POST https://httpbin.org/post HTTP/1.1
-content-type: application/json
-accept: application/json
+Content-Type: application/json
+Accept: application/json
 # @file-to-variable TEST_INCLUDE ./test-include.json
 
 {

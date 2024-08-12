@@ -4,9 +4,9 @@ The definition syntax of request variables is just like a single-line comment,
 and follows `# @name REQUEST_NAME` just as metadata.
 
 ```http
+# @name THIS_IS_AN_EXAMPLE_REQUEST_NAME
 POST https://httpbin.org/post HTTP/1.1
 Content-Type: application/x-www-form-urlencoded
-# @name THIS_IS_AN_EXAMPLE_REQUEST_NAME
 
 name=foo&password=bar
 ```
@@ -51,9 +51,9 @@ diagnostic information will be displayed to help you to inspect this.
 Below is a sample of request variable definitions and references in an http file.
 
 ```http
-POST https://httpbin.org/post HTTP/1.1
-accept: application/json
 # @name REQUEST_ONE
+POST https://httpbin.org/post HTTP/1.1
+Accept: application/json
 
 {
   "token": "foobar"
@@ -61,9 +61,9 @@ accept: application/json
 
 ###
 
-POST https://httpbin.org/post HTTP/1.1
-accept: application/json
 # @name REQUEST_TWO
+POST https://httpbin.org/post HTTP/1.1
+Accept: application/json
 
 {
   "token": "{{REQUEST_ONE.response.body.$.json.token}}"
@@ -72,7 +72,7 @@ accept: application/json
 ###
 
 POST https://httpbin.org/post HTTP/1.1
-accept: application/json
+Accept: application/json
 
 {
   "date_header": "{{REQUEST_TWO.response.headers['Date']}}"

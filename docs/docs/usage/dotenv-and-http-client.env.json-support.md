@@ -72,7 +72,7 @@ Then, you can reference the environment variables in your HTTP requests like thi
 
 ```http title="examples.http"
 POST https://httpbin.org/post HTTP/1.1
-content-type: application/json
+Content-Type: application/json
 Authorization: Bearer {{API_KEY}}
 
 {
@@ -91,8 +91,8 @@ the `DEFAULT_HEADERS` will be merged with the headers from the HTTP requests.
 {
   "_base": {
     "DEFAULT_HEADERS": {
-      "content-type": "application/json",
-      "accept": "application/json"
+      "Content-Type": "application/json",
+      "Accept": "application/json"
   },
   "dev": {
     "API_KEY": "your-api-key"
@@ -127,7 +127,7 @@ Then, you can reference the environment variables in your HTTP requests like thi
 
 ```http title="examples.http"
 POST https://httpbin.org/post HTTP/1.1
-content-type: application/json
+Content-Type: application/json
 Authorization: Bearer {{API_KEY}}
 
 {

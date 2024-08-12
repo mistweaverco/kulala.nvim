@@ -8,7 +8,7 @@ Create a file with the `.http` extension and write your GraphQL requests in it.
 
 ```http title="gql-with-variables.http"
 POST https://swapi-graphql.netlify.app/.netlify/functions/index HTTP/1.1
-accept: application/json
+Accept: application/json
 X-REQUEST-TYPE: GraphQL
 
 query Person($id: ID) {
@@ -24,7 +24,7 @@ query Person($id: ID) {
 
 ```http title="gql-without-variables.http"
 POST https://swapi-graphql.netlify.app/.netlify/functions/index HTTP/1.1
-accept: application/json
+Accept: application/json
 X-REQUEST-TYPE: GraphQL
 
 query Query {

@@ -47,13 +47,13 @@ The format is `header-name`: `value`, as shown in the following examples:
 
 ```http
 GET https://localhost:7220/weatherforecast
-date: Wed, 27 Apr 2023 07:28:00 GMT
+Date: Wed, 27 Apr 2023 07:28:00 GMT
 
 ###
 
 GET https://localhost:7220/weatherforecast
-cache-control: max-age=604800
-age: 100
+Cache-control: max-age=604800
+Age: 100
 
 ###
 ```
@@ -67,8 +67,8 @@ Add the request body after a blank line, as shown in the following example:
 
 ```http
 POST https://localhost:7220/weatherforecast
-content-type: application/json
-accept-language: en-US,en;q=0.5
+Content-Type: application/json
+Accept-Language: en-US,en;q=0.5
 
 {
     "date": "2023-05-10",
@@ -98,6 +98,7 @@ The following example shows two variables defined and used in a request:
 ```http
 @hostname=localhost
 @port=44320
+
 GET https://{{hostname}}:{{port}}/weatherforecast
 ```
 
@@ -111,5 +112,6 @@ instead of the two shown in the preceding example:
 @hostname=localhost
 @port=44320
 @host={{hostname}}:{{port}}
+
 GET https://{{host}}/api/search/tool
 ```

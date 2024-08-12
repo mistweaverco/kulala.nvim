@@ -10,15 +10,11 @@ If the response is a *simple* JSON object,
 you can set environment variables using the `@env-json-key` directive.
 
 ```http title="with-builtin-parser.http"
-POST https://httpbin.org/post HTTP/1.1
-content-type: application/json
-accept: application/json
 # Setting the environment variables to be used in the next request.
-# Only dot notation is supported for JSON objects.
-# If you need more fancy stuff you can use a script or jq command.
-# See the example below.
-# @env-json-key AUTH_TOKEN json.token
-# @env-json-key AUTH_USERNAME json.username
+# @name REQUEST_ONE
+POST https://httpbin.org/post HTTP/1.1
+Content-Type: application/json
+Accept: application/json
 
 {
   "username": "{{USERNAME}}",
@@ -29,13 +25,13 @@ accept: application/json
 ###
 
 POST https://httpbin.org/post HTTP/1.1
-content-type: application/json
-accept: application/json
-authorization: Bearer {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{REQUEST_ONE.response.body.$.json.token}}
 
 {
   "success": true,
-  "username": "{{AUTH_USERNAME}}"
+  "username": "{{REQUEST_ONE.response.body.$.json.username}}"
 }
 ```
 
@@ -47,8 +43,8 @@ set environment variables using an external command (e.g., `jq`).
 
 ```http title="with-external-jq.http"
 POST https://httpbin.org/post HTTP/1.1
-content-type: application/json
-accept: application/json
+Content-Type: application/json
+Accept: application/json
 # Setting the environment variables to be used in the next request.
 # Any external command can be used to set the environment variables.
 # The command should output the environment variable as string.
@@ -64,9 +60,9 @@ accept: application/json
 ###
 
 POST https://httpbin.org/post HTTP/1.1
-content-type: application/json
-accept: application/json
-authorization: Bearer {{AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{AUTH_TOKEN}}
 
 {
   "success": true,

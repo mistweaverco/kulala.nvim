@@ -7,18 +7,14 @@ Create a file with the `.http` extension and write your HTTP requests in it.
 ## Simple example
 
 The headers of the first request can be obtained and used in the second request.
-The keys of the headers are all lowercase,
-even if they are written in uppercase or mixed-case in the request.
 
-In this example, the `content-type` and `date` headers are received in the first request.
-The headers received are actually `Content-Type` and `Date`, but they are converted to lowercase.
+In this example, the `Content-Type` and `Date` headers are received in the first request.
 
 ```http title="simple.http"
+# @name REQUEST_ONE
 POST https://httpbin.org/post HTTP/1.1
-content-type: application/json
-accept: application/json
-# @env-header-key HEADER_CONTENT_TYPE content-type
-# @env-header-key HEADER_DATE date
+Content-Type: application/json
+Accept: application/json
 
 {
   "type": "very-simple"
@@ -27,12 +23,12 @@ accept: application/json
 ###
 
 POST https://httpbin.org/post HTTP/1.1
-content-type: application/json
-accept: application/json
+Content-Type: application/json
+Accept: application/json
 
 {
   "success": true,
-  "previous_request_header_content_type": "{{HEADER_CONTENT_TYPE}}",
-  "previous_request_header_date": "{{HEADER_DATE}}"
+  "previous_request_header_content_type": "{{REQUEST_ONE.response.headers['Content-Type']}}",
+  "previous_request_header_date": "{{REQUEST_ONE.response.headers.Date}}"
 }
 ```
