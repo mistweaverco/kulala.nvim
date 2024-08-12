@@ -1,4 +1,5 @@
 local DB = require("kulala.db")
+local CONFIG = require("kulala.config")
 
 local M = {}
 
@@ -20,82 +21,61 @@ local function get_match(str)
   return nil, nil, nil, nil
 end
 
-local function is_json_path(subpath)
-  local p = "^%$.*"
-  return string.match(subpath, p)
+local get_lower_headers = function(headers)
+  local headers_table = {}
+  for key, value in pairs(headers) do
+    headers_table[key:lower()] = value
+  end
+  return headers_table
 end
 
-local function is_xpath_path(subpath)
-  local p = "^//.*"
-  return string.match(subpath, p)
-end
-
-local function get_xpath_body_value_from_path(name, method, path)
-  local base_table = DB.data.env[name]
-  if not base_table then
-    return nil
-  end
-  if not base_table[method] then
-    return nil
-  end
-  if not base_table[method].body then
-    return nil
-  end
-  path = string.gsub(path, "^(%w+)%.(response|request)%.body%.", "")
-  local body = base_table[method].body
-  local cmd = { "xmllint", "--xpath", path, "-" }
-  local result = vim.system(cmd, { stdin = body, text = true }):wait().stdout
-  return result
-end
-
-local function get_json_body_value_from_path(name, method, subpath)
-  local base_table = DB.data.env[name]
-  if not base_table then
-    return nil
-  end
-  if not base_table[method] then
-    return nil
-  end
-  if not base_table[method].body then
-    return nil
-  end
-
-  subpath = string.gsub(subpath, "^%$%.", "")
-
-  local result = vim.fn.json_decode(base_table[method].body)
-
-  local path_parts = {}
-
-  for part in string.gmatch(subpath, "[^%.%[%]\"']+") do
-    table.insert(path_parts, part)
-  end
-
-  for _, key in ipairs(path_parts) do
-    -- Check if the current result is a table (either an object or an array)
-    if type(result) == "table" then
-      -- If the key is a number (index), convert it to an integer and access the array element
-      local index = tonumber(key)
-      if index then
-        -- Lua arrays are 1-based, so we need to adjust the index
-        if result[index + 1] then
-          result = result[index + 1]
-        else
-          return nil -- Return nil if the index is out of bounds
-        end
-      else
-        -- Otherwise, assume it's a key in an object
-        if result[key] then
-          result = result[key]
-        else
-          return nil -- Return nil if the key is not found
-        end
-      end
-    else
-      return nil -- Return nil if result is not a table at this point
+local function get_config_contenttype(headers)
+  headers = get_lower_headers(headers)
+  if headers["content-type"] then
+    local content_type = vim.split(headers["content-type"], ";")[1]
+    local config = CONFIG.get().contenttypes[content_type]
+    if config then
+      return config
     end
   end
+  return CONFIG.default_contenttype
+end
 
-  return result
+local function get_body_value_from_path(name, method, subpath)
+  local base_table = DB.data.env[name]
+  if not base_table then
+    return nil
+  end
+  if not base_table[method] then
+    return nil
+  end
+  if not base_table[method].body then
+    return nil
+  end
+
+  if subpath == "*" then
+    return base_table[method].body
+  end
+  
+  if not base_table[method].headers then
+    return nil
+  end
+  local contenttype = get_config_contenttype(base_table[method].headers)
+
+  if type(contenttype.pathresolver) == "function" then
+    return contenttype.pathresolver(base_table[method].body, subpath)
+  elseif type(contenttype.pathresolver) == "table" then
+    local cmd = {}
+    for k,v in pairs(contenttype.pathresolver) do
+      if type(v) == "string" then
+        v = string.gsub(v, "{{path}}", subpath)
+      end
+      cmd[k] = v
+    end
+    return vim.system(cmd, { stdin = base_table[method].body, text = true }):wait().stdout
+  end
+
+  return nil
 end
 
 local function get_header_value_from_path(name, method, subpath)
@@ -138,11 +118,7 @@ M.parse = function(path)
   if path_type == "headers" then
     return get_header_value_from_path(path_name, path_method, path_subpath)
   elseif path_type == "body" then
-    if is_json_path(path_subpath) then
-      return get_json_body_value_from_path(path_name, path_method, path_subpath)
-    elseif is_xpath_path(path_subpath) then
-      return get_xpath_body_value_from_path(path_name, path_method, path_subpath)
-    end
+    return get_body_value_from_path(path_name, path_method, path_subpath)
   end
 
   return nil

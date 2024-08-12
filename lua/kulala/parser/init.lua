@@ -413,17 +413,8 @@ function M.parse()
     table.insert(res.cmd, additional_curl_option)
   end
   table.insert(res.cmd, res.url)
-  if res.headers["accept"] == "application/json" then
-    res.ft = "json"
-  elseif res.headers["accept"] == "application/xml" then
-    res.ft = "xml"
-  elseif res.headers["accept"] == "text/html" then
-    res.ft = "html"
-  end
   FS.delete_file(PLUGIN_TMP_DIR .. "/headers.txt")
   FS.delete_file(PLUGIN_TMP_DIR .. "/body.txt")
-  FS.delete_file(PLUGIN_TMP_DIR .. "/ft.txt")
-  FS.write_file(PLUGIN_TMP_DIR .. "/ft.txt", res.ft)
   if CONFIG.get().debug then
     FS.write_file(PLUGIN_TMP_DIR .. "/request.txt", table.concat(res.cmd, " "))
   end

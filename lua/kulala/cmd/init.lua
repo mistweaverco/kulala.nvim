@@ -1,6 +1,5 @@
 local GLOBALS = require("kulala.globals")
 local FS = require("kulala.utils.fs")
-local FORMATTER = require("kulala.formatter")
 local EXT_PROCESSING = require("kulala.external_processing")
 local INT_PROCESSING = require("kulala.internal_processing")
 
@@ -20,9 +19,6 @@ M.run = function(result, callback)
       local success = code == 0
       if success then
         local body = FS.read_file(GLOBALS.BODY_FILE)
-        if result.ft ~= "text" then
-          FS.write_file(GLOBALS.BODY_FILE, FORMATTER.format(result.ft, body))
-        end
         for _, metadata in ipairs(result.metadata) do
           if metadata then
             if metadata.name == "name" then

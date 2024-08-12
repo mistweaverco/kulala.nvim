@@ -1,41 +1,24 @@
 # Automatic Response Formatting
 
-You can automatically format the response of an HTTP request using the `accept` header.
+You can automatically format the response of an HTTP request.
 
-For example, if you want to receive the response in JSON format, you can add the `accept: application/json` header.
+The response header will be parsed for the `Content-Type` value.
+If the content type has been defined in the `contentypes` section of the configuration and there is a `formatter` available, the response will be processed by the given beautifier.
 
-```http title="automatic-response-formatting.http"
-POST https://httpbin.org/post HTTP/1.1
-content-type: application/json
-accept: application/json
-
-{
-  "uuid": "{{$uuid}}",
-  "timestamp": "{{$timestamp}}",
-  "date": "{{$date}}",
-  "randomInt": "{{$randomInt}}",
-}
-
-```
 :::info
 
-You need to have external tools to format the response.
-For example, `jq` for JSON, `xmllint` for XML and HTML, etc.
+You need to have external tools to format the response, 
+for example `jq` for JSON or `xmllint` for XML and HTML,
+or you implement a lua function.
 
 :::
 
-### Supported Formats
-
-- JSON: `application/json`
-- XML: `application/xml`
-- HTML: `text/html`
-
 ### Default formatters
 
-```lua title="default-formatters.lua"
-formatters = {
-  json = { "jq", "." },
-  xml = { "xmllint", "--format", "-" },
-  html = { "xmllint", "--format", "--html", "-" },
-}
-```
+By default there are formatters defined for following types:
+
+- `application/json`
+- `application/xml`
+- `text/html`
+
+For details see the configuration section.

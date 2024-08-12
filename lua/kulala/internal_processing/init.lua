@@ -1,6 +1,7 @@
 local FS = require("kulala.utils.fs")
 local GLOBALS = require("kulala.globals")
 local DB = require("kulala.db")
+local CONFIG = require("kulala.config")
 local M = {}
 
 -- Function to access a nested key in a table dynamically
@@ -17,8 +18,8 @@ local function get_nested_value(t, key)
 end
 
 local get_headers_as_table = function()
-  local headers_file = FS.read_file(GLOBALS.HEADERS_FILE)
-  local lines = vim.split(headers_file, "\r\n")
+  local headers_file = FS.read_file(GLOBALS.HEADERS_FILE):gsub("\r\n", "\n")
+  local lines = vim.split(headers_file, "\n")
   local headers_table = {}
   for _, header in ipairs(lines) do
     if header:find(":") ~= nil then
@@ -40,6 +41,18 @@ local get_lower_headers_as_table = function()
     headers_table[key:lower()] = value
   end
   return headers_table
+end
+
+M.get_config_contenttype = function()
+  local headers = get_lower_headers_as_table()
+  if headers["content-type"] then
+    local content_type = vim.split(headers["content-type"], ";")[1]
+    local config = CONFIG.get().contenttypes[content_type]
+    if config then
+      return config
+    end
+  end
+  return CONFIG.default_contenttype
 end
 
 M.set_env_for_named_request = function(name, body)

@@ -6,6 +6,8 @@ local PARSER = require("kulala.parser")
 local CMD = require("kulala.cmd")
 local FS = require("kulala.utils.fs")
 local DB = require("kulala.db")
+local INT_PROCESSING = require("kulala.internal_processing")
+local FORMATTER = require("kulala.formatter")
 local M = {}
 
 local get_win = function ()
@@ -172,8 +174,11 @@ M.show_body = function()
       open_buffer()
     end
     local body = FS.read_file(GLOBALS.BODY_FILE)
-    local ft = FS.read_file(GLOBALS.FILETYPE_FILE)
-    set_buffer_contents(body, ft)
+    local contenttype = INT_PROCESSING.get_config_contenttype()
+    if contenttype.formatter then
+       body = FORMATTER.format(contenttype.formatter, body)
+    end
+    set_buffer_contents(body, contenttype.ft)
   else
     vim.notify("No body found", vim.log.levels.WARN)
   end
@@ -198,10 +203,13 @@ M.show_headers_body = function ()
       open_buffer()
     end
     local h = FS.read_file(GLOBALS.HEADERS_FILE)
-    local body = FS.read_file(GLOBALS.BODY_FILE)
-    local ft = FS.read_file(GLOBALS.FILETYPE_FILE)
     h = h:gsub("\r\n", "\n")
-    set_buffer_contents(h .. "\n" .. body, ft)
+    local body = FS.read_file(GLOBALS.BODY_FILE)
+    local contenttype = INT_PROCESSING.get_config_contenttype()
+    if contenttype.formatter then
+       body = FORMATTER.format(contenttype.formatter, body)
+    end
+    set_buffer_contents(h .. "\n" .. body, contenttype.ft)
   else
     vim.notify("No headers or body found", vim.log.levels.WARN)
   end
