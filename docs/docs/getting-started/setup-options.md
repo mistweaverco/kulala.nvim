@@ -117,7 +117,7 @@ Filetypes, formatters and path resolvers are defined for each content-type in an
 Default:
 
 ```lua
-content_types = {
+contenttypes = {
   ["application/json"] = {
     ft = "json",
     formatter = { "jq", "." },
@@ -147,7 +147,7 @@ Any filetype (`:help filetype`) neovim supports.
 Default:
 
 ```lua
-content_types = {
+contenttypes = {
   ["application/json"] = {
     ft = "json",
   },
@@ -163,7 +163,7 @@ Example:
 
 ```lua
 require("kulala").setup({
-  content_types = {
+  contenttypes = {
     ["text/xml"] = {
       ft = "xml",
     },
@@ -184,7 +184,7 @@ Possible values:
 Default:
 
 ```lua
-content_types = {
+contenttypes = {
   ["application/json"] = {
     formatter = { "jq", "." },
   },
@@ -201,7 +201,7 @@ Example:
 
 ```lua
 require("kulala").setup({
-  content_types = {
+  contenttypes = {
     ["text/plain"] = {
       formatter = function(body)
         return body:lower()
@@ -229,7 +229,7 @@ Kulala has implemented a simple JSONPath parser which supports object traversal 
 For full JSONPath support you need to use an external program like `jsonpath-cli` or `jp`. 
 
 ```lua
-content_types = {
+contenttypes = {
   ["application/json"] = {
     pathresolver = require("kulala.parser.jsonpath").parse,
   },
@@ -246,7 +246,7 @@ Example:
 
 ```lua
 require("kulala").setup({
-  content_types = {
+  contenttypes = {
     ["text/xml"] = {
       pathresolver = { "xmllint", "--xpath", "{{path}}", "-" },
     },
