@@ -1,7 +1,6 @@
 local UI = require("kulala.ui")
 local SELECTOR = require("kulala.ui.selector")
-local ENV_PARSER = require("kulala.parser.env")
-local GLOBAL_STORE = require("kulala.global_store")
+local DB = require("kulala.db")
 local GLOBALS = require("kulala.globals")
 local CONFIG = require("kulala.config")
 local JUMPS = require("kulala.jumps")
@@ -11,9 +10,6 @@ local M = {}
 
 M.setup = function(config)
   CONFIG.setup(config)
-  GLOBAL_STORE.set("selected_env", CONFIG.get().default_env)
-  vim.g.kulala_selected_env = CONFIG.get().default_env
-  ENV_PARSER.load_envs()
 end
 
 M.run = function()
@@ -76,7 +72,7 @@ M.set_selected_env = function(env)
     end
     return
   end
-  GLOBAL_STORE.set("selected_env", env)
+  vim.g.kulala_selected_env = env
 end
 
 return M

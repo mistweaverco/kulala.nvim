@@ -4,7 +4,7 @@ if not has_telescope then
   return nil
 end
 
-local GLOBAL_STORE = require("kulala.global_store")
+local DB = require("kulala.db")
 local FS = require("kulala.utils.fs")
 
 local action_state = require("telescope.actions.state")
@@ -43,12 +43,12 @@ local function kulala_search(_)
 end
 
 local function kulala_env_select(_)
-  if not GLOBAL_STORE.get("http_client_env") then
+  if not DB.data.http_client_env then
     return
   end
 
   local envs = {}
-  for key, _ in pairs(GLOBAL_STORE.get("http_client_env")) do
+  for key, _ in pairs(DB.data.http_client_env) do
     table.insert(envs, key)
   end
 
@@ -65,7 +65,6 @@ local function kulala_env_select(_)
           if selection == nil then
             return
           end
-          GLOBAL_STORE.set("selected_env", selection.value)
           vim.g.kulala_selected_env = selection.value
         end)
         return true
@@ -73,7 +72,7 @@ local function kulala_env_select(_)
       previewer = previewers.new_buffer_previewer({
         title = "Environment",
         define_preview = function(self, entry)
-          local env = GLOBAL_STORE.get("http_client_env")[entry.value]
+          local env = DB.data.http_client_env[entry.value]
           if env == nil then
             return
           end
