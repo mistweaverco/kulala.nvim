@@ -65,7 +65,7 @@ end
 
 local open_buffer = function()
   local prev_win = vim.api.nvim_get_current_win()
-  vim.cmd("vsplit " .. GLOBALS.UI_ID)
+  vim.cmd( GLOBALS.split .. " " .. GLOBALS.UI_ID)
   if CONFIG.get().winbar then
     WINBAR.create_winbar(get_win(), get_buffer())
   end

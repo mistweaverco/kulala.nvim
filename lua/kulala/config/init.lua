@@ -55,6 +55,8 @@ M.defaults = {
   },
   -- enable winbar
   winbar = false,
+  -- split direction. "horizontal" | "vertical
+  split = "vertical",
 }
 
 M.default_contenttype = {

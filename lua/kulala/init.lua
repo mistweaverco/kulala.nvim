@@ -12,6 +12,7 @@ local M = {}
 M.setup = function(config)
   CONFIG.setup(config)
   GLOBAL_STORE.set("selected_env", CONFIG.get().default_env)
+  GLOBALS["split"]= CONFIG.get().split== "horizontal" and "split" or "vsplit"
   vim.g.kulala_selected_env = CONFIG.get().default_env
   ENV_PARSER.load_envs()
 end
