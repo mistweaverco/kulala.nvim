@@ -8,6 +8,9 @@ Here is a full example of setting up the Kulala plugin with the `setup` function
 
 ```lua title="setup.lua"
 require("kulala").setup({
+  -- split direction
+  -- possible values: "vertical", "horizontal"
+  split_direction = "vertical",
   -- default_view, body or headers or headers_body
   default_view = "body",
   -- dev, test, prod, can be anything
@@ -65,6 +68,25 @@ require("kulala").setup({
   },
   -- enable winbar
   winbar = false;
+})
+```
+
+### split_direction
+
+Split direction.
+
+Possible values:
+
+- `vertical`
+- `horizontal`
+
+Default: `vertical`
+
+Example:
+
+```lua
+require("kulala").setup({
+  split_direction = "horizontal",
 })
 ```
 
