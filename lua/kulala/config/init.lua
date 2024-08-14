@@ -27,6 +27,7 @@ M.defaults = {
       pathresolver = nil,
     },
   },
+  show_icons = "on_request",
   -- default icons
   icons = {
     inlay = {

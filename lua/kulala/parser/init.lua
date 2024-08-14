@@ -103,12 +103,13 @@ M.get_document = function()
       headers = {},
       metadata = {},
       body = nil,
+      show_icon_line_number = nil,
       start_line = line_offset + 1,
       block_line_count = block_line_count,
       lines_length = #lines,
       variables = {},
     }
-    for _, line in ipairs(lines) do
+    for relative_linenr, line in ipairs(lines) do
       line = vim.trim(line)
       if line:sub(1, 1) == "#" then
         -- Metadata (e.g., # @this-is-name this is the value)
@@ -190,6 +191,16 @@ M.get_document = function()
         if request.method == nil then
           request.method, request.url = line:match("^([A-Z]+)%s+(.+)$")
         end
+        local show_icons = CONFIG.get().show_icons
+        if show_icons ~= nil then
+          if show_icons == "on_request" then
+            request.show_icon_line_number = request.start_line + relative_linenr - 1
+          elseif show_icons == "above_request" then
+            request.show_icon_line_number = request.start_line + relative_linenr - 2
+          elseif show_icons == "below_request" then
+            request.show_icon_line_number = request.start_line + relative_linenr
+          end
+        end
         is_request_line = false
       end
     end
@@ -268,6 +279,7 @@ end
 ---@field cmd table
 ---@field ft string
 ---@field http_version string
+---@field show_icon_line_number string
 
 ---Parse a request and return the request on itself, its headers and body
 ---@return Request Table containing the request data
@@ -289,6 +301,7 @@ function M.parse()
 
   document_variables = extend_document_variables(document_variables, req)
 
+  res.show_icon_line_number = req.show_icon_line_number
   res.url = parse_url(req.url, document_variables)
   res.method = req.method
   res.http_version = req.http_version

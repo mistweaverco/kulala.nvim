@@ -33,6 +33,11 @@ require("kulala").setup({
       pathresolver = {},
     },
   },
+  -- can be used to show loading, done and error icons in inlay hints
+  -- possible values: "on_request", "above_request", "below_request", or nil to disable
+  -- If "above_request" or "below_request" is used, the icons will be shown above or below the request line
+  -- Make sure to have a line above or below the request line to show the icons
+  show_icons = "on_request",
   -- default icons
   icons = {
     inlay = {
@@ -265,6 +270,23 @@ require("kulala").setup({
   },
 })
 ```
+
+### show_icons
+
+Can be used to show loading, done and error icons in inlay hints.
+
+Possible values:
+- `"on_request"`
+- `"above_request"`
+- `"below_request"`
+- `nil` (to disable inlay hints)
+
+If `"above_request"` or `"below_request"` is used,
+the icons will be shown above or below the request line.
+
+Make sure to have a line above or below the request line to show the icons.
+
+Default: `"on_request"`.
 
 ### icons
 
