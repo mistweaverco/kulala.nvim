@@ -29,7 +29,9 @@ It allows you to make HTTP requests from within Neovim.
 ## Install
 
 > [!WARNING]
-> Requires Neovim 0.10.0+
+> Requires Neovim 0.10.0+ and cURL.
+>
+> See [requirements](https://kulala.mwco.app/docs/getting-started/requirements).
 
 Via [lazy.nvim](https://github.com/folke/lazy.nvim):
 
