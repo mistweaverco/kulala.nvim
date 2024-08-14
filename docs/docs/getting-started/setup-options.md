@@ -15,11 +15,23 @@ require("kulala").setup({
   default_env = "dev",
   -- enable/disable debug mode
   debug = false,
-  -- default formatters for different content types
-  formatters = {
-    json = { "jq", "." },
-    xml = { "xmllint", "--format", "-" },
-    html = { "xmllint", "--format", "--html", "-" },
+  -- default formatters/pathresolver for different content types
+  contenttypes = {
+    ["application/json"] = {
+      ft = "json",
+      formatter = { "jq", "." },
+      pathresolver = require("kulala.parser.jsonpath").parse,
+    },
+    ["application/xml"] = {
+      ft = "xml",
+      formatter = { "xmllint", "--format", "-" },
+      pathresolver = { "xmllint", "--xpath", "{{path}}", "-" },
+    },
+    ["text/html"] = {
+      ft = "html",
+      formatter = { "xmllint", "--format", "--html", "-" },
+      pathresolver = {},
+    },
   },
   -- default icons
   icons = {
@@ -37,10 +49,10 @@ require("kulala").setup({
   scratchpad_default_contents = {
     "@MY_TOKEN_NAME=my_token_value",
     "",
+    "# @name scratchpad",
     "POST https://httpbin.org/post HTTP/1.1",
     "accept: application/json",
     "content-type: application/json",
-    "# @name scratchpad",
     "",
     "{",
     '  "foo": "bar"',
@@ -110,7 +122,7 @@ require("kulala").setup({
 })
 ```
 
-### content types
+### contenttypes
 
 Filetypes, formatters and path resolvers are defined for each content-type in an hash array
 
@@ -131,12 +143,12 @@ contenttypes = {
   ["text/html"] = {
     ft = "html",
     formatter = { "xmllint", "--format", "--html", "-" },
-    pathresolver = {}, 
+    pathresolver = {},
   },
 }
 ```
 
-#### filetypes
+#### contenttypes.ft
 
 Default filetype for the given content type.
 
@@ -171,7 +183,7 @@ require("kulala").setup({
 })
 ```
 
-#### formatters
+#### contenttypes.formatter
 
 Formatters take the response body and produce a beautified / more human readable output.
 
@@ -211,7 +223,7 @@ require("kulala").setup({
 })
 ```
 
-#### path resolvers
+#### contenttypes.pathresolver
 
 You can use Request Variables to read values from requests / responses.
 To access a specific value inside a body Kulala gives you the possibility to define a path for it.
@@ -291,7 +303,7 @@ require("kulala").setup({
 })
 ```
 
-### Additional cURL options
+### additional_curl_options
 
 Additional cURL options.
 
@@ -326,10 +338,10 @@ Default:
 scratchpad_default_contents = {
   "@MY_TOKEN_NAME=my_token_value",
   "",
+  "# @name scratchpad",
   "POST https://httpbin.org/post HTTP/1.1",
   "accept: application/json",
   "content-type: application/json",
-  "# @name scratchpad",
   "",
   "{",
   '  "foo": "bar"',
@@ -344,10 +356,10 @@ require("kulala").setup({
   scratchpad_default_contents = {
     "@AUTH_USERNAME=my_username",
     "",
+    "# @name scratchpad_special_name",
     "POST https://httpbin.org/post HTTP/1.1",
     "accept: application/json",
     "content-type: application/json",
-    "# @name scratchpad_special_name",
     "",
     "{",
     '  "baz": "qux"',
