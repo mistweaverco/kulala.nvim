@@ -57,7 +57,7 @@ M.defaults = {
 }
 
 M.default_contenttype = {
-  ft = "plaintext",
+  ft = "text",
   formatter = nil,
   pathresolver = nil,
 }
