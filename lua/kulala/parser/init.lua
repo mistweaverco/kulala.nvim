@@ -4,7 +4,6 @@ local DYNAMIC_VARS = require("kulala.parser.dynamic_vars")
 local ENV_PARSER = require("kulala.parser.env")
 local FS = require("kulala.utils.fs")
 local GLOBALS = require("kulala.globals")
-local GLOBAL_STORE = require("kulala.global_store")
 local GRAPHQL_PARSER = require("kulala.parser.graphql")
 local REQUEST_VARIABLES = require("kulala.parser.request_variables")
 local STRING_UTILS = require("kulala.utils.string")
@@ -12,8 +11,7 @@ local PARSER_UTILS = require("kulala.parser.utils")
 local PLUGIN_TMP_DIR = FS.get_plugin_tmp_dir()
 local M = {}
 
-local function parse_string_variables(str, variables)
-  local env = ENV_PARSER.get_env()
+local function parse_string_variables(str, variables, env)
   local function replace_placeholder(variable_name)
     local value = ""
     -- If the variable name contains a `$` symbol then try to parse it as a dynamic variable
@@ -23,7 +21,7 @@ local function parse_string_variables(str, variables)
         value = variable_value
       end
     elseif variables[variable_name] then
-      value = parse_string_variables(variables[variable_name], variables)
+      value = parse_string_variables(variables[variable_name], variables, env)
     elseif env[variable_name] then
       value = env[variable_name]
     elseif REQUEST_VARIABLES.parse(variable_name) then
@@ -42,10 +40,10 @@ local function parse_string_variables(str, variables)
   return result
 end
 
-local function parse_headers(headers, variables)
+local function parse_headers(headers, variables, env)
   local h = {}
   for key, value in pairs(headers) do
-    h[key] = parse_string_variables(value, variables)
+    h[key] = parse_string_variables(value, variables, env)
   end
   return h
 end
@@ -73,18 +71,18 @@ local function encode_url_params(url)
   return url
 end
 
-local function parse_url(url, variables)
-  url = parse_string_variables(url, variables)
+local function parse_url(url, variables, env)
+  url = parse_string_variables(url, variables, env)
   url = encode_url_params(url)
   url = url:gsub('"', "")
   return url
 end
 
-local function parse_body(body, variables)
+local function parse_body(body, variables, env)
   if body == nil then
     return nil
   end
-  return parse_string_variables(body, variables)
+  return parse_string_variables(body, variables, env)
 end
 
 M.get_document = function()
@@ -294,6 +292,7 @@ function M.parse()
     ft = "text",
   }
 
+  local env = ENV_PARSER.get_env()
   local document_variables, requests = M.get_document()
   local req = M.get_request_at_cursor(requests)
 
@@ -302,11 +301,11 @@ function M.parse()
   document_variables = extend_document_variables(document_variables, req)
 
   res.show_icon_line_number = req.show_icon_line_number
-  res.url = parse_url(req.url, document_variables)
+  res.url = parse_url(req.url, document_variables, env)
   res.method = req.method
   res.http_version = req.http_version
-  res.headers = parse_headers(req.headers, document_variables)
-  res.body = parse_body(req.body, document_variables)
+  res.headers = parse_headers(req.headers, document_variables, env)
+  res.body = parse_body(req.body, document_variables, env)
   res.metadata = req.metadata
 
   -- We need to append the contents of the file to
@@ -334,8 +333,8 @@ function M.parse()
   end
 
   -- Merge headers from the _base environment if it exists
-  if GLOBAL_STORE.get("http_client_env_base") then
-    local default_headers = GLOBAL_STORE.get("http_client_env_base")["DEFAULT_HEADERS"]
+  if DB.data.http_client_env_base then
+    local default_headers = DB.data.http_client_env_base["DEFAULT_HEADERS"]
     if default_headers then
       for key, value in pairs(default_headers) do
         key = key:lower()
