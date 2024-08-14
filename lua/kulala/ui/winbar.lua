@@ -1,3 +1,4 @@
+local UICallbacks = require("kulala.ui.callbacks")
 local CONFIG = require("kulala.config")
 local M = {}
 
@@ -41,13 +42,14 @@ M.toggle_winbar_tab = function(win_id, view)
 end
 
 ---@param win_id integer|nil Window id
----@param buf integer|nil Buffer
-M.create_winbar = function(win_id, buf)
+M.create_winbar = function(win_id)
   if win_id then
     local default_view = CONFIG.get().default_view
     M.winbar_sethl()
     M.toggle_winbar_tab(win_id, default_view)
-    M.winbar_set_key_mapping(buf)
+    UICallbacks.add("on_replace_buffer", function(_, new_buffer)
+      M.winbar_set_key_mapping(new_buffer)
+    end)
   end
 end
 

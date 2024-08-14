@@ -1,3 +1,4 @@
+local UICallbacks = require("kulala.ui.callbacks")
 local WINBAR = require("kulala.ui.winbar")
 local GLOBALS = require("kulala.globals")
 local CONFIG = require("kulala.config")
@@ -42,6 +43,7 @@ end
 ---This is necessary to prevent bugs like this:
 ---https://github.com/mistweaverco/kulala.nvim/issues/128
 local replace_buffer = function()
+  local callbacks = UICallbacks.get("on_replace_buffer")
   local old_bufnr = get_buffer()
 
   local new_bufnr = vim.api.nvim_create_buf(true, false)
@@ -60,6 +62,9 @@ local replace_buffer = function()
   -- Set the buffer name to the UI_ID after we have deleted the old buffer
   vim.api.nvim_buf_set_name(new_bufnr, GLOBALS.UI_ID)
 
+  for _, callback in ipairs(callbacks) do
+    callback(old_bufnr, new_bufnr)
+  end
   return new_bufnr
 end
 
@@ -68,7 +73,7 @@ local open_buffer = function()
   local sd = CONFIG.get().split_direction == "vertical" and "vsplit" or "split"
   vim.cmd(sd .. " " .. GLOBALS.UI_ID)
   if CONFIG.get().winbar then
-    WINBAR.create_winbar(get_win(), get_buffer())
+    WINBAR.create_winbar(get_win())
   end
   vim.api.nvim_set_current_win(prev_win)
 end
