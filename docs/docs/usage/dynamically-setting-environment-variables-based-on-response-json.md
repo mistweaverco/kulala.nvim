@@ -44,13 +44,13 @@ set environment variables using an external command (e.g., `jq`).
 In this example `jq` is used to extract the `ctx` string from a JWT token.
 
 ```http title="with-external-jq.http"
-POST https://httpbin.org/post HTTP/1.1
-Content-Type: application/json
-Accept: application/json
 # Setting the environment variables to be used in the next request.
 # Any external command can be used to set the environment variables.
 # The command should output the environment variable as string.
 # @env-stdin-cmd JWT_CONTEXT jq -r '.token | gsub("-";"+") | gsub("_";"/") | split(".") | .[1] | @base64d | fromjson | .ctx'
+POST https://httpbin.org/post HTTP/1.1
+Content-Type: application/json
+Accept: application/json
 
 {
   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoiZ29yaWxsYSIsIm5hbWUiOiJHb3JpbGxhIE1vZSIsImN0eCI6IlNvbWUgY29udGV4dCIsIndlYnNpdGUiOiJodHRwczovL2dvcmlsbGEubW9lIn0.YmEG9bOo1o9opeWnCsfW621A-sB_5WXSBI2FjtvwXlk"

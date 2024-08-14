@@ -137,19 +137,25 @@ M.copy = function()
 end
 
 M.open = function()
-  local linenr = INLAY.get_current_line_number()
-  INLAY:show_loading(linenr)
   local result = PARSER:parse()
+  local icon_linenr = result.show_icon_line_number
+  if icon_linenr then
+    INLAY:show_loading(icon_linenr)
+  end
   vim.schedule(function()
     local start = vim.loop.hrtime()
     CMD.run_parser(result, function(success)
       if not success then
-        INLAY:show_error(linenr)
+        if icon_linenr then
+          INLAY:show_error(icon_linenr)
+        end
         return
       else
         local elapsed = vim.loop.hrtime() - start
         local elapsed_ms = pretty_ms(elapsed / 1e6)
-        INLAY:show_done(linenr, elapsed_ms)
+        if icon_linenr then
+          INLAY:show_done(icon_linenr, elapsed_ms)
+        end
         if not buffer_exists() then
           open_buffer()
         end
