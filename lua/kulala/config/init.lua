@@ -2,6 +2,9 @@ local FS = require("kulala.utils.fs")
 local M = {}
 
 M.defaults = {
+  -- split direction
+  -- possible values: "vertical", "horizontal"
+  split_direction = "vertical",
   -- default_view, body or headers or headers_body
   default_view = "body",
   -- dev, test, prod, can be anything
@@ -55,8 +58,6 @@ M.defaults = {
   },
   -- enable winbar
   winbar = false,
-  -- split direction. "horizontal" | "vertical
-  split = "vertical",
 }
 
 M.default_contenttype = {
