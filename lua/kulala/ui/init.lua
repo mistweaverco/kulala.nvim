@@ -38,10 +38,34 @@ local get_buffer = function()
   return nil
 end
 
+---This makes sure to replace the buffer with a new one
+---This is necessary to prevent bugs like this:
+---https://github.com/mistweaverco/kulala.nvim/issues/128
+local replace_buffer = function()
+  local old_bufnr = get_buffer()
+
+  local new_bufnr = vim.api.nvim_create_buf(true, false)
+  vim.api.nvim_set_option_value("buftype", "nofile", {
+    buf = new_bufnr,
+  })
+
+  if old_bufnr ~= nil then
+    for _, win in ipairs(vim.fn.win_findbuf(old_bufnr)) do
+      vim.api.nvim_win_set_buf(win, new_bufnr)
+    end
+
+    vim.api.nvim_buf_delete(old_bufnr, { force = true })
+  end
+
+  -- Set the buffer name to the UI_ID after we have deleted the old buffer
+  vim.api.nvim_buf_set_name(new_bufnr, GLOBALS.UI_ID)
+
+  return new_bufnr
+end
+
 local open_buffer = function()
   local prev_win = vim.api.nvim_get_current_win()
   vim.cmd("vsplit " .. GLOBALS.UI_ID)
-  vim.cmd("setlocal buftype=nofile")
   if CONFIG.get().winbar then
     WINBAR.create_winbar(get_win(), get_buffer())
   end
@@ -49,7 +73,7 @@ local open_buffer = function()
 end
 
 local close_buffer = function()
-  vim.cmd("bdelete " .. GLOBALS.UI_ID)
+  vim.cmd("bdelete! " .. GLOBALS.UI_ID)
 end
 
 local function buffer_exists()
@@ -70,23 +94,15 @@ vim.api.nvim_create_autocmd("WinClosed", {
   end,
 })
 
-local function clear_buffer()
-  local buf = get_buffer()
-  if buf then
-    vim.api.nvim_buf_set_lines(buf, 0, -1, false, {})
-  end
-end
-
 local function set_buffer_contents(contents, ft)
   if buffer_exists() then
-    local buf = get_buffer()
-    clear_buffer()
+    local buf = replace_buffer()
     local lines = vim.split(contents, "\n")
     vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
     if ft ~= nil then
-      vim.api.nvim_buf_set_option(buf, "filetype", ft)
+      vim.bo[buf].filetype = ft
     else
-      vim.api.nvim_buf_set_option(buf, "filetype", "plaintext")
+      vim.bo[buf].filetype = "text"
     end
   end
 end
@@ -191,7 +207,7 @@ M.show_headers = function()
     end
     local h = FS.read_file(GLOBALS.HEADERS_FILE)
     h = h:gsub("\r\n", "\n")
-    set_buffer_contents(h, "plaintext")
+    set_buffer_contents(h, "text")
   else
     vim.notify("No headers found", vim.log.levels.WARN)
   end
