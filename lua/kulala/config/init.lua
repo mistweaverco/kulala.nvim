@@ -58,6 +58,8 @@ M.defaults = {
   },
   -- enable winbar
   winbar = false,
+  -- enable reading vscode rest client environment variables
+  vscode_rest_client_environmentvars = false,
 }
 
 M.default_contenttype = {
