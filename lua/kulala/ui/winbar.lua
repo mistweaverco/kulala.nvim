@@ -13,10 +13,13 @@ end
 M.winbar_set_key_mapping = function(buf)
   if buf then
     vim.keymap.set("n", "B", function()
-      require("kulala.ui").toggle_headers()
+      require("kulala.ui").show_body()
     end, { silent = true, buffer = buf })
     vim.keymap.set("n", "H", function()
-      require("kulala.ui").toggle_headers()
+      require("kulala.ui").show_headers()
+    end, { silent = true, buffer = buf })
+    vim.keymap.set("n", "A", function()
+      require("kulala.ui").show_headers_body()
     end, { silent = true, buffer = buf })
   end
 end
@@ -28,13 +31,19 @@ M.toggle_winbar_tab = function(win_id, view)
     if view == "body" then
       vim.api.nvim_set_option_value(
         "winbar",
-        "%#KulalaTabSel# Body (B) %* %#KulalaTab# Headers (H) %* ",
+        "%#KulalaTabSel# Body (B) %* %#KulalaTab# Headers (H) %* %#KulalaTab# All (A) %* ",
         { win = win_id }
       )
     elseif view == "headers" then
       vim.api.nvim_set_option_value(
         "winbar",
-        "%#KulalaTab# Body (B) %* %#KulalaTabSel# Headers (H) %* ",
+        "%#KulalaTab# Body (B) %* %#KulalaTabSel# Headers (H) %* %#KulalaTab# All (A) %* ",
+        { win = win_id }
+      )
+    elseif view == "headers_body" then
+      vim.api.nvim_set_option_value(
+        "winbar",
+        "%#KulalaTab# Body (B) %* %#KulalaTab# Headers (H) %* %#KulalaTabSel# All (A) %* ",
         { win = win_id }
       )
     end

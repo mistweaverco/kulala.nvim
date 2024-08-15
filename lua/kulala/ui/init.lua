@@ -167,19 +167,10 @@ M.open = function()
         end
         if CONFIG.get().default_view == "body" then
           M.show_body()
-          if CONFIG.get().winbar then
-            WINBAR.toggle_winbar_tab(get_win(), "body")
-          end
         elseif CONFIG.get().default_view == "headers" then
           M.show_headers()
-          if CONFIG.get().winbar then
-            WINBAR.toggle_winbar_tab(get_win(), "headers")
-          end
-        else
+        elseif CONFIG.get().default_view == "headers_body" then
           M.show_headers_body()
-          if CONFIG.get().winbar then
-            WINBAR.toggle_winbar_tab(get_win(), "headers_body")
-          end
         end
       end
     end)
@@ -207,6 +198,10 @@ M.show_body = function()
       body = FORMATTER.format(contenttype.formatter, body)
     end
     set_buffer_contents(body, contenttype.ft)
+    if CONFIG.get().winbar then
+      WINBAR.toggle_winbar_tab(get_win(), "body")
+    end
+    CONFIG.options.default_view = "body"
   else
     vim.notify("No body found", vim.log.levels.WARN)
   end
@@ -220,6 +215,10 @@ M.show_headers = function()
     local h = FS.read_file(GLOBALS.HEADERS_FILE)
     h = h:gsub("\r\n", "\n")
     set_buffer_contents(h, "text")
+    if CONFIG.get().winbar then
+      WINBAR.toggle_winbar_tab(get_win(), "headers")
+    end
+    CONFIG.options.default_view = "headers"
   else
     vim.notify("No headers found", vim.log.levels.WARN)
   end
@@ -238,6 +237,10 @@ M.show_headers_body = function()
       body = FORMATTER.format(contenttype.formatter, body)
     end
     set_buffer_contents(h .. "\n" .. body, contenttype.ft)
+    if CONFIG.get().winbar then
+      WINBAR.toggle_winbar_tab(get_win(), "headers_body")
+    end
+    CONFIG.options.default_view = "headers_body"
   else
     vim.notify("No headers or body found", vim.log.levels.WARN)
   end
@@ -260,14 +263,10 @@ M.replay = function()
         end
         if CONFIG.get().default_view == "body" then
           M.show_body()
-          if CONFIG.get().winbar then
-            WINBAR.toggle_winbar_tab(get_win(), "body")
-          end
-        else
+        elseif CONFIG.get().default_view == "headers" then
           M.show_headers()
-          if CONFIG.get().winbar then
-            WINBAR.toggle_winbar_tab(get_win(), "headers")
-          end
+        elseif CONFIG.get().default_view == "headers_body" then
+          M.show_headers_body()
         end
       end
     end)
@@ -291,14 +290,8 @@ M.toggle_headers = function()
   CONFIG.set(cfg)
   if cfg.default_view == "body" then
     M.show_body()
-    if cfg.winbar then
-      WINBAR.toggle_winbar_tab(get_win(), "body")
-    end
   else
     M.show_headers()
-    if cfg.winbar then
-      WINBAR.toggle_winbar_tab(get_win(), "headers")
-    end
   end
 end
 
