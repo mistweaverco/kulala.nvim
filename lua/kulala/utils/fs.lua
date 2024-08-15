@@ -5,7 +5,7 @@ local M = {}
 --- @return string|nil
 --- @usage local p = fs.find_file_in_parent_dirs('Makefile')
 M.find_file_in_parent_dirs = function(filename)
-  return vim.fs.find({ filename }, {
+  return vim.fs.find(filename, {
     upward = true,
     limit = 1,
     path = vim.fn.expand("%:p:h"),
