@@ -12,7 +12,7 @@ M.get_env = function()
   for key, value in pairs(vim.fn.environ()) do
     env[key] = value
   end
-  
+
   DB.data.http_client_env_base = {}
   DB.data.http_client_env = {}
 
@@ -34,7 +34,7 @@ M.get_env = function()
           f["$shared"] = nil
           DB.data.http_client_env = vim.tbl_deep_extend("force", DB.data.http_client_env, f)
         end
-      end  
+      end
     end
 
     if code_workspace_file then
@@ -74,12 +74,12 @@ M.get_env = function()
   end
 
   for key, value in pairs(DB.data.http_client_env_base) do
-    if key ~= "DEFAULT_HEADERS" then 
+    if key ~= "DEFAULT_HEADERS" then
       env[key] = value
     end
   end
 
-  local selected_env_name = DB.data.http_client_env[vim.g.kulala_selected_env or Config.get().default_env]
+  local selected_env = DB.data.http_client_env[vim.g.kulala_selected_env or Config.get().default_env]
   if selected_env then
     env = vim.tbl_extend("force", env, selected_env)
   end
