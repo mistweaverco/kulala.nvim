@@ -67,7 +67,9 @@ require("kulala").setup({
     "}",
   },
   -- enable winbar
-  winbar = false;
+  winbar = false,
+  -- enable reading vscode rest client environment variables
+  vscode_rest_client_environmentvars = false,
 })
 ```
 
@@ -428,6 +430,27 @@ Example:
 ```lua
 require("kulala").setup({
   winbar = false,
+})
+```
+
+### vscode_rest_client_environmentvars
+
+If enabled, Kulala searches for `.vscode/settings.json` or `*.code-workspace` files in the current directory and its parents to read the `rest-client.environmentVariables` definitions (`$shared` will be treated as `_base`).
+
+If `http-client.env.json` is also present, it will be merged (and overwrites variables from VSCode).
+
+Possible values:
+
+- `true`
+- `false`
+
+Default: `false`
+
+Example:
+
+```lua
+require("kulala").setup({
+  vscode_rest_client_environmentvars = true,
 })
 ```
 
