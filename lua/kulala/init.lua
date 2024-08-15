@@ -1,6 +1,6 @@
 local UI = require("kulala.ui")
 local SELECTOR = require("kulala.ui.selector")
-local DB = require("kulala.db")
+local ENV = require("kulala.parser.env")
 local GLOBALS = require("kulala.globals")
 local CONFIG = require("kulala.config")
 local JUMPS = require("kulala.jumps")
@@ -63,6 +63,7 @@ M.scratchpad = function()
 end
 
 M.set_selected_env = function(env)
+  ENV.get_env()
   if env == nil then
     local has_telescope, telescope = pcall(require, "telescope")
     if has_telescope then

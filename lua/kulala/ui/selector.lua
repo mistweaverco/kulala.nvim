@@ -1,11 +1,9 @@
 local DB = require("kulala.db")
 local FS = require("kulala.utils.fs")
-local ENV_PARSER = require("kulala.parser.env")
 
 local M = {}
 
 function M.select_env()
-  ENV_PARSER.get_env()
   if not DB.data.http_client_env then
     return
   end
