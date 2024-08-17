@@ -10,6 +10,7 @@ local function get_match(str)
     "^([%w_]+)%.(request)%.(headers)(.*)",
     "^([%w_]+)%.(request)%.(body)%.(.*)",
     "^([%w_]+)%.(response)%.(headers)(.*)",
+    "^([%w_]+)%.(response)%.(cookies)(.*)",
     "^([%w_]+)%.(response)%.(body)%.(.*)",
   }
   for _, p in ipairs(patterns) do
@@ -108,6 +109,36 @@ local function get_header_value_from_path(name, method, subpath)
   return result
 end
 
+local function get_cookies_value_from_path(name, subpath)
+  local base_table = DB.data.env[name]
+  if not base_table then
+    return nil
+  end
+  if not base_table.response then
+    return nil
+  end
+  if not base_table.response.cookies then
+    return nil
+  end
+  local result = base_table.response.cookies
+  local path_parts = {}
+
+  -- Split the path into parts
+  for part in string.gmatch(subpath, "[^%.%[%]\"']+") do
+    table.insert(path_parts, part)
+  end
+
+  for _, key in ipairs(path_parts) do
+    if result[key] then
+      result = result[key]
+    else
+      return nil -- Return nil if any part of the path is not found
+    end
+  end
+
+  return result
+end
+
 M.parse = function(path)
   local path_name, path_method, path_type, path_subpath = get_match(path)
 
@@ -117,6 +148,8 @@ M.parse = function(path)
 
   if path_type == "headers" then
     return get_header_value_from_path(path_name, path_method, path_subpath)
+  elseif path_type == "cookies" then
+    return get_cookies_value_from_path(path_name, path_subpath)
   elseif path_type == "body" then
     return get_body_value_from_path(path_name, path_method, path_subpath)
   end

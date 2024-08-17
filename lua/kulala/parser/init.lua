@@ -420,12 +420,19 @@ function M.parse()
   end
   table.insert(res.cmd, "-A")
   table.insert(res.cmd, "kulala.nvim/" .. GLOBALS.VERSION)
+  -- if the user has not specified the no-cookie meta tag,
+  -- then use the cookies jar file
+  if PARSER_UTILS.contains_meta_tag(req, "no-cookie-jar") == false then
+    table.insert(res.cmd, "--cookie-jar")
+    table.insert(res.cmd, GLOBALS.COOKIES_JAR_FILE)
+  end
   for _, additional_curl_option in pairs(CONFIG.get().additional_curl_options) do
     table.insert(res.cmd, additional_curl_option)
   end
   table.insert(res.cmd, res.url)
-  FS.delete_file(PLUGIN_TMP_DIR .. "/headers.txt")
-  FS.delete_file(PLUGIN_TMP_DIR .. "/body.txt")
+  FS.delete_file(GLOBALS.HEADERS_FILE)
+  FS.delete_file(GLOBALS.BODY_FILE)
+  FS.delete_file(GLOBALS.COOKIES_JAR_FILE)
   if CONFIG.get().debug then
     FS.write_file(PLUGIN_TMP_DIR .. "/request.txt", table.concat(res.cmd, " "))
   end

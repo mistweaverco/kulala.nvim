@@ -34,6 +34,48 @@ local get_headers_as_table = function()
   return headers_table
 end
 
+local get_cookies_as_table = function()
+  local cookies_file = FS.read_file(GLOBALS.COOKIES_JAR_FILE)
+  if cookies_file == nil then
+    return {}
+  end
+  cookies_file = cookies_file:gsub("\r\n", "\n")
+  local lines = vim.split(cookies_file, "\n")
+  local cookies = {}
+  for _, line in ipairs(lines) do
+    -- Trim leading and trailing whitespace
+    line = line:gsub("^%s+", ""):gsub("%s+$", "")
+
+    -- Skip empty lines or comment lines (except #HttpOnly_)
+    if line ~= "" and (line:sub(1, 1) ~= "#" or line:find("^#HttpOnly_")) then
+      -- If it's a #HttpOnly_ line, remove the #HttpOnly_ part
+      if line:find("^#HttpOnly_") then
+        line = line:gsub("^#HttpOnly_", "")
+      end
+
+      -- Split the line into fields based on tabs
+      local fields = {}
+      for field in line:gmatch("[^\t]+") do
+        table.insert(fields, field)
+      end
+
+      -- The field before the last one is the key
+      local key = fields[#fields - 1]
+
+      -- Store the key-value pair in the cookies table
+      cookies[key] = {
+        domain = fields[1],
+        flag = fields[2],
+        path = fields[3],
+        secure = fields[4],
+        expires = fields[5],
+        value = fields[7],
+      }
+    end
+  end
+  return cookies
+end
+
 local get_lower_headers_as_table = function()
   local headers = get_headers_as_table()
   local headers_table = {}
@@ -60,6 +102,7 @@ M.set_env_for_named_request = function(name, body)
     response = {
       headers = get_headers_as_table(),
       body = body,
+      cookies = get_cookies_as_table(),
     },
     request = {
       headers = DB.data.current_request.headers,

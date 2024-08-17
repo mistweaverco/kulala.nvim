@@ -1,7 +1,7 @@
 local M = {}
 
 M.parse = function(body, path)
-  subpath = string.gsub(path, "^%$%.", "")
+  local subpath = string.gsub(path, "^%$%.", "")
 
   local result = vim.fn.json_decode(body)
 
