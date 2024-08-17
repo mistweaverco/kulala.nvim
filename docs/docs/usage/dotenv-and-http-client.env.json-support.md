@@ -57,7 +57,7 @@ You can freely define your own environment names.
 
 By default the `dev` environment is used.
 
-This can be overridden by [setting the `default_env` setup option](../getting-started/setup-options).
+This can be overridden by [setting the `default_env` configuration option](../getting-started/configuration-options).
 
 To change the environment, you can use the `:lua require('kulala').set_selected_env('prod')` command.
 

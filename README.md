@@ -40,8 +40,10 @@ Via [lazy.nvim](https://github.com/folke/lazy.nvim):
 ```lua
 { 'mistweaverco/kulala.nvim', opts = {} },
 ```
+> [!NOTE]
+> `opts` needs to be at least an empty table `{}` and can't be completely omitted.
 
-See [setup options](https://kulala.mwco.app/docs/getting-started/setup-options) for more information.
+See [configuration options](https://kulala.mwco.app/docs/getting-started/configuration-options) for more information.
 
 ## Honorable mentions
 

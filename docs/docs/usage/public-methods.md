@@ -19,7 +19,7 @@ The scratchpad is a (throwaway) buffer where you can write your requests.
 It is useful for quick testing. It is useful for requests that you don't want to save.
 
 It's default contents can be configured via the
-[`scratchpad_default_contents`][scratchpad_default_contents] setup option.
+[`scratchpad_default_contents`][scratchpad_default_contents] configuration option.
 
 ### copy
 
@@ -88,5 +88,5 @@ See: https://learn.microsoft.com/en-us/aspnet/core/test/http-files?view=aspnetco
 If you omit the `env_key`,
 it will try to load up a telescope prompt to select an environment or fallback to using `vim.ui.select`.
 
-[scratchpad_default_contents]: ../getting-started/setup-options#scratchpad_default_contents
+[scratchpad_default_contents]: ../getting-started/configuration-options#scratchpad_default_contents
 [kulala-cmp-graphql]: https://github.com/mistweaverco/kulala-cmp-graphql.nvim

@@ -14,7 +14,7 @@ const sidebars: SidebarsConfig = {
       items: [
         'getting-started/install',
         'getting-started/requirements',
-        'getting-started/setup-options',
+        'getting-started/configuration-options',
       ],
     },
     {
