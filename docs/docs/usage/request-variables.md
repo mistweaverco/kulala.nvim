@@ -35,6 +35,38 @@ You have two reference part choices of the `response` or `request`: `body` and `
 
 For `body` part, you can use JSONPath and XPath to extract specific property or attribute.
 
+### Special case for cookies
+
+The response cookies can be referenced by `{{REQUEST_NAME.response.cookies.CookieName.(value|domain|flag|path|secure|expires)}}`.
+
+```http
+# @name REQUEST_GH
+GET https://github.com HTTP/1.1
+
+###
+
+POST https://httpbin.org/post HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+
+{
+  "logged_into_gh": "{{REQUEST_GH.response.cookies.logged_in.value}}"
+}
+
+```
+
+:::tip
+
+If you don't want Kulala to create a cookie jar for a specific request,
+you can add the meta-tag `@no-cookie-jar` to the request.
+
+```http
+# @no-cookie-jar
+GET https://github.com HTTP/1.1
+```
+
+:::
+
 ## Example
 
 if a JSON response returns `body` `{"id": "mock"}`, you can set the JSONPath part to `$.id` to reference the `id`.
