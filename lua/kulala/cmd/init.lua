@@ -2,6 +2,7 @@ local GLOBALS = require("kulala.globals")
 local FS = require("kulala.utils.fs")
 local EXT_PROCESSING = require("kulala.external_processing")
 local INT_PROCESSING = require("kulala.internal_processing")
+local Api = require("kulala.api")
 
 local M = {}
 
@@ -53,6 +54,7 @@ M.run_parser = function(result, callback)
             end
           end
         end
+        Api.trigger("after_request")
       end
       if callback then
         callback(success)
