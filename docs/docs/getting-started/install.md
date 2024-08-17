@@ -17,10 +17,13 @@ require('lazy').setup({
   -- HTTP REST-Client Interface
   {
     'mistweaverco/kulala.nvim',
-    config = function()
-      require('kulala').setup()
-    end
+    opts = {}
   },
 })
 ```
 
+:::warning
+
+`opts` needs to be at least an empty table `{}` and can't be completely omitted.
+
+:::

@@ -38,19 +38,12 @@ Via [lazy.nvim](https://github.com/folke/lazy.nvim):
 ### Configuration
 
 ```lua
-require('lazy').setup({
-  -- HTTP REST-Client Interface
-  {
-    'mistweaverco/kulala.nvim',
-    config = function()
-      -- Setup is required, even if you don't pass any options
-      require('kulala').setup()
-    end
-  },
-})
+{ 'mistweaverco/kulala.nvim', opts = {} },
 ```
+> [!NOTE]
+> `opts` needs to be at least an empty table `{}` and can't be completely omitted.
 
-See [setup options](https://kulala.mwco.app/docs/getting-started/setup-options) for more information.
+See [configuration options](https://kulala.mwco.app/docs/getting-started/configuration-options) for more information.
 
 ## Honorable mentions
 

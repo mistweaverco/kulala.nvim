@@ -1,76 +1,79 @@
-# Setup Options
+# Configuration Options
 
-The following options can be set in the setup function.
+Kulala can be configured with the following options.
 
 ### Full example
 
-Here is a full example of setting up the Kulala plugin with the `setup` function:
+Here is a full example of setting up the Kulala plugin with the available `opts`:
 
-```lua title="setup.lua"
-require("kulala").setup({
-  -- split direction
-  -- possible values: "vertical", "horizontal"
-  split_direction = "vertical",
-  -- default_view, body or headers or headers_body
-  default_view = "body",
-  -- dev, test, prod, can be anything
-  -- see: https://learn.microsoft.com/en-us/aspnet/core/test/http-files?view=aspnetcore-8.0#environment-files
-  default_env = "dev",
-  -- enable/disable debug mode
-  debug = false,
-  -- default formatters/pathresolver for different content types
-  contenttypes = {
-    ["application/json"] = {
-      ft = "json",
-      formatter = { "jq", "." },
-      pathresolver = require("kulala.parser.jsonpath").parse,
+```lua title="kulala.lua"
+{
+  "mistweaverco/kulala.nvim",
+  opts = {
+    -- split direction
+    -- possible values: "vertical", "horizontal"
+    split_direction = "vertical",
+    -- default_view, body or headers or headers_body
+    default_view = "body",
+    -- dev, test, prod, can be anything
+    -- see: https://learn.microsoft.com/en-us/aspnet/core/test/http-files?view=aspnetcore-8.0#environment-files
+    default_env = "dev",
+    -- enable/disable debug mode
+    debug = false,
+    -- default formatters/pathresolver for different content types
+    contenttypes = {
+      ["application/json"] = {
+        ft = "json",
+        formatter = { "jq", "." },
+        pathresolver = require("kulala.parser.jsonpath").parse,
+      },
+      ["application/xml"] = {
+        ft = "xml",
+        formatter = { "xmllint", "--format", "-" },
+        pathresolver = { "xmllint", "--xpath", "{{path}}", "-" },
+      },
+      ["text/html"] = {
+        ft = "html",
+        formatter = { "xmllint", "--format", "--html", "-" },
+        pathresolver = {},
+      },
     },
-    ["application/xml"] = {
-      ft = "xml",
-      formatter = { "xmllint", "--format", "-" },
-      pathresolver = { "xmllint", "--xpath", "{{path}}", "-" },
+    -- can be used to show loading, done and error icons in inlay hints
+    -- possible values: "on_request", "above_request", "below_request", or nil to disable
+    -- If "above_request" or "below_request" is used, the icons will be shown above or below the request line
+    -- Make sure to have a line above or below the request line to show the icons
+    show_icons = "on_request",
+    -- default icons
+    icons = {
+      inlay = {
+        loading = "⏳",
+        done = "✅",
+        error = "❌",
+      },
+      lualine = "🐼",
     },
-    ["text/html"] = {
-      ft = "html",
-      formatter = { "xmllint", "--format", "--html", "-" },
-      pathresolver = {},
+    -- additional cURL options
+    -- see: https://curl.se/docs/manpage.html
+    additional_curl_options = {},
+    -- scratchpad default contents
+    scratchpad_default_contents = {
+      "@MY_TOKEN_NAME=my_token_value",
+      "",
+      "# @name scratchpad",
+      "POST https://httpbin.org/post HTTP/1.1",
+      "accept: application/json",
+      "content-type: application/json",
+      "",
+      "{",
+      '  "foo": "bar"',
+      "}",
     },
+    -- enable winbar
+    winbar = false,
+    -- enable reading vscode rest client environment variables
+    vscode_rest_client_environmentvars = false,
   },
-  -- can be used to show loading, done and error icons in inlay hints
-  -- possible values: "on_request", "above_request", "below_request", or nil to disable
-  -- If "above_request" or "below_request" is used, the icons will be shown above or below the request line
-  -- Make sure to have a line above or below the request line to show the icons
-  show_icons = "on_request",
-  -- default icons
-  icons = {
-    inlay = {
-      loading = "⏳",
-      done = "✅",
-      error = "❌",
-    },
-    lualine = "🐼",
-  },
-  -- additional cURL options
-  -- see: https://curl.se/docs/manpage.html
-  additional_curl_options = {},
-  -- scratchpad default contents
-  scratchpad_default_contents = {
-    "@MY_TOKEN_NAME=my_token_value",
-    "",
-    "# @name scratchpad",
-    "POST https://httpbin.org/post HTTP/1.1",
-    "accept: application/json",
-    "content-type: application/json",
-    "",
-    "{",
-    '  "foo": "bar"',
-    "}",
-  },
-  -- enable winbar
-  winbar = false,
-  -- enable reading vscode rest client environment variables
-  vscode_rest_client_environmentvars = false,
-})
+}
 ```
 
 ### split_direction
@@ -87,9 +90,12 @@ Default: `vertical`
 Example:
 
 ```lua
-require("kulala").setup({
-  split_direction = "horizontal",
-})
+{
+  "mistweaverco/kulala.nvim",
+  opts = {
+    split_direction = "vertical",
+  },
+}
 ```
 
 ### default_view
@@ -107,9 +113,12 @@ Default: `body`
 Example:
 
 ```lua
-require("kulala").setup({
-  default_view = "body",
-})
+{
+  "mistweaverco/kulala.nvim",
+  opts = {
+    default_view = "body",
+  },
+}
 ```
 
 ### default_env
@@ -127,9 +136,12 @@ Default: `dev`
 Example:
 
 ```lua
-require("kulala").setup({
-  default_env = "body",
-})
+{
+  "mistweaverco/kulala.nvim",
+  opts = {
+    default_env = "dev",
+  },
+}
 ```
 
 ### debug
@@ -146,9 +158,12 @@ Default: `false`
 Example:
 
 ```lua
-require("kulala").setup({
-  debug = false,
-})
+{
+  "mistweaverco/kulala.nvim",
+  opts = {
+    debug = false,
+  },
+}
 ```
 
 ### contenttypes
@@ -203,13 +218,16 @@ contenttypes = {
 Example:
 
 ```lua
-require("kulala").setup({
-  contenttypes = {
-    ["text/xml"] = {
-      ft = "xml",
+{
+  "mistweaverco/kulala.nvim",
+  opts = {
+    contenttypes = {
+      ["text/xml"] = {
+        ft = "xml",
+      },
     },
   },
-})
+}
 ```
 
 #### contenttypes.formatter
@@ -241,15 +259,18 @@ contenttypes = {
 Example:
 
 ```lua
-require("kulala").setup({
-  contenttypes = {
-    ["text/plain"] = {
-      formatter = function(body)
-        return body:lower()
-      end,
+{
+  "mistweaverco/kulala.nvim",
+  opts = {
+    contenttypes = {
+      ["text/plain"] = {
+        formatter = function(body)
+          return body:lower()
+        end,
+      },
     },
   },
-})
+}
 ```
 
 #### contenttypes.pathresolver
@@ -286,13 +307,16 @@ contenttypes = {
 Example:
 
 ```lua
-require("kulala").setup({
-  contenttypes = {
-    ["text/xml"] = {
-      pathresolver = { "xmllint", "--xpath", "{{path}}", "-" },
+{
+  "mistweaverco/kulala.nvim",
+  opts = {
+    contenttypes = {
+      ["text/xml"] = {
+        pathresolver = { "xmllint", "--xpath", "{{path}}", "-" },
+      },
     },
   },
-})
+}
 ```
 
 ### show_icons
@@ -337,16 +361,19 @@ icons = {
 Example:
 
 ```lua
-require("kulala").setup({
-  icons = {
-    inlay = {
-      loading = "⏳",
-      done = "✅"
-      error = "❌",
+{
+  "mistweaverco/kulala.nvim",
+  opts = {
+    icons = {
+      inlay = {
+        loading = "⏳",
+        done = "✅"
+        error = "❌",
+      },
+      lualine = "🐼",
     },
-    lualine = "🐼",
   },
-})
+}
 ```
 
 ### additional_curl_options
@@ -362,9 +389,12 @@ Default: `{}`
 Example:
 
 ```lua
-require("kulala").setup({
-  additional_curl_options = { "--insecure", "-A", "Mozilla/5.0" },
-})
+{
+  "mistweaverco/kulala.nvim",
+  opts = {
+    additional_curl_options = { "--insecure", "-A", "Mozilla/5.0" },
+  },
+}
 ```
 
 ### scratchpad_default_contents
@@ -398,20 +428,23 @@ scratchpad_default_contents = {
 Example:
 
 ```lua
-require("kulala").setup({
-  scratchpad_default_contents = {
-    "@AUTH_USERNAME=my_username",
-    "",
-    "# @name scratchpad_special_name",
-    "POST https://httpbin.org/post HTTP/1.1",
-    "accept: application/json",
-    "content-type: application/json",
-    "",
-    "{",
-    '  "baz": "qux"',
-    "}",
+{
+  "mistweaverco/kulala.nvim",
+  opts = {
+    scratchpad_default_contents = {
+      "@AUTH_USERNAME=my_username",
+      "",
+      "# @name scratchpad_special_name",
+      "POST https://httpbin.org/post HTTP/1.1",
+      "accept: application/json",
+      "content-type: application/json",
+      "",
+      "{",
+      '  "baz": "qux"',
+      "}",
+    },
   },
-})
+}
 ```
 
 ### winbar
@@ -428,9 +461,12 @@ Default: `false`
 Example:
 
 ```lua
-require("kulala").setup({
-  winbar = false,
-})
+{
+  "mistweaverco/kulala.nvim",
+  opts = {
+    winbar = false,
+  },
+}
 ```
 
 ### vscode_rest_client_environmentvars
@@ -449,8 +485,11 @@ Default: `false`
 Example:
 
 ```lua
-require("kulala").setup({
-  vscode_rest_client_environmentvars = true,
-})
+{
+  "mistweaverco/kulala.nvim",
+  opts = {
+    vscode_rest_client_environmentvars = true,
+  },
+}
 ```
 
