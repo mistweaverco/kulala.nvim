@@ -49,26 +49,41 @@ local function parse_headers(headers, variables, env)
 end
 
 local function encode_url_params(url)
-  local url_parts = vim.split(url, "?")
-  url = url_parts[1]
-  local query = url_parts[2]
+  local anchor = ""
+  local index = url:find("#")
+  if index then
+    anchor = "#" .. STRING_UTILS.url_encode(url:sub(index+1))
+    url = url:sub(1, index-1)
+  end
+  index = url:find("?")
+  if index == nil then
+    return url .. anchor
+  end
+  local query = url:sub(index+1)
+  url = url:sub(1, index-1)
   local query_parts = {}
   if query then
     query_parts = vim.split(query, "&")
   end
   local query_params = ""
   for _, query_part in ipairs(query_parts) do
-    local query_param = vim.split(query_part, "=")
-    query_params = query_params
-      .. "&"
-      .. STRING_UTILS.url_encode(query_param[1])
-      .. "="
-      .. STRING_UTILS.url_encode(query_param[2])
+    index = query_part:find("=")
+    if index then
+      query_params = query_params
+        .. "&"
+        .. STRING_UTILS.url_encode(query_part:sub(1, index-1))
+        .. "="
+        .. STRING_UTILS.url_encode(query_part:sub(index+1))
+    else
+      query_params = query_params
+        .. "&"
+        .. STRING_UTILS.url_encode(query_part)
+    end
   end
   if query_params ~= "" then
-    return url .. "?" .. query_params:sub(2)
+    url = url .. "?" .. query_params:sub(2)
   end
-  return url
+  return url .. anchor
 end
 
 local function parse_url(url, variables, env)
