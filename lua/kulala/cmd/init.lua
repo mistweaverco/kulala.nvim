@@ -1,8 +1,9 @@
 local GLOBALS = require("kulala.globals")
-local FS = require("kulala.utils.fs")
+local Fs = require("kulala.utils.fs")
 local EXT_PROCESSING = require("kulala.external_processing")
 local INT_PROCESSING = require("kulala.internal_processing")
 local Api = require("kulala.api")
+local Scripts = require("kulala.scripts")
 
 local M = {}
 
@@ -38,7 +39,7 @@ M.run_parser = function(result, callback)
     on_exit = function(_, code)
       local success = code == 0
       if success then
-        local body = FS.read_file(GLOBALS.BODY_FILE)
+        local body = Fs.read_file(GLOBALS.BODY_FILE)
         for _, metadata in ipairs(result.metadata) do
           if metadata then
             if metadata.name == "name" then
@@ -54,8 +55,10 @@ M.run_parser = function(result, callback)
             end
           end
         end
+        Scripts.javascript.run("post_request", result.scripts.post_request)
         Api.trigger("after_request")
       end
+      Fs.delete_request_scripts_files()
       if callback then
         callback(success)
       end
