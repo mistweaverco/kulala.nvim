@@ -416,7 +416,7 @@ function M.parse()
 
       if authtype == "ntlm" or authtype == "negotiate" or authtype == "digest" or authtype == "basic" then
         local match, authuser, authpw = auth_header:match("^(%w+)%s+([^%s:]+)%s*[:%s]%s*([^%s]+)%s*$")
-        if match ~= nil then
+        if match ~= nil or (authtype == "ntlm" or authtype == "negotiate") then
           table.insert(res.cmd, "--" .. authtype)
           table.insert(res.cmd, "-u")
           table.insert(res.cmd, (authuser or "") .. ":" .. (authpw or ""))
