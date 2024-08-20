@@ -52,15 +52,15 @@ local function encode_url_params(url)
   local anchor = ""
   local index = url:find("#")
   if index then
-    anchor = "#" .. STRING_UTILS.url_encode(url:sub(index+1))
-    url = url:sub(1, index-1)
+    anchor = "#" .. STRING_UTILS.url_encode(url:sub(index + 1))
+    url = url:sub(1, index - 1)
   end
   index = url:find("?")
   if index == nil then
     return url .. anchor
   end
-  local query = url:sub(index+1)
-  url = url:sub(1, index-1)
+  local query = url:sub(index + 1)
+  url = url:sub(1, index - 1)
   local query_parts = {}
   if query then
     query_parts = vim.split(query, "&")
@@ -71,13 +71,11 @@ local function encode_url_params(url)
     if index then
       query_params = query_params
         .. "&"
-        .. STRING_UTILS.url_encode(query_part:sub(1, index-1))
+        .. STRING_UTILS.url_encode(query_part:sub(1, index - 1))
         .. "="
-        .. STRING_UTILS.url_encode(query_part:sub(index+1))
+        .. STRING_UTILS.url_encode(query_part:sub(index + 1))
     else
-      query_params = query_params
-        .. "&"
-        .. STRING_UTILS.url_encode(query_part)
+      query_params = query_params .. "&" .. STRING_UTILS.url_encode(query_part)
     end
   end
   if query_params ~= "" then
@@ -417,14 +415,14 @@ function M.parse()
       authtype = authtype:lower()
 
       if authtype == "ntlm" or authtype == "negotiate" or authtype == "digest" or authtype == "basic" then
-        local _, authuser, authpw = auth_header:match("^(%w+)%s+([^%s:]+)%s*[:%s]%s*([^%s]+)%s*$")
-        table.insert(res.cmd, "--" .. authtype)
-        table.insert(res.cmd, "-u")
-        table.insert(res.cmd, (authuser or "") .. ":" .. (authpw or ""))
-        res.headers["authorization"] = nil
-      end
-
-      if authtype == "aws" then
+        local match, authuser, authpw = auth_header:match("^(%w+)%s+([^%s:]+)%s*[:%s]%s*([^%s]+)%s*$")
+        if match ~= nil then
+          table.insert(res.cmd, "--" .. authtype)
+          table.insert(res.cmd, "-u")
+          table.insert(res.cmd, (authuser or "") .. ":" .. (authpw or ""))
+          res.headers["authorization"] = nil
+        end
+      elseif authtype == "aws" then
         local key, secret, optional = auth_header:match("^%w+%s([^%s]+)%s*([^%s]+)[%s$]+(.*)$")
         local token = optional:match("token:([^%s]+)")
         local region = optional:match("region:([^%s]+)")
@@ -434,10 +432,10 @@ function M.parse()
           provider = provider .. ":" .. region
         end
         if service then
-          provider = provider ..":" ..service
+          provider = provider .. ":" .. service
         end
         table.insert(res.cmd, "--aws-sigv4")
-        table.insert(res.cmd, provider )
+        table.insert(res.cmd, provider)
         table.insert(res.cmd, "-u")
         table.insert(res.cmd, key .. ":" .. secret)
         if token then
