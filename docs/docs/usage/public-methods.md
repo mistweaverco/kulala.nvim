@@ -57,7 +57,7 @@ It tries to load up a telescope prompt to select a file or fallback to using `vi
 ### scripts_clear_global
 
 `require('kulala').scripts_clear_global('variable_name')`
-clears a global variable set via `client.global.set`.
+clears a global variable set via [`client.global.set`](../scripts/client-reference).
 
 You can clear all globals by omitting the `variable_name` like so:
 `require('kulala').scripts_clear_global()`.
