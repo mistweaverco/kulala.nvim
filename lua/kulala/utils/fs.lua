@@ -151,10 +151,14 @@ M.get_request_scripts_variables = function()
   return nil
 end
 
+M.get_global_scripts_variables_file_path = function()
+  return M.get_tmp_scripts_dir() .. "/global_variables.json"
+end
+
 M.get_global_scripts_variables = function()
-  local dir = M.get_tmp_scripts_dir()
-  if M.file_exists(dir .. "/global_variables.json") then
-    return vim.fn.json_decode(M.read_file(dir .. "/global_variables.json"))
+  local fp = M.get_global_scripts_variables_file_path()
+  if M.file_exists(fp) then
+    return vim.fn.json_decode(fp)
   end
   return nil
 end
