@@ -13,6 +13,13 @@ request.variables.set = function (key, value) {
   json[key] = value;
   __fs.writeFileSync(__REQUEST_VARIABLES_FILEPATH, JSON.stringify(json));
 }
+request.variables.get = function (key) {
+  let json = {};
+  if (__fs.existsSync(__REQUEST_VARIABLES_FILEPATH)) {
+    json = JSON.parse(__fs.readFileSync(__REQUEST_VARIABLES_FILEPATH));
+  }
+  return json[key];
+};
 const client = {};
 client.global = {};
 client.global.set = function (key, value) {

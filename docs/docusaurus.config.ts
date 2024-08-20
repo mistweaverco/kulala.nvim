@@ -59,6 +59,11 @@ const config: Config = {
           to: '/docs/usage',
         },
         {
+          position: 'left',
+          label: 'Scripts',
+          to: '/docs/scripts/overview',
+        },
+        {
           href: 'https://github.com/mistweaverco/kulala.nvim',
           label: 'GitHub',
           position: 'right',

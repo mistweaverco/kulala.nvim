@@ -120,11 +120,13 @@ Authorization: Bearer {{login.response.body.$.access_token}}
 AWS Signature version 4 authenticates requests to AWS services.
 To use it you need to set the Authorization header schema to AWS and provide your AWS credentials separated by spaces:
 
+```plaintext
 <access-key-id>: AWS Access Key Id
 <secret-access-key>: AWS Secret Access Key
 token:<aws-session-token>: AWS Session Token - required only for temporary credentials
 region:<region>: AWS Region
 service:<service>: AWS Service
+```
 
 ```http
 GET {{apiUrl}}/ HTTP/1.1

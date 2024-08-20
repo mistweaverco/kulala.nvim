@@ -29,7 +29,6 @@ const sidebars: SidebarsConfig = {
       items: [
         "usage/public-methods",
         "usage/api",
-        "usage/scripts",
         "usage/authentication",
         "usage/automatic-response-formatting",
         "usage/dotenv-and-http-client.env.json-support",
@@ -43,6 +42,22 @@ const sidebars: SidebarsConfig = {
         "usage/using-environment-variables",
         "usage/using-variables",
         'usage/http-file-spec',
+      ],
+    },
+    {
+      type: 'category',
+      label: 'Scripts',
+      link: {
+        type: 'generated-index',
+        title: 'Scripts',
+        description: 'Learn about the scripting capabilities!',
+        slug: 'scripts',
+      },
+      items: [
+        "scripts/overview",
+        "scripts/client-reference",
+        "scripts/request-reference",
+        "scripts/response-reference",
       ],
     },
   ],
