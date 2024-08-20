@@ -19,7 +19,7 @@ M.get_env = function()
   if Config.get().vscode_rest_client_environmentvars then
     local vscode_dir = FS.find_file_in_parent_dirs(".vscode")
     local code_workspace_file = FS.find_file_in_parent_dirs(function(name, path)
-      return name:match('.*%.code%-workspace$')
+      return name:match(".*%.code%-workspace$")
     end)
 
     if vscode_dir then
@@ -86,6 +86,16 @@ M.get_env = function()
 
   for key, value in pairs(DB.data.env) do
     env[key] = value
+  end
+
+  local global_scripts_variables = FS.get_global_scripts_variables()
+  if global_scripts_variables then
+    env = vim.tbl_extend("force", env, global_scripts_variables)
+  end
+
+  local request_scripts_variables = FS.get_request_scripts_variables()
+  if request_scripts_variables then
+    env = vim.tbl_extend("force", env, request_scripts_variables)
   end
 
   return env

@@ -9,6 +9,8 @@ local REQUEST_VARIABLES = require("kulala.parser.request_variables")
 local STRING_UTILS = require("kulala.utils.string")
 local PARSER_UTILS = require("kulala.parser.utils")
 local PLUGIN_TMP_DIR = FS.get_plugin_tmp_dir()
+local Scripts = require("kulala.scripts")
+local Logger = require("kulala.logger")
 local M = {}
 
 local function parse_string_variables(str, variables, env)
@@ -28,7 +30,7 @@ local function parse_string_variables(str, variables, env)
       value = REQUEST_VARIABLES.parse(variable_name)
     else
       value = "{{" .. variable_name .. "}}"
-      vim.notify(
+      Logger.info(
         "The variable '"
           .. variable_name
           .. "' was not found in the document or in the environment. Returning the string as received ..."
@@ -107,6 +109,8 @@ M.get_document = function()
   local line_offset = 0
   for _, block in ipairs(blocks) do
     local is_request_line = true
+    local is_prerequest_handler_script_inline = false
+    local is_postrequest_handler_script_inline = false
     local is_body_section = false
     local lines = vim.split(block, "\n", { plain = true, trimempty = false })
     local block_line_count = #lines
@@ -119,10 +123,32 @@ M.get_document = function()
       block_line_count = block_line_count,
       lines_length = #lines,
       variables = {},
+      scripts = {
+        pre_request = {
+          inline = {},
+          files = {},
+        },
+        post_request = {
+          inline = {},
+          files = {},
+        },
+      },
     }
     for relative_linenr, line in ipairs(lines) do
       line = vim.trim(line)
-      if line:sub(1, 1) == "#" then
+      -- end of inline scripting
+      if is_request_line == true and line:match("^%%}$") then
+        is_prerequest_handler_script_inline = false
+      -- end of inline scripting
+      elseif is_body_section == true and line:match("^%%}$") then
+        is_postrequest_handler_script_inline = false
+      -- inline scripting active: add the line to the response handler scripts
+      elseif is_postrequest_handler_script_inline then
+        table.insert(request.scripts.post_request.inline, line)
+      -- inline scripting active: add the line to the prerequest handler scripts
+      elseif is_prerequest_handler_script_inline then
+        table.insert(request.scripts.pre_request.inline, line)
+      elseif line:sub(1, 1) == "#" then
         -- Metadata (e.g., # @this-is-name this is the value)
         -- See: https://httpyac.github.io/guide/metaData.html
         if line:sub(1, 3) == "# @" then
@@ -131,12 +157,26 @@ M.get_document = function()
             table.insert(request.metadata, { name = meta_name, value = meta_value })
           end
         end
+      -- we're still in(/before) the request line and we have a pre-request inline handler script
+      elseif is_request_line == true and line:match("^< %{%%$") then
+        is_prerequest_handler_script_inline = true
+      -- we're still in(/before) the request line and we have a pre-request file handler script
+      elseif is_request_line == true and line:match("^< (.*)$") then
+        local scriptfile = line:match("^< (.*)$")
+        table.insert(request.scripts.pre_request.files, scriptfile)
         -- It's a comment, skip it
       elseif line == "" and is_body_section == false then
         -- Skip empty lines
         if is_request_line == false then
           is_body_section = true
         end
+      -- start of inline scripting
+      elseif line:match("^> {%%$") then
+        is_postrequest_handler_script_inline = true
+      -- file scripting notation
+      elseif line:match("^> (.*)$") then
+        local scriptfile = line:match("^> (.*)$")
+        table.insert(request.scripts.post_request.files, scriptfile)
       elseif line:match("^@([%w_]+)") then
         -- Variable
         -- Variables are defined as `@variable_name=value`
@@ -281,6 +321,14 @@ local function extend_document_variables(document_variables, request)
   return document_variables
 end
 
+---@class ScriptsItems
+---@field inline table -- Inline post-request handler scripts - each element is a line of the script
+---@field file table -- File post-request handler scripts - each element is a file path
+---
+---@class Scripts
+---@field pre_request ScriptsItems[] -- Pre-request handler scripts
+---@field post_request ScriptsItems[] -- Post-request handler scripts
+
 ---@class Request
 ---@field metadata table
 ---@field method string
@@ -291,9 +339,10 @@ end
 ---@field ft string
 ---@field http_version string
 ---@field show_icon_line_number string
+---@field scripts Scripts
 
 ---Parse a request and return the request on itself, its headers and body
----@return Request Table containing the request data
+---@return Request -- Table containing the request data
 function M.parse()
   local res = {
     metadata = {},
@@ -303,16 +352,29 @@ function M.parse()
     body = {},
     cmd = {},
     ft = "text",
+    scripts = {
+      pre_request = {
+        inline = {},
+        files = {},
+      },
+      post_request = {
+        inline = {},
+        files = {},
+      },
+    },
   }
 
-  local env = ENV_PARSER.get_env()
   local document_variables, requests = M.get_document()
   local req = M.get_request_at_cursor(requests)
+  Scripts.javascript.run("pre_request", req.scripts.pre_request)
+  local env = ENV_PARSER.get_env()
 
   DB.data.previous_request = DB.data.current_request
 
   document_variables = extend_document_variables(document_variables, req)
 
+  res.scripts.pre_request = req.scripts.pre_request
+  res.scripts.post_request = req.scripts.post_request
   res.show_icon_line_number = req.show_icon_line_number
   res.url = parse_url(req.url, document_variables, env)
   res.method = req.method

@@ -7,7 +7,7 @@ Create a file with the `.http` extension and write your HTTP requests in it.
 ## With built-in parser
 
 If the response is a *simple* JSON object,
-you can set environment variables using the `@env-json-key` directive.
+you can set environment variables using the [request variables](request-variables) feature.
 
 ```http title="with-builtin-parser.http"
 # Setting the environment variables to be used in the next request.
@@ -47,7 +47,7 @@ In this example `jq` is used to extract the `ctx` string from a JWT token.
 # Setting the environment variables to be used in the next request.
 # Any external command can be used to set the environment variables.
 # The command should output the environment variable as string.
-# @env-stdin-cmd JWT_CONTEXT jq -r '.token | gsub("-";"+") | gsub("_";"/") | split(".") | .[1] | @base64d | fromjson | .ctx'
+# @env-stdin-cmd JWT_CONTEXT jq -r '.json.token | gsub("-";"+") | gsub("_";"/") | split(".") | .[1] | @base64d | fromjson | .ctx'
 POST https://httpbin.org/post HTTP/1.1
 Content-Type: application/json
 Accept: application/json

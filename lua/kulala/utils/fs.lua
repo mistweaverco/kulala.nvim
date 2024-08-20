@@ -12,6 +12,35 @@ M.find_file_in_parent_dirs = function(filename)
   })[1]
 end
 
+---Get the current buffer directory
+---@return string
+M.get_current_buffer_dir = function()
+  -- Get the full path of the current buffer
+  local buffer_path = vim.api.nvim_buf_get_name(0)
+  -- Extract the directory part from the buffer path
+  local buffer_dir = vim.fn.fnamemodify(buffer_path, ":h")
+  return buffer_dir
+end
+
+---Get UUID
+---@return string
+---@usage local p = fs.get_uuid()
+M.get_uuid = function()
+  local template = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx"
+  local res = string.gsub(template, "[xy]", function(c)
+    local v = (c == "x") and math.random(0, 0xf) or math.random(8, 0xb)
+    return string.format("%x", v)
+  end)
+  return res
+end
+
+---Get the directory of a file path
+---@param filepath string
+---@return string
+M.get_dir_by_filepath = function(filepath)
+  return vim.fn.fnamemodify(filepath, ":h")
+end
+
 M.find_all_http_files = function()
   return vim.fs.find(function(name)
     return name:match("%.http$") or name:match("%.rest$")
@@ -53,15 +82,85 @@ M.file_exists = function(filename)
   return vim.fn.filereadable(filename) == 1
 end
 
+M.ensure_dir_exists = function(dir)
+  if vim.fn.isdirectory(dir) == 0 then
+    vim.fn.mkdir(dir, "p")
+  end
+end
+
 -- Get plugin tmp directory
 --- @return string
 --- @usage local p = fs.get_plugin_tmp_dir()
 M.get_plugin_tmp_dir = function()
   local dir = vim.fn.stdpath("data") .. "/tmp/kulala"
-  if vim.fn.isdirectory(dir) == 0 then
-    vim.fn.mkdir(dir, "p")
-  end
+  M.ensure_dir_exists(dir)
   return dir
+end
+
+M.get_scripts_dir = function()
+  local dir = M.get_plugin_root_dir() .. "/scripts"
+  return dir
+end
+
+M.get_tmp_scripts_dir = function()
+  local dir = M.get_plugin_tmp_dir() .. "/scripts"
+  M.ensure_dir_exists(dir)
+  return dir
+end
+
+M.get_request_scripts_dir = function()
+  local dir = M.get_plugin_tmp_dir() .. "/scripts/requests"
+  M.ensure_dir_exists(dir)
+  return dir
+end
+
+M.delete_files_in_directory = function(dir)
+  -- Open the directory for scanning
+  local scandir = vim.loop.fs_scandir(dir)
+  if scandir then
+    -- Iterate over each file in the directory
+    while true do
+      local name, type = vim.loop.fs_scandir_next(scandir)
+      if not name then
+        break
+      end
+      -- Only delete files, not directories
+      if type == "file" then
+        local filepath = dir .. "/" .. name
+        local success, err = vim.loop.fs_unlink(filepath)
+        if not success then
+          print("Error deleting file:", filepath, err)
+        end
+      end
+    end
+  else
+    print("Error opening directory:", dir)
+  end
+end
+
+M.delete_request_scripts_files = function()
+  local dir = M.get_request_scripts_dir()
+  M.delete_files_in_directory(dir)
+end
+
+M.get_request_scripts_variables = function()
+  local dir = M.get_request_scripts_dir()
+  if M.file_exists(dir .. "/request_variables.json") then
+    return vim.fn.json_decode(M.read_file(dir .. "/request_variables.json"))
+  end
+  return nil
+end
+
+M.get_global_scripts_variables_file_path = function()
+  return M.get_tmp_scripts_dir() .. "/global_variables.json"
+end
+
+M.get_global_scripts_variables = function()
+  local fp = M.get_global_scripts_variables_file_path()
+  if M.file_exists(fp) then
+    return vim.fn.json_decode(fp)
+  end
+  return nil
 end
 
 -- Check if a command is available
@@ -99,6 +198,22 @@ M.read_file = function(filename)
   local content = f:read("*a")
   f:close()
   return content
+end
+
+---Read file lines
+---@param filename string
+---@return string[]
+M.read_file_lines = function(filename)
+  local f = io.open(filename, "r")
+  if f == nil then
+    return {}
+  end
+  local lines = {}
+  for line in f:lines() do
+    table.insert(lines, line)
+  end
+  f:close()
+  return lines
 end
 
 return M

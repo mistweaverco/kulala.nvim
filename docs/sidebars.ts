@@ -44,6 +44,22 @@ const sidebars: SidebarsConfig = {
         'usage/http-file-spec',
       ],
     },
+    {
+      type: 'category',
+      label: 'Scripts',
+      link: {
+        type: 'generated-index',
+        title: 'Scripts',
+        description: 'Learn about the scripting capabilities!',
+        slug: 'scripts',
+      },
+      items: [
+        "scripts/overview",
+        "scripts/client-reference",
+        "scripts/request-reference",
+        "scripts/response-reference",
+      ],
+    },
   ],
 };
 

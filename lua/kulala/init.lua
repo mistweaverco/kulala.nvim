@@ -6,6 +6,7 @@ local CONFIG = require("kulala.config")
 local JUMPS = require("kulala.jumps")
 local Graphql = require("kulala.graphql")
 local Logger = require("kulala.logger")
+local ScriptsUtils = require("kulala.scripts.utils")
 local M = {}
 
 M.setup = function(config)
@@ -52,6 +53,10 @@ M.search = function()
   else
     SELECTOR.search()
   end
+end
+
+M.scripts_clear_global = function(key_or_keys)
+  ScriptsUtils.clear_global(key_or_keys)
 end
 
 M.download_graphql_schema = function()

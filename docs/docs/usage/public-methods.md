@@ -54,6 +54,18 @@ It tries to load up a telescope prompt to select a file or fallback to using `vi
 
 `require('kulala').jump_next()` jumps to the next request.
 
+### scripts_clear_global
+
+`require('kulala').scripts_clear_global('variable_name')`
+clears a global variable set via `client.global.set`.
+
+You can clear all globals by omitting the `variable_name` like so:
+`require('kulala').scripts_clear_global()`.
+
+Additionally, you can clear a list of global variables by
+passing a table of variable names like so:
+`require('kulala').scripts_clear_global({'variable_name1', 'variable_name2'})`.
+
 ### download_graphql_schema
 
 You can download the schema of a GraphQL server with:
