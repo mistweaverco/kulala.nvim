@@ -6,6 +6,10 @@ All public methods are available via the `kulala` module.
 
 `require('kulala').run()` runs the current request.
 
+### run_all
+
+`require('kulala').run_all()` runs all requests in the current buffer.
+
 ### replay
 
 `require('kulala').replay()` replays the last run request.

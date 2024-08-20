@@ -265,11 +265,12 @@ M.get_document = function()
   return variables, requests
 end
 
-M.get_request_at_cursor = function(requests)
-  local cursor_pos = vim.api.nvim_win_get_cursor(0) -- {line, col}
-  local cursor_line = cursor_pos[1]
+M.get_request_at = function(requests, linenr)
+  if linenr == nil then
+    linenr = vim.api.nvim_win_get_cursor(0)[1]
+  end
   for _, request in ipairs(requests) do
-    if cursor_line >= request.start_line and cursor_line <= request.end_line then
+    if linenr >= request.start_line and linenr <= request.end_line then
       return request
     end
   end
@@ -342,8 +343,9 @@ end
 ---@field scripts Scripts
 
 ---Parse a request and return the request on itself, its headers and body
+---@param start_request_linenr number|nil The line number where the request starts
 ---@return Request -- Table containing the request data
-function M.parse()
+function M.parse(start_request_linenr)
   local res = {
     metadata = {},
     method = "GET",
@@ -365,7 +367,7 @@ function M.parse()
   }
 
   local document_variables, requests = M.get_document()
-  local req = M.get_request_at_cursor(requests)
+  local req = M.get_request_at(requests, start_request_linenr)
   Scripts.javascript.run("pre_request", req.scripts.pre_request)
   local env = ENV_PARSER.get_env()
 

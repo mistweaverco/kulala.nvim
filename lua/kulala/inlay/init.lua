@@ -1,4 +1,4 @@
-local NS = vim.api.nvim_create_namespace("jest.nvim")
+local NS = vim.api.nvim_create_namespace("kulala_inlay_hints")
 local CONFIG = require("kulala.config")
 
 local M = {}
@@ -12,6 +12,14 @@ M.clear = function()
   vim.api.nvim_buf_clear_namespace(0, NS, 0, -1)
 end
 
+M.clear_if_marked = function(bufnr, linenr)
+  local extmarks = vim.api.nvim_buf_get_extmarks(bufnr, NS, { linenr - 1, 0 }, { linenr - 1, -1 }, {})
+  if #extmarks > 0 then
+    local extmark_id = extmarks[1][1]
+    vim.api.nvim_buf_del_extmark(bufnr, NS, extmark_id)
+  end
+end
+
 M.show_loading = function(self, linenr)
   M.show(CONFIG.get().icons.inlay.loading, linenr)
 end
@@ -21,7 +29,7 @@ M.show_error = function(self, linenr)
 end
 
 M.show_done = function(self, linenr, elapsed_time)
-  icon = ""
+  local icon = ""
   if string.len(CONFIG.get().icons.inlay.done) > 0 then
     icon = CONFIG.get().icons.inlay.done .. " "
   end
@@ -29,8 +37,8 @@ M.show_done = function(self, linenr, elapsed_time)
 end
 
 M.show = function(t, linenr)
-  M.clear()
   local bufnr = vim.api.nvim_get_current_buf()
+  M.clear_if_marked(bufnr, linenr)
   vim.api.nvim_buf_set_extmark(bufnr, NS, linenr - 1, 0, {
     virt_text = { { t } },
   })

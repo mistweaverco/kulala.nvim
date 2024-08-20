@@ -143,7 +143,8 @@ M.copy = function()
 end
 
 M.open = function()
-  local result = PARSER:parse()
+  INLAY.clear()
+  local result = PARSER.parse()
   local icon_linenr = result.show_icon_line_number
   if icon_linenr then
     INLAY:show_loading(icon_linenr)
@@ -174,6 +175,35 @@ M.open = function()
         end
       end
     end)
+  end)
+end
+
+M.open_all = function()
+  INLAY.clear()
+  local _, doc = PARSER.get_document()
+  CMD.run_parser_all(doc, function(success, start, icon_linenr)
+    if not success then
+      if icon_linenr then
+        INLAY:show_error(icon_linenr)
+      end
+      return
+    else
+      local elapsed = vim.loop.hrtime() - start
+      local elapsed_ms = pretty_ms(elapsed / 1e6)
+      if icon_linenr then
+        INLAY:show_done(icon_linenr, elapsed_ms)
+      end
+      if not buffer_exists() then
+        open_buffer()
+      end
+      if CONFIG.get().default_view == "body" then
+        M.show_body()
+      elseif CONFIG.get().default_view == "headers" then
+        M.show_headers()
+      elseif CONFIG.get().default_view == "headers_body" then
+        M.show_headers_body()
+      end
+    end
   end)
 end
 

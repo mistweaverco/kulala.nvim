@@ -17,6 +17,10 @@ M.run = function()
   UI:open()
 end
 
+M.run_all = function()
+  UI:open_all()
+end
+
 M.replay = function()
   UI:replay()
 end
