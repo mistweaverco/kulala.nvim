@@ -125,7 +125,7 @@ Variables set via `client.global.set` are available in all requests and
 persist between neovim restarts.
 
 To clear a global variable,
-run [`lua require('kulala').scripts_clear_global('BONOBO')`](configuration-options#scripts_clear_global).
+run [`lua require('kulala').scripts_clear_global('BONOBO')`](../usage/configuration-options#scripts_clear_global).
 
 :::
 
