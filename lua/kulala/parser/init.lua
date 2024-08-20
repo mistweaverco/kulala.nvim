@@ -408,8 +408,7 @@ function M.parse()
 
   if res.headers["authorization"] then
     local auth_header = res.headers["authorization"]
-    local authtype, authuser, authpw = auth_header:match("^(%w+)%s+([^%s:]+)%s*[:%s]%s*([^%s]+)%s*$")
-
+    local authtype = auth_header:match("^(%w+)%s+.*")
     if authtype == nil then
       authtype = auth_header:match("^(%w+)%s*$")
     end
@@ -418,9 +417,33 @@ function M.parse()
       authtype = authtype:lower()
 
       if authtype == "ntlm" or authtype == "negotiate" or authtype == "digest" or authtype == "basic" then
+        local _, authuser, authpw = auth_header:match("^(%w+)%s+([^%s:]+)%s*[:%s]%s*([^%s]+)%s*$")
         table.insert(res.cmd, "--" .. authtype)
         table.insert(res.cmd, "-u")
         table.insert(res.cmd, (authuser or "") .. ":" .. (authpw or ""))
+        res.headers["authorization"] = nil
+      end
+
+      if authtype == "aws" then
+        local key, secret, optional = auth_header:match("^%w+%s([^%s]+)%s*([^%s]+)[%s$]+(.*)$")
+        local token = optional:match("token:([^%s]+)")
+        local region = optional:match("region:([^%s]+)")
+        local service = optional:match("service:([^%s]+)")
+        local provider = "aws:amz"
+        if region then
+          provider = provider .. ":" .. region
+        end
+        if service then
+          provider = provider ..":" ..service
+        end
+        table.insert(res.cmd, "--aws-sigv4")
+        table.insert(res.cmd, provider )
+        table.insert(res.cmd, "-u")
+        table.insert(res.cmd, key .. ":" .. secret)
+        if token then
+          table.insert(res.cmd, "-H")
+          table.insert(res.cmd, "x-amz-security-token:" .. token)
+        end
         res.headers["authorization"] = nil
       end
     end
