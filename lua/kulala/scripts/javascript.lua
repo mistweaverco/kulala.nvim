@@ -76,7 +76,17 @@ M.run = function(type, data)
   end
 
   for _, script in ipairs(scripts) do
-    vim.system({ "node", script.path }, { cwd = script.cwd }):wait()
+    vim
+      .system({
+        "node",
+        script.path,
+      }, {
+        cwd = script.cwd,
+        env = {
+          NODE_PATH = script.cwd .. "/" .. "node_modules",
+        },
+      })
+      :wait()
   end
 end
 
