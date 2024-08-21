@@ -1,3 +1,4 @@
+local Logger = require("kulala.logger")
 local FS = require("kulala.utils.fs")
 local GLOBALS = require("kulala.globals")
 local DB = require("kulala.db")
@@ -122,6 +123,24 @@ M.env_header_key = function(cmd)
     vim.notify("env-header-key --> Header not found.", vim.log.levels.ERROR)
   else
     DB.data.env[variable_name] = value
+  end
+end
+
+M.redirect_response_body_to_file = function(data)
+  if not FS.file_exists(GLOBALS.BODY_FILE) then
+    return
+  end
+  for _, redirect in ipairs(data) do
+    local fp = FS.join_paths(FS.get_current_buffer_dir(), redirect.file)
+    if FS.file_exists(fp) then
+      if redirect.overwrite then
+        FS.copy_file(GLOBALS.BODY_FILE, fp)
+      else
+        Logger.warn("File already exists and overwrite is disabled: " .. fp)
+      end
+    else
+      FS.copy_file(GLOBALS.BODY_FILE, fp)
+    end
   end
 end
 

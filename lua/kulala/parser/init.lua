@@ -123,6 +123,7 @@ M.get_document = function()
       block_line_count = block_line_count,
       lines_length = #lines,
       variables = {},
+      redirect_response_body_to_files = {},
       scripts = {
         pre_request = {
           inline = {},
@@ -170,6 +171,20 @@ M.get_document = function()
         if is_request_line == false then
           is_body_section = true
         end
+      -- redirect response body to file, without overwriting
+      elseif line:match("^>> (.*)$") then
+        local write_to_file = line:match("^>> (.*)$")
+        table.insert(request.redirect_response_body_to_files, {
+          file = write_to_file,
+          overwrite = false,
+        })
+      -- redirect response body to file, with overwriting
+      elseif line:match("^>>! (.*)$") then
+        local write_to_file = line:match("^>>! (.*)$")
+        table.insert(request.redirect_response_body_to_files, {
+          file = write_to_file,
+          overwrite = true,
+        })
       -- start of inline scripting
       elseif line:match("^> {%%$") then
         is_postrequest_handler_script_inline = true
@@ -322,6 +337,10 @@ local function extend_document_variables(document_variables, request)
   return document_variables
 end
 
+---@class ResponseBodyToFile
+---@field file string -- The file path to write the response body to
+---@field overwrite boolean -- Whether to overwrite the file if it already exists
+
 ---@class ScriptsItems
 ---@field inline table -- Inline post-request handler scripts - each element is a line of the script
 ---@field file table -- File post-request handler scripts - each element is a file path
@@ -341,6 +360,7 @@ end
 ---@field http_version string
 ---@field show_icon_line_number string
 ---@field scripts Scripts
+---@field redirect_response_body_to_files ResponseBodyToFile[]
 
 ---Parse a request and return the request on itself, its headers and body
 ---@param start_request_linenr number|nil The line number where the request starts
@@ -354,6 +374,7 @@ function M.parse(start_request_linenr)
     body = {},
     cmd = {},
     ft = "text",
+    redirect_response_body_to_files = {},
     scripts = {
       pre_request = {
         inline = {},
@@ -384,6 +405,7 @@ function M.parse(start_request_linenr)
   res.headers = parse_headers(req.headers, document_variables, env)
   res.body = parse_body(req.body, document_variables, env)
   res.metadata = req.metadata
+  res.redirect_response_body_to_files = req.redirect_response_body_to_files
 
   -- We need to append the contents of the file to
   -- the body if it is a POST request,

@@ -22,6 +22,10 @@ M.find_file_in_parent_dirs = function(filename)
   })[1]
 end
 
+M.copy_file = function(source, destination)
+  return vim.loop.fs_copyfile(source, destination, 0)
+end
+
 ---Get the current buffer directory
 ---@return string
 M.get_current_buffer_dir = function()

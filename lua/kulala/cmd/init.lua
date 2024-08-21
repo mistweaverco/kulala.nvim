@@ -86,6 +86,7 @@ M.run_parser = function(result, callback)
             end
           end
         end
+        INT_PROCESSING.redirect_response_body_to_file(result.redirect_response_body_to_files)
         Scripts.javascript.run("post_request", result.scripts.post_request)
         Api.trigger("after_request")
       end
@@ -130,8 +131,11 @@ M.run_parser_all = function(doc, callback)
             end
           end
         end
+        INT_PROCESSING.redirect_response_body_to_file(result.redirect_response_body_to_files)
+        Scripts.javascript.run("post_request", result.scripts.post_request)
         Api.trigger("after_request")
       end
+      Fs.delete_request_scripts_files()
       if callback then
         callback(success, start, icon_linenr)
       end
