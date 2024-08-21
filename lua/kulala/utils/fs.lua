@@ -156,7 +156,7 @@ end
 M.get_request_scripts_variables = function()
   local dir = M.get_request_scripts_dir()
   if M.file_exists(dir .. "/request_variables.json") then
-    return vim.fn.json_decode(M.read_file(join_paths(dir, "request_variables.json")))
+    return vim.fn.json_decode(M.read_file(M.join_paths(dir, "request_variables.json")))
   end
   return nil
 end
