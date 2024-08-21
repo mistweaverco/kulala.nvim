@@ -118,13 +118,14 @@ local function pretty_ms(ms)
 end
 
 M.copy = function()
-  local result = PARSER:parse()
+  local result = PARSER.parse()
   local cmd_table = {}
   local skip_arg = false
   for idx, v in ipairs(result.cmd) do
     if string.sub(v, 1, 1) == "-" or idx == 1 then
       -- remove headers and body output to file
-      if v == "-o" or v == "-D" then
+      -- remove --cookie-jar
+      if v == "-o" or v == "-D" or v == "--cookie-jar" then
         skip_arg = true
       else
         table.insert(cmd_table, v)
