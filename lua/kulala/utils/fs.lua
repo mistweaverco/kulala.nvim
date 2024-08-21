@@ -158,7 +158,7 @@ end
 M.get_global_scripts_variables = function()
   local fp = M.get_global_scripts_variables_file_path()
   if M.file_exists(fp) then
-    return vim.fn.json_decode(fp)
+    return vim.fn.json_decode(M.read_file(fp))
   end
   return nil
 end
