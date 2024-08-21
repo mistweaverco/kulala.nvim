@@ -176,7 +176,12 @@ M.get_path_separator = function()
 end
 
 M.get_plugin_root_dir = function()
-  return debug.getinfo(1).source:match("@(.*" .. M.get_path_separator() .. ")") .. ".."
+  local source = debug.getinfo(1).source
+  local dir_path  = source:match("@(.*/)")
+  if dir_path == nil then
+    dir_path = source:match("@(.*\\)")
+  end
+  return dir_path .. ".."
 end
 
 ---Gets a directory path for the plugin
