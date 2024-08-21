@@ -76,7 +76,7 @@ M.run = function(type, data)
   end
 
   for _, script in ipairs(scripts) do
-    vim
+    local output = vim
       .system({
         "node",
         script.path,
@@ -87,6 +87,14 @@ M.run = function(type, data)
         },
       })
       :wait()
+    if output ~= nil then
+      if output.stderr ~= nil then
+        vim.print(output.stderr)
+      end
+      if output.stdout ~= nil then
+        vim.print(output.stdout)
+      end
+    end
   end
 end
 
