@@ -9,6 +9,7 @@ local FS = require("kulala.utils.fs")
 local DB = require("kulala.db")
 local INT_PROCESSING = require("kulala.internal_processing")
 local FORMATTER = require("kulala.formatter")
+local Inspect = require("kulala.parser.inspect")
 local M = {}
 
 local get_win = function()
@@ -324,6 +325,71 @@ M.toggle_headers = function()
   else
     M.show_headers()
   end
+end
+
+M.inspect = function()
+  -- Create a new buffer
+  local buf = vim.api.nvim_create_buf(false, true)
+  local content = Inspect.get_contents()
+
+  -- Set the content of the buffer
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, content)
+
+  -- Set the filetype to http to enable syntax highlighting
+  vim.bo[buf].filetype = "http"
+
+  -- Get the total dimensions of the editor
+  local total_width = vim.o.columns
+  local total_height = vim.o.lines
+
+  -- Calculate the content dimensions
+  local content_width = 0
+  for _, line in ipairs(content) do
+      if #line > content_width then
+          content_width = #line
+      end
+  end
+  local content_height = #content
+
+  -- Ensure the window doesn't exceed 80% of the total size
+  local win_width = math.min(content_width, math.floor(total_width * 0.8))
+  local win_height = math.min(content_height, math.floor(total_height * 0.8))
+
+  -- Calculate the window position to center it
+  local row = math.floor((total_height - win_height) / 2)
+  local col = math.floor((total_width - win_width) / 2)
+
+  -- Define the floating window configuration
+  local win_config = {
+      relative = 'editor',
+      width = win_width,
+      height = win_height,
+      row = row,
+      col = col,
+      style = 'minimal',
+      border = 'rounded',
+  }
+
+  -- Create the floating window with the buffer
+  local win = vim.api.nvim_open_win(buf, true, win_config)
+
+  -- Set up an autocommand to close the floating window on any buffer leave
+  vim.api.nvim_create_autocmd("BufLeave", {
+      buffer = buf,
+      once = true,
+      callback = function()
+          vim.api.nvim_win_close(win, true)
+      end
+  })
+
+  -- Map the 'q' key to close the window
+  vim.api.nvim_buf_set_keymap(buf, 'n', 'q', '', {
+      noremap = true,
+      silent = true,
+      callback = function()
+          vim.api.nvim_win_close(win, true)
+      end,
+  })
 end
 
 return M

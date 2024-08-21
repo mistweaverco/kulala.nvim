@@ -25,6 +25,10 @@ M.replay = function()
   UI:replay()
 end
 
+M.inspect = function()
+  UI:inspect()
+end
+
 M.copy = function()
   UI:copy()
 end

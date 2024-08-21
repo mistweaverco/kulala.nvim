@@ -14,6 +14,12 @@ All public methods are available via the `kulala` module.
 
 `require('kulala').replay()` replays the last run request.
 
+### inspect
+
+`require('kulala').inspect()` inspects the current request.
+
+It opens up a floating window with the parsed request.
+
 ### scratchpad
 
 `require('kulala').scratchpad()` opens the scratchpad.
