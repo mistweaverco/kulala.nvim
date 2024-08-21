@@ -36,6 +36,7 @@ const sidebars: SidebarsConfig = {
         "usage/dynamically-setting-environment-variables-based-on-response-json",
         "usage/dynamically-setting-environment-variables-based-on-headers",
         "usage/file-to-variable",
+        "usage/redirect-the-response",
         "usage/graphql",
         "usage/magic-variables",
         "usage/sending-form-data",
