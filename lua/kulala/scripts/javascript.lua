@@ -4,8 +4,8 @@ local M = {}
 local NODE_EXISTS = vim.fn.executable("node") == 1
 local SCRIPTS_DIR = Fs.get_scripts_dir()
 local REQUEST_SCRIPTS_DIR = Fs.get_request_scripts_dir()
-local BASE_FILE_PRE = SCRIPTS_DIR .. "/pre_request_base.js"
-local BASE_FILE_POST = SCRIPTS_DIR .. "/post_request_base.js"
+local BASE_FILE_PRE = Fs.join_paths(SCRIPTS_DIR, "pre_request_base.js")
+local BASE_FILE_POST = Fs.join_paths(SCRIPTS_DIR, "post_request_base.js")
 
 local generate_one = function(script_type, is_external_file, script_data)
   local lines
@@ -18,7 +18,7 @@ local generate_one = function(script_type, is_external_file, script_data)
   if is_external_file then
     -- if script_data starts with ./ or ../, it is a relative path
     if string.match(script_data, "^%./") or string.match(script_data, "^%../") then
-      script_data = Fs.get_current_buffer_dir() .. "/" .. script_data:gsub("^%./", "")
+      script_data = Fs.get_current_buffer_dir() .. Fs.ps .. script_data:gsub("^%./", "")
     end
     script_cwd = Fs.get_dir_by_filepath(script_data)
     lines = Fs.read_file_lines(script_data)
@@ -33,7 +33,7 @@ local generate_one = function(script_type, is_external_file, script_data)
     return nil, nil
   end
   local uuid = Fs.get_uuid()
-  local script_path = REQUEST_SCRIPTS_DIR .. "/" .. uuid .. ".js"
+  local script_path = REQUEST_SCRIPTS_DIR .. Fs.ps .. uuid .. ".js"
   Fs.write_file(script_path, base_file)
   return script_path, script_cwd
 end
@@ -83,7 +83,7 @@ M.run = function(type, data)
       }, {
         cwd = script.cwd,
         env = {
-          NODE_PATH = script.cwd .. "/" .. "node_modules",
+          NODE_PATH = script.cwd .. Fs.ps .. "node_modules",
         },
       })
       :wait()

@@ -1,5 +1,15 @@
 local M = {}
 
+--- Path separator
+M.ps = package.config:sub(1, 1)
+
+---Join paths -- similar to os.path.join in python
+---@vararg string
+---@return string
+M.join_paths = function(...)
+  return table.concat({ ... }, M.ps)
+end
+
 -- find nearest file in parent directories, starting from the current buffer file path
 --- @param filename string
 --- @return string|nil
@@ -92,24 +102,24 @@ end
 --- @return string
 --- @usage local p = fs.get_plugin_tmp_dir()
 M.get_plugin_tmp_dir = function()
-  local dir = vim.fn.stdpath("data") .. "/tmp/kulala"
+  local dir = M.join_paths(vim.fn.stdpath("data"), "tmp", "kulala")
   M.ensure_dir_exists(dir)
   return dir
 end
 
 M.get_scripts_dir = function()
-  local dir = M.get_plugin_root_dir() .. "/scripts"
+  local dir = M.join_paths(M.get_plugin_root_dir(), "scripts")
   return dir
 end
 
 M.get_tmp_scripts_dir = function()
-  local dir = M.get_plugin_tmp_dir() .. "/scripts"
+  local dir = M.join_paths(M.get_plugin_tmp_dir(), "scripts")
   M.ensure_dir_exists(dir)
   return dir
 end
 
 M.get_request_scripts_dir = function()
-  local dir = M.get_plugin_tmp_dir() .. "/scripts/requests"
+  local dir = M.join_paths(M.get_plugin_tmp_dir(), "scripts", "requests")
   M.ensure_dir_exists(dir)
   return dir
 end
@@ -126,7 +136,7 @@ M.delete_files_in_directory = function(dir)
       end
       -- Only delete files, not directories
       if type == "file" then
-        local filepath = dir .. "/" .. name
+        local filepath = dir .. M.ps .. name
         local success, err = vim.loop.fs_unlink(filepath)
         if not success then
           print("Error deleting file:", filepath, err)
@@ -146,13 +156,13 @@ end
 M.get_request_scripts_variables = function()
   local dir = M.get_request_scripts_dir()
   if M.file_exists(dir .. "/request_variables.json") then
-    return vim.fn.json_decode(M.read_file(dir .. "/request_variables.json"))
+    return vim.fn.json_decode(M.read_file(join_paths(dir, "request_variables.json")))
   end
   return nil
 end
 
 M.get_global_scripts_variables_file_path = function()
-  return M.get_tmp_scripts_dir() .. "/global_variables.json"
+  return M.join_paths(M.get_tmp_scripts_dir(), "global_variables.json")
 end
 
 M.get_global_scripts_variables = function()
@@ -171,15 +181,11 @@ M.command_exists = function(cmd)
   return vim.fn.executable(cmd) == 1
 end
 
-M.get_path_separator = function()
-  return package.config:sub(1, 1)
-end
-
 M.get_plugin_root_dir = function()
   local source = debug.getinfo(1).source
-  local dir_path  = source:match("@(.*/)")
+  local dir_path  = source:match("@(.*/)") or source:match("@(.*\\)")
   if dir_path == nil then
-    dir_path = source:match("@(.*\\)")
+    return nil
   end
   return dir_path .. ".."
 end
@@ -188,7 +194,7 @@ end
 ---@param paths string[]
 ---@return string
 M.get_plugin_path = function(paths)
-  return M.get_plugin_root_dir() .. M.get_path_separator() .. table.concat(paths, M.get_path_separator())
+  return M.get_plugin_root_dir() .. M.ps .. table.concat(paths, M.ps)
 end
 
 -- Read a file
