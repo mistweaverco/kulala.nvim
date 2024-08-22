@@ -187,7 +187,6 @@ M.open_all = function()
   local requests
   if CONFIG:get().treesitter then
     requests = TS.get_all_requests()
-    vim.print(#requests)
   else
     _, requests = PARSER.get_document()
   end
