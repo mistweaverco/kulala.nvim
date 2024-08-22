@@ -60,8 +60,6 @@ M.defaults = {
   winbar = false,
   -- enable reading vscode rest client environment variables
   vscode_rest_client_environmentvars = false,
-  -- parse requests with tree-sitter
-  treesitter = false,
 }
 
 M.default_contenttype = {
