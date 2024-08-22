@@ -8,6 +8,7 @@ local GRAPHQL_PARSER = require("kulala.parser.graphql")
 local REQUEST_VARIABLES = require("kulala.parser.request_variables")
 local STRING_UTILS = require("kulala.utils.string")
 local PARSER_UTILS = require("kulala.parser.utils")
+local TS = require("kulala.parser.treesitter")
 local PLUGIN_TMP_DIR = FS.get_plugin_tmp_dir()
 local Scripts = require("kulala.scripts")
 local Logger = require("kulala.logger")
@@ -387,8 +388,15 @@ function M.parse(start_request_linenr)
     },
   }
 
-  local document_variables, requests = M.get_document()
-  local req = M.get_request_at(requests, start_request_linenr)
+  local req, document_variables
+  if CONFIG:get().treesitter then
+    document_variables = TS.get_document_variables()
+    req = TS.get_request_at(start_request_linenr)
+  else
+    local requests
+    document_variables, requests = M.get_document()
+    req = M.get_request_at(requests, start_request_linenr)
+  end
   Scripts.javascript.run("pre_request", req.scripts.pre_request)
   local env = ENV_PARSER.get_env()
 
