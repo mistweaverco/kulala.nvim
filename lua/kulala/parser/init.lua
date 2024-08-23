@@ -469,7 +469,7 @@ function M.parse(start_request_linenr)
         res.headers["content-type"] = "application/json"
       end
     elseif res.headers["content-type"]:find("^multipart/form%-data") then
-      table.insert(res.cmd, "--data-binary")
+      table.insert(res.cmd, "--form")
       table.insert(res.cmd, res.body)
     else
       table.insert(res.cmd, "--data")
