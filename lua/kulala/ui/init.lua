@@ -129,7 +129,10 @@ local function print_http_spec(spec)
   local lines = {}
   local idx = 1
 
-  lines[idx] = spec.method .. " " .. spec.url .. " HTTP/1.1"
+  lines[idx] = spec.method .. " " .. spec.url
+  if spec.http_version ~= "" then
+    lines[idx] = lines[idx] .. " " .. spec.http_version
+  end
   for header, value in pairs(spec.headers) do
     idx = idx + 1
     lines[idx] = header .. ": " .. value

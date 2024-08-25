@@ -14,10 +14,11 @@ function M.parse(curl)
     return nil
   end
   local res = {
-    method = "GET",
+    method = "",
     headers = {},
     data = nil,
     url = parts[#parts],
+    http_version = "",
   }
 
   local State = {
@@ -31,14 +32,23 @@ function M.parse(curl)
 
   for _, arg in ipairs(parts) do
     if state == State.START then
-      if arg == "-X" then
+      if arg == "-X" or arg == "--request" then
         state = State.Method
-      elseif arg == "-A" then
+      elseif arg == "-A" or arg == "--user-agent" then
         state = State.UserAgent
-      elseif arg == "-H" then
+      elseif arg == "-H" or arg == "--header" then
         state = State.Header
-      elseif arg == "--data" then
+      elseif arg == "-d" or arg == "--data" then
         state = State.Body
+        if res.method == "" then
+          res.method = "POST"
+        end
+      elseif arg == "--http1.1" then
+          res.http_version = "HTTP/1.1"
+      elseif arg == "--http2" then
+          res.http_version = "HTTP/2"
+      elseif arg == "--http3" then
+          res.http_version = "HTTP/3"
       end
       goto continue
     end
@@ -59,6 +69,9 @@ function M.parse(curl)
     ::continue::
   end
 
+  if res.method == "" then
+    res.method = "GET"
+  end
   return res
 end
 
