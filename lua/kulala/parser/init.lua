@@ -102,6 +102,10 @@ local function parse_body(body, variables, env)
 end
 
 M.get_document = function()
+  if CONFIG.get().treesitter then
+    return TS.get_document()
+  end
+
   local content_lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
   local content = table.concat(content_lines, "\n")
   local variables = {}
