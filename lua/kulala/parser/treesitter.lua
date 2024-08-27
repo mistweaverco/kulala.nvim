@@ -4,19 +4,17 @@ local STRING_UTILS = require("kulala.utils.string")
 
 local M = {}
 
-local QUERIES = {}
-local function init_queries()
-  if QUERIES.section then
-    return
-  end
+local QUERIES = {
+  section = vim.treesitter.query.parse("http", "(section) @section"),
 
-  QUERIES.section = vim.treesitter.query.parse("http", "(section) @section")
-  QUERIES.variable = vim.treesitter.query.parse("http", "(variable_declaration) @variable")
-  QUERIES.request = vim.treesitter.query.parse("http", [[
+  variable = vim.treesitter.query.parse("http", "(variable_declaration) @variable"),
+
+  request = vim.treesitter.query.parse("http", [[
     (comment name: (_) value: (_)) @meta
 
     (pre_request_script
-      (script)? @script.pre.inline
+      ((script) @script.pre.inline
+        (#offset! @script.pre.inline 0 2 0 -2))?
       (path)? @script.pre.file)
 
     (request
@@ -27,23 +25,26 @@ local function init_queries()
       ]?) @request
 
     (res_handler_script
-      (script)? @script.post.inline
+      ((script) @script.post.inline
+        (#offset! @script.post.inline 0 2 0 -2))?
       (path)? @script.post.file)
   ]])
-end
+}
 
-local function text(node)
+local function text(node, metadata)
   if not node then
     return nil
   end
 
-  local node_text = vim.treesitter.get_node_text(node, 0)
+  local node_text = vim.treesitter.get_node_text(node, 0, { metadata = metadata })
   return STRING_UTILS.trim(node_text)
 end
 
 local REQUEST_VISITORS = {
-  request = function(req, node, fields)
-    local start_line, _, end_line, _ = node:range()
+  request = function(req, args)
+    local fields = args.fields
+    local start_line, _, end_line, _ = args.node:range()
+
     req.url = fields.url
     req.method = fields.method
     req.http_version = fields.http_version
@@ -65,35 +66,33 @@ local REQUEST_VISITORS = {
     end
   end,
 
-  header = function(req, _, fields)
-    req.headers[fields.name:lower()] = fields.value
+  header = function(req, args)
+    req.headers[args.fields.name:lower()] = args.fields.value
   end,
 
-  meta = function(req, _, fields)
-    table.insert(req.metadata, fields)
+  meta = function(req, args)
+    table.insert(req.metadata, args.fields)
   end,
 
-  ["script.pre.inline"] = function(req, _, node)
-    local script = text(node):gsub("{%%%s*(.-)%s*%%}", "%1")
-    table.insert(req.scripts.pre_request.inline, script)
+  ["script.pre.inline"] = function(req, args)
+    table.insert(req.scripts.pre_request.inline, args.text)
   end,
 
-  ["script.pre.file"] = function(req, _, fields)
-    table.insert(req.scripts.pre_request.files, fields.path)
+  ["script.pre.file"] = function(req, args)
+    table.insert(req.scripts.pre_request.files, args.fields.path)
   end,
 
-  ["script.post.inline"] = function(req, node, _)
-    local script = text(node):gsub("{%%%s*(.-)%s*%%}", "%1")
-    table.insert(req.scripts.post_request.inline, script)
+  ["script.post.inline"] = function(req, args)
+    table.insert(req.scripts.post_request.inline, args.text)
   end,
 
-  ["script.post.file"] = function(req, _, fields)
-    table.insert(req.scripts.post_request.files, fields.path)
+  ["script.post.file"] = function(req, args)
+    table.insert(req.scripts.post_request.files, args.fields.path)
   end,
 
-  ["body.external"] = function(req, _, fields)
-    local contents = FS.read_file(fields.path)
-    if fields.path:match("%.graphql$") or fields.path:match("%.gql$") then
+  ["body.external"] = function(req, args)
+    local contents = FS.read_file(args.fields.path)
+    if args.fields.path:match("%.graphql$") or args.fields.path:match("%.gql$") then
       if req.method == "POST" then
         req.body = string.format('{ "query": %q }', STRING_UTILS.remove_newline(contents))
         req.headers['content-type'] = "application/json"
@@ -111,10 +110,10 @@ local REQUEST_VISITORS = {
     end
   end,
 
-  ["body.graphql"] = function(req, node, _)
+  ["body.graphql"] = function(req, args)
     local json_body = {}
 
-    for child in node:iter_children() do
+    for child in args.node:iter_children() do
       if child:type() == "graphql_data" then
         json_body.query = text(child)
       elseif child:type() == "json_body" then
@@ -163,12 +162,15 @@ local function parse_request(section_node)
     },
   }
 
-  for i, node in QUERIES.request:iter_captures(section_node, 0) do
+  for i, node, metadata in QUERIES.request:iter_captures(section_node, 0) do
     local capture = QUERIES.request.captures[i]
-    local fields = get_fields(node)
 
     if REQUEST_VISITORS[capture] then
-      REQUEST_VISITORS[capture](req, node, fields)
+      REQUEST_VISITORS[capture](req, {
+        node = node,
+        text = text(node, metadata[i]),
+        fields = get_fields(node),
+      })
     end
   end
 
@@ -176,7 +178,6 @@ local function parse_request(section_node)
 end
 
 M.get_document_variables = function()
-  init_queries()
   local root = get_root_node()
   local vars = {}
 
@@ -190,7 +191,6 @@ end
 
 M.get_request_at = function(line)
   line = line or vim.fn.line(".")
-  init_queries()
   local root = get_root_node()
 
   for _, section_node in QUERIES.section:iter_captures(root, 0, line, line) do
@@ -199,7 +199,6 @@ M.get_request_at = function(line)
 end
 
 M.get_all_requests = function()
-  init_queries()
   local root = get_root_node()
 
   local requests = {}
