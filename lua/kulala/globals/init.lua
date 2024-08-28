@@ -10,5 +10,6 @@ M.SCRATCHPAD_ID = "kulala://scratchpad"
 M.HEADERS_FILE = plugin_tmp_dir .. "/headers.txt"
 M.BODY_FILE = plugin_tmp_dir .. "/body.txt"
 M.COOKIES_JAR_FILE = plugin_tmp_dir .. "/cookies.txt"
+M.CONSOLE_FILE = plugin_tmp_dir .. "/console.txt"
 
 return M

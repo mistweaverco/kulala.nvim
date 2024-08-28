@@ -50,8 +50,9 @@ If you have a folder structure like this:
 You can use the `require` function to import modules in `my-script.js`:
 
 ```javascript
-const moment = require('moment');
+const moment = require("moment");
 ```
+
 as long as the module is installed in the same directory as the script, or globally.
 
 The current working directory for `my-script.js` is the `scripts` directory.
@@ -59,8 +60,8 @@ The current working directory for `my-script.js` is the `scripts` directory.
 So want to write a file in the `http` directory, you can use a relative path:
 
 ```javascript
-const fs = require('fs');
-fs.writeFileSync('../http/my-file.txt', 'Hello, world!');
+const fs = require("fs");
+fs.writeFileSync("../http/my-file.txt", "Hello, world!");
 ```
 
 ## Pre-request
@@ -202,6 +203,7 @@ run [`lua require('kulala').scripts_clear_global('BONOBO')`](../usage/public-met
 ```text title="./TOKEN.txt"
 THIS_IS_SOME_TOKEN_VALUE_123
 ```
+
 ## Post-request
 
 ```http title="./post-request-example.http"
@@ -255,4 +257,48 @@ Content-Type: application/json
 
 ```javascript title="./post-request.js"
 client.global.set("BONOBO", response.headers.valueOf("Date"));
+```
+
+## Print Variables
+
+```http title="./pre-request-example.http"
+# @name REQUEST_ONE
+< {%
+  var crypto = require('crypto');
+  var fs = require('fs');
+  var TOKEN = fs.readFileSync('TOKEN.txt', 'utf8').trim();
+  var PASSWORD = crypto.randomBytes(16).toString('hex');
+  request.variables.set('GORILLA', TOKEN);
+  request.variables.set('PASSWORD', PASSWORD);
+  console.log(TOKEN)
+  console.log(PASSWORD)
+%}
+< ./pre-request.js
+POST https://httpbin.org/post HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer Foo:bar
+
+{
+  "token": "{{GORILLA}}",
+  "password": "{{PASSWORD}}",
+  "deep": {
+    "nested": [
+      {
+        "key": "foo"
+      },
+      {
+        "key": "{{BONOBO}}"
+      }
+    ]
+  }
+}
+
+> {%
+  var token = response.body.json.token
+  var fs = require('fs');
+  fs.writeFileSync('TOKEN.txt', token);
+  client.global.set('GORILLA_TOKEN', token);
+  console.log(token)
+%}
 ```

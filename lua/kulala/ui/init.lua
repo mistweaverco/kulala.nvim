@@ -75,7 +75,7 @@ local open_buffer = function()
   local prev_win = vim.api.nvim_get_current_win()
   local sd = CONFIG.get().split_direction == "vertical" and "vsplit" or "split"
   vim.cmd(sd .. " " .. GLOBALS.UI_ID)
-  if CONFIG.get().winbar then
+  if CONFIG.show_winbar() then
     WINBAR.create_winbar(get_win())
   end
   vim.api.nvim_set_current_win(prev_win)
@@ -238,7 +238,7 @@ M.show_body = function()
       body = FORMATTER.format(contenttype.formatter, body)
     end
     set_buffer_contents(body, contenttype.ft)
-    if CONFIG.get().winbar then
+    if CONFIG.show_winbar() then
       WINBAR.toggle_winbar_tab(get_win(), "body")
     end
     CONFIG.options.default_view = "body"
@@ -255,7 +255,7 @@ M.show_headers = function()
     local h = FS.read_file(GLOBALS.HEADERS_FILE)
     h = h:gsub("\r\n", "\n")
     set_buffer_contents(h, "text")
-    if CONFIG.get().winbar then
+    if CONFIG.show_winbar() then
       WINBAR.toggle_winbar_tab(get_win(), "headers")
     end
     CONFIG.options.default_view = "headers"
@@ -277,12 +277,30 @@ M.show_headers_body = function()
       body = FORMATTER.format(contenttype.formatter, body)
     end
     set_buffer_contents(h .. "\n" .. body, contenttype.ft)
-    if CONFIG.get().winbar then
+    if CONFIG.show_winbar() then
       WINBAR.toggle_winbar_tab(get_win(), "headers_body")
     end
     CONFIG.options.default_view = "headers_body"
   else
     vim.notify("No headers or body found", vim.log.levels.WARN)
+  end
+end
+
+M.show_console = function()
+  local console_file = GLOBALS.CONSOLE_FILE
+  if FS.file_exists(console_file) then
+    if not buffer_exists() then
+      open_buffer()
+    end
+    local h = FS.read_file(console_file)
+    h = h:gsub("\r\n", "\n")
+    set_buffer_contents(h, "text")
+    if CONFIG.show_winbar() then
+      WINBAR.toggle_winbar_tab(get_win(), "console")
+    end
+    CONFIG.options.default_view = "console"
+  else
+    vim.notify("No console found", vim.log.levels.WARN)
   end
 end
 
@@ -353,9 +371,9 @@ M.inspect = function()
   -- Calculate the content dimensions
   local content_width = 0
   for _, line in ipairs(content) do
-      if #line > content_width then
-          content_width = #line
-      end
+    if #line > content_width then
+      content_width = #line
+    end
   end
   local content_height = #content
 
@@ -369,13 +387,13 @@ M.inspect = function()
 
   -- Define the floating window configuration
   local win_config = {
-      relative = 'editor',
-      width = win_width,
-      height = win_height,
-      row = row,
-      col = col,
-      style = 'minimal',
-      border = 'rounded',
+    relative = "editor",
+    width = win_width,
+    height = win_height,
+    row = row,
+    col = col,
+    style = "minimal",
+    border = "rounded",
   }
 
   -- Create the floating window with the buffer
@@ -383,20 +401,20 @@ M.inspect = function()
 
   -- Set up an autocommand to close the floating window on any buffer leave
   vim.api.nvim_create_autocmd("BufLeave", {
-      buffer = buf,
-      once = true,
-      callback = function()
-          vim.api.nvim_win_close(win, true)
-      end
+    buffer = buf,
+    once = true,
+    callback = function()
+      vim.api.nvim_win_close(win, true)
+    end,
   })
 
   -- Map the 'q' key to close the window
-  vim.api.nvim_buf_set_keymap(buf, 'n', 'q', '', {
-      noremap = true,
-      silent = true,
-      callback = function()
-          vim.api.nvim_win_close(win, true)
-      end,
+  vim.api.nvim_buf_set_keymap(buf, "n", "q", "", {
+    noremap = true,
+    silent = true,
+    callback = function()
+      vim.api.nvim_win_close(win, true)
+    end,
   })
 end
 

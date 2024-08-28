@@ -58,6 +58,7 @@ M.defaults = {
   },
   -- enable winbar
   winbar = false,
+  default_winbar = { "body", "headers", "headers_body" },
   -- enable reading vscode rest client environment variables
   vscode_rest_client_environmentvars = false,
   -- parse requests with tree-sitter
@@ -82,6 +83,22 @@ end
 
 M.get = function()
   return M.options
+end
+
+M.show_winbar = function()
+  local winbar = M.get_winbar()
+  return #winbar ~= 0
+end
+
+M.get_winbar = function()
+  local winbar = M.get().winbar
+  if winbar == true then
+    return M.defaults.default_winbar
+  elseif vim.tbl_islist(winbar) then
+    return winbar
+  else
+    return {}
+  end
 end
 
 return M
