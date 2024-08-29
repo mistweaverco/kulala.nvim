@@ -1,4 +1,5 @@
 local Shlex = require("kulala.shlex")
+local Stringutils = require("kulala.utils.string")
 
 local M = {}
 
@@ -68,9 +69,8 @@ function M.parse(curl)
     elseif state == State.UserAgent then
       res.headers["user-agent"] = arg
     elseif state == State.Header then
-      local header = string.match(arg, "^(.*):")
-      local value = string.match(arg, ":(.*)$")
-      res.headers[header] = value
+      local header, value = Stringutils.cut(arg, ":")
+      res.headers[Stringutils.remove_extra_space(header)] = Stringutils.remove_extra_space(value)
     elseif state == State.Body then
       res.body = arg
     end
