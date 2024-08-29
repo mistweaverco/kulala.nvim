@@ -41,10 +41,13 @@ function M.parse(curl)
         state = State.UserAgent
       elseif arg == "-H" or arg == "--header" then
         state = State.Header
-      elseif arg == "-d" or arg == "--data" then
+      elseif arg == "-d" or arg == "--data" or arg == "--data-raw" then
         state = State.Body
         if res.method == "" then
           res.method = "POST"
+        end
+        if res.headers["content-type"] == nil then
+          res.headers["content-type"] = "application/x-www-form-urlencoded"
         end
       elseif arg == "--http1.1" then
           res.http_version = "HTTP/1.1"
