@@ -49,6 +49,10 @@ function M.parse(curl)
         if res.headers["content-type"] == nil then
           res.headers["content-type"] = "application/x-www-form-urlencoded"
         end
+      elseif arg == "--json" then
+          state = State.Body
+          res.headers["content-type"] = "application/json"
+          res.headers["accept"] = "application/json"
       elseif arg == "--http1.1" then
           res.http_version = "HTTP/1.1"
       elseif arg == "--http2" then
