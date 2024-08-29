@@ -17,7 +17,7 @@ function M.parse(curl)
     method = "",
     headers = {},
     data = nil,
-    url = parts[#parts],
+    url = "",
     http_version = "",
   }
 
@@ -32,7 +32,10 @@ function M.parse(curl)
 
   for _, arg in ipairs(parts) do
     if state == State.START then
-      if arg == "-X" or arg == "--request" then
+      if arg:match("^http[s]?://") and res.url == "" then
+        res.url = arg
+        goto continue
+      elseif arg == "-X" or arg == "--request" then
         state = State.Method
       elseif arg == "-A" or arg == "--user-agent" then
         state = State.UserAgent
