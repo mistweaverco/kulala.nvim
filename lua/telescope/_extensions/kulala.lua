@@ -12,6 +12,7 @@ local actions = require("telescope.actions")
 local finders = require("telescope.finders")
 local pickers = require("telescope.pickers")
 local previewers = require("telescope.previewers")
+local config = require("telescope.config").values
 
 local function kulala_search(_)
   -- a list of all the .http/.rest files in the current directory
@@ -38,6 +39,7 @@ local function kulala_search(_)
       previewer = previewers.vim_buffer_cat.new({
         title = "Preview",
       }),
+      sorter = config.generic_sorter({}),
     })
     :find()
 end
@@ -83,6 +85,7 @@ local function kulala_env_select(_)
           vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, lines)
         end,
       }),
+      sorter = config.generic_sorter({}),
     })
     :find()
 end

@@ -15,7 +15,7 @@ M.get_contents = function()
   end
   if req.body ~= nil then
     table.insert(contents, "")
-    local body_as_table = vim.split(req.body, "\r\n")
+    local body_as_table = vim.split(req.body, "\r?\n")
     for _, line in ipairs(body_as_table) do
       table.insert(contents, line)
     end

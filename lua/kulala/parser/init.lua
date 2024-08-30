@@ -8,6 +8,7 @@ local GRAPHQL_PARSER = require("kulala.parser.graphql")
 local REQUEST_VARIABLES = require("kulala.parser.request_variables")
 local STRING_UTILS = require("kulala.utils.string")
 local PARSER_UTILS = require("kulala.parser.utils")
+local TS = require("kulala.parser.treesitter")
 local PLUGIN_TMP_DIR = FS.get_plugin_tmp_dir()
 local Scripts = require("kulala.scripts")
 local Logger = require("kulala.logger")
@@ -101,6 +102,10 @@ local function parse_body(body, variables, env)
 end
 
 M.get_document = function()
+  if CONFIG.get().treesitter then
+    return TS.get_document()
+  end
+
   local content_lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
   local content = table.concat(content_lines, "\n")
   local variables = {}
@@ -387,8 +392,15 @@ function M.parse(start_request_linenr)
     },
   }
 
-  local document_variables, requests = M.get_document()
-  local req = M.get_request_at(requests, start_request_linenr)
+  local req, document_variables
+  if CONFIG:get().treesitter then
+    document_variables = TS.get_document_variables()
+    req = TS.get_request_at(start_request_linenr)
+  else
+    local requests
+    document_variables, requests = M.get_document()
+    req = M.get_request_at(requests, start_request_linenr)
+  end
   Scripts.javascript.run("pre_request", req.scripts.pre_request)
   local env = ENV_PARSER.get_env()
 
@@ -410,7 +422,7 @@ function M.parse(start_request_linenr)
   -- We need to append the contents of the file to
   -- the body if it is a POST request,
   -- or to the URL itself if it is a GET request
-  if req.body_type == "input" then
+  if req.body_type == "input" and not CONFIG:get().treesitter then
     if req.body_path:match("%.graphql$") or req.body_path:match("%.gql$") then
       local graphql_file = io.open(req.body_path, "r")
       local graphql_query = graphql_file:read("*a")
@@ -453,15 +465,20 @@ function M.parse(start_request_linenr)
   table.insert(res.cmd, PLUGIN_TMP_DIR .. "/body.txt")
   table.insert(res.cmd, "-X")
   table.insert(res.cmd, res.method)
+
+  local is_graphql = PARSER_UTILS.contains_meta_tag(req, "graphql") or
+    PARSER_UTILS.contains_header(res.headers, "x-request-type", "GraphQL")
+  if CONFIG.get().treesitter then
+    -- treesitter parser handles graphql requests before this point
+    is_graphql = false
+  end
+
   if res.headers["content-type"] ~= nil and res.body ~= nil then
     -- check if we are a graphql query
     -- we need this here, because the user could have defined the content-type
     -- as application/json, but the body is a graphql query
     -- This can happen when the user is using http-client.env.json with DEFAULT_HEADERS.
-    if
-      PARSER_UTILS.contains_meta_tag(req, "graphql")
-      or PARSER_UTILS.contains_header(res.headers, "x-request-type", "GraphQL")
-    then
+    if is_graphql then
       local gql_json = GRAPHQL_PARSER.get_json(res.body)
       if gql_json then
         table.insert(res.cmd, "--data")
@@ -477,10 +494,7 @@ function M.parse(start_request_linenr)
     end
   else -- no content type supplied
     -- check if we are a graphql query
-    if
-      PARSER_UTILS.contains_meta_tag(req, "graphql")
-      or PARSER_UTILS.contains_header(res.headers, "x-request-type", "GraphQL")
-    then
+    if is_graphql then
       local gql_json = GRAPHQL_PARSER.get_json(res.body)
       if gql_json then
         table.insert(res.cmd, "--data")
