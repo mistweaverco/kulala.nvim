@@ -9,6 +9,8 @@ local FS = require("kulala.utils.fs")
 local DB = require("kulala.db")
 local INT_PROCESSING = require("kulala.internal_processing")
 local FORMATTER = require("kulala.formatter")
+local TS = require("kulala.parser.treesitter")
+
 local Inspect = require("kulala.parser.inspect")
 local M = {}
 
@@ -182,8 +184,14 @@ end
 
 M.open_all = function()
   INLAY.clear()
-  local _, doc = PARSER.get_document()
-  CMD.run_parser_all(doc, function(success, start, icon_linenr)
+  local requests
+  if CONFIG:get().treesitter then
+    requests = TS.get_all_requests()
+  else
+    _, requests = PARSER.get_document()
+  end
+
+  CMD.run_parser_all(requests, function(success, start, icon_linenr)
     if not success then
       if icon_linenr then
         INLAY:show_error(icon_linenr)
