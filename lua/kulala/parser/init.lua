@@ -101,6 +101,33 @@ local function parse_body(body, variables, env)
   return parse_string_variables(body, variables, env)
 end
 
+local function split_by_block_delimiters(text)
+  local result = {}
+  local start = 1
+  -- Pattern to match lines starting with ### followed by optional text and ending with a newline
+  local pattern = "\n###.-\n"
+  while true do
+    -- Find the next delimiter
+    local split_start, split_end = text:find(pattern, start)
+    if not split_start then
+      -- If no more delimiters, add the remaining text as the last section
+      local last_section = text:sub(start):gsub("\n+$", "") -- Remove trailing newlines
+      if #last_section > 0 then
+        table.insert(result, last_section)
+      end
+      break
+    end
+    -- Add the text before the delimiter as a section
+    local section = text:sub(start, split_start - 1):gsub("\n+$", "") -- Remove trailing newlines
+    if #section > 0 then
+      table.insert(result, section)
+    end
+    -- Move start position
+    start = split_end
+  end
+  return result
+end
+
 M.get_document = function()
   if CONFIG.get().treesitter then
     return TS.get_document()
@@ -110,7 +137,7 @@ M.get_document = function()
   local content = table.concat(content_lines, "\n")
   local variables = {}
   local requests = {}
-  local blocks = vim.split(content, "\n###\n", { plain = true, trimempty = false })
+  local blocks = split_by_block_delimiters(content)
   local line_offset = 0
   for _, block in ipairs(blocks) do
     local is_request_line = true
@@ -466,8 +493,8 @@ function M.parse(start_request_linenr)
   table.insert(res.cmd, "-X")
   table.insert(res.cmd, res.method)
 
-  local is_graphql = PARSER_UTILS.contains_meta_tag(req, "graphql") or
-    PARSER_UTILS.contains_header(res.headers, "x-request-type", "GraphQL")
+  local is_graphql = PARSER_UTILS.contains_meta_tag(req, "graphql")
+    or PARSER_UTILS.contains_header(res.headers, "x-request-type", "GraphQL")
   if CONFIG.get().treesitter then
     -- treesitter parser handles graphql requests before this point
     is_graphql = false
