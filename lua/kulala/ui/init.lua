@@ -278,6 +278,24 @@ M.show_headers_body = function()
   end
 end
 
+M.show_console = function()
+  local console_file = GLOBALS.CONSOLE_FILE
+  if FS.file_exists(console_file) then
+    if not buffer_exists() then
+      open_buffer()
+    end
+    local h = FS.read_file(console_file)
+    h = h:gsub("\r\n", "\n")
+    set_buffer_contents(h, "text")
+    if CONFIG.get().winbar then
+      WINBAR.toggle_winbar_tab(get_win(), "console")
+    end
+    CONFIG.options.default_view = "console"
+  else
+    vim.notify("No console found", vim.log.levels.WARN)
+  end
+end
+
 M.replay = function()
   local result = DB.data.current_request
   if result == nil then

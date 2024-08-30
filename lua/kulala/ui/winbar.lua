@@ -21,6 +21,9 @@ M.winbar_set_key_mapping = function(buf)
     vim.keymap.set("n", "A", function()
       require("kulala.ui").show_headers_body()
     end, { silent = true, buffer = buf })
+    vim.keymap.set("n", "C", function()
+      require("kulala.ui").show_console()
+    end, { silent = true, buffer = buf })
   end
 end
 
@@ -31,19 +34,25 @@ M.toggle_winbar_tab = function(win_id, view)
     if view == "body" then
       vim.api.nvim_set_option_value(
         "winbar",
-        "%#KulalaTabSel# Body (B) %* %#KulalaTab# Headers (H) %* %#KulalaTab# All (A) %* ",
+        "%#KulalaTabSel# Body (B) %* %#KulalaTab# Headers (H) %* %#KulalaTab# All (A) %* %#KulalaTab# Console (C) %* ",
         { win = win_id }
       )
     elseif view == "headers" then
       vim.api.nvim_set_option_value(
         "winbar",
-        "%#KulalaTab# Body (B) %* %#KulalaTabSel# Headers (H) %* %#KulalaTab# All (A) %* ",
+        "%#KulalaTab# Body (B) %* %#KulalaTabSel# Headers (H) %* %#KulalaTab# All (A) %* %#KulalaTab# Console (C) %* ",
         { win = win_id }
       )
     elseif view == "headers_body" then
       vim.api.nvim_set_option_value(
         "winbar",
-        "%#KulalaTab# Body (B) %* %#KulalaTab# Headers (H) %* %#KulalaTabSel# All (A) %* ",
+        "%#KulalaTab# Body (B) %* %#KulalaTab# Headers (H) %* %#KulalaTabSel# All (A) %* %#KulalaTab# Console (C) %* ",
+        { win = win_id }
+      )
+    elseif view == "console" then
+      vim.api.nvim_set_option_value(
+        "winbar",
+        "%#KulalaTab# Body (B) %* %#KulalaTab# Headers (H) %* %#KulalaTab# All (A) %* %#KulalaTabSel# Console (C) %* ",
         { win = win_id }
       )
     end
