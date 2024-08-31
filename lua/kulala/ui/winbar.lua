@@ -33,20 +33,6 @@ local winbar_info = {
   },
 }
 
-local function pairsByKeys(t)
-  local a = {}
-  for n in pairs(t) do
-    a[#a + 1] = n
-  end
-  table.sort(a)
-
-  local i = 0
-  return function()
-    i = i + 1
-    return a[i], t[a[i]]
-  end
-end
-
 ---set winbar highlight
 M.winbar_sethl = function()
   vim.api.nvim_set_hl(0, "KulalaTab", { link = "TabLine" })
