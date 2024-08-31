@@ -58,11 +58,16 @@ M.defaults = {
   },
   -- enable winbar
   winbar = false,
-  default_winbar = { "body", "headers", "headers_body" },
+  -- Specify the panes to be displayed by default
+  -- Current avaliable pane contains { "body", "headers", "headers_body", "script_output" },
+  default_winbar_panes = { "body", "headers", "headers_body" },
   -- enable reading vscode rest client environment variables
   vscode_rest_client_environmentvars = false,
   -- parse requests with tree-sitter
   treesitter = false,
+  -- disable the vim.print output of the scripts
+  -- they will be still written to disk, but not printed immediately
+  disable_script_print_output = false,
 }
 
 M.default_contenttype = {
@@ -83,22 +88,6 @@ end
 
 M.get = function()
   return M.options
-end
-
-M.show_winbar = function()
-  local winbar = M.get_winbar()
-  return #winbar ~= 0
-end
-
-M.get_winbar = function()
-  local winbar = M.get().winbar
-  if winbar == true then
-    return M.defaults.default_winbar
-  elseif vim.tbl_islist(winbar) then
-    return winbar
-  else
-    return {}
-  end
 end
 
 return M

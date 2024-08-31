@@ -305,11 +305,13 @@ Authorization: Bearer Foo:bar
 
 :::tip
 
-When you add `console.log` to script, the output will be displayed in the `Console` panel if you have enabled the following configuration.
+If you add `console.log` to script,
+the output will be displayed in the `Script Output` panel,
+when you have enabled the following configuration.
 
 ```lua
 opts = {
-  winbar = { "body", "headers", "headers_body", "console" },
+  default_winbar_panes = { "body", "headers", "headers_body", "script_output" },
 }
 ```
 

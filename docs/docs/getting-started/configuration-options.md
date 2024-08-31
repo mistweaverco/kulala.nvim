@@ -78,14 +78,18 @@ Here is a full example of setting up the Kulala plugin with the available `opts`
     },
 
     -- enable winbar
-    -- Specify the panes to be displayed by default
-    -- The display sequence is the same as when set
-    -- When winbar is true, will display panes contains { "body", "headers", "headers_body" }
-    -- Current avaliable pane contains { "body", "headers", "headers_body", "console" },
     winbar = false,
+
+    -- Specify the panes to be displayed by default
+    -- Current avaliable pane contains { "body", "headers", "headers_body", "script_output" },
+    default_winbar_panes = { "body", "headers", "headers_body" },
 
     -- enable reading vscode rest client environment variables
     vscode_rest_client_environmentvars = false,
+
+    -- disable the vim.print output of the scripts
+    -- they will be still written to disk, but not printed immediately
+    disable_script_print_output = false,
   },
 }
 ```

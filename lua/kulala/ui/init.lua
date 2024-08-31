@@ -10,6 +10,7 @@ local DB = require("kulala.db")
 local INT_PROCESSING = require("kulala.internal_processing")
 local FORMATTER = require("kulala.formatter")
 local TS = require("kulala.parser.treesitter")
+local Logger = require("kulala.logger")
 
 local Inspect = require("kulala.parser.inspect")
 local M = {}
@@ -75,7 +76,7 @@ local open_buffer = function()
   local prev_win = vim.api.nvim_get_current_win()
   local sd = CONFIG.get().split_direction == "vertical" and "vsplit" or "split"
   vim.cmd(sd .. " " .. GLOBALS.UI_ID)
-  if CONFIG.show_winbar() then
+  if CONFIG.get().winbar then
     WINBAR.create_winbar(get_win())
   end
   vim.api.nvim_set_current_win(prev_win)
@@ -176,6 +177,8 @@ M.open = function()
           M.show_headers()
         elseif CONFIG.get().default_view == "headers_body" then
           M.show_headers_body()
+        elseif CONFIG.get().default_view == "script_output" then
+          M.show_script_output()
         end
       end
     end)
@@ -238,7 +241,7 @@ M.show_body = function()
       body = FORMATTER.format(contenttype.formatter, body)
     end
     set_buffer_contents(body, contenttype.ft)
-    if CONFIG.show_winbar() then
+    if CONFIG.get().winbar then
       WINBAR.toggle_winbar_tab(get_win(), "body")
     end
     CONFIG.options.default_view = "body"
@@ -255,7 +258,7 @@ M.show_headers = function()
     local h = FS.read_file(GLOBALS.HEADERS_FILE)
     h = h:gsub("\r\n", "\n")
     set_buffer_contents(h, "text")
-    if CONFIG.show_winbar() then
+    if CONFIG.get().winbar then
       WINBAR.toggle_winbar_tab(get_win(), "headers")
     end
     CONFIG.options.default_view = "headers"
@@ -277,7 +280,7 @@ M.show_headers_body = function()
       body = FORMATTER.format(contenttype.formatter, body)
     end
     set_buffer_contents(h .. "\n" .. body, contenttype.ft)
-    if CONFIG.show_winbar() then
+    if CONFIG.get().winbar then
       WINBAR.toggle_winbar_tab(get_win(), "headers_body")
     end
     CONFIG.options.default_view = "headers_body"
@@ -286,21 +289,61 @@ M.show_headers_body = function()
   end
 end
 
-M.show_console = function()
-  local console_file = GLOBALS.CONSOLE_FILE
-  if FS.file_exists(console_file) then
+M.generate_ascii_header = function(text, opts)
+  local default_opts = {
+    max_line_length = 80,
+  }
+  opts = vim.tbl_extend("force", default_opts, opts or {})
+  -- Function to center text within a given width, with additional spaces
+  local function center_text(t, width)
+    local padding = math.floor((width - #t) / 2)
+    return string.rep(" ", padding) .. t .. string.rep(" ", width - #t - padding)
+  end
+
+  -- Split the text into lines if it exceeds the max_line_length
+  local lines = {}
+  while #text > opts.max_line_length - 4 do
+    local line = text:sub(1, opts.max_line_length - 4)
+    table.insert(lines, line)
+    text = text:sub(opts.max_line_length - 3)
+  end
+  table.insert(lines, text)
+
+  -- Create the header
+  local header = {}
+  local line_length = opts.max_line_length
+  table.insert(header, " " .. string.rep("_", line_length - 2) .. " ")
+  for _, line in ipairs(lines) do
+    table.insert(header, string.format("/%s\\", string.rep(" ", line_length - 2)))
+    table.insert(header, string.format("|%s|", center_text(line, line_length - 2)))
+  end
+  table.insert(header, string.format("\\%s/", string.rep("_", line_length - 2)))
+
+  -- Return the header as a string
+  return table.concat(header, "\n") .. "\n"
+end
+
+M.show_script_output = function()
+  local pre_file_contents = FS.read_file(GLOBALS.SCRIPT_PRE_OUTPUT_FILE)
+  local post_file_contents = FS.read_file(GLOBALS.SCRIPT_POST_OUTPUT_FILE)
+  if pre_file_contents ~= nil or post_file_contents ~= nil then
     if not buffer_exists() then
       open_buffer()
     end
-    local h = FS.read_file(console_file)
-    h = h:gsub("\r\n", "\n")
-    set_buffer_contents(h, "text")
-    if CONFIG.show_winbar() then
-      WINBAR.toggle_winbar_tab(get_win(), "console")
+    local contents = ""
+    if pre_file_contents ~= nil then
+      contents = contents .. M.generate_ascii_header("Pre Script") .. "\n" .. pre_file_contents:gsub("\r\n", "\n")
     end
-    CONFIG.options.default_view = "console"
+    if post_file_contents ~= nil then
+      contents = contents .. M.generate_ascii_header("Post Script") .. "\n" .. post_file_contents:gsub("\r\n", "\n")
+    end
+    set_buffer_contents(contents, "text")
+    if CONFIG.get().winbar then
+      WINBAR.toggle_winbar_tab(get_win(), "script_output")
+    end
+    CONFIG.options.default_view = "script_output"
   else
-    vim.notify("No console found", vim.log.levels.WARN)
+    Logger.error("No script output found")
   end
 end
 
@@ -325,6 +368,8 @@ M.replay = function()
           M.show_headers()
         elseif CONFIG.get().default_view == "headers_body" then
           M.show_headers_body()
+        elseif CONFIG.get().default_view == "script_output" then
+          M.show_script_output()
         end
       end
     end)

@@ -1,5 +1,6 @@
 local FS = require("kulala.utils.fs")
 local GLOBALS = require("kulala.globals")
+local CONFIG = require("kulala.config")
 local M = {}
 
 local NODE_EXISTS = vim.fn.executable("node") == 1
@@ -35,7 +36,7 @@ local generate_one = function(script_type, is_external_file, script_data)
   end
   local uuid = FS.get_uuid()
   local script_path = REQUEST_SCRIPTS_DIR .. FS.ps .. uuid .. ".js"
-  FS.write_file(script_path, base_file)
+  FS.write_file(script_path, base_file, false)
   return script_path, script_cwd
 end
 
@@ -89,17 +90,25 @@ M.run = function(type, data)
       })
       :wait()
     if output ~= nil then
-      local console_file = GLOBALS.CONSOLE_FILE
-      if type == "pre_request" then
-        FS.write_file(console_file, "============= PRE_REQUEST  =============\n\n")
-      elseif type == "post_request" then
-        FS.write_file(console_file, "\n============= POST_REQUEST =============\n\n", true)
+      if output.stderr ~= nil and not string.match(output.stderr, "^%s*$") then
+        if not CONFIG.get().disable_script_print_output then
+          vim.print(output.stderr)
+        end
+        if type == "pre_request" then
+          FS.write_file(GLOBALS.SCRIPT_PRE_OUTPUT_FILE, output.stderr, false)
+        elseif type == "post_request" then
+          FS.write_file(GLOBALS.SCRIPT_POST_OUTPUT_FILE, output.stderr, false)
+        end
       end
-      if output.stderr ~= nil then
-        FS.write_file(console_file, output.stderr, true)
-      end
-      if output.stdout ~= nil then
-        FS.write_file(console_file, output.stdout, true)
+      if output.stdout ~= nil and not string.match(output.stdout, "^%s*$") then
+        if not CONFIG.get().disable_script_print_output then
+          vim.print(output.stdout)
+        end
+        if type == "pre_request" then
+          FS.write_file(GLOBALS.SCRIPT_PRE_OUTPUT_FILE, output.stdout, false)
+        elseif type == "post_request" then
+          FS.write_file(GLOBALS.SCRIPT_POST_OUTPUT_FILE, output.stdout, false)
+        end
       end
     end
   end

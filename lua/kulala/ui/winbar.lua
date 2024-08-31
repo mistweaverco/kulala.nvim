@@ -24,12 +24,12 @@ local winbar_info = {
     end,
     keymap = "A",
   },
-  console = {
-    desc = "Console (C)",
+  script_output = {
+    desc = "Script Output (O)",
     action = function()
-      require("kulala.ui").show_console()
+      require("kulala.ui").show_script_output()
     end,
-    keymap = "C",
+    keymap = "O",
   },
 }
 
@@ -55,7 +55,7 @@ end
 ---@param view string Body or headers
 M.toggle_winbar_tab = function(win_id, view)
   if win_id then
-    local winbar = CONFIG.get_winbar()
+    local winbar = CONFIG.get().default_winbar_panes
     local winbar_title = {}
     for _, key in ipairs(winbar) do
       local info = winbar_info[key]
