@@ -302,3 +302,15 @@ Authorization: Bearer Foo:bar
   console.log(token)
 %}
 ```
+
+:::tip
+
+When you add `console.log` to script, the output will be displayed in the `Console` panel if you have enabled the following configuration.
+
+```lua
+opts = {
+  winbar = { "body", "headers", "headers_body", "console" },
+}
+```
+
+:::
