@@ -171,13 +171,15 @@ M.open = function()
         if not buffer_exists() then
           open_buffer()
         end
-        if CONFIG.get().default_view == "body" then
+
+        local default_view = CONFIG.get().default_view
+        if default_view == "body" then
           M.show_body()
-        elseif CONFIG.get().default_view == "headers" then
+        elseif default_view == "headers" then
           M.show_headers()
-        elseif CONFIG.get().default_view == "headers_body" then
+        elseif default_view == "headers_body" then
           M.show_headers_body()
-        elseif CONFIG.get().default_view == "script_output" then
+        elseif default_view == "script_output" then
           M.show_script_output()
         end
       end
