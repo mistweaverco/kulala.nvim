@@ -75,6 +75,10 @@ M.scratchpad = function()
   UI:scratchpad()
 end
 
+M.get_selected_env = function()
+  return vim.g.kulala_selected_env or CONFIG.get().default_env
+end
+
 M.set_selected_env = function(env)
   ENV.get_env()
   if env == nil then
