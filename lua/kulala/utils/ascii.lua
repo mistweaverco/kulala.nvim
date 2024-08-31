@@ -51,6 +51,10 @@ M.get_waterfall_timings = function(timings, opts)
     current_pos = current_pos + width
   end
 
+  -- Add the total time to the end
+  table.insert(lines, string.rep("-", max_width))
+  table.insert(lines, string.format("%-15s | Total Time: %sms", "", total_time))
+
   return lines
 end
 
