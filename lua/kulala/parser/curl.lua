@@ -33,7 +33,7 @@ function M.parse(curl)
 
   for _, arg in ipairs(parts) do
     if state == State.START then
-      if arg:match("^http[s]?://") and res.url == "" then
+      if arg:match("^[a-z0-9]+://") and res.url == "" then
         res.url = arg
         goto continue
       elseif arg == "-X" or arg == "--request" then
