@@ -130,7 +130,7 @@ M.copy = function()
     if string.sub(v, 1, 1) == "-" or idx == 1 then
       -- remove headers and body output to file
       -- remove --cookie-jar
-      if v == "-o" or v == "-D" or v == "--cookie-jar" then
+      if v == "-o" or v == "-D" or v == "--cookie-jar" or v == "-w" then
         skip_arg = true
       else
         table.insert(cmd_table, v)
