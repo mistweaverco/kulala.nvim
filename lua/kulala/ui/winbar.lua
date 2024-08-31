@@ -2,6 +2,37 @@ local UICallbacks = require("kulala.ui.callbacks")
 local CONFIG = require("kulala.config")
 local M = {}
 
+local winbar_info = {
+  body = {
+    desc = "Body (B)",
+    action = function()
+      require("kulala.ui").show_body()
+    end,
+    keymap = "B",
+  },
+  headers = {
+    desc = "Headers (H)",
+    action = function()
+      require("kulala.ui").show_headers()
+    end,
+    keymap = "H",
+  },
+  headers_body = {
+    desc = "All (A)",
+    action = function()
+      require("kulala.ui").show_headers_body()
+    end,
+    keymap = "A",
+  },
+  script_output = {
+    desc = "Script Output (O)",
+    action = function()
+      require("kulala.ui").show_script_output()
+    end,
+    keymap = "O",
+  },
+}
+
 ---set winbar highlight
 M.winbar_sethl = function()
   vim.api.nvim_set_hl(0, "KulalaTab", { link = "TabLine" })
@@ -12,15 +43,11 @@ end
 ---@param buf integer|nil Buffer
 M.winbar_set_key_mapping = function(buf)
   if buf then
-    vim.keymap.set("n", "B", function()
-      require("kulala.ui").show_body()
-    end, { silent = true, buffer = buf })
-    vim.keymap.set("n", "H", function()
-      require("kulala.ui").show_headers()
-    end, { silent = true, buffer = buf })
-    vim.keymap.set("n", "A", function()
-      require("kulala.ui").show_headers_body()
-    end, { silent = true, buffer = buf })
+    for _, value in pairs(winbar_info) do
+      vim.keymap.set("n", value.keymap, function()
+        value.action()
+      end, { silent = true, buffer = buf })
+    end
   end
 end
 
@@ -28,25 +55,22 @@ end
 ---@param view string Body or headers
 M.toggle_winbar_tab = function(win_id, view)
   if win_id then
-    if view == "body" then
-      vim.api.nvim_set_option_value(
-        "winbar",
-        "%#KulalaTabSel# Body (B) %* %#KulalaTab# Headers (H) %* %#KulalaTab# All (A) %* ",
-        { win = win_id }
-      )
-    elseif view == "headers" then
-      vim.api.nvim_set_option_value(
-        "winbar",
-        "%#KulalaTab# Body (B) %* %#KulalaTabSel# Headers (H) %* %#KulalaTab# All (A) %* ",
-        { win = win_id }
-      )
-    elseif view == "headers_body" then
-      vim.api.nvim_set_option_value(
-        "winbar",
-        "%#KulalaTab# Body (B) %* %#KulalaTab# Headers (H) %* %#KulalaTabSel# All (A) %* ",
-        { win = win_id }
-      )
+    local winbar = CONFIG.get().default_winbar_panes
+    local winbar_title = {}
+    for _, key in ipairs(winbar) do
+      local info = winbar_info[key]
+      if info ~= nil then
+        local desc = info.desc .. " %*"
+        if view == key then
+          desc = "%#KulalaTabSel# " .. desc
+        else
+          desc = "%#KulalaTab# " .. desc
+        end
+        table.insert(winbar_title, desc)
+      end
     end
+    local value = table.concat(winbar_title, " ")
+    vim.api.nvim_set_option_value("winbar", value, { win = win_id })
   end
 end
 
