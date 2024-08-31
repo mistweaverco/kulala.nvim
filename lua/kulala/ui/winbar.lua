@@ -31,6 +31,13 @@ local winbar_info = {
     end,
     keymap = "O",
   },
+  stats = {
+    desc = "Stats (S)",
+    action = function()
+      require("kulala").show_stats()
+    end,
+    keymap = "S",
+  },
 }
 
 ---set winbar highlight

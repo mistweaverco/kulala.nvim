@@ -20,6 +20,10 @@ All public methods are available via the `kulala` module.
 
 It opens up a floating window with the parsed request.
 
+### show_stats
+
+`require('kulala').show_stats()` shows the statistics of the last run request.
+
 ### scratchpad
 
 `require('kulala').scratchpad()` opens the scratchpad.
