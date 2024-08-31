@@ -69,7 +69,11 @@ M.run_parser = function(result, callback)
       end
     end,
     on_stdout = function(_, lines, _)
-      stats = vim.fn.json_decode(table.concat(lines, "\n"))
+      local contents = table.concat(lines, "\n")
+      if contents == "" then
+        return
+      end
+      stats = vim.fn.json_decode(contents)
     end,
     on_exit = function(_, code)
       local success = code == 0
@@ -116,14 +120,16 @@ M.run_parser_all = function(doc, callback)
       end
       local start = vim.loop.hrtime()
       local success = false
-      vim
+      local stats = vim
         .system(result.cmd, { text = true }, function(data)
           success = data.code == 0
         end)
         :wait()
       if success then
-        local response = Fs.read_file(GLOBALS.BODY_FILE)
-        local body = CurlFormatParser.parse_response(response)
+        local body = Fs.read_file(GLOBALS.BODY_FILE)
+        if stats then
+          Fs.write_file(GLOBALS.STATS_FILE, vim.fn.json_encode(stats), false)
+        end
         for _, metadata in ipairs(result.metadata) do
           if metadata then
             if metadata.name == "name" then
