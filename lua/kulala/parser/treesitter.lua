@@ -1,14 +1,20 @@
-local CONFIG = require('kulala.config')
-local FS = require('kulala.utils.fs')
-local STRING_UTILS = require('kulala.utils.string')
+if not pcall(require, "nvim-treesitter") then
+  return nil
+end
+
+local CONFIG = require("kulala.config")
+local FS = require("kulala.utils.fs")
+local STRING_UTILS = require("kulala.utils.string")
 
 local M = {}
 
 local QUERIES = {
-  section = vim.treesitter.query.parse('http', '(section (request) @request) @section'),
-  variable = vim.treesitter.query.parse('http', '(variable_declaration) @variable'),
+  section = vim.treesitter.query.parse("http", "(section (request) @request) @section"),
+  variable = vim.treesitter.query.parse("http", "(variable_declaration) @variable"),
 
-  request = vim.treesitter.query.parse('http', [[
+  request = vim.treesitter.query.parse(
+    "http",
+    [[
     (comment name: (_) value: (_)) @meta
 
     (pre_request_script
@@ -27,7 +33,8 @@ local QUERIES = {
       ((script) @script.post.inline
         (#offset! @script.post.inline 0 2 0 -2))?
       (path)? @script.post.file)
-  ]])
+  ]]
+  ),
 }
 
 local function text(node, metadata)
@@ -55,11 +62,11 @@ local REQUEST_VISITORS = {
     req.show_icon_line_number = nil
     local show_icons = CONFIG.get().show_icons
     if show_icons ~= nil then
-      if show_icons == 'on_request' then
+      if show_icons == "on_request" then
         req.show_icon_line_number = start_line + 1
-      elseif show_icons == 'above_req' then
+      elseif show_icons == "above_req" then
         req.show_icon_line_number = start_line
-      elseif show_icons == 'below_req' then
+      elseif show_icons == "below_req" then
         req.show_icon_line_number = end_line
       end
     end
@@ -73,36 +80,32 @@ local REQUEST_VISITORS = {
     table.insert(req.metadata, args.fields)
   end,
 
-  ['script.pre.inline'] = function(req, args)
+  ["script.pre.inline"] = function(req, args)
     table.insert(req.scripts.pre_request.inline, args.text)
   end,
 
-  ['script.pre.file'] = function(req, args)
+  ["script.pre.file"] = function(req, args)
     table.insert(req.scripts.pre_request.files, args.fields.path)
   end,
 
-  ['script.post.inline'] = function(req, args)
+  ["script.post.inline"] = function(req, args)
     table.insert(req.scripts.post_request.inline, args.text)
   end,
 
-  ['script.post.file'] = function(req, args)
+  ["script.post.file"] = function(req, args)
     table.insert(req.scripts.post_request.files, args.fields.path)
   end,
 
-  ['body.external'] = function(req, args)
+  ["body.external"] = function(req, args)
     local contents = FS.read_file(args.fields.path)
-    local filetype, _ = vim.filetype.match { filename = args.fields.path }
-    if filetype == 'graphql' then
-      if req.method == 'POST' then
+    local filetype, _ = vim.filetype.match({ filename = args.fields.path })
+    if filetype == "graphql" then
+      if req.method == "POST" then
         req.body = string.format('{ "query": %q }', STRING_UTILS.remove_newline(contents))
-        req.headers['content-type'] = 'application/json'
+        req.headers["content-type"] = "application/json"
       else
-        local query = STRING_UTILS.url_encode(
-          STRING_UTILS.remove_extra_space(
-            STRING_UTILS.remove_newline(contents)
-          )
-        )
-        req.url = string.format('%s?query=%s', req.url, query)
+        local query = STRING_UTILS.url_encode(STRING_UTILS.remove_extra_space(STRING_UTILS.remove_newline(contents)))
+        req.url = string.format("%s?query=%s", req.url, query)
         req.body = nil
       end
     else
@@ -110,13 +113,13 @@ local REQUEST_VISITORS = {
     end
   end,
 
-  ['body.graphql'] = function(req, args)
+  ["body.graphql"] = function(req, args)
     local json_body = {}
 
     for child in args.node:iter_children() do
-      if child:type() == 'graphql_data' then
+      if child:type() == "graphql_data" then
         json_body.query = text(child)
-      elseif child:type() == 'json_body' then
+      elseif child:type() == "json_body" then
         local variables_str = text(child)
         json_body.variables = vim.fn.json_decode(variables_str)
       end
@@ -124,13 +127,13 @@ local REQUEST_VISITORS = {
 
     if #json_body.query > 0 then
       req.body = vim.fn.json_encode(json_body)
-      req.headers['content-type'] = 'application/json'
+      req.headers["content-type"] = "application/json"
     end
   end,
 }
 
 local function get_root_node()
-  return vim.treesitter.get_parser(0, 'http'):parse()[1]:root()
+  return vim.treesitter.get_parser(0, "http"):parse()[1]:root()
 end
 
 local function get_fields(node)
@@ -145,11 +148,11 @@ end
 
 local function parse_request(section_node)
   local req = {
-    url = '',
-    method = '',
-    http_version = '',
+    url = "",
+    method = "",
+    http_version = "",
     headers = {},
-    body = '',
+    body = "",
     metadata = {},
     show_icon_line_number = nil,
     redirect_response_body_to_files = {},
@@ -190,11 +193,11 @@ M.get_document_variables = function(root)
 end
 
 M.get_request_at = function(line)
-  line = line or vim.fn.line('.')
+  line = line or vim.fn.line(".")
   local root = get_root_node()
 
   for i, node in QUERIES.section:iter_captures(root, 0, line, line) do
-    if QUERIES.section.captures[i] == 'section' then
+    if QUERIES.section.captures[i] == "section" then
       return parse_request(node)
     end
   end
@@ -205,7 +208,7 @@ M.get_all_requests = function(root)
   local requests = {}
 
   for i, node in QUERIES.section:iter_captures(root, 0) do
-    if QUERIES.section.captures[i] == 'request' then
+    if QUERIES.section.captures[i] == "request" then
       local start_line, _, end_line, _ = node:range()
       table.insert(requests, { start_line = start_line, end_line = end_line })
     end
@@ -214,7 +217,7 @@ M.get_all_requests = function(root)
   return requests
 end
 
-M.get_document = function ()
+M.get_document = function()
   local root = get_root_node()
   local variables = M.get_document_variables(root)
   local requests = M.get_all_requests(root)

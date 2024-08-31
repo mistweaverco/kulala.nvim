@@ -10,6 +10,7 @@ local DB = require("kulala.db")
 local INT_PROCESSING = require("kulala.internal_processing")
 local FORMATTER = require("kulala.formatter")
 local TS = require("kulala.parser.treesitter")
+local Logger = require("kulala.logger")
 
 local Inspect = require("kulala.parser.inspect")
 local M = {}
@@ -176,6 +177,8 @@ M.open = function()
           M.show_headers()
         elseif CONFIG.get().default_view == "headers_body" then
           M.show_headers_body()
+        elseif CONFIG.get().default_view == "script_output" then
+          M.show_script_output()
         end
       end
     end)
@@ -286,6 +289,64 @@ M.show_headers_body = function()
   end
 end
 
+M.generate_ascii_header = function(text, opts)
+  local default_opts = {
+    max_line_length = 80,
+  }
+  opts = vim.tbl_extend("force", default_opts, opts or {})
+  -- Function to center text within a given width, with additional spaces
+  local function center_text(t, width)
+    local padding = math.floor((width - #t) / 2)
+    return string.rep(" ", padding) .. t .. string.rep(" ", width - #t - padding)
+  end
+
+  -- Split the text into lines if it exceeds the max_line_length
+  local lines = {}
+  while #text > opts.max_line_length - 4 do
+    local line = text:sub(1, opts.max_line_length - 4)
+    table.insert(lines, line)
+    text = text:sub(opts.max_line_length - 3)
+  end
+  table.insert(lines, text)
+
+  -- Create the header
+  local header = {}
+  local line_length = opts.max_line_length
+  table.insert(header, " " .. string.rep("_", line_length - 2) .. " ")
+  for _, line in ipairs(lines) do
+    table.insert(header, string.format("/%s\\", string.rep(" ", line_length - 2)))
+    table.insert(header, string.format("|%s|", center_text(line, line_length - 2)))
+  end
+  table.insert(header, string.format("\\%s/", string.rep("_", line_length - 2)))
+
+  -- Return the header as a string
+  return table.concat(header, "\n") .. "\n"
+end
+
+M.show_script_output = function()
+  local pre_file_contents = FS.read_file(GLOBALS.SCRIPT_PRE_OUTPUT_FILE)
+  local post_file_contents = FS.read_file(GLOBALS.SCRIPT_POST_OUTPUT_FILE)
+  if pre_file_contents ~= nil or post_file_contents ~= nil then
+    if not buffer_exists() then
+      open_buffer()
+    end
+    local contents = ""
+    if pre_file_contents ~= nil then
+      contents = contents .. M.generate_ascii_header("Pre Script") .. "\n" .. pre_file_contents:gsub("\r\n", "\n")
+    end
+    if post_file_contents ~= nil then
+      contents = contents .. M.generate_ascii_header("Post Script") .. "\n" .. post_file_contents:gsub("\r\n", "\n")
+    end
+    set_buffer_contents(contents, "text")
+    if CONFIG.get().winbar then
+      WINBAR.toggle_winbar_tab(get_win(), "script_output")
+    end
+    CONFIG.options.default_view = "script_output"
+  else
+    Logger.error("No script output found")
+  end
+end
+
 M.replay = function()
   local result = DB.data.current_request
   if result == nil then
@@ -307,6 +368,8 @@ M.replay = function()
           M.show_headers()
         elseif CONFIG.get().default_view == "headers_body" then
           M.show_headers_body()
+        elseif CONFIG.get().default_view == "script_output" then
+          M.show_script_output()
         end
       end
     end)
@@ -353,9 +416,9 @@ M.inspect = function()
   -- Calculate the content dimensions
   local content_width = 0
   for _, line in ipairs(content) do
-      if #line > content_width then
-          content_width = #line
-      end
+    if #line > content_width then
+      content_width = #line
+    end
   end
   local content_height = #content
 
@@ -369,13 +432,13 @@ M.inspect = function()
 
   -- Define the floating window configuration
   local win_config = {
-      relative = 'editor',
-      width = win_width,
-      height = win_height,
-      row = row,
-      col = col,
-      style = 'minimal',
-      border = 'rounded',
+    relative = "editor",
+    width = win_width,
+    height = win_height,
+    row = row,
+    col = col,
+    style = "minimal",
+    border = "rounded",
   }
 
   -- Create the floating window with the buffer
@@ -383,20 +446,20 @@ M.inspect = function()
 
   -- Set up an autocommand to close the floating window on any buffer leave
   vim.api.nvim_create_autocmd("BufLeave", {
-      buffer = buf,
-      once = true,
-      callback = function()
-          vim.api.nvim_win_close(win, true)
-      end
+    buffer = buf,
+    once = true,
+    callback = function()
+      vim.api.nvim_win_close(win, true)
+    end,
   })
 
   -- Map the 'q' key to close the window
-  vim.api.nvim_buf_set_keymap(buf, 'n', 'q', '', {
-      noremap = true,
-      silent = true,
-      callback = function()
-          vim.api.nvim_win_close(win, true)
-      end,
+  vim.api.nvim_buf_set_keymap(buf, "n", "q", "", {
+    noremap = true,
+    silent = true,
+    callback = function()
+      vim.api.nvim_win_close(win, true)
+    end,
   })
 end
 

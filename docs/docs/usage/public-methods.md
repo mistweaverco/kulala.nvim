@@ -94,13 +94,24 @@ This file can be used in conjunction with
 the [kulala-cmp-graphql][kulala-cmp-graphql] plugin to
 provide autocompletion and type checking.
 
+### get_selected_env
+
+::: warning :::
+
+This function is only available if you are using a `http-client.env.json` file.
+
+:::
+
+`require('kulala').get_selected_env()`
+returns the selected environment.
+
 ### set_selected_env
 
-> If you are using a dotenv (`.env`) file,
-> this function has no effect.
->
-> It is only for setting the selected environment of
-> a `http-client.env.json` file.
+::: warning :::
+
+This function is only available if you are using a `http-client.env.json` file.
+
+:::
 
 `require('kulala').set_selected_env(env_key)`
 sets the selected environment.

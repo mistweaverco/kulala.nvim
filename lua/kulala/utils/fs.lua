@@ -64,14 +64,23 @@ end
 -- Writes string to file
 --- @param filename string
 --- @param content string
+--- @param append boolean
 --- @usage fs.write_file('Makefile', 'all: \n\t@echo "Hello World"')
+--- @usage fs.write_file('Makefile', 'all: \n\t@echo "Hello World"', true)
 --- @return boolean
 --- @usage local p = fs.write_file('Makefile', 'all: \n\t@echo "Hello World"')
-M.write_file = function(filename, content)
-  local f = io.open(filename, "w")
+M.write_file = function(filename, content, append)
+  local f = nil
+  if append then
+    f = io.open(filename, "a")
+  else
+    f = io.open(filename, "w")
+  end
+
   if f == nil then
     return false
   end
+
   f:write(content)
   f:close()
   return true
@@ -187,7 +196,7 @@ end
 
 M.get_plugin_root_dir = function()
   local source = debug.getinfo(1).source
-  local dir_path  = source:match("@(.*/)") or source:match("@(.*\\)")
+  local dir_path = source:match("@(.*/)") or source:match("@(.*\\)")
   if dir_path == nil then
     return nil
   end
