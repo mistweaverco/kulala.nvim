@@ -71,31 +71,6 @@ M.toggle_winbar_tab = function(win_id, view)
     end
     local value = table.concat(winbar_title, " ")
     vim.api.nvim_set_option_value("winbar", value, { win = win_id })
-    -- if view == "body" then
-    --   vim.api.nvim_set_option_value(
-    --     "winbar",
-    --     "%#KulalaTabSel# Body (B) %* %#KulalaTab# Headers (H) %* %#KulalaTab# All (A) %* %#KulalaTab# Console (C) %* ",
-    --     { win = win_id }
-    --   )
-    -- elseif view == "headers" then
-    --   vim.api.nvim_set_option_value(
-    --     "winbar",
-    --     "%#KulalaTab# Body (B) %* %#KulalaTabSel# Headers (H) %* %#KulalaTab# All (A) %* %#KulalaTab# Console (C) %* ",
-    --     { win = win_id }
-    --   )
-    -- elseif view == "headers_body" then
-    --   vim.api.nvim_set_option_value(
-    --     "winbar",
-    --     "%#KulalaTab# Body (B) %* %#KulalaTab# Headers (H) %* %#KulalaTabSel# All (A) %* %#KulalaTab# Console (C) %* ",
-    --     { win = win_id }
-    --   )
-    -- elseif view == "console" then
-    --   vim.api.nvim_set_option_value(
-    --     "winbar",
-    --     "%#KulalaTab# Body (B) %* %#KulalaTab# Headers (H) %* %#KulalaTab# All (A) %* %#KulalaTabSel# Console (C) %* ",
-    --     { win = win_id }
-    --   )
-    -- end
   end
 end
 
