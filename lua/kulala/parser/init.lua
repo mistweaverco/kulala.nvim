@@ -602,8 +602,6 @@ function M.parse(start_request_linenr)
   FS.delete_file(GLOBALS.HEADERS_FILE)
   FS.delete_file(GLOBALS.BODY_FILE)
   FS.delete_file(GLOBALS.COOKIES_JAR_FILE)
-  FS.delete_file(GLOBALS.SCRIPT_PRE_OUTPUT_FILE)
-  FS.delete_file(GLOBALS.SCRIPT_POST_OUTPUT_FILE)
   if CONFIG.get().debug then
     FS.write_file(PLUGIN_TMP_DIR .. "/request.txt", table.concat(res.cmd, " "), false)
   end
