@@ -155,4 +155,16 @@ M.env_json_key = function(cmd, body)
   end
 end
 
+M.prompt_var = function(metadata_value)
+  local kv = vim.split(metadata_value, " ")
+  local key = kv[1]
+  local prompt = table.concat(kv, " ", 2)
+  local value = vim.fn.input(prompt)
+  if value == nil or value == "" then
+    return false
+  end
+  DB.data.env[key] = value
+  return true
+end
+
 return M

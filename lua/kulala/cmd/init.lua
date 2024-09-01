@@ -7,6 +7,7 @@ local Api = require("kulala.api")
 local Scripts = require("kulala.scripts")
 local INLAY = require("kulala.inlay")
 local UV = vim.loop
+local Logger = require("kulala.logger")
 
 local M = {}
 
@@ -19,7 +20,12 @@ local function run_next_task()
     local task = table.remove(TASK_QUEUE, 1)
     UV.new_timer():start(0, 0, function()
       vim.schedule(function()
-        task.fn() -- Execute the task in the main thread
+        local res = task.fn() -- Execute the task in the main thread
+        if res == false then
+          RUNNING_TASK = false
+          TASK_QUEUE = {} -- Clear the task queue and
+          return
+        end
         if task.callback then
           task.callback() -- Execute the callback in the main thread
         end
@@ -36,6 +42,21 @@ local function offload_task(fn, callback)
   if not RUNNING_TASK then
     run_next_task()
   end
+end
+
+local function process_prompt_vars(res)
+  local success = true
+  for _, metadata in ipairs(res.metadata) do
+    if metadata then
+      if metadata.name == "prompt" then
+        local r = INT_PROCESSING.prompt_var(metadata.value)
+        if not r then
+          success = false
+        end
+      end
+    end
+  end
+  return success
 end
 
 ---Runs the command and returns the result
@@ -60,6 +81,10 @@ end
 ---Runs the parser and returns the result
 M.run_parser = function(result, callback)
   local stats
+  if process_prompt_vars(result) == false then
+    Logger.warn("Prompt failed.")
+    return
+  end
   vim.fn.jobstart(result.cmd, {
     on_stderr = function(_, datalist)
       if callback then
@@ -113,6 +138,13 @@ end
 M.run_parser_all = function(doc, callback)
   for _, req in ipairs(doc) do
     offload_task(function()
+      if process_prompt_vars(req) == false then
+        if req.show_icon_line_number then
+          INLAY:show_error(req.show_icon_line_number)
+        end
+        Logger.warn("Prompt failed. Skipping this and all following requests.")
+        return false
+      end
       local result = PARSER.parse(req.start_line)
       local icon_linenr = result.show_icon_line_number
       if icon_linenr then
@@ -153,6 +185,7 @@ M.run_parser_all = function(doc, callback)
       if callback then
         callback(success, start, icon_linenr)
       end
+      return true
     end)
   end
 end
