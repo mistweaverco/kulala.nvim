@@ -79,12 +79,13 @@ M.run = function(cmd, callback)
 end
 
 ---Runs the parser and returns the result
-M.run_parser = function(result, callback)
+M.run_parser = function(req, callback)
   local stats
-  if process_prompt_vars(result) == false then
+  if process_prompt_vars(req) == false then
     Logger.warn("Prompt failed.")
     return
   end
+  local result = PARSER.parse(req.start_line)
   vim.fn.jobstart(result.cmd, {
     on_stderr = function(_, datalist)
       if callback then

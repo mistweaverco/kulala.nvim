@@ -150,24 +150,28 @@ end
 
 M.open = function()
   INLAY.clear()
-  local result = PARSER.parse()
-  local icon_linenr = result.show_icon_line_number
-  if icon_linenr then
-    INLAY:show_loading(icon_linenr)
-  end
   vim.schedule(function()
     local start = vim.loop.hrtime()
-    CMD.run_parser(result, function(success)
+    local _, requests = PARSER.get_document()
+    local req = PARSER.get_request_at(requests)
+    if req == nil then
+      Logger.error("No request found")
+      return
+    end
+    if req.show_icon_line_number then
+      INLAY:show_loading(req.show_icon_line_number)
+    end
+    CMD.run_parser(req, function(success)
       if not success then
-        if icon_linenr then
-          INLAY:show_error(icon_linenr)
+        if req.show_icon_line_number then
+          INLAY:show_error(req.show_icon_line_number)
         end
         return
       else
         local elapsed = vim.loop.hrtime() - start
         local elapsed_ms = pretty_ms(elapsed / 1e6)
-        if icon_linenr then
-          INLAY:show_done(icon_linenr, elapsed_ms)
+        if req.show_icon_line_number then
+          INLAY:show_done(req.show_icon_line_number, elapsed_ms)
         end
         if not buffer_exists() then
           open_buffer()
