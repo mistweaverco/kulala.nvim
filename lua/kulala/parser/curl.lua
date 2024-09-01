@@ -10,6 +10,21 @@ function M.parse(curl)
   if curl == nil or string.len(curl) == 0 then
     return nil
   end
+
+  -- Combine multi-line curl commands into a single line.
+  -- Good for everyone, but especially for
+  -- Googlers who copy curl commands from their beloved ❤️ Google Chrome DevTools.
+  --
+  -- This is a simple heuristic that assumes that a backslash followed by a newline
+  -- is a line continuation. This is not always true, but it's good enough for most cases.
+  -- It should alsow work with Windows-style line endings.
+  -- If you have a better idea, please submit a PR.
+  curl = string.gsub(curl, "\\\r?\n", "")
+
+  -- remove extra spaces,
+  -- they confuse the Shlex parser and might be present in the output of the above heuristic
+  curl = string.gsub(curl, "%s+", " ")
+
   local parts = Shlex.split(curl)
   -- if string doesn't start with curl, return nil
   -- it could also be curl-7.68.0 or something like that
