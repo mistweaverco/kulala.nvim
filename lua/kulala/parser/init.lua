@@ -129,17 +129,71 @@ local function split_by_block_delimiters(text)
   return result
 end
 
+local function get_request_from_fenced_code_block()
+  local cursor_pos = vim.api.nvim_win_get_cursor(0)
+  local start_line = cursor_pos[1]
+
+  -- Get the total number of lines in the current buffer
+  local total_lines = vim.api.nvim_buf_line_count(0)
+
+  -- Search for the start of the fenced code block (``` or similar)
+  local block_start = nil
+  for i = start_line, 1, -1 do
+    local line = vim.api.nvim_buf_get_lines(0, i - 1, i, false)[1]
+    if line:match("^%s*```") then
+      block_start = i
+      break
+    end
+  end
+
+  -- If we didn't find a block start, return nil
+  if not block_start then
+    return nil
+  end
+
+  -- Search for the end of the fenced code block
+  local block_end = nil
+  for i = start_line, total_lines do
+    local line = vim.api.nvim_buf_get_lines(0, i - 1, i, false)[1]
+    if line:match("^%s*```") then
+      block_end = i
+      break
+    end
+  end
+
+  -- If we didn't find a block end, return nil
+  if not block_end then
+    return nil
+  end
+
+  return vim.api.nvim_buf_get_lines(0, block_start, block_end - 1, false), block_start
+end
+
 M.get_document = function()
+  local line_offset
+  local content_lines
+
   if CONFIG.get().treesitter then
     return TS.get_document()
   end
 
-  local content_lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+  local maybe_from_fenced_code_block = FS.is_non_http_file()
+
+  if maybe_from_fenced_code_block then
+    content_lines, line_offset = get_request_from_fenced_code_block()
+  else
+    content_lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+    line_offset = 0
+  end
+
+  if not content_lines then
+    return nil, nil
+  end
+
   local content = table.concat(content_lines, "\n")
   local variables = {}
   local requests = {}
   local blocks = split_by_block_delimiters(content)
-  local line_offset = 0
   for _, block in ipairs(blocks) do
     local is_request_line = true
     local is_prerequest_handler_script_inline = false

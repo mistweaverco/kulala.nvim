@@ -10,6 +10,12 @@ M.join_paths = function(...)
   return table.concat({ ... }, M.ps)
 end
 
+-- This is mainly used for determining if the current buffer is a non-http file
+-- and therefore maybe we need to parse a fenced code block
+M.is_non_http_file = function()
+  return vim.bo.filetype ~= "http" and vim.bo.filetype ~= "rest"
+end
+
 -- find nearest file in parent directories, starting from the current buffer file path
 --- @param filename string
 --- @return string|nil
