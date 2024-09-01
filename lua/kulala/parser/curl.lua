@@ -6,9 +6,10 @@ local M = {}
 ---Parse a curl command into a Request object
 ---@param curl string The curl command line to parse
 ---@return Request|nil -- Table with a parsed data or nil if parsing fails
+---@return string|nil -- Original curl command (sanitized one-liner) or nil if parsing fails
 function M.parse(curl)
   if curl == nil or string.len(curl) == 0 then
-    return nil
+    return nil, nil
   end
 
   -- Combine multi-line curl commands into a single line.
@@ -29,7 +30,7 @@ function M.parse(curl)
   -- if string doesn't start with curl, return nil
   -- it could also be curl-7.68.0 or something like that
   if string.find(parts[1], "^curl.*") == nil then
-    return nil
+    return nil, nil
   end
   local res = {
     method = "",
@@ -102,7 +103,7 @@ function M.parse(curl)
   if res.method == "" then
     res.method = "GET"
   end
-  return res
+  return res, curl
 end
 
 return M

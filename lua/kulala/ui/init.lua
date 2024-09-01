@@ -123,23 +123,26 @@ local function pretty_ms(ms)
 end
 
 ---Prints the parsed Request table into current buffer - uses nvim_put
-local function print_http_spec(spec)
+local function print_http_spec(spec, curl)
   local lines = {}
   local idx = 1
 
-  lines[idx] = spec.method .. " " .. spec.url
+  table.insert(lines, "# " .. curl)
+
   if spec.http_version ~= "" then
-    lines[idx] = lines[idx] .. " " .. spec.http_version
+    table.insert(lines, spec.method .. " " .. spec.url .. " " .. spec.http_version)
+  else
+    table.insert(lines, spec.method .. " " .. spec.url)
   end
+
   for header, value in pairs(spec.headers) do
-    idx = idx + 1
-    lines[idx] = header .. ": " .. value
+    table.insert(lines, header .. ": " .. value)
   end
+
   if spec.body ~= "" then
-    idx = idx + 1
-    lines[idx] = ""
+    table.insert(lines, "")
     -- FIXME: broken for multi-line body
-    lines[idx + 1] = spec.body
+    table.insert(lines, spec.body)
   end
   vim.api.nvim_put(lines, "l", false, false)
 end
@@ -172,12 +175,13 @@ end
 
 M.from_curl = function()
   local clipboard = vim.fn.getreg("+")
-  local spec = CURL_PARSER.parse(clipboard)
+  local spec, curl = CURL_PARSER.parse(clipboard)
   if spec == nil then
     Logger.error("Failed to parse curl command")
     return
   end
-  print_http_spec(spec)
+  -- put the curl command in the buffer as comment
+  print_http_spec(spec, curl)
 end
 
 M.open = function()
