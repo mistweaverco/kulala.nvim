@@ -39,4 +39,12 @@ M.url_decode = function(str)
   return str
 end
 
+M.cut = function(str, delimiter)
+  local pos = string.find(str, delimiter)
+  if pos == nil then
+    return str, ""
+  end
+  return string.sub(str, 1, pos - 1), string.sub(str, pos + 1)
+end
+
 return M

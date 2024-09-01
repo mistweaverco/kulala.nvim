@@ -40,6 +40,12 @@ It's default contents can be configured via the
 `require('kulala').copy()` copies the current request
 (as cURL command) to the clipboard.
 
+### from_curl
+
+`require('kulala').from_curl()` parse the cURL command from the clipboard and
+write the HTTP spec into current buffer. It is useful for importing requests
+from other tools like browsers.
+
 ### close
 
 `require('kulala').close()` closes the kulala window and also the current buffer.

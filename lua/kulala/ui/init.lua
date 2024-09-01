@@ -4,6 +4,7 @@ local GLOBALS = require("kulala.globals")
 local CONFIG = require("kulala.config")
 local INLAY = require("kulala.inlay")
 local PARSER = require("kulala.parser")
+local CURL_PARSER = require("kulala.parser.curl")
 local CMD = require("kulala.cmd")
 local FS = require("kulala.utils.fs")
 local DB = require("kulala.db")
@@ -12,7 +13,6 @@ local FORMATTER = require("kulala.formatter")
 local TS = require("kulala.parser.treesitter")
 local Logger = require("kulala.logger")
 local AsciiUtils = require("kulala.utils.ascii")
-
 local Inspect = require("kulala.parser.inspect")
 local M = {}
 
@@ -122,6 +122,31 @@ local function pretty_ms(ms)
   return string.format("%.2fms", ms)
 end
 
+---Prints the parsed Request table into current buffer - uses nvim_put
+local function print_http_spec(spec, curl)
+  local lines = {}
+  local idx = 1
+
+  table.insert(lines, "# " .. curl)
+
+  if spec.http_version ~= "" then
+    table.insert(lines, spec.method .. " " .. spec.url .. " " .. spec.http_version)
+  else
+    table.insert(lines, spec.method .. " " .. spec.url)
+  end
+
+  for header, value in pairs(spec.headers) do
+    table.insert(lines, header .. ": " .. value)
+  end
+
+  if spec.body ~= "" then
+    table.insert(lines, "")
+    -- FIXME: broken for multi-line body
+    table.insert(lines, spec.body)
+  end
+  vim.api.nvim_put(lines, "l", false, false)
+end
+
 M.copy = function()
   local result = PARSER.parse()
   local cmd_table = {}
@@ -146,6 +171,17 @@ M.copy = function()
   local cmd = table.concat(cmd_table, " ")
   vim.fn.setreg("+", cmd)
   vim.notify("Copied to clipboard", vim.log.levels.INFO)
+end
+
+M.from_curl = function()
+  local clipboard = vim.fn.getreg("+")
+  local spec, curl = CURL_PARSER.parse(clipboard)
+  if spec == nil then
+    Logger.error("Failed to parse curl command")
+    return
+  end
+  -- put the curl command in the buffer as comment
+  print_http_spec(spec, curl)
 end
 
 M.open = function()

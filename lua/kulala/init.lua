@@ -37,6 +37,10 @@ M.show_stats = function()
   UI:show_stats()
 end
 
+M.from_curl = function()
+  UI:from_curl()
+end
+
 M.version = function()
   local neovim_version = vim.fn.execute("version") or "Unknown"
   Logger.info("Kulala version: " .. GLOBALS.VERSION .. "\n\n" .. "Neovim version: " .. neovim_version)
