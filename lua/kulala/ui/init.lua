@@ -12,7 +12,7 @@ local FORMATTER = require("kulala.formatter")
 local TS = require("kulala.parser.treesitter")
 local Logger = require("kulala.logger")
 local AsciiUtils = require("kulala.utils.ascii")
-
+local Shlex = require("kulala.shlex")
 local Inspect = require("kulala.parser.inspect")
 local M = {}
 
@@ -146,6 +146,71 @@ M.copy = function()
   local cmd = table.concat(cmd_table, " ")
   vim.fn.setreg("+", cmd)
   vim.notify("Copied to clipboard", vim.log.levels.INFO)
+end
+
+M.from_curl = function()
+  local clipboard = vim.fn.getreg("+")
+  local parts = Shlex.split(clipboard)
+  if parts[1] ~= "curl" then
+    vim.notify("Not a curl command", vim.log.levels.ERROR)
+    return
+  end
+
+  local res = {
+    method = "GET",
+    url = parts[#parts],
+    headers = {},
+    body = {},
+  }
+
+  local State = {
+    START = 0,
+    Method = 1,
+    UserAgent = 2,
+    Header = 3,
+    Body = 4,
+  }
+  local state = State.START
+
+  for _, arg in ipairs(parts) do
+    if state == State.START then
+      if arg == "-X" then
+        state = State.Method
+      elseif arg == "-A" then
+        state = State.UserAgent
+      elseif arg == "-H" then
+        state = State.Header
+      elseif arg == "--data" then
+        state = State.Body
+      end
+      goto continue
+    end
+
+    if state == State.Method then
+      res.method = arg
+    elseif state == State.UserAgent then
+      res.headers["user-agent"] = arg
+    elseif state == State.Header then
+      local header = string.match(arg, "^(.*):")
+      local value = string.match(arg, ":(.*)$")
+      res.headers[header] = value
+    elseif state == State.Body then
+      res.body = arg
+    end
+    state = State.START
+
+    ::continue::
+  end
+
+  -- vim.print(vim.inspect(res), vim.log.levels.INFO)
+  -- write to current buffer
+  vim.api.nvim_buf_set_lines(0, -1, -1, true, {res.method .. " " .. res.url .. " HTTP/1.1"})
+  for header, value in pairs(res.headers) do
+    vim.api.nvim_buf_set_lines(0, -1, -1, true, {header .. ": " .. value})
+  end
+  if res.body ~= "" then
+    vim.api.nvim_buf_set_lines(0, -1, -1, true, {"", res.body})
+  end
 end
 
 M.open = function()
