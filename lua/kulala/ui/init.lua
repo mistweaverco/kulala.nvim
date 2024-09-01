@@ -13,8 +13,6 @@ local FORMATTER = require("kulala.formatter")
 local TS = require("kulala.parser.treesitter")
 local Logger = require("kulala.logger")
 local AsciiUtils = require("kulala.utils.ascii")
-local Shlex = require("kulala.shlex")
-local Shlex = require("kulala.shlex")
 local Inspect = require("kulala.parser.inspect")
 local M = {}
 
@@ -176,7 +174,7 @@ M.from_curl = function()
   local clipboard = vim.fn.getreg("+")
   local spec = CURL_PARSER.parse(clipboard)
   if spec == nil then
-    vim.notify("Not a curl command", vim.log.levels.ERROR)
+    Logger.error("Failed to parse curl command")
     return
   end
   print_http_spec(spec)
