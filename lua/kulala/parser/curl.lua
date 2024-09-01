@@ -1,4 +1,4 @@
-local Shlex = require("kulala.shlex")
+local Shlex = require("kulala.lib.shlex")
 local Stringutils = require("kulala.utils.string")
 
 local M = {}
@@ -11,7 +11,9 @@ function M.parse(curl)
     return nil
   end
   local parts = Shlex.split(curl)
-  if string.find(parts[1], "^curl") == nil then
+  -- if string doesn't start with curl, return nil
+  -- it could also be curl-7.68.0 or something like that
+  if string.find(parts[1], "^curl.*") == nil then
     return nil
   end
   local res = {
@@ -32,10 +34,10 @@ function M.parse(curl)
   local state = State.START
 
   for _, arg in ipairs(parts) do
+    local skip = false
     if state == State.START then
       if arg:match("^[a-z0-9]+://") and res.url == "" then
         res.url = arg
-        goto continue
       elseif arg == "-X" or arg == "--request" then
         state = State.Method
       elseif arg == "-A" or arg == "--user-agent" then
@@ -51,32 +53,35 @@ function M.parse(curl)
           res.headers["content-type"] = "application/x-www-form-urlencoded"
         end
       elseif arg == "--json" then
-          state = State.Body
-          res.headers["content-type"] = "application/json"
-          res.headers["accept"] = "application/json"
+        state = State.Body
+        res.headers["content-type"] = "application/json"
+        res.headers["accept"] = "application/json"
       elseif arg == "--http1.1" then
-          res.http_version = "HTTP/1.1"
+        res.http_version = "HTTP/1.1"
       elseif arg == "--http2" then
-          res.http_version = "HTTP/2"
+        res.http_version = "HTTP/2"
       elseif arg == "--http3" then
-          res.http_version = "HTTP/3"
+        res.http_version = "HTTP/3"
       end
-      goto continue
+      skip = true
     end
 
-    if state == State.Method then
-      res.method = arg
-    elseif state == State.UserAgent then
-      res.headers["user-agent"] = arg
-    elseif state == State.Header then
-      local header, value = Stringutils.cut(arg, ":")
-      res.headers[Stringutils.remove_extra_space(header)] = Stringutils.remove_extra_space(value)
-    elseif state == State.Body then
-      res.body = arg
+    if not skip then
+      if state == State.Method then
+        res.method = arg
+      elseif state == State.UserAgent then
+        res.headers["user-agent"] = arg
+      elseif state == State.Header then
+        local header, value = Stringutils.cut(arg, ":")
+        res.headers[Stringutils.remove_extra_space(header)] = Stringutils.remove_extra_space(value)
+      elseif state == State.Body then
+        res.body = arg
+      end
     end
-    state = State.START
 
-    ::continue::
+    if not skip then
+      state = State.START
+    end
   end
 
   if res.method == "" then

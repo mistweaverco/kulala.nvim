@@ -6,7 +6,7 @@ M.__index = M
 function M.create(str)
   local o = setmetatable({}, M)
 
-  o.buffer = str or ''
+  o.buffer = str or ""
   o.pos = 0
   o.__index = M
 
@@ -14,7 +14,7 @@ function M.create(str)
 end
 
 function M.read(sr, num)
-  if num == '*a' then
+  if num == "*a" then
     if sr.pos == #sr.buffer then
       return nil
     end
@@ -24,7 +24,7 @@ function M.read(sr, num)
     sr.pos = #sr.buffer
     return out
   elseif num <= 0 then
-    return ''
+    return ""
   end
 
   local out = sr.buffer:sub(sr.pos + 1, sr.pos + num)
@@ -37,18 +37,16 @@ function M.read(sr, num)
 end
 
 function M.seek(sr, whence, offset)
-  whence = whence or 'cur'
+  whence = whence or "cur"
 
-  if whence == 'set' then
+  if whence == "set" then
     sr.pos = offset or 0
-  elseif whence == 'cur' then
+  elseif whence == "cur" then
     sr.pos = sr.pos + (offset or 0)
-  elseif whence == 'end' then
+  elseif whence == "end" then
     sr.pos = #sr.buffer + (offset or 0)
   else
-    error(
-      'bad argument #1 to \'seek\' (invalid option \'' .. tostring(whence) ..
-        '\')', 2)
+    error("bad argument #1 to 'seek' (invalid option '" .. tostring(whence) .. "')", 2)
   end
 
   sr.pos = math.min(math.max(sr.pos, 0), #sr.buffer)
@@ -74,7 +72,7 @@ function M.readuntil(sr, phrase, exclude)
 end
 
 function M.readline(sr)
-  return sr:readuntil('\n') or sr:readuntil()
+  return sr:readuntil("\n") or sr:readuntil()
 end
 
 setmetatable(M, {
