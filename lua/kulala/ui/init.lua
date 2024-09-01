@@ -4,6 +4,7 @@ local GLOBALS = require("kulala.globals")
 local CONFIG = require("kulala.config")
 local INLAY = require("kulala.inlay")
 local PARSER = require("kulala.parser")
+local CURL_PARSER = require("kulala.parser.curl")
 local CMD = require("kulala.cmd")
 local FS = require("kulala.utils.fs")
 local DB = require("kulala.db")
@@ -12,6 +13,7 @@ local FORMATTER = require("kulala.formatter")
 local TS = require("kulala.parser.treesitter")
 local Logger = require("kulala.logger")
 local AsciiUtils = require("kulala.utils.ascii")
+local Shlex = require("kulala.shlex")
 local Shlex = require("kulala.shlex")
 local Inspect = require("kulala.parser.inspect")
 local M = {}
@@ -122,6 +124,25 @@ local function pretty_ms(ms)
   return string.format("%.2fms", ms)
 end
 
+---Prints the parsed Request table into current buffer - uses nvim_put
+local function print_http_spec(spec)
+  local lines = {}
+  local idx = 1
+
+  lines[idx] = spec.method .. " " .. spec.url .. " HTTP/1.1"
+  for header, value in pairs(spec.headers) do
+    idx = idx + 1
+    lines[idx] = header .. ": " .. value
+  end
+  if spec.body ~= "" then
+    idx = idx + 1
+    lines[idx] = ""
+    -- FIXME: broken for multi-line body
+    lines[idx + 1] = spec.body
+  end
+  vim.api.nvim_put(lines, "l", false, false)
+end
+
 M.copy = function()
   local result = PARSER.parse()
   local cmd_table = {}
@@ -150,67 +171,12 @@ end
 
 M.from_curl = function()
   local clipboard = vim.fn.getreg("+")
-  local parts = Shlex.split(clipboard)
-  if parts[1] ~= "curl" then
+  local spec = CURL_PARSER.parse(clipboard)
+  if spec == nil then
     vim.notify("Not a curl command", vim.log.levels.ERROR)
     return
   end
-
-  local res = {
-    method = "GET",
-    url = parts[#parts],
-    headers = {},
-    body = {},
-  }
-
-  local State = {
-    START = 0,
-    Method = 1,
-    UserAgent = 2,
-    Header = 3,
-    Body = 4,
-  }
-  local state = State.START
-
-  for _, arg in ipairs(parts) do
-    if state == State.START then
-      if arg == "-X" then
-        state = State.Method
-      elseif arg == "-A" then
-        state = State.UserAgent
-      elseif arg == "-H" then
-        state = State.Header
-      elseif arg == "--data" then
-        state = State.Body
-      end
-      goto continue
-    end
-
-    if state == State.Method then
-      res.method = arg
-    elseif state == State.UserAgent then
-      res.headers["user-agent"] = arg
-    elseif state == State.Header then
-      local header = string.match(arg, "^(.*):")
-      local value = string.match(arg, ":(.*)$")
-      res.headers[header] = value
-    elseif state == State.Body then
-      res.body = arg
-    end
-    state = State.START
-
-    ::continue::
-  end
-
-  -- vim.print(vim.inspect(res), vim.log.levels.INFO)
-  -- write to current buffer
-  vim.api.nvim_buf_set_lines(0, -1, -1, true, {res.method .. " " .. res.url .. " HTTP/1.1"})
-  for header, value in pairs(res.headers) do
-    vim.api.nvim_buf_set_lines(0, -1, -1, true, {header .. ": " .. value})
-  end
-  if res.body ~= "" then
-    vim.api.nvim_buf_set_lines(0, -1, -1, true, {"", res.body})
-  end
+  print_http_spec(spec)
 end
 
 M.open = function()
