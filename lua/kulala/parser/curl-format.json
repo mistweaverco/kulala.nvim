@@ -1,0 +1,26 @@
+[
+  {
+    "name": "namelookup",
+    "duration": "%{time_namelookup}"
+  },
+  {
+    "name": "connect",
+    "duration": "%{time_connect}"
+  },
+  {
+    "name": "appconnect",
+    "duration": "%{time_appconnect}"
+  },
+  {
+    "name": "pretransfer",
+    "duration": "%{time_pretransfer}"
+  },
+  {
+    "name": "redirect",
+    "duration": "%{time_redirect}"
+  },
+  {
+    "name": "starttransfer",
+    "duration": "%{time_starttransfer}"
+  }
+]

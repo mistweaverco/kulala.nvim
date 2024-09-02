@@ -20,6 +20,10 @@ All public methods are available via the `kulala` module.
 
 It opens up a floating window with the parsed request.
 
+### show_stats
+
+`require('kulala').show_stats()` shows the statistics of the last run request.
+
 ### scratchpad
 
 `require('kulala').scratchpad()` opens the scratchpad.
@@ -35,6 +39,12 @@ It's default contents can be configured via the
 
 `require('kulala').copy()` copies the current request
 (as cURL command) to the clipboard.
+
+### from_curl
+
+`require('kulala').from_curl()` parse the cURL command from the clipboard and
+write the HTTP spec into current buffer. It is useful for importing requests
+from other tools like browsers.
 
 ### close
 

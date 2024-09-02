@@ -4,6 +4,7 @@ local GLOBALS = require("kulala.globals")
 local CONFIG = require("kulala.config")
 local INLAY = require("kulala.inlay")
 local PARSER = require("kulala.parser")
+local CURL_PARSER = require("kulala.parser.curl")
 local CMD = require("kulala.cmd")
 local FS = require("kulala.utils.fs")
 local DB = require("kulala.db")
@@ -11,7 +12,7 @@ local INT_PROCESSING = require("kulala.internal_processing")
 local FORMATTER = require("kulala.formatter")
 local TS = require("kulala.parser.treesitter")
 local Logger = require("kulala.logger")
-
+local AsciiUtils = require("kulala.utils.ascii")
 local Inspect = require("kulala.parser.inspect")
 local M = {}
 
@@ -121,6 +122,31 @@ local function pretty_ms(ms)
   return string.format("%.2fms", ms)
 end
 
+---Prints the parsed Request table into current buffer - uses nvim_put
+local function print_http_spec(spec, curl)
+  local lines = {}
+  local idx = 1
+
+  table.insert(lines, "# " .. curl)
+
+  if spec.http_version ~= "" then
+    table.insert(lines, spec.method .. " " .. spec.url .. " " .. spec.http_version)
+  else
+    table.insert(lines, spec.method .. " " .. spec.url)
+  end
+
+  for header, value in pairs(spec.headers) do
+    table.insert(lines, header .. ": " .. value)
+  end
+
+  if spec.body ~= "" then
+    table.insert(lines, "")
+    -- FIXME: broken for multi-line body
+    table.insert(lines, spec.body)
+  end
+  vim.api.nvim_put(lines, "l", false, false)
+end
+
 M.copy = function()
   local result = PARSER.parse()
   local cmd_table = {}
@@ -129,7 +155,7 @@ M.copy = function()
     if string.sub(v, 1, 1) == "-" or idx == 1 then
       -- remove headers and body output to file
       -- remove --cookie-jar
-      if v == "-o" or v == "-D" or v == "--cookie-jar" then
+      if v == "-o" or v == "-D" or v == "--cookie-jar" or v == "-w" then
         skip_arg = true
       else
         table.insert(cmd_table, v)
@@ -147,38 +173,57 @@ M.copy = function()
   vim.notify("Copied to clipboard", vim.log.levels.INFO)
 end
 
+M.from_curl = function()
+  local clipboard = vim.fn.getreg("+")
+  local spec, curl = CURL_PARSER.parse(clipboard)
+  if spec == nil then
+    Logger.error("Failed to parse curl command")
+    return
+  end
+  -- put the curl command in the buffer as comment
+  print_http_spec(spec, curl)
+end
+
 M.open = function()
   INLAY.clear()
-  local result = PARSER.parse()
-  local icon_linenr = result.show_icon_line_number
-  if icon_linenr then
-    INLAY:show_loading(icon_linenr)
-  end
   vim.schedule(function()
     local start = vim.loop.hrtime()
-    CMD.run_parser(result, function(success)
+    local _, requests = PARSER.get_document()
+    local req = PARSER.get_request_at(requests)
+    if req == nil then
+      Logger.error("No request found")
+      return
+    end
+    if req.show_icon_line_number then
+      INLAY:show_loading(req.show_icon_line_number)
+    end
+    CMD.run_parser(req, function(success)
       if not success then
-        if icon_linenr then
-          INLAY:show_error(icon_linenr)
+        if req.show_icon_line_number then
+          INLAY:show_error(req.show_icon_line_number)
         end
         return
       else
         local elapsed = vim.loop.hrtime() - start
         local elapsed_ms = pretty_ms(elapsed / 1e6)
-        if icon_linenr then
-          INLAY:show_done(icon_linenr, elapsed_ms)
+        if req.show_icon_line_number then
+          INLAY:show_done(req.show_icon_line_number, elapsed_ms)
         end
         if not buffer_exists() then
           open_buffer()
         end
-        if CONFIG.get().default_view == "body" then
+
+        local default_view = CONFIG.get().default_view
+        if default_view == "body" then
           M.show_body()
-        elseif CONFIG.get().default_view == "headers" then
+        elseif default_view == "headers" then
           M.show_headers()
-        elseif CONFIG.get().default_view == "headers_body" then
+        elseif default_view == "headers_body" then
           M.show_headers_body()
-        elseif CONFIG.get().default_view == "script_output" then
+        elseif default_view == "script_output" then
           M.show_script_output()
+        elseif CONFIG.get().default_view == "stats" then
+          M.show_stats()
         end
       end
     end)
@@ -215,6 +260,10 @@ M.open_all = function()
         M.show_headers()
       elseif CONFIG.get().default_view == "headers_body" then
         M.show_headers_body()
+      elseif CONFIG.get().default_view == "script_output" then
+        M.show_script_output()
+      elseif CONFIG.get().default_view == "stats" then
+        M.show_stats()
       end
     end
   end)
@@ -286,6 +335,25 @@ M.show_headers_body = function()
     CONFIG.options.default_view = "headers_body"
   else
     vim.notify("No headers or body found", vim.log.levels.WARN)
+  end
+end
+
+M.show_stats = function()
+  local stats = FS.read_file(GLOBALS.STATS_FILE)
+  if stats ~= nil then
+    if not buffer_exists() then
+      open_buffer()
+    end
+    stats = vim.fn.json_decode(stats)
+    local diagram_lines = AsciiUtils.get_waterfall_timings(stats)
+    local diagram = table.concat(diagram_lines, "\n")
+    set_buffer_contents(diagram, "text")
+    if CONFIG.get().winbar then
+      WINBAR.toggle_winbar_tab(get_win(), "stats")
+    end
+    CONFIG.options.default_view = "stats"
+  else
+    Logger.error("No stats found")
   end
 end
 

@@ -90,14 +90,19 @@ M.run = function(type, data)
       })
       :wait()
     if output ~= nil then
+      local script_pre_output_file = GLOBALS.SCRIPT_PRE_OUTPUT_FILE
+      FS.delete_file(script_pre_output_file)
+      local script_post_output_file = GLOBALS.SCRIPT_POST_OUTPUT_FILE
+      FS.delete_file(script_post_output_file)
+
       if output.stderr ~= nil and not string.match(output.stderr, "^%s*$") then
         if not CONFIG.get().disable_script_print_output then
           vim.print(output.stderr)
         end
         if type == "pre_request" then
-          FS.write_file(GLOBALS.SCRIPT_PRE_OUTPUT_FILE, output.stderr, false)
+          FS.write_file(script_pre_output_file, output.stderr)
         elseif type == "post_request" then
-          FS.write_file(GLOBALS.SCRIPT_POST_OUTPUT_FILE, output.stderr, false)
+          FS.write_file(script_post_output_file, output.stderr)
         end
       end
       if output.stdout ~= nil and not string.match(output.stdout, "^%s*$") then
@@ -105,9 +110,13 @@ M.run = function(type, data)
           vim.print(output.stdout)
         end
         if type == "pre_request" then
-          FS.write_file(GLOBALS.SCRIPT_PRE_OUTPUT_FILE, output.stdout, false)
+          if not FS.write_file(script_pre_output_file, output.stdout) then
+            vim.print("write " .. script_pre_output_file .. " fail")
+          end
         elseif type == "post_request" then
-          FS.write_file(GLOBALS.SCRIPT_POST_OUTPUT_FILE, output.stdout, false)
+          if not FS.write_file(script_post_output_file, output.stdout) then
+            vim.print("write " .. script_post_output_file .. " fail")
+          end
         end
       end
     end
