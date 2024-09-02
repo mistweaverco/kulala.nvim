@@ -125,7 +125,6 @@ end
 ---Prints the parsed Request table into current buffer - uses nvim_put
 local function print_http_spec(spec, curl)
   local lines = {}
-  local idx = 1
 
   table.insert(lines, "# " .. curl)
 
