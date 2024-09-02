@@ -128,6 +128,7 @@ Possible values:
 - `body`
 - `headers`
 - `headers_body`
+- `script_output`
 
 Default: `body`
 
