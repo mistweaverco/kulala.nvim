@@ -59,6 +59,11 @@ the `body` and `headers` view of the last run request.
 
 Persists across restarts.
 
+### toggle_virtual_variable
+
+`require('kulala').toggle_virtual_variable()` toggles between
+the `variable` and `virtual text`.
+
 ### search
 
 `require('kulala').search()` searches for all `.http` and `.rest` files
@@ -106,7 +111,7 @@ provide autocompletion and type checking.
 
 ### get_selected_env
 
-::: warning :::
+:::warning
 
 This function is only available if you are using a `http-client.env.json` file.
 
@@ -117,7 +122,7 @@ returns the selected environment.
 
 ### set_selected_env
 
-::: warning :::
+:::warning
 
 This function is only available if you are using a `http-client.env.json` file.
 
