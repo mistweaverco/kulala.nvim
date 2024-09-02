@@ -69,6 +69,9 @@ function M.parse(curl)
           res.headers["content-type"] = "application/x-www-form-urlencoded"
         end
       elseif arg == "--json" then
+        if res.method == "" then
+          res.method = "POST"
+        end
         state = State.Body
         res.headers["content-type"] = "application/json"
         res.headers["accept"] = "application/json"
@@ -89,7 +92,7 @@ function M.parse(curl)
         res.headers["user-agent"] = arg
       elseif state == State.Header then
         local header, value = Stringutils.cut(arg, ":")
-        res.headers[Stringutils.remove_extra_space(header)] = Stringutils.remove_extra_space(value)
+        res.headers[Stringutils.remove_extra_space(header):lower()] = Stringutils.remove_extra_space(value)
       elseif state == State.Body then
         res.body = arg
       end
