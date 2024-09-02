@@ -148,6 +148,10 @@ end
 
 M.copy = function()
   local result = PARSER.parse()
+  if result == nil then
+    Logger.error("No request found")
+    return
+  end
   local cmd_table = {}
   local skip_arg = false
   for idx, v in ipairs(result.cmd) do

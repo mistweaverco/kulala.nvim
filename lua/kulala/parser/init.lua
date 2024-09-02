@@ -451,7 +451,7 @@ end
 
 ---Parse a request and return the request on itself, its headers and body
 ---@param start_request_linenr number|nil The line number where the request starts
----@return Request -- Table containing the request data
+---@return Request|nil -- Table containing the request data or nil if parsing fails
 function M.parse(start_request_linenr)
   local res = {
     metadata = {},
@@ -483,6 +483,11 @@ function M.parse(start_request_linenr)
     document_variables, requests = M.get_document()
     req = M.get_request_at(requests, start_request_linenr)
   end
+
+  if req == nil then
+    return nil
+  end
+
   Scripts.javascript.run("pre_request", req.scripts.pre_request)
   local env = ENV_PARSER.get_env()
 
