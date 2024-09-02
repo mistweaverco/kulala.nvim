@@ -90,6 +90,9 @@ Here is a full example of setting up the Kulala plugin with the available `opts`
     -- disable the vim.print output of the scripts
     -- they will be still written to disk, but not printed immediately
     disable_script_print_output = false,
+
+    -- Shortcut keys that directly trigger execution
+    execute_keymap = "<CR>",
   },
 }
 ```
