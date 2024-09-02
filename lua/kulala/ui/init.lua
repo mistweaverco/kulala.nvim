@@ -125,7 +125,6 @@ end
 ---Prints the parsed Request table into current buffer - uses nvim_put
 local function print_http_spec(spec, curl)
   local lines = {}
-  local idx = 1
 
   table.insert(lines, "# " .. curl)
 
@@ -149,6 +148,10 @@ end
 
 M.copy = function()
   local result = PARSER.parse()
+  if result == nil then
+    Logger.error("No request found")
+    return
+  end
   local cmd_table = {}
   local skip_arg = false
   for idx, v in ipairs(result.cmd) do
