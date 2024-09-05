@@ -225,7 +225,11 @@ M.get_all_requests = function(root)
   for i, node in QUERIES.section:iter_captures(root, 0) do
     if QUERIES.section.captures[i] == "request" then
       local start_line, _, end_line, _ = node:range()
-      table.insert(requests, { start_line = start_line, end_line = end_line })
+      table.insert(requests, {
+        start_line = start_line,
+        end_line = end_line,
+        metadata = {},
+      })
     end
   end
 
