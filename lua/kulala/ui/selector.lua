@@ -4,12 +4,12 @@ local FS = require("kulala.utils.fs")
 local M = {}
 
 function M.select_env()
-  if not DB.data.http_client_env then
+  if not DB.get().http_client_env then
     return
   end
 
   local envs = {}
-  for key, _ in pairs(DB.data.http_client_env) do
+  for key, _ in pairs(DB.get().http_client_env) do
     table.insert(envs, key)
   end
 

@@ -45,12 +45,12 @@ local function kulala_search(_)
 end
 
 local function kulala_env_select(_)
-  if not DB.data.http_client_env then
+  if not DB.get().data.http_client_env then
     return
   end
 
   local envs = {}
-  for key, _ in pairs(DB.data.http_client_env) do
+  for key, _ in pairs(DB.get().data.http_client_env) do
     table.insert(envs, key)
   end
 
@@ -74,7 +74,7 @@ local function kulala_env_select(_)
       previewer = previewers.new_buffer_previewer({
         title = "Environment",
         define_preview = function(self, entry)
-          local env = DB.data.http_client_env[entry.value]
+          local env = DB.get().data.http_client_env[entry.value]
           if env == nil then
             return
           end

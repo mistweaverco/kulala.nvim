@@ -90,6 +90,9 @@ Here is a full example of setting up the Kulala plugin with the available `opts`
     -- disable the vim.print output of the scripts
     -- they will be still written to disk, but not printed immediately
     disable_script_print_output = false,
+    -- set scope for environment and request variables
+    -- possible values: b = buffer, g = global
+    environment_scope = "b",
   },
 }
 ```
@@ -508,6 +511,29 @@ Example:
   "mistweaverco/kulala.nvim",
   opts = {
     vscode_rest_client_environmentvars = true,
+  },
+}
+```
+### environment_scope
+
+While using request variables the results will be stored for later use.
+As usual variables they are file relevant and should be stored in the buffer.
+If you want to share the variables between buffers you can use the global scope.
+
+Possible values:
+
+- `"b"` (buffer)
+- `"g"` (global)
+
+Default: `"b"`
+
+Example:
+
+```lua
+{
+"mistweaverco/kulala.nvim",
+  opts = {
+    environment_scope = "b",
   },
 }
 ```

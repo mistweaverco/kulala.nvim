@@ -43,7 +43,7 @@ local function get_config_contenttype(headers)
 end
 
 local function get_body_value_from_path(name, method, subpath)
-  local base_table = DB.data.env[name]
+  local base_table = DB.get().env[name]
   if not base_table then
     return nil
   end
@@ -80,7 +80,7 @@ local function get_body_value_from_path(name, method, subpath)
 end
 
 local function get_header_value_from_path(name, method, subpath)
-  local base_table = DB.data.env[name]
+  local base_table = DB.get().env[name]
   if not base_table then
     return nil
   end
@@ -110,7 +110,7 @@ local function get_header_value_from_path(name, method, subpath)
 end
 
 local function get_cookies_value_from_path(name, subpath)
-  local base_table = DB.data.env[name]
+  local base_table = DB.get().env[name]
   if not base_table then
     return nil
   end

@@ -419,7 +419,7 @@ M.show_script_output = function()
 end
 
 M.replay = function()
-  local result = DB.data.current_request
+  local result = DB.get().current_request
   if result == nil then
     vim.notify("No request to replay", vim.log.levels.WARN, { title = "kulala" })
     return
