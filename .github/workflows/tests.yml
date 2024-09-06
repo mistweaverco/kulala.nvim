@@ -1,0 +1,35 @@
+---
+name: Test
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  tests:
+    name: Tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            rev: v0.10.0/nvim.appimage
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            _neovim
+            ~/.local/share/nvim/site/pack/vendor/start
+          key: ${{ runner.os }}-${{ matrix.rev }}
+
+      - name: Prepare dependencies
+        run: | # TODO: Cache apt dependencies
+          sudo apt-get update && sudo apt-get install -y libfuse2
+          ./scripts/tests.sh prepare ${{ matrix.rev }}
+
+      - name: Run tests
+        run: ./scripts/tests.sh run

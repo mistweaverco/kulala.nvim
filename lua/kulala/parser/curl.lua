@@ -69,6 +69,9 @@ function M.parse(curl)
           res.headers["content-type"] = "application/x-www-form-urlencoded"
         end
       elseif arg == "--json" then
+        if res.method == "" then
+          res.method = "POST"
+        end
         state = State.Body
         res.headers["content-type"] = "application/json"
         res.headers["accept"] = "application/json"
