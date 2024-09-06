@@ -92,7 +92,7 @@ function M.parse(curl)
         res.headers["user-agent"] = arg
       elseif state == State.Header then
         local header, value = Stringutils.cut(arg, ":")
-        res.headers[Stringutils.remove_extra_space(header):lower()] = Stringutils.remove_extra_space(value)
+        res.headers[Stringutils.remove_extra_space(header)] = Stringutils.remove_extra_space(value)
       elseif state == State.Body then
         res.body = arg
       end

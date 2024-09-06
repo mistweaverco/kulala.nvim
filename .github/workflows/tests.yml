@@ -1,43 +1,35 @@
-name: kulala tests
+---
+name: Test
+
 on:
-  push:
+  pull_request:
     branches:
       - main
-  pull_request: ~
 
+jobs:
   tests:
-    name: tests
+    name: Tests
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         include:
           - os: ubuntu-22.04
-            rev: v0.10.0/nvim-linux64.tar.gz
+            rev: v0.10.0/nvim.appimage
     steps:
       - uses: actions/checkout@v4
-      - name: Restore cache.
+      - name: Restore cache
         uses: actions/cache@v4
         with:
-          path: _neovim
+          path: |
+            _neovim
+            ~/.local/share/nvim/site/pack/vendor/start
           key: ${{ runner.os }}-${{ matrix.rev }}
 
       - name: Prepare dependencies
-        run: |
-          test -d _neovim || {
-            mkdir -p _neovim
-            curl -sL "https://github.com/neovim/neovim/releases/download/${{ matrix.rev }}" | tar xzf - --strip-components=1 -C "${PWD}/_neovim"
-          }
-          mkdir -p ~/.local/share/nvim/site/pack/vendor/start
-          git clone --depth 1 https://github.com/nvim-lua/plenary.nvim ~/.local/share/nvim/site/pack/vendor/start/plenary.nvim
-          ln -s $(pwd) ~/.local/share/nvim/site/pack/vendor/start
-          export PATH="${PWD}/_neovim/bin:${PATH}"
-          export VIM="${PWD}/_neovim/share/nvim/runtime"
-          nvim --headless -c 'TSInstallSync lua | quit'
+        run: | # TODO: Cache apt dependencies
+          sudo apt-get update && sudo apt-get install -y libfuse2
+          ./scripts/tests.sh prepare ${{ matrix.rev }}
 
       - name: Run tests
-        run: |
-          export PATH="${PWD}/_neovim/bin:${PATH}"
-          export VIM="${PWD}/_neovim/share/nvim/runtime"
-          nvim --version
-          /bin/bash ./scripts/test
+        run: ./scripts/tests.sh run
