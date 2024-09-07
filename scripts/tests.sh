@@ -3,14 +3,11 @@
 # Copy from MIT licensed neotest plugin:
 # https://github.com/nvim-neotest/neotest/blob/958a6bff41c7086fe8b46f7f320d0fd073cfc6a0/scripts/test
 
-NVIM_DL_BASE="https://github.com/neovim/neovim/releases/download/"
-
 prepare() {
-  local version=$1
-
-  if [[ ! -f _neovim/nvim ]] && [[ -n $version ]]; then
-    mkdir -p _neovim && curl -sL -o _neovim/nvim "${NVIM_DL_BASE}${version}" && chmod +x _neovim/nvim
-    _neovim/nvim --headless -c 'TSInstallSync lua | quit'
+  if [[ ! -d ~/.local/share/nvim/site/pack/vendor/start/nvim-treesitter ]]; then
+    git clone --depth 1 \
+      https://github.com/nvim-treesitter/nvim-treesitter \
+      ~/.local/share/nvim/site/pack/vendor/start/nvim-treesitter
   fi
   if [[ ! -d ~/.local/share/nvim/site/pack/vendor/start/plenary.nvim ]]; then
     git clone --depth 1 \
@@ -20,11 +17,10 @@ prepare() {
   if [[ ! -d ~/.local/share/nvim/site/pack/vendor/start/kulala.nvim ]]; then
     ln -s "$(pwd)" ~/.local/share/nvim/site/pack/vendor/start
   fi
+  nvim --headless -c 'TSUpdate | TSInstallSync lua | quit'
 }
 
 run() {
-  type _neovim/nvim && nvim() { _neovim/nvim "$@"; }
-
   local tempfile
   tempfile=$(mktemp)
 

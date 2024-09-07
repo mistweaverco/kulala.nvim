@@ -14,22 +14,21 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-22.04
-            rev: v0.10.0/nvim.appimage
+          - os: ubuntu-latest
+            container-image: ghcr.io/mistweaverco/kulala-nvim-testrunner:latest
+    container:
+      image: ${{ matrix.container-image }}
     steps:
       - uses: actions/checkout@v4
       - name: Restore cache
         uses: actions/cache@v4
         with:
           path: |
-            _neovim
             ~/.local/share/nvim/site/pack/vendor/start
-          key: ${{ runner.os }}-${{ matrix.rev }}
+          key: ${{ runner.os }}-${{ matrix.container-image }}
 
       - name: Prepare dependencies
-        run: | # TODO: Cache apt dependencies
-          sudo apt-get update && sudo apt-get install -y libfuse2
-          ./scripts/tests.sh prepare ${{ matrix.rev }}
+        run: ./scripts/tests.sh prepare
 
       - name: Run tests
         run: ./scripts/tests.sh run
