@@ -371,6 +371,9 @@ M.get_request_at = function(requests, linenr)
   if linenr == nil then
     linenr = vim.api.nvim_win_get_cursor(0)[1]
   end
+  if CONFIG.get().treesitter then
+    return TS.get_request_at(linenr - 1)
+  end
   for _, request in ipairs(requests) do
     if linenr >= request.start_line and linenr <= request.end_line then
       return request

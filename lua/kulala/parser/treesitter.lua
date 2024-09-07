@@ -33,6 +33,9 @@ local QUERIES = {
       ((script) @script.post.inline
         (#offset! @script.post.inline 0 2 0 -2))?
       (path)? @script.post.file)
+
+    (res_redirect
+      path: (path)) @redirect
   ]]
   ),
 }
@@ -130,6 +133,18 @@ local REQUEST_VISITORS = {
       req.headers["content-type"] = "application/json"
     end
   end,
+
+  redirect = function(req, args)
+    local overwrite = false
+    if args.text:match("^>>!") then
+      overwrite = true
+    end
+
+    table.insert(req.redirect_response_body_to_files, {
+      file = args.fields.path,
+      overwrite = overwrite,
+    })
+  end,
 }
 
 local function get_root_node()
@@ -193,7 +208,7 @@ M.get_document_variables = function(root)
 end
 
 M.get_request_at = function(line)
-  line = line or vim.fn.line(".")
+  line = line or (vim.fn.line(".") - 1)
   local root = get_root_node()
 
   for i, node in QUERIES.section:iter_captures(root, 0, line, line) do
@@ -210,7 +225,11 @@ M.get_all_requests = function(root)
   for i, node in QUERIES.section:iter_captures(root, 0) do
     if QUERIES.section.captures[i] == "request" then
       local start_line, _, end_line, _ = node:range()
-      table.insert(requests, { start_line = start_line, end_line = end_line })
+      table.insert(requests, {
+        start_line = start_line,
+        end_line = end_line,
+        metadata = {},
+      })
     end
   end
 

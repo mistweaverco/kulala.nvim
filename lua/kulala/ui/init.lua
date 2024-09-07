@@ -235,13 +235,7 @@ end
 
 M.open_all = function()
   INLAY.clear()
-  local requests
-  if CONFIG:get().treesitter then
-    requests = TS.get_all_requests()
-  else
-    _, requests = PARSER.get_document()
-  end
-
+  local _, requests = PARSER.get_document()
   CMD.run_parser_all(requests, function(success, start, icon_linenr)
     if not success then
       if icon_linenr then
