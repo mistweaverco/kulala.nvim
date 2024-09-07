@@ -491,7 +491,7 @@ function M.parse(start_request_linenr)
   Scripts.javascript.run("pre_request", req.scripts.pre_request)
   local env = ENV_PARSER.get_env()
 
-  DB.data.previous_request = DB.data.current_request
+  DB.update().previous_request = DB.find_unique("current_request")
 
   document_variables = extend_document_variables(document_variables, req)
 
@@ -531,8 +531,8 @@ function M.parse(start_request_linenr)
   end
 
   -- Merge headers from the _base environment if it exists
-  if DB.data.http_client_env_base then
-    local default_headers = DB.data.http_client_env_base["DEFAULT_HEADERS"]
+  if DB.find_unique("http_client_env_base") then
+    local default_headers = DB.find_unique("http_client_env_base")["DEFAULT_HEADERS"]
     if default_headers then
       for key, value in pairs(default_headers) do
         key = key:lower()
@@ -664,7 +664,10 @@ function M.parse(start_request_linenr)
   if CONFIG.get().debug then
     FS.write_file(PLUGIN_TMP_DIR .. "/request.txt", table.concat(res.cmd, " "), false)
   end
-  DB.data.current_request = res
+  DB.update().current_request = res
+  -- Save this to global,
+  -- so .replay() can be triggered from any buffer or window
+  DB.global_update().replay = res
   return res
 end
 

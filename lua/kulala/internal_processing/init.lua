@@ -106,11 +106,11 @@ M.set_env_for_named_request = function(name, body)
       cookies = get_cookies_as_table(),
     },
     request = {
-      headers = DB.data.current_request.headers,
-      body = DB.data.current_request.body,
+      headers = DB.find_unique("current_request").headers,
+      body = DB.find_unique("current_request").body,
     },
   }
-  DB.data.env[name] = named_request
+  DB.update().env[name] = named_request
 end
 
 M.env_header_key = function(cmd)
@@ -122,7 +122,7 @@ M.env_header_key = function(cmd)
   if value == nil then
     vim.notify("env-header-key --> Header not found.", vim.log.levels.ERROR)
   else
-    DB.data.env[variable_name] = value
+    DB.update().env[variable_name] = value
   end
 end
 
@@ -151,7 +151,7 @@ M.env_json_key = function(cmd, body)
   else
     local kv = vim.split(cmd, " ")
     local value = get_nested_value(json, kv[2])
-    DB.data.env[kv[1]] = value
+    DB.update().env[kv[1]] = value
   end
 end
 
@@ -163,7 +163,7 @@ M.prompt_var = function(metadata_value)
   if value == nil or value == "" then
     return false
   end
-  DB.data.env[key] = value
+  DB.update().env[key] = value
   return true
 end
 

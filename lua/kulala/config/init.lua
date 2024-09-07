@@ -68,6 +68,9 @@ M.defaults = {
   -- disable the vim.print output of the scripts
   -- they will be still written to disk, but not printed immediately
   disable_script_print_output = false,
+  -- set scope for environment and request variables
+  -- possible values: b = buffer, g = global
+  environment_scope = "b",
 }
 
 M.default_contenttype = {
@@ -76,7 +79,7 @@ M.default_contenttype = {
   pathresolver = nil,
 }
 
-M.options = {}
+M.options = M.defaults
 
 M.setup = function(config)
   M.options = vim.tbl_deep_extend("force", M.defaults, config or {})
