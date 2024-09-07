@@ -3,6 +3,7 @@ local CONFIG = require("kulala.config")
 local M = {}
 
 M.data = nil
+M.global_data = {}
 
 local function default_data()
   return {
@@ -44,7 +45,19 @@ local function save_data()
   end
 end
 
-M.get = function()
+M.global_find_many = function()
+  return M.global_data
+end
+
+M.global_find_unique = function(key)
+  return M.global_data[key]
+end
+
+M.global_update = function()
+  return M.global_data
+end
+
+M.find_many = function()
   if not M.data or not M.data.scope_nr then
     load_data()
   elseif M.data.scope_nr ~= get_current_scope_nr() then
@@ -52,6 +65,14 @@ M.get = function()
     load_data()
   end
   return M.data
+end
+
+M.update = function()
+  return M.find_many()
+end
+
+M.find_unique = function(key)
+  return M.find_many()[key]
 end
 
 return M

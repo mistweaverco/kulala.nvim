@@ -47,7 +47,7 @@ M.env_stdin_cmd = function(cmdstring, contents)
   end
 
   -- save the result to the environment variable
-  DB.get().env[env_name] = M.stdin_cmd(cmd_string, contents)
+  DB.update().env[env_name] = M.stdin_cmd(cmd_string, contents)
 end
 
 return M

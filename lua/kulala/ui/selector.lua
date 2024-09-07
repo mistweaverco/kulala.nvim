@@ -4,12 +4,13 @@ local FS = require("kulala.utils.fs")
 local M = {}
 
 function M.select_env()
-  if not DB.get().http_client_env then
+  local http_client_env = DB.find_unique("http_client_env")
+  if not http_client_env then
     return
   end
 
   local envs = {}
-  for key, _ in pairs(DB.get().http_client_env) do
+  for key, _ in pairs(http_client_env) do
     table.insert(envs, key)
   end
 
