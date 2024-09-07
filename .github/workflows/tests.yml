@@ -24,11 +24,8 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            ~/.local/share/nvim/site/pack/vendor/start
+            .tests
           key: ${{ runner.os }}-${{ matrix.container-image }}
-
-      - name: Prepare dependencies
-        run: ./scripts/tests.sh prepare
 
       - name: Run tests
         run: ./scripts/tests.sh run
