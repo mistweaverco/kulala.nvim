@@ -79,7 +79,7 @@ M.default_contenttype = {
   pathresolver = nil,
 }
 
-M.options = {}
+M.options = M.defaults
 
 M.setup = function(config)
   M.options = vim.tbl_deep_extend("force", M.defaults, config or {})
