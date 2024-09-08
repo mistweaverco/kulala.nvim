@@ -71,6 +71,10 @@ M.defaults = {
   -- set scope for environment and request variables
   -- possible values: b = buffer, g = global
   environment_scope = "b",
+  -- enable/disable variable info text
+  -- this will show the variable name and value either as virtual text or float
+  -- possible values: false, "virtual", "float"
+  show_variable_info_text = false,
 }
 
 M.default_contenttype = {
