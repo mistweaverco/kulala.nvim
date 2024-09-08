@@ -67,24 +67,26 @@ local add_virtual_variable_text = function()
 
   local variables = vim.tbl_extend(
     "force",
-    TS.get_document_variables(),
-    ENV_PARSER.get_env(),
-    DB.data.http_client_env_base["DEFAULT_HEADERS"]
+    TS.get_document_variables() or {},
+    ENV_PARSER.get_env() or {},
+    DB.data.http_client_env_base["DEFAULT_HEADERS"] or {}
   )
 
   for lineno, line in ipairs(lines) do
-    for start_idx, match in line:gmatch("()(" .. pattern .. ")()") do
-      local label = match:gsub("{{", ""):gsub("}}", "")
-      local value = variables[label]
-      if value ~= nil then
-        -- Calculate the position to place virtual text
-        local end_idx = start_idx + #match - 1
+    if line ~= nil and line:match("%S") ~= nil then
+      for start_idx, match in line:gmatch("()(" .. pattern .. ")()") do
+        local label = match:gsub("{{", ""):gsub("}}", "")
+        local value = variables[label]
+        if value ~= nil then
+          -- Calculate the position to place virtual text
+          local end_idx = start_idx + #match - 1
 
-        -- Add virtual text before the closing braces of the match
-        vim.api.nvim_buf_set_extmark(bufnr, ns_id, lineno - 1, end_idx - 2, {
-          virt_text = { { ":" .. value, "Comment" } }, -- You can change the highlight group "Comment" as needed
-          virt_text_pos = "inline",
-        })
+          -- Add virtual text before the closing braces of the match
+          vim.api.nvim_buf_set_extmark(bufnr, ns_id, lineno - 1, end_idx - 2, {
+            virt_text = { { ":" .. value, "Comment" } }, -- You can change the highlight group "Comment" as needed
+            virt_text_pos = "inline",
+          })
+        end
       end
     end
   end
@@ -105,7 +107,7 @@ M.toggle_virtual_variable = function()
     vim.api.nvim_create_augroup(VV_GROUP_NAME, { clear = true })
     vim.api.nvim_create_autocmd({ "BufEnter", "TextChanged", "TextChangedI" }, {
       group = VV_GROUP_NAME,
-      pattern = "*.http",
+      pattern = "*.(http|rest)",
       callback = add_virtual_variable_text,
     })
   else
