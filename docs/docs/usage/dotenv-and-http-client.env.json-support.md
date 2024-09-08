@@ -93,6 +93,7 @@ the `DEFAULT_HEADERS` will be merged with the headers from the HTTP requests.
     "DEFAULT_HEADERS": {
       "Content-Type": "application/json",
       "Accept": "application/json"
+    },
   },
   "dev": {
     "API_KEY": "your-api-key"
