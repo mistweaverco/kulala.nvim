@@ -15,7 +15,7 @@ const sidebars: SidebarsConfig = {
         'getting-started/install',
         'getting-started/requirements',
         'getting-started/configuration-options',
-        'getting-started/best-practices',
+        'getting-started/example-configuration',
       ],
     },
     {
