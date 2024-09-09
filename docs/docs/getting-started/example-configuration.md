@@ -77,7 +77,7 @@ vim.api.nvim_buf_set_keymap(
 
 Add the following code to `ftplugin/http.lua` to copy the current request as a curl command when you press `<leader>co`.
 
-::: tip
+:::tip
 
 Mnemonic: `co` for `curl out`.
 
@@ -98,7 +98,7 @@ vim.api.nvim_buf_set_keymap(
 Add the following code to `ftplugin/http.lua` to insert from a curl command
 in your clipboard when you press `<leader>ci`.
 
-::: tip
+:::tip
 
 Mnemonic: `ci` for `curl in`.
 
