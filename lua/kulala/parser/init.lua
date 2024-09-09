@@ -543,7 +543,7 @@ function M.parse(start_request_linenr)
   end
 
   -- build the command to exectute the request
-  table.insert(res.cmd, "curl")
+  table.insert(res.cmd, CONFIG.get().curl_path)
   table.insert(res.cmd, "-s")
   table.insert(res.cmd, "-D")
   table.insert(res.cmd, PLUGIN_TMP_DIR .. "/headers.txt")

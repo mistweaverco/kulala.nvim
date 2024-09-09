@@ -2,6 +2,10 @@ local FS = require("kulala.utils.fs")
 local M = {}
 
 M.defaults = {
+  -- cURL path
+  -- if you have curl installed in a non-standard path,
+  -- you can specify it here
+  curl_path = "curl",
   -- split direction
   -- possible values: "vertical", "horizontal"
   split_direction = "vertical",
