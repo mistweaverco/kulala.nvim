@@ -10,6 +10,11 @@ Here is a full example of setting up the Kulala plugin with the available `opts`
 {
   "mistweaverco/kulala.nvim",
   opts = {
+    -- cURL path
+    -- if you have curl installed in a non-standard path,
+    -- you can specify it here
+    curl_path = "curl",
+
     -- split direction
     -- possible values: "vertical", "horizontal"
     split_direction = "vertical",
@@ -97,6 +102,24 @@ Here is a full example of setting up the Kulala plugin with the available `opts`
 }
 ```
 
+### curl_path
+
+cURL path.
+
+If you have `curl` installed in a non-standard path, you can specify it here.
+
+Default: `curl`
+
+Example:
+
+```lua
+{
+  "mistweaverco/kulala.nvim",
+  opts = {
+    curl_path = "/home/bonobo/.local/bin/curl",
+  },
+}
+```
 ### split_direction
 
 Split direction.
