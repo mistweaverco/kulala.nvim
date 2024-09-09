@@ -1,6 +1,18 @@
 local FS = require("kulala.utils.fs")
 local M = {}
 
+-- enable treesitter parsing by default if http parser is available
+local treesitter_default = false
+local ok, parsers = pcall(require, "nvim-treesitter.parsers")
+if ok then
+  for _, parser in pairs(parsers.available_parsers()) do
+    if parser == "http" then
+      treesitter_default = true
+      break
+    end
+  end
+end
+
 M.defaults = {
   -- split direction
   -- possible values: "vertical", "horizontal"
@@ -64,7 +76,7 @@ M.defaults = {
   -- enable reading vscode rest client environment variables
   vscode_rest_client_environmentvars = false,
   -- parse requests with tree-sitter
-  treesitter = false,
+  treesitter = treesitter_default,
   -- disable the vim.print output of the scripts
   -- they will be still written to disk, but not printed immediately
   disable_script_print_output = false,

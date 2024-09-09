@@ -93,6 +93,11 @@ Here is a full example of setting up the Kulala plugin with the available `opts`
     -- set scope for environment and request variables
     -- possible values: b = buffer, g = global
     environment_scope = "b",
+
+    -- by default, requests are parsed using treesitter if an http parser is available.
+    -- if you encounter tree-sitter related issues, you can disable this feature
+    -- by setting this option to false (and then open an issue on GitHub!)
+    treesitter = true,
   },
 }
 ```

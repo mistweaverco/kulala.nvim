@@ -1,7 +1,3 @@
-if not pcall(require, "nvim-treesitter") then
-  return nil
-end
-
 local CONFIG = require("kulala.config")
 local FS = require("kulala.utils.fs")
 local STRING_UTILS = require("kulala.utils.string")
