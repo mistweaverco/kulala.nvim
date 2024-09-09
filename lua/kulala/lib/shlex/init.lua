@@ -53,8 +53,8 @@ function M.shlex:create(str, posix, punctuation_chars)
   o.posix = posix == true
   if o.posix then
     o.wordchars = o.wordchars
-      .. "ßàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ"
-      .. "ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞ"
+        .. "ßàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ"
+        .. "ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞ"
   end
 
   if punctuation_chars then
@@ -101,6 +101,9 @@ function M.shlex:read_token()
       print("shlex: in state '" .. (self.state or "nil") .. "' I see character: '" .. (nextchar or "nil") .. "'")
     end
 
+    -- lua doesn't have continue statements and Lua 5.1 sadly don't have goto
+    local continue = false
+
     if none(self.state) then
       self.token = ""
       break
@@ -115,37 +118,37 @@ function M.shlex:read_token()
         if some(self.token) or (self.posix and quoted) then
           break
         else
-          break
+          continue = true
         end
-      elseif self.commenters:find(nextchar, 1, true) then
+      elseif not continue and self.commenters:find(nextchar, 1, true) then
         self.sr:readline()
         self.lineno = self.lineno + 1
-      elseif self.posix and self.escape:find(nextchar, 1, true) then
+      elseif not continue and self.posix and self.escape:find(nextchar, 1, true) then
         escapedstate = "a"
         self.state = nextchar
-      elseif self.wordchars:find(nextchar, 1, true) then
+      elseif not continue and self.wordchars:find(nextchar, 1, true) then
         self.token = nextchar
         self.state = "a"
-      elseif self.punctuation_chars:find(nextchar, 1, true) then
+      elseif not continue and self.punctuation_chars:find(nextchar, 1, true) then
         self.token = nextchar
         self.state = "c"
-      elseif self.quotes:find(nextchar, 1, true) then
+      elseif not continue and self.quotes:find(nextchar, 1, true) then
         if not self.posix then
           self.token = nextchar
         end
         self.state = nextchar
-      elseif self.whitespace_split then
+      elseif not continue and self.whitespace_split then
         self.token = nextchar
         self.state = "a"
-      else
+      elseif not continue then
         self.token = nextchar
         if some(self.token) or (self.posix and quoted) then
           break
         else
-          break
+          continue = true
         end
       end
-    elseif self.quotes:find(self.state, 1, true) then
+    elseif not continue and self.quotes:find(self.state, 1, true) then
       quoted = true
       if none(nextchar) then
         if self.debug >= 2 then
@@ -167,7 +170,7 @@ function M.shlex:read_token()
       else
         self.token = self.token .. nextchar
       end
-    elseif self.escape:find(self.state, 1, true) then
+    elseif not continue and self.escape:find(self.state, 1, true) then
       if none(nextchar) then
         if self.debug >= 2 then
           print("shlex: I see EOF in escape state")
@@ -179,7 +182,7 @@ function M.shlex:read_token()
       end
       self.token = self.token .. nextchar
       self.state = escapedstate
-    elseif self.state == "a" or self.state == "c" then
+    elseif not continue and self.state == "a" or self.state == "c" then
       if none(nextchar) then
         self.state = nil
         break
@@ -191,9 +194,9 @@ function M.shlex:read_token()
         if some(self.token) or (self.posix and quoted) then
           break
         else
-          break
+          continue = true
         end
-      elseif self.commenters:find(nextchar, 1, true) then
+      elseif not continue and self.commenters:find(nextchar, 1, true) then
         self.sr:readline()
         self.lineno = self.lineno + 1
         if self.posix then
@@ -201,10 +204,10 @@ function M.shlex:read_token()
           if some(self.token) or (self.posix and quoted) then
             break
           else
-            break
+            continue = true
           end
         end
-      elseif self.state == "c" then
+      elseif not continue and self.state == "c" then
         if self.punctuation_chars:find(nextchar, 1, true) then
           self.token = self.token .. nextchar
         else
@@ -214,18 +217,18 @@ function M.shlex:read_token()
           self.state = " "
           break
         end
-      elseif self.posix and self.quotes:find(nextchar, 1, true) then
+      elseif not continue and self.posix and self.quotes:find(nextchar, 1, true) then
         self.state = nextchar
-      elseif self.posix and self.escape:find(nextchar, 1, true) then
+      elseif not continue and self.posix and self.escape:find(nextchar, 1, true) then
         escapedstate = "a"
         self.state = nextchar
-      elseif
-        self.wordchars:find(nextchar, 1, true)
-        or self.quotes:find(nextchar, 1, true)
-        or (self.whitespace_split and not self.punctuation_chars:find(nextchar, 1, true))
+      elseif not continue and
+          (self.wordchars:find(nextchar, 1, true)
+            or self.quotes:find(nextchar, 1, true)
+            or (self.whitespace_split and not self.punctuation_chars:find(nextchar, 1, true)))
       then
         self.token = self.token .. nextchar
-      else
+      elseif not continue then
         if some(self.punctuation_chars) then
           table.insert(self._pushback_chars, nextchar)
         else
@@ -235,7 +238,7 @@ function M.shlex:read_token()
         if some(self.token) or (self.posix and quoted) then
           break
         else
-          break
+          continue = true
         end
       end
     end
@@ -292,6 +295,7 @@ function M.split(str, comments, posix)
   end
   local lex = M.shlex(str)
   lex.posix = posix
+  lex.whitespace_split = true
   if comments == false then
     lex.commenters = ""
   end
