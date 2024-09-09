@@ -1,6 +1,9 @@
 local M = {}
 
 local function parse(body)
+  local query_string
+  local variables_string
+  -- Split the body into lines
   local lines = vim.split(body, "\r\n")
   local in_query = false
   local in_variables = false
@@ -22,6 +25,7 @@ local function parse(body)
       in_query = false
       in_variables = true
     end
+    line = vim.trim(line)
     if in_query then
       table.insert(query, line)
     elseif in_variables then
@@ -30,18 +34,18 @@ local function parse(body)
   end
 
   if #query == 0 then
-    query = nil
+    query_string = nil
   else
-    query = table.concat(query, " ")
+    query_string = table.concat(query, " ")
   end
 
   if #variables == 0 then
-    variables = nil
+    variables_string = nil
   else
-    variables = table.concat(variables, " ")
+    variables_string = table.concat(variables, " ")
   end
 
-  return query, variables
+  return query_string, variables_string
 end
 
 M.get_json = function(body)
