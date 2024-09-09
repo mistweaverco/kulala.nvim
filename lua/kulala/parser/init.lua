@@ -199,7 +199,7 @@ M.get_document = function()
     local is_prerequest_handler_script_inline = false
     local is_postrequest_handler_script_inline = false
     local is_body_section = false
-    local lines = vim.split(block, "\n", { plain = true, trimempty = false })
+    local lines = vim.split(block, "\n")
     local block_line_count = #lines
     local request = {
       headers = {},
@@ -223,7 +223,6 @@ M.get_document = function()
       },
     }
     for relative_linenr, line in ipairs(lines) do
-      line = vim.trim(line)
       -- end of inline scripting
       if is_request_line == true and line:match("^%%}$") then
         is_prerequest_handler_script_inline = false
@@ -252,9 +251,7 @@ M.get_document = function()
       elseif is_request_line == true and line:match("^< (.*)$") then
         local scriptfile = line:match("^< (.*)$")
         table.insert(request.scripts.pre_request.files, scriptfile)
-        -- It's a comment, skip it
       elseif line == "" and is_body_section == false then
-        -- Skip empty lines
         if is_request_line == false then
           is_body_section = true
         end
@@ -289,7 +286,7 @@ M.get_document = function()
           variable_name = variable_name:sub(1)
           variables[variable_name] = variable_value
         end
-      elseif is_body_section == true and #line > 0 then
+      elseif is_body_section == true then
         if request.body == nil then
           request.body = ""
         end
@@ -309,8 +306,7 @@ M.get_document = function()
           end
         else
           if
-            (request.headers["content-type"] ~= nil and request.headers["content-type"]:find("^multipart/form%-data"))
-            or PARSER_UTILS.contains_meta_tag(request, "graphql")
+            request.headers["content-type"] ~= nil and request.headers["content-type"]:find("^multipart/form%-data")
           then
             request.body = request.body .. line .. "\r\n"
           elseif
