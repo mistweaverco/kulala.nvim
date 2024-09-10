@@ -16,3 +16,36 @@ name={{name}}&
 age={{age}}
 ```
 
+## Sending multipart form data
+
+You can send multipart form data in Kulala by using the `multipart/form-data` content type.
+
+```http title="multipart.http"
+# @file-to-variable LOGO_FILE_VAR ./../../logo.png
+POST https://httpbin.org/post HTTP/1.1
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary{{$timestamp}}
+
+------WebKitFormBoundary{{$timestamp}}
+Content-Disposition: form-data; name="logo"; filename="logo.png"
+Content-Type: image/jpeg
+
+{{LOGO_FILE_VAR}}
+
+------WebKitFormBoundary{{$timestamp}}
+Content-Disposition: form-data; name="x"
+
+0
+------WebKitFormBoundary{{$timestamp}}
+Content-Disposition: form-data; name="y"
+
+1.4333333333333333
+------WebKitFormBoundary{{$timestamp}}
+Content-Disposition: form-data; name="w"
+
+514.5666666666667
+------WebKitFormBoundary{{$timestamp}}
+Content-Disposition: form-data; name="h"
+
+514.5666666666667
+------WebKitFormBoundary{{$timestamp}}--
+```

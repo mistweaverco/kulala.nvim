@@ -10,6 +10,27 @@ M.join_paths = function(...)
   return table.concat({ ... }, M.ps)
 end
 
+---Returns true if the path is absolute, false otherwise
+M.is_absolute_path = function(path)
+  if path:match("^/") or path:match("^%a:\\") then
+    return true
+  end
+  return false
+end
+
+---Either returns the absolute path if the path is already absolute or
+---joins the path with the current buffer directory
+M.get_file_path = function(path)
+  if M.is_absolute_path(path) then
+    return path
+  end
+  local buffer_dir = vim.fn.expand("%:p:h")
+  if path:sub(1, 2) == "./" or path:sub(1, 2) == ".\\" then
+    path = path:sub(3)
+  end
+  return M.join_paths(buffer_dir, path)
+end
+
 -- This is mainly used for determining if the current buffer is a non-http file
 -- and therefore maybe we need to parse a fenced code block
 M.is_non_http_file = function()
@@ -230,6 +251,17 @@ M.read_file = function(filename)
   local content = f:read("*a")
   f:close()
   return content
+end
+
+M.get_binary_temp_file = function(content)
+  local tmp_file = vim.fn.tempname()
+  local f = io.open(tmp_file, "wb")
+  if f == nil then
+    return nil
+  end
+  f:write(content)
+  f:close()
+  return tmp_file
 end
 
 ---Read file lines
