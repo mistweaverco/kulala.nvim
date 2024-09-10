@@ -1,7 +1,8 @@
 local Config = require("kulala.config")
 local Parser = require("kulala.parser")
 local Float = require("kulala.ui.float")
-local Db = require("kulala.db")
+local ENV = require("kulala.parser.env")
+local INLAY = require("kulala.inlay")
 
 local M = {}
 
@@ -37,12 +38,14 @@ local show_variable_info_text = function()
 end
 
 M.setup = function()
-  if Config.get().show_variable_info_text == "float" then
+  local show_type = Config.get().show_variable_info_text
+  if show_type == "float" then
     local augroup = vim.api.nvim_create_augroup("kulala_show_float_variable_info_text", { clear = true })
     local float_win_id = nil
     local timer = nil
     vim.api.nvim_create_autocmd("CursorMoved", {
       group = augroup,
+      pattern = { "*.http", "*.rest" },
       callback = function()
         if float_win_id then
           vim.api.nvim_win_close(float_win_id, true)
@@ -59,6 +62,8 @@ M.setup = function()
         end)
       end,
     })
+  elseif show_type == "virtual" then
+    INLAY.toggle_virtual_variable()
   end
 end
 
