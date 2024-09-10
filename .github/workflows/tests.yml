@@ -1,0 +1,31 @@
+---
+name: Test
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  tests:
+    name: Tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            container-image: ghcr.io/mistweaverco/kulala-nvim-testrunner:latest
+    container:
+      image: ${{ matrix.container-image }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            .tests
+          key: ${{ runner.os }}-${{ matrix.container-image }}
+
+      - name: Run tests
+        run: ./scripts/tests.sh run

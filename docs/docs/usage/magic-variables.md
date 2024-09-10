@@ -20,6 +20,6 @@ Accept: application/json
   "uuid": "{{$uuid}}",
   "timestamp": "{{$timestamp}}",
   "date": "{{$date}}",
-  "randomInt": "{{$randomInt}}",
+  "randomInt": "{{$randomInt}}"
 }
 ```

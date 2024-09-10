@@ -199,7 +199,7 @@ M.get_document = function()
     local is_prerequest_handler_script_inline = false
     local is_postrequest_handler_script_inline = false
     local is_body_section = false
-    local lines = vim.split(block, "\n", { plain = true, trimempty = false })
+    local lines = vim.split(block, "\n")
     local block_line_count = #lines
     local request = {
       headers = {},
@@ -223,7 +223,6 @@ M.get_document = function()
       },
     }
     for relative_linenr, line in ipairs(lines) do
-      line = vim.trim(line)
       -- end of inline scripting
       if is_request_line == true and line:match("^%%}$") then
         is_prerequest_handler_script_inline = false
@@ -252,9 +251,7 @@ M.get_document = function()
       elseif is_request_line == true and line:match("^< (.*)$") then
         local scriptfile = line:match("^< (.*)$")
         table.insert(request.scripts.pre_request.files, scriptfile)
-        -- It's a comment, skip it
       elseif line == "" and is_body_section == false then
-        -- Skip empty lines
         if is_request_line == false then
           is_body_section = true
         end
@@ -289,7 +286,7 @@ M.get_document = function()
           variable_name = variable_name:sub(1)
           variables[variable_name] = variable_value
         end
-      elseif is_body_section == true and #line > 0 then
+      elseif is_body_section == true then
         if request.body == nil then
           request.body = ""
         end
@@ -309,8 +306,7 @@ M.get_document = function()
           end
         else
           if
-            (request.headers["content-type"] ~= nil and request.headers["content-type"]:find("^multipart/form%-data"))
-            or PARSER_UTILS.contains_meta_tag(request, "graphql")
+            request.headers["content-type"] ~= nil and request.headers["content-type"]:find("^multipart/form%-data")
           then
             request.body = request.body .. line .. "\r\n"
           elseif
@@ -370,6 +366,9 @@ end
 M.get_request_at = function(requests, linenr)
   if linenr == nil then
     linenr = vim.api.nvim_win_get_cursor(0)[1]
+  end
+  if CONFIG.get().treesitter then
+    return TS.get_request_at(linenr - 1)
   end
   for _, request in ipairs(requests) do
     if linenr >= request.start_line and linenr <= request.end_line then
@@ -451,7 +450,7 @@ end
 
 ---Parse a request and return the request on itself, its headers and body
 ---@param start_request_linenr number|nil The line number where the request starts
----@return Request -- Table containing the request data
+---@return Request|nil -- Table containing the request data or nil if parsing fails
 function M.parse(start_request_linenr)
   local res = {
     metadata = {},
@@ -483,10 +482,15 @@ function M.parse(start_request_linenr)
     document_variables, requests = M.get_document()
     req = M.get_request_at(requests, start_request_linenr)
   end
+
+  if req == nil then
+    return nil
+  end
+
   Scripts.javascript.run("pre_request", req.scripts.pre_request)
   local env = ENV_PARSER.get_env()
 
-  DB.data.previous_request = DB.data.current_request
+  DB.update().previous_request = DB.find_unique("current_request")
 
   document_variables = extend_document_variables(document_variables, req)
 
@@ -526,8 +530,8 @@ function M.parse(start_request_linenr)
   end
 
   -- Merge headers from the _base environment if it exists
-  if DB.data.http_client_env_base then
-    local default_headers = DB.data.http_client_env_base["DEFAULT_HEADERS"]
+  if DB.find_unique("http_client_env_base") then
+    local default_headers = DB.find_unique("http_client_env_base")["DEFAULT_HEADERS"]
     if default_headers then
       for key, value in pairs(default_headers) do
         key = key:lower()
@@ -539,7 +543,7 @@ function M.parse(start_request_linenr)
   end
 
   -- build the command to exectute the request
-  table.insert(res.cmd, "curl")
+  table.insert(res.cmd, CONFIG.get().curl_path)
   table.insert(res.cmd, "-s")
   table.insert(res.cmd, "-D")
   table.insert(res.cmd, PLUGIN_TMP_DIR .. "/headers.txt")
@@ -659,7 +663,10 @@ function M.parse(start_request_linenr)
   if CONFIG.get().debug then
     FS.write_file(PLUGIN_TMP_DIR .. "/request.txt", table.concat(res.cmd, " "), false)
   end
-  DB.data.current_request = res
+  DB.update().current_request = res
+  -- Save this to global,
+  -- so .replay() can be triggered from any buffer or window
+  DB.global_update().replay = res
   return res
 end
 

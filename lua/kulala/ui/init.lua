@@ -125,7 +125,6 @@ end
 ---Prints the parsed Request table into current buffer - uses nvim_put
 local function print_http_spec(spec, curl)
   local lines = {}
-  local idx = 1
 
   table.insert(lines, "# " .. curl)
 
@@ -149,6 +148,10 @@ end
 
 M.copy = function()
   local result = PARSER.parse()
+  if result == nil then
+    Logger.error("No request found")
+    return
+  end
   local cmd_table = {}
   local skip_arg = false
   for idx, v in ipairs(result.cmd) do
@@ -232,13 +235,7 @@ end
 
 M.open_all = function()
   INLAY.clear()
-  local requests
-  if CONFIG:get().treesitter then
-    requests = TS.get_all_requests()
-  else
-    _, requests = PARSER.get_document()
-  end
-
+  local _, requests = PARSER.get_document()
   CMD.run_parser_all(requests, function(success, start, icon_linenr)
     if not success then
       if icon_linenr then
@@ -416,7 +413,7 @@ M.show_script_output = function()
 end
 
 M.replay = function()
-  local result = DB.data.current_request
+  local result = DB.global_find_unique("replay")
   if result == nil then
     vim.notify("No request to replay", vim.log.levels.WARN, { title = "kulala" })
     return

@@ -4,3 +4,4 @@ http-client.env.json
 *.http
 *graphql-schema.json
 /http-examples
+.tests
