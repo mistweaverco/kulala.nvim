@@ -1,5 +1,5 @@
 ---
-name: Test
+name: Conform
 
 on:
   pull_request:
@@ -29,3 +29,13 @@ jobs:
 
       - name: Run tests
         run: ./scripts/tests.sh run
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/mistweaverco/kulala-nvim-testrunner:latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run linter
+        run: ./scripts/lint.sh check
