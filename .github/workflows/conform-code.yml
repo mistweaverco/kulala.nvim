@@ -1,8 +1,10 @@
 ---
-name: Conform
+name: Conform Code
 
 on:
   pull_request:
+    paths:
+      - '**/*.lua'
     branches:
       - main
 
@@ -30,7 +32,7 @@ jobs:
       - name: Run tests
         run: ./scripts/tests.sh run
   lint:
-    name: Lint
+    name: Lint Code
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/mistweaverco/kulala-nvim-testrunner:latest
@@ -38,4 +40,4 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Run linter
-        run: ./scripts/lint.sh check
+        run: ./scripts/lint.sh check-code
