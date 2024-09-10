@@ -1,4 +1,5 @@
 local UI = require("kulala.ui")
+local INLAY = require("kulala.inlay")
 local SELECTOR = require("kulala.ui.selector")
 local ENV = require("kulala.parser.env")
 local GLOBALS = require("kulala.globals")
