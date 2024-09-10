@@ -7,15 +7,13 @@ local M = {}
 
 local show_variable_info_text = function()
   local line = vim.api.nvim_get_current_line()
-  local db_env = Db.find_unique("env")
-  if db_env == nil then
+  local env = ENV.get_env()
+  local variables = Parser.get_document() or {}
+  variables = vim.tbl_extend("force", variables, env)
+  if vim.tbl_isempty(variables) then
     return nil
   end
-  local variables = Parser.get_document()
-  if variables == nil then
-    return nil
-  end
-  variables = vim.tbl_extend("force", variables, db_env)
+
   -- get variable under cursor
   -- a variable is a string that starts with two {{ and ends with two }}
   local cursor = vim.api.nvim_win_get_cursor(0)
