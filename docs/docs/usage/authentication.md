@@ -2,28 +2,46 @@
 
 How to handle authentication in Kulala.
 
-In general, you can use the `Authorization` header to send an authentication token to the server.
+In general, you can use the `Authorization` header to
+send an authentication token to the server.
 The content of the header depends on the type of authentication you are using.
 
 See these topics for more information:
 
 - [Sending form data](sending-form-data.md)
-- [Dynamic environment variables](dynamically-setting-environment-variables-based-on-response-json.md)
+- [Dynamic environment variables][dyn-env]
 - [Dotenv and environment files](dotenv-and-http-client.env.json-support)
 - [Request variables](request-variables.md)
 
+## Supported Authentication Types
+
+Amazon Web Services (AWS) Signature version 4 is
+a protocol for authenticating requests to AWS services.
+
+New Technology LAN Manager (NTLM),
+is a suite of Microsoft security protocols that
+provides authentication, integrity, and confidentiality to users.
+
+Basic, Digest, NTLM, Negotiate, Bearer Token and
+AWS Signature V4 are supported.
+
 ## Basic Authentication
 
-Basic authentication needs a Base64 encoded string of `username:password` as the value of the `Authorization` header.
+Basic authentication needs a
+Base64 encoded string of `username:password` as
+the value of the `Authorization` header.
 
-If given it will be directly used in the HTTP request:
+If given it'll be directly used in the HTTP request:
 
 ```http
 GET https://www/api HTTP/1.1
 Authorization: Basic TXlVc2VyOlByaXZhdGU=
 ```
 
-Futhermore you can enter username and password in plain text in the `Authorization` header field, Kulala will automatically encode it for you.
+Futhermore you can enter username and password in
+plain text in the `Authorization` header field,
+Kulala will automatically encode it for you.
+
 There will be two possible ways to enter the credentials:
 
 ```http
@@ -58,7 +76,8 @@ Authorization: Basic {{Username}} {{Password}}
 
 ## NTLM Authentication
 
-For NTLM authentication, you need to provide the username and password the same way:
+For NTLM authentication,
+you need to provide the username and password the same way:
 
 ```http
 GET https://www/api HTTP/1.1
@@ -74,7 +93,9 @@ Authorization: Basic {{Username}} {{Password}}
 
 ## Negotiate
 
-This is a SPNEGO-based implementation, which does not need username and password but uses the default credentials.
+This is a SPNEGO-based implementation,
+which doesn't need username and password,
+but uses the default credentials.
 
 ```http
 GET https://www/api HTTP/1.1
@@ -83,7 +104,9 @@ Authorization: Negotiate
 
 ## Bearer Token
 
-For a Bearer Token you need to send your credentials to an authentication endpoint and receive a token in return.
+For a Bearer Token you need to send your credentials to
+an authentication endpoint and receive a token in return.
+
 This token is then used in the `Authorization` header for further requests.
 
 ### Sending the credentials
@@ -97,7 +120,8 @@ Accept: application/json
 client_id={{ClientId}}&client_secret={{ClientSecret}}&grant_type=client_credentials&scope={{Scope}}
 ```
 
-This is a `login` named request with the credentials and the result may look like
+This is a `login` named request with the credentials and
+the result may look like
 
 ```json
 {
@@ -107,7 +131,8 @@ This is a `login` named request with the credentials and the result may look lik
 }
 ```
 
-with the request variables feature from Kulala you can now access the `access_token` and use it in the next requests.
+with the request variables feature from Kulala you
+can now access the `access_token` and use it in the next requests.
 
 ```http
 GET {{apiURL}}/items HTTP/1.1
@@ -117,8 +142,12 @@ Authorization: Bearer {{login.response.body.$.access_token}}
 
 ## AWS Signature V4
 
+Amazon Web Services (AWS) Signature version 4 is a
+protocol for authenticating requests to AWS services.
+
 AWS Signature version 4 authenticates requests to AWS services.
-To use it you need to set the Authorization header schema to AWS and provide your AWS credentials separated by spaces:
+To use it you need to set the Authorization header schema to
+AWS and provide your AWS credentials separated by spaces:
 
 ```plaintext
 <access-key-id>: AWS Access Key Id
@@ -132,3 +161,5 @@ service:<service>: AWS Service
 GET {{apiUrl}}/ HTTP/1.1
 Authorization: AWS <access-key-id> <secret-access-key> token:<aws-session-token> region:<region> service:<service>
 ```
+
+[dyn-env]: dynamically-setting-environment-variables-based-on-response-json.md

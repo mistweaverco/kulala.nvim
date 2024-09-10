@@ -3,11 +3,13 @@
 You can redirect the response to a file.
 
 
-## Do not overwrite file
+## Don't overwrite file
 
-By using the `>>` operator followed by the file name, the response will be saved to the file.
+By using the `>>` operator followed by the file name,
+the response will be saved to the file.
 
-If the file already exists, a warning will be displayed, and the file will not be overwritten.
+If the file already exists,
+a warning will be displayed, and the file won't be overwritten.
 
 To overwrite the file, use the `>>!` operator.
 
