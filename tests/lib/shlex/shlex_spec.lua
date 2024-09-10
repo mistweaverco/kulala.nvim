@@ -62,7 +62,7 @@ foo#bar\nbaz|foo|baz|
 áéíóú|áéíóú|
 ]]
 
--- broken data are test cases, works well in CPython shlex, but do not in Lua version
+-- broken data are test cases which works well in CPython shlex, but do not in Lua version
 local broken_data = [[
 foo "" bar|foo||bar|
 foo '' bar|foo||bar|
@@ -132,10 +132,7 @@ end)
 describe("broken", function()
   for input, expected in test_cases(broken_data) do
     it("'" .. input .. "'", function()
-      local shlex = SHLEX.shlex:create(input, true, nil)
-      shlex.debug = 0
-      shlex.whitespace_split = true
-      local actual = shlex:list()
+      local actual = SHLEX.split(input)
       assert.is_not.same(expected, actual)
     end)
   end
