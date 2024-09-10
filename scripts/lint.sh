@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 
-if ! command -v nvim &> /dev/null; then
-  echo "nvim is not installed"
+if ! command -v stylua &> /dev/null; then
+  echo "stylua is not installed"
   exit 1
 fi
 
-run() {
-  nvim --version
+check() {
+  stylua --version
   if [[ -n $1 ]]; then
-    nvim -l tests/minit.lua tests --filter "$1"
+    stylua --check "$1"
   else
-    nvim -l tests/minit.lua tests
+    stylua --check .
   fi
 }
 
@@ -19,8 +19,8 @@ main() {
   shift
   local args=$*
   case $action in
-    "run")
-      run "$args"
+    "check")
+      check "$args"
       ;;
     *)
       echo "Invalid action"
