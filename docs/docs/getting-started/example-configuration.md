@@ -2,7 +2,8 @@
 
 This is an example configuration for `kulala`.
 
-This helps you get started with `kulala` and provides a basic configuration to use it.
+This helps you get started with `kulala` and
+provides a basic configuration to use it.
 
 ## Configuration file
 
@@ -12,7 +13,8 @@ This file will be loaded when you open a file with the `http` filetype.
 
 ### Execute request
 
-Add the following code to `ftplugin/http.lua` to execute the http request when you press Enter.
+Add the following code to `ftplugin/http.lua` to
+run the http request when you press Enter.
 
 ```lua ftplugin/http.lua
 vim.api.nvim_buf_set_keymap(
@@ -26,7 +28,8 @@ vim.api.nvim_buf_set_keymap(
 
 ### Jump between requests
 
-Add the following code to `ftplugin/http.lua` to jump between requests when you press `]` and `[`.
+Add the following code to `ftplugin/http.lua` to
+jump between requests when you press `]` and `[`.
 
 ```lua ftplugin/http.lua
 vim.api.nvim_buf_set_keymap(
@@ -47,7 +50,8 @@ vim.api.nvim_buf_set_keymap(
 
 ### Inspect the current request
 
-Add the following code to `ftplugin/http.lua` to inspect the current request when you press `<leader>i`.
+Add the following code to `ftplugin/http.lua` to
+inspect the current request when you press `<leader>i`.
 
 ```lua ftplugin/http.lua
 vim.api.nvim_buf_set_keymap(
@@ -61,7 +65,8 @@ vim.api.nvim_buf_set_keymap(
 
 ### Toggle body and headers
 
-Add the following code to `ftplugin/http.lua` to toggle between body and headers when you press `<leader>t`.
+Add the following code to `ftplugin/http.lua` to
+toggle between body and headers when you press `<leader>t`.
 
 ```lua ftplugin/http.lua
 vim.api.nvim_buf_set_keymap(
@@ -75,7 +80,8 @@ vim.api.nvim_buf_set_keymap(
 
 ### Copy as curl
 
-Add the following code to `ftplugin/http.lua` to copy the current request as a curl command when you press `<leader>co`.
+Add the following code to `ftplugin/http.lua` to
+copy the current request as a curl command when you press `<leader>co`.
 
 :::tip
 

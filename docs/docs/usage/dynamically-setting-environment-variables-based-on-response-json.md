@@ -6,8 +6,9 @@ Create a file with the `.http` extension and write your HTTP requests in it.
 
 ## With built-in parser
 
-If the response is a *simple* JSON object,
-you can set environment variables using the [request variables](request-variables) feature.
+If the response is a *uncomplicated* JSON object,
+you can set environment variables using
+the [request variables](request-variables) feature.
 
 ```http title="with-builtin-parser.http"
 # Setting the environment variables to be used in the next request.
@@ -40,6 +41,8 @@ Authorization: Bearer {{REQUEST_ONE.response.body.$.json.token}}
 If the response is a *complex* JSON object,
 you can use the `@env-stdin-cmd` directive to
 set environment variables using an external command (e.g., `jq`).
+
+JSON Web Tokens (JWT) are a common example where the response JSON is complex.
 
 In this example `jq` is used to extract the `ctx` string from a JWT token.
 

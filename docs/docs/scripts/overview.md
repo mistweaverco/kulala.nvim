@@ -30,7 +30,8 @@ Given the following folder structure:
 The current working directory for `my-script.js` is the `scripts` directory,
 whereas the current working directory for `example.js` is the `http` directory.
 
-All inline scripts are executed in the current working directory of the HTTP file,
+All inline scripts are executed in the
+current working directory of the HTTP file,
 which is the `http` directory in this case.
 
 ### Using node modules
@@ -53,7 +54,8 @@ You can use the `require` function to import modules in `my-script.js`:
 const moment = require("moment");
 ```
 
-as long as the module is installed in the same directory as the script, or globally.
+as long as the module is installed in the
+same directory as the script, or globally.
 
 The current working directory for `my-script.js` is the `scripts` directory.
 
@@ -111,7 +113,8 @@ content-type: application/json
 
 :::tip
 
-Variables set via `request.variables.set` are only available in the current request.
+Variables set via `request.variables.set` are
+only available in the current request.
 
 :::
 
@@ -125,7 +128,9 @@ Variables set via `client.global.set` are available in all requests and
 persist between neovim restarts.
 
 To clear a global variable,
-run [`lua require('kulala').scripts_clear_global('BONOBO')`](../usage/public-methods#scripts_clear_global).
+run `lua require('kulala').scripts_clear_global('BONOBO')`.
+
+See: [scripts_clear_global](../usage/public-methods#scripts_clear_global).
 
 :::
 

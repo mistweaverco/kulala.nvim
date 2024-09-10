@@ -4,7 +4,8 @@ Kulala can be configured with the following options.
 
 ### Full example
 
-Here is a full example of setting up the Kulala plugin with the available `opts`:
+Here is a full example of setting up
+the Kulala plugin with the available `opts`:
 
 ```lua title="kulala.lua"
 {
@@ -170,7 +171,7 @@ Example:
 
 Default environment.
 
-See: https://learn.microsoft.com/en-us/aspnet/core/test/http-files?view=aspnetcore-8.0#environment-files
+See: [Environment files][see-env-files].
 
 Possible values:
 
@@ -213,7 +214,8 @@ Example:
 
 ### contenttypes
 
-Filetypes, formatters and path resolvers are defined for each content-type in an hash array
+Filetypes, formatters and path resolvers are
+defined for each content-type in an hash array.
 
 Default:
 
@@ -277,13 +279,16 @@ Example:
 
 #### contenttypes.formatter
 
-Formatters take the response body and produce a beautified / more human readable output.
+Formatters take the response body and
+produce a beautified / more human readable output.
 
 Possible values:
 
 - You can define a commandline which processes the body.
-  The body will be piped as stdin and the output will be used as the formatted body.
-- You can define a lua function `formatted_body = function(body)` which returns the formatted body.
+  The body will be piped as stdin and
+  the output will be used as the formatted body.
+- You can define a lua function `formatted_body = function(body)`
+  which returns the formatted body.
 
 Default:
 
@@ -321,19 +326,27 @@ Example:
 #### contenttypes.pathresolver
 
 You can use Request Variables to read values from requests / responses.
-To access a specific value inside a body Kulala gives you the possibility to define a path for it.
-This is normally JSONPath for JSON or XPath for XML but can be individually defined for any content type.
+To access a specific value inside a body Kulala gives
+you the possibility to define a path for it.
+
+This is normally JSONPath for JSON or XPath for XML,
+but can be individually defined for any content type.
 
 Possible values:
 
-- You can use an external program which receives the full body as stdin and has to return the selected value in stdout.
-  The placeholder `{{path}}` can be used in any string of this defintion and will be replaced by the actual path (after `body.`).
+- You can use an external program which receives the
+  full body as stdin and has to return the selected value in stdout.
+  The placeholder `{{path}}` can be used in any string of
+  this defintion and will be replaced by the actual path (after `body.`).
 - Alternative you can give a lua function of `value = function(body, path)`.
 
 Default:
 
-Kulala has implemented a simple JSONPath parser which supports object traversal including array index access.
-For full JSONPath support you need to use an external program like `jsonpath-cli` or `jp`.
+Kulala has implemented a basic JSONPath parser which
+supports object traversal including array index access.
+
+For full JSONPath support you need to use an
+external program like `jsonpath-cli` or `jp`.
 
 ```lua
 contenttypes = {
@@ -447,7 +460,7 @@ Example:
 
 Scratchpad default contents.
 
-The contents of the scratchpad when it is opened
+The contents of the scratchpad when it's opened
 via `:lua require('kulala').scratchpad()` command.
 
 Possible values:
@@ -517,9 +530,14 @@ Example:
 
 ### vscode_rest_client_environmentvars
 
-If enabled, Kulala searches for `.vscode/settings.json` or `*.code-workspace` files in the current directory and its parents to read the `rest-client.environmentVariables` definitions (`$shared` will be treated as `_base`).
+If enabled, Kulala searches for
+`.vscode/settings.json` or `*.code-workspace`
+files in the current directory and
+its parents to read the `rest-client.environmentVariables` definitions
+(`$shared` will be treated as `_base`).
 
-If `http-client.env.json` is also present, it will be merged (and overwrites variables from VSCode).
+If `http-client.env.json` is also present,
+it'll be merged (and overwrites variables from VSCode).
 
 Possible values:
 
@@ -541,7 +559,7 @@ Example:
 ### environment_scope
 
 While using request variables the results will be stored for later use.
-As usual variables they are file relevant and should be stored in the buffer.
+As usual variables they're file relevant and should be stored in the buffer.
 If you want to share the variables between buffers you can use the global scope.
 
 Possible values:
@@ -561,3 +579,5 @@ Example:
   },
 }
 ```
+
+[see-env-files]: https://learn.microsoft.com/en-us/aspnet/core/test/http-files?view=aspnetcore-8.0#environment-files

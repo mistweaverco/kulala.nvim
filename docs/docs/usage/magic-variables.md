@@ -1,15 +1,20 @@
 # Magic Variables
 
-There is a predefined set of magic variables that you can use in your HTTP requests.
+There is a predefined set of magic variables that
+you can use in your HTTP requests.
 
 They all start with a `$` sign.
 
-- `{{$uuid}}` - Generates a random UUID.
+A Unique User Identifier (UUID) is a 128-bit number used to
+identify information in computer systems.
+
+- `{{$uuid}}` - Generates a UUID.
 - `{{$timestamp}}` - Generates a timestamp.
-- `{{$date}}` - Generates a date (YYYY-MM-DD).
+- `{{$date}}` - Generates a date (yyyy-mm-dd).
 - `{{$randomInt}}` - Generates a random integer (between 0 and 9999999).
 
-To test this feature, create a file with the `.http` extension and write your HTTP requests in it.
+To test this feature,
+create a file with the `.http` extension and write your HTTP requests in it.
 
 ```http title="magic-variables.http"
 POST https://httpbin.org/post HTTP/1.1

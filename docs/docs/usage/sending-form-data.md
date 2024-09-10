@@ -1,6 +1,7 @@
 # Sending Form Data
 
-You can send form data in Kulala by using the `application/x-www-form-urlencoded` content type.
+You can send form data in Kulala by
+using the `application/x-www-form-urlencoded` content type.
 
 Create a file with the `.http` extension and write your HTTP requests in it.
 
@@ -18,7 +19,8 @@ age={{age}}
 
 ## Sending multipart form data
 
-You can send multipart form data in Kulala by using the `multipart/form-data` content type.
+You can send multipart form data in Kulala by
+using the `multipart/form-data` content type.
 
 ```http title="multipart.http"
 # @file-to-variable LOGO_FILE_VAR ./../../logo.png

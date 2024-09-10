@@ -10,7 +10,7 @@ Requires Neovim 0.10.0+
 
 Via [lazy.nvim](https://github.com/folke/lazy.nvim):
 
-### Simple configuration
+### Basic configuration
 
 ```lua title="init.lua"
 require('lazy').setup({
