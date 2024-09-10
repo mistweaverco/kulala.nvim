@@ -53,8 +53,8 @@ function M.shlex:create(str, posix, punctuation_chars)
   o.posix = posix == true
   if o.posix then
     o.wordchars = o.wordchars
-        .. "ßàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ"
-        .. "ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞ"
+      .. "ßàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ"
+      .. "ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞ"
   end
 
   if punctuation_chars then
@@ -222,10 +222,13 @@ function M.shlex:read_token()
       elseif not continue and self.posix and self.escape:find(nextchar, 1, true) then
         escapedstate = "a"
         self.state = nextchar
-      elseif not continue and
-          (self.wordchars:find(nextchar, 1, true)
-            or self.quotes:find(nextchar, 1, true)
-            or (self.whitespace_split and not self.punctuation_chars:find(nextchar, 1, true)))
+      elseif
+        not continue
+        and (
+          self.wordchars:find(nextchar, 1, true)
+          or self.quotes:find(nextchar, 1, true)
+          or (self.whitespace_split and not self.punctuation_chars:find(nextchar, 1, true))
+        )
       then
         self.token = self.token .. nextchar
       elseif not continue then
