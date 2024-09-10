@@ -413,6 +413,7 @@ local function extend_document_variables(document_variables, request)
         local kv = vim.split(metadata.value, " ")
         local variable_name = kv[1]
         local file_path = kv[2]
+        file_path = FS.get_file_path(file_path)
         local file_contents = FS.read_file(file_path)
         if file_contents then
           document_variables[variable_name] = file_contents
@@ -574,8 +575,13 @@ function M.parse(start_request_linenr)
         res.headers["content-type"] = "application/json"
       end
     elseif res.headers["content-type"]:find("^multipart/form%-data") then
-      table.insert(res.cmd, "--data-binary")
-      table.insert(res.cmd, res.body)
+      local tmp_file = FS.get_binary_temp_file(res.body)
+      if tmp_file ~= nil then
+        table.insert(res.cmd, "--data-binary")
+        table.insert(res.cmd, "@" .. tmp_file)
+      else
+        Logger.error("Failed to create a temporary file for the binary request body")
+      end
     else
       table.insert(res.cmd, "--data")
       table.insert(res.cmd, res.body)
