@@ -223,6 +223,10 @@ M.command_exists = function(cmd)
   return vim.fn.executable(cmd) == 1
 end
 
+M.command_path = function(cmd)
+  return vim.fn.exepath(cmd)
+end
+
 M.get_plugin_root_dir = function()
   local source = debug.getinfo(1).source
   local dir_path = source:match("@(.*/)") or source:match("@(.*\\)")
