@@ -13,10 +13,11 @@ local M = {}
 
 M.check = function()
   info("{kulala.nvim} version " .. GLOBALS.VERSION)
-  if FS.command_exists("curl") then
-    ok("{curl} found")
+  local curl = CONFIG.get().curl_path
+  if FS.command_exists(curl) then
+    ok(string.format("{%s} found", curl))
   else
-    error("{curl} not found")
+    error(string.format("{%s} not found", curl))
   end
 
   start("Checking formatters")
