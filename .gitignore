@@ -5,3 +5,4 @@ http-client.env.json
 *graphql-schema.json
 /http-examples
 .tests
+.nvim
