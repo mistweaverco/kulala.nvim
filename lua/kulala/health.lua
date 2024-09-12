@@ -16,8 +16,8 @@ M.check = function()
   local curl = CONFIG.get().curl_path
   if FS.command_exists(curl) then
     local curl_path = FS.command_path(curl)
-    local curl_version = vim.fn.system({curl_path, '--version'})
-    ok(string.format("{curl} found: %s (version: %s)", curl_path, curl_version:gsub('^curl ([^ ]+).*', '%1')))
+    local curl_version = vim.fn.system({ curl_path, "--version" })
+    ok(string.format("{curl} found: %s (version: %s)", curl_path, curl_version:gsub("^curl ([^ ]+).*", "%1")))
   else
     error(string.format("{%s} not found", curl))
   end
