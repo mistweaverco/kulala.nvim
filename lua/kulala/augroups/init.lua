@@ -100,6 +100,7 @@ M.toggle_virtual_variable = function()
     vim.api.nvim_create_augroup(VV_GROUP_NAME, { clear = true })
     vim.api.nvim_create_autocmd({ "BufEnter", "TextChanged", "TextChangedI" }, {
       group = VV_GROUP_NAME,
+      pattern = Config.get().support_filetypes,
       callback = add_virtual_variable_text,
     })
   else
