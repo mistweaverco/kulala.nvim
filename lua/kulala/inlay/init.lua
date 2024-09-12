@@ -1,7 +1,9 @@
 local NS = vim.api.nvim_create_namespace("kulala_inlay_hints")
 local CONFIG = require("kulala.config")
 
-local M = {}
+local M = {
+  show_virtual_variable_text = CONFIG.get().show_variable_info_text == "virtual",
+}
 
 M.get_current_line_number = function()
   local linenr = vim.api.nvim_win_get_cursor(0)[1]

@@ -75,6 +75,8 @@ M.defaults = {
   -- this will show the variable name and value either as virtual text or float
   -- possible values: false, "virtual", "float"
   show_variable_info_text = false,
+  -- Specifies the range of supported file types
+  support_filetypes = { "*.http", "*.rest", "*.md" },
 }
 
 M.default_contenttype = {

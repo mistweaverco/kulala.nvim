@@ -103,4 +103,8 @@ M.set_selected_env = function(env)
   vim.g.kulala_selected_env = env
 end
 
+M.toggle_virtual_variable = function()
+  Augroups.toggle_virtual_variable()
+end
+
 return M
