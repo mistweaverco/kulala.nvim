@@ -85,7 +85,6 @@ M.get_env = function()
   local selected_env = DB.find_unique("http_client_env")[vim.g.kulala_selected_env or Config.get().default_env]
   if selected_env then
     env = vim.tbl_extend("force", env, selected_env)
-    vim.print("selected_env: " .. table.concat(vim.tbl_keys(selected_env), " "))
   end
 
   local db_env = DB.find_unique("env") or {}

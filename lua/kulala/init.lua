@@ -1,5 +1,4 @@
 local UI = require("kulala.ui")
-local INLAY = require("kulala.inlay")
 local SELECTOR = require("kulala.ui.selector")
 local ENV = require("kulala.parser.env")
 local GLOBALS = require("kulala.globals")
@@ -105,7 +104,7 @@ M.set_selected_env = function(env)
 end
 
 M.toggle_virtual_variable = function()
-  INLAY.toggle_virtual_variable()
+  Augroups.toggle_virtual_variable()
 end
 
 return M
