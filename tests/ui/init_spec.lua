@@ -1,12 +1,7 @@
-local CONFIG = require("kulala.config")
-local FORMATTER = require("kulala.formatter")
-local FS = require('kulala.globals')
-local GLOBALS = require('kulala.globals')
-local INT_PROCESSING = require("kulala.internal_processing")
-local WINBAR = require("kulala.ui.winbar")
-local UI = require('kulala.ui')
+local GLOBALS = require("kulala.globals")
+local UI = require("kulala.ui")
 
-local assert = require('luassert')
+local assert = require("luassert")
 
 describe("kulala.ui", function()
   -- restore all changed done by luassert before each test run
@@ -53,7 +48,7 @@ describe("kulala.ui", function()
   end)
 
   it("from_curl", function()
-    local getreg = stub(vim.fn, 'getreg', function()
+    local getreg = stub(vim.fn, "getreg", function()
       return "curl http://example.com"
     end)
     local nvim_put = stub(vim.api, 'nvim_put')
