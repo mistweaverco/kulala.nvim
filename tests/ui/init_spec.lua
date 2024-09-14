@@ -51,7 +51,7 @@ describe("kulala.ui", function()
     local getreg = stub(vim.fn, "getreg", function()
       return "curl http://example.com"
     end)
-    local nvim_put = stub(vim.api, 'nvim_put')
+    local nvim_put = stub(vim.api, "nvim_put")
 
     UI.from_curl()
 
