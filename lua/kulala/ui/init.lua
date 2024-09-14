@@ -83,13 +83,16 @@ local open_buffer = function()
   vim.api.nvim_set_current_win(prev_win)
 end
 
-local close_buffer = function()
+M._close_buffer = function()
   vim.cmd("bdelete! " .. GLOBALS.UI_ID)
 end
 
-local function buffer_exists()
+M._buffer_exists = function()
   return get_buffer() ~= nil
 end
+
+local close_buffer = M._close_buffer
+local buffer_exists = M._buffer_exists
 
 -- Create an autocmd to delete the buffer when the window is closed
 -- This is necessary to prevent the buffer from being left behind
@@ -268,8 +271,8 @@ M.open_all = function()
 end
 
 M.close = function()
-  if buffer_exists() then
-    close_buffer()
+  if M._buffer_exists() then
+    M._close_buffer()
   end
   local ext = vim.fn.expand("%:e")
   if ext == "http" or ext == "rest" then
