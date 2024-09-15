@@ -107,6 +107,7 @@ references in an http file.
 # @name REQUEST_ONE
 POST https://httpbin.org/post HTTP/1.1
 Accept: application/json
+Content-Type: application/json
 
 {
   "token": "foobar"
@@ -117,6 +118,7 @@ Accept: application/json
 # @name REQUEST_TWO
 POST https://httpbin.org/post HTTP/1.1
 Accept: application/json
+Content-Type: application/json
 
 {
   "token": "{{REQUEST_ONE.response.body.$.json.token}}"
@@ -126,6 +128,7 @@ Accept: application/json
 
 POST https://httpbin.org/post HTTP/1.1
 Accept: application/json
+Content-Type: application/json
 
 {
   "date_header": "{{REQUEST_TWO.response.headers['Date']}}"
