@@ -52,7 +52,9 @@ local function kulala_env_select(_)
 
   local envs = {}
   for key, _ in pairs(http_client_env) do
-    table.insert(envs, key)
+    if key ~= "$schema" and key ~= "$shared" then
+      table.insert(envs, key)
+    end
   end
 
   pickers
