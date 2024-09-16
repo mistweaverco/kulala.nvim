@@ -68,16 +68,17 @@ M.get_env = function()
 
   if http_client_env_json then
     local f = vim.fn.json_decode(vim.fn.readfile(http_client_env_json))
-    if f._base then
-      DB.update().http_client_env_base = vim.tbl_deep_extend("force", DB.find_unique("http_client_env_base"), f._base)
+    if f["$shared"] then
+      DB.update().http_client_env_base =
+        vim.tbl_deep_extend("force", DB.find_unique("http_client_env_base"), f["$shared"])
     end
-    f._base = nil
+    f["$shared"] = nil
     DB.update().http_client_env = vim.tbl_deep_extend("force", DB.find_unique("http_client_env"), f)
   end
 
   local http_client_env_base = DB.find_unique("http_client_env_base") or {}
   for key, value in pairs(http_client_env_base) do
-    if key ~= "DEFAULT_HEADERS" then
+    if key ~= "$default_headers" then
       env[key] = value
     end
   end
