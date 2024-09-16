@@ -37,6 +37,7 @@ define environment variables in it.
 
 ```json title="http-client.env.json"
 {
+  "$schema": "https://raw.githubusercontent.com/mistweaverco/kulala.nvim/main/schemas/http-client.env.json",
   "dev": {
     "API_KEY": "your-api-key"
   },
@@ -95,6 +96,7 @@ the `$default_headers` will be merged with the headers from the HTTP requests.
 
 ```json title="http-client.env.json"
 {
+  "$schema": "https://raw.githubusercontent.com/mistweaverco/kulala.nvim/main/schemas/http-client.env.json",
   "$shared": {
     "$default_headers": {
       "Content-Type": "application/json",
