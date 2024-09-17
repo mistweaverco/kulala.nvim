@@ -179,13 +179,15 @@ Example:
 {
 "mistweaverco/kulala.nvim",
   opts = {
-    ["localhost"] = {
-      cert = vim.fn.stdpath("config") .. "/certs/localhost.crt",
-      key = vim.fn.stdpath("config") .. "/certs/localhost.key",
-    },
-    ["www.somewhere.com:8443"] = {
-      cert = "/home/userx/certs/somewhere.crt",
-      key = "/home/userx/certs/somewhere.key",
+    certificates = {
+      ["localhost"] = {
+        cert = vim.fn.stdpath("config") .. "/certs/localhost.crt",
+        key = vim.fn.stdpath("config") .. "/certs/localhost.key",
+      },
+      ["www.somewhere.com:8443"] = {
+        cert = "/home/userx/certs/somewhere.crt",
+        key = "/home/userx/certs/somewhere.key",
+      },
     },
   },
 }
