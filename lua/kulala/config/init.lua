@@ -75,6 +75,8 @@ M.defaults = {
   -- set scope for environment and request variables
   -- possible values: b = buffer, g = global
   environment_scope = "b",
+  -- certificates
+  certificates = {},
 }
 
 M.default_contenttype = {

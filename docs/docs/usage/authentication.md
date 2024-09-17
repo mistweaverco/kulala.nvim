@@ -22,8 +22,8 @@ New Technology LAN Manager (NTLM),
 is a suite of Microsoft security protocols that
 provides authentication, integrity, and confidentiality to users.
 
-Basic, Digest, NTLM, Negotiate, Bearer Token and
-AWS Signature V4 are supported.
+Basic, Digest, NTLM, Negotiate, Bearer Token,
+AWS Signature V4 and SSL Client Certificates are supported.
 
 ## Basic Authentication
 
@@ -64,14 +64,14 @@ You can enter the `username:password` in plain text
 
 ```http
 GET https://www/api HTTP/1.1
-Authorization: Basic {{Username}}:{{Password}}
+Authorization: Digest {{Username}}:{{Password}}
 ```
 
 or `username password`
 
 ```http
 GET https://www/api HTTP/1.1
-Authorization: Basic {{Username}} {{Password}}
+Authorization: Digest {{Username}} {{Password}}
 ```
 
 ## NTLM Authentication
@@ -81,14 +81,21 @@ you need to provide the username and password the same way:
 
 ```http
 GET https://www/api HTTP/1.1
-Authorization: Basic {{Username}}:{{Password}}
+Authorization: NTLM {{Username}}:{{Password}}
 ```
 
 or
 
 ```http
 GET https://www/api HTTP/1.1
-Authorization: Basic {{Username}} {{Password}}
+Authorization: NTLM {{Username}} {{Password}}
+```
+
+or without any username where the current user is been used
+
+```http
+GET https://www/api HTTP/1.1
+Authorization: NTLM
 ```
 
 ## Negotiate
@@ -160,6 +167,28 @@ service:<service>: AWS Service
 ```http
 GET {{apiUrl}}/ HTTP/1.1
 Authorization: AWS <access-key-id> <secret-access-key> token:<aws-session-token> region:<region> service:<service>
+```
+
+## SSL Client Certificate
+
+This is described in the configuration section and is done on a per-host basis.
+
+Example:
+
+```lua
+{
+"mistweaverco/kulala.nvim",
+  opts = {
+    ["localhost"] = {
+      cert = vim.fn.stdpath("config") .. "/certs/localhost.crt",
+      key = vim.fn.stdpath("config") .. "/certs/localhost.key",
+    },
+    ["www.somewhere.com:8443"] = {
+      cert = "/home/userx/certs/somewhere.crt",
+      key = "/home/userx/certs/somewhere.key",
+    },
+  },
+}
 ```
 
 [dyn-env]: dynamically-setting-environment-variables-based-on-response-json.md
