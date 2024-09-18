@@ -96,9 +96,13 @@ the Kulala plugin with the available `opts`:
     -- disable the vim.print output of the scripts
     -- they will be still written to disk, but not printed immediately
     disable_script_print_output = false,
+
     -- set scope for environment and request variables
     -- possible values: b = buffer, g = global
     environment_scope = "b",
+
+    -- certificates
+    certificates = {},
   },
 }
 ```
@@ -556,6 +560,7 @@ Example:
   },
 }
 ```
+
 ### environment_scope
 
 While using request variables the results will be stored for later use.
@@ -579,5 +584,48 @@ Example:
   },
 }
 ```
+
+
+### certificates
+
+A hash array of certificates to be used for requests.
+
+The key is the hostname and optional the port. 
+If no port is given, the certificate will be used for all ports where no dedicated one is defined.
+
+Each certificate definition needs 
+
+- `cert` the path to the certificate file
+- `key` the path to the key files
+
+Example:
+
+```lua
+{
+"mistweaverco/kulala.nvim",
+  opts = {
+    certificates = {
+      ["localhost"] = {
+        cert = vim.fn.stdpath("config") .. "/certs/localhost.crt",
+        key = vim.fn.stdpath("config") .. "/certs/localhost.key",
+      },
+      ["www.somewhere.com:8443"] = {
+        cert = "/home/userx/certs/somewhere.crt",
+        key = "/home/userx/certs/somewhere.key",
+      },
+    },
+  },
+}
+```
+
+Hostnames with prefix `*.` will be used as wildcard certificates for the host itself and all subdomains.
+
+`*.company.com` will match
+
+- `company.com`
+- `www.company.com`
+- `api.company.com`
+- `sub.api.company.com`
+- etc.
 
 [see-env-files]: https://learn.microsoft.com/en-us/aspnet/core/test/http-files?view=aspnetcore-8.0#environment-files

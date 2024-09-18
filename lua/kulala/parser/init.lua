@@ -641,6 +641,39 @@ function M.parse(start_request_linenr)
     end
   end
 
+  local protocol, host, port = res.url:match("^([^:]*)://([^:/]*):([^/]*)")
+  if not protocol then
+    protocol, host = res.url:match("^([^:]*)://([^:/]*)")
+  end
+  if protocol == "https" then
+    certificate = CONFIG.get().certificates[host .. ":" .. (port or "443")]
+    if not certificate then
+      certificate = CONFIG.get().certificates[host]
+    end
+    if not certificate then
+      while host ~= "" do
+        certificate = CONFIG.get().certificates["*." .. host .. ":" .. (port or "443")]
+        if not certificate then
+          certificate = CONFIG.get().certificates["*." .. host]
+        end
+        if certificate then
+          break
+        end
+        host = host:gsub("^[^%.]+%.?", "")
+      end
+    end
+    if certificate then
+      if certificate.cert then
+        table.insert(res.cmd, "--cert")
+        table.insert(res.cmd, certificate.cert)
+      end
+      if certificate.key then
+        table.insert(res.cmd, "--key")
+        table.insert(res.cmd, certificate.key)
+      end
+    end
+  end
+
   for key, value in pairs(res.headers) do
     table.insert(res.cmd, "-H")
     table.insert(res.cmd, key .. ":" .. value)
