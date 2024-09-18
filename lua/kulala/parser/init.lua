@@ -641,7 +641,7 @@ function M.parse(start_request_linenr)
     end
   end
 
-  protocol, host, port = res.url:match("^([^:]*)://([^:/]*):([^/]*)")
+  local protocol, host, port = res.url:match("^([^:]*)://([^:/]*):([^/]*)")
   if not protocol then
     protocol, host = res.url:match("^([^:]*)://([^:/]*)")
   end
@@ -650,11 +650,25 @@ function M.parse(start_request_linenr)
     if not certificate then
       certificate = CONFIG.get().certificates[host]
     end
+    while host ~= "" do
+      certificate = CONFIG.get().certificates["*." .. host .. ":" .. (port or "443")]
+      if not certificate then
+        certificate = CONFIG.get().certificates["*." .. host]
+      end
+      if certificate then
+        break
+      end
+      host = host:gsub("^[^%.]+%.?", "")
+    end
     if certificate then
-      table.insert(res.cmd, "--cert")
-      table.insert(res.cmd, certificate.cert)
-      table.insert(res.cmd, "--key")
-      table.insert(res.cmd, certificate.key)
+      if certificate.cert then
+        table.insert(res.cmd, "--cert")
+        table.insert(res.cmd, certificate.cert)
+      end
+      if certificate.key then
+        table.insert(res.cmd, "--key")
+        table.insert(res.cmd, certificate.key)
+      end
     end
   end
 

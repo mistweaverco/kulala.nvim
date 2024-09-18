@@ -618,4 +618,14 @@ Example:
 }
 ```
 
+Hostnames with prefix `*.` will be used as wildcard certificates for the host itself and all subdomains.
+
+`*.company.com` will match
+
+- `company.com`
+- `www.company.com`
+- `api.company.com`
+- `sub.api.company.com`
+- etc.
+
 [see-env-files]: https://learn.microsoft.com/en-us/aspnet/core/test/http-files?view=aspnetcore-8.0#environment-files
