@@ -650,15 +650,17 @@ function M.parse(start_request_linenr)
     if not certificate then
       certificate = CONFIG.get().certificates[host]
     end
-    while host ~= "" do
-      certificate = CONFIG.get().certificates["*." .. host .. ":" .. (port or "443")]
-      if not certificate then
-        certificate = CONFIG.get().certificates["*." .. host]
+    if not certificate then
+      while host ~= "" do
+        certificate = CONFIG.get().certificates["*." .. host .. ":" .. (port or "443")]
+        if not certificate then
+          certificate = CONFIG.get().certificates["*." .. host]
+        end
+        if certificate then
+          break
+        end
+        host = host:gsub("^[^%.]+%.?", "")
       end
-      if certificate then
-        break
-      end
-      host = host:gsub("^[^%.]+%.?", "")
     end
     if certificate then
       if certificate.cert then
