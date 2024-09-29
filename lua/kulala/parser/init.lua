@@ -148,7 +148,7 @@ local function get_request_from_fenced_code_block()
 
   -- If we didn't find a block start, return nil
   if not block_start then
-    return nil
+    return nil, nil
   end
 
   -- Search for the end of the fenced code block
@@ -163,7 +163,7 @@ local function get_request_from_fenced_code_block()
 
   -- If we didn't find a block end, return nil
   if not block_end then
-    return nil
+    return nil, nil
   end
 
   return vim.api.nvim_buf_get_lines(0, block_start, block_end - 1, false), block_start
@@ -364,6 +364,10 @@ M.get_document = function()
 end
 
 M.get_request_at = function(requests, linenr)
+  if requests == nil then
+    Logger.error("No requests found in the document")
+    return nil
+  end
   if linenr == nil then
     linenr = vim.api.nvim_win_get_cursor(0)[1]
   end
