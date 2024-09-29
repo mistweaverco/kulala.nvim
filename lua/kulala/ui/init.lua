@@ -108,13 +108,14 @@ vim.api.nvim_create_autocmd("WinClosed", {
 local function set_buffer_contents(contents, ft)
   if buffer_exists() then
     local buf = replace_buffer()
-    local lines = vim.split(contents, "\n")
-    vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+    -- setup filetype first so that treesitter foldexpr can calculate fold level per lines
     if ft ~= nil then
       vim.bo[buf].filetype = ft
     else
       vim.bo[buf].filetype = "text"
     end
+    local lines = vim.split(contents, "\n")
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
   end
 end
 
