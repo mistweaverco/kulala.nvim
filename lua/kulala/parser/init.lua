@@ -534,7 +534,7 @@ function M.parse(start_request_linenr)
     end
   end
 
-  -- Merge headers from the _base environment if it exists
+  -- Merge headers from the $shared environment if it exists
   if DB.find_unique("http_client_env_shared") then
     local default_headers = DB.find_unique("http_client_env_shared")["$default_headers"]
     if default_headers then
