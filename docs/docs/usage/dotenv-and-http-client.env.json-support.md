@@ -83,19 +83,19 @@ we defined the `API_URL` and `API_KEY` environment variables,
 but left the `API_KEY` empty.
 
 This is by intention, because we can define the `API_KEY` in the
-`http-client.env.private.json` file.
+`http-client.private.env.json` file.
 
 :::danger
 
 You should never commit sensitive data like API keys to your repository.
-So always use the `http-client.env.private.json` file for that and
+So always use the `http-client.private.env.json` file for that and
 add it to your `.gitignore` file.
 
 :::
 
-```json title="http-client.env.private.json"
+```json title="http-client.private.env.json"
 {
-  "$schema": "https://raw.githubusercontent.com/mistweaverco/kulala.nvim/main/schemas/http-client.env.schema.json",
+  "$schema": "https://raw.githubusercontent.com/mistweaverco/kulala.nvim/main/schemas/http-client.private.env.schema.json",
   "dev": {
     "API_KEY": "d3v"
   },
