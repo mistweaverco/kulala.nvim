@@ -570,7 +570,7 @@ function M.parse(start_request_linenr)
     -- check if we are a graphql query
     -- we need this here, because the user could have defined the content-type
     -- as application/json, but the body is a graphql query
-    -- This can happen when the user is using http-client.env.json with DEFAULT_HEADERS.
+    -- This can happen when the user is using http-client.env.json with $shared -> $default_headers.
     if is_graphql then
       local gql_json = GRAPHQL_PARSER.get_json(res.body)
       if gql_json then
