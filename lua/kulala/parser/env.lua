@@ -6,6 +6,7 @@ local M = {}
 
 M.get_env = function()
   local http_client_env_json = FS.find_file_in_parent_dirs("http-client.env.json")
+  local http_client_private_env_json = FS.find_file_in_parent_dirs("http-client.private.env.json")
   local dotenv = FS.find_file_in_parent_dirs(".env")
   local env = {}
 
@@ -68,6 +69,16 @@ M.get_env = function()
 
   if http_client_env_json then
     local f = vim.fn.json_decode(vim.fn.readfile(http_client_env_json))
+    if f["$shared"] then
+      DB.update().http_client_env_shared =
+        vim.tbl_deep_extend("force", DB.find_unique("http_client_env_shared"), f["$shared"])
+    end
+    f["$shared"] = nil
+    DB.update().http_client_env = vim.tbl_deep_extend("force", DB.find_unique("http_client_env"), f)
+  end
+
+  if http_client_private_env_json then
+    local f = vim.fn.json_decode(vim.fn.readfile(http_client_private_env_json))
     if f["$shared"] then
       DB.update().http_client_env_shared =
         vim.tbl_deep_extend("force", DB.find_unique("http_client_env_shared"), f["$shared"])
