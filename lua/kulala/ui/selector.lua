@@ -11,6 +11,9 @@ function M.select_env()
 
   local envs = {}
   for key, _ in pairs(http_client_env) do
+    if key ~= "$schema" and key ~= "$shared" then
+      table.insert(envs, key)
+    end
     table.insert(envs, key)
   end
 

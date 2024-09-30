@@ -537,8 +537,7 @@ Example:
 If enabled, Kulala searches for
 `.vscode/settings.json` or `*.code-workspace`
 files in the current directory and
-its parents to read the `rest-client.environmentVariables` definitions
-(`$shared` will be treated as `_base`).
+its parents to read the `rest-client.environmentVariables` definitions.
 
 If `http-client.env.json` is also present,
 it'll be merged (and overwrites variables from VSCode).

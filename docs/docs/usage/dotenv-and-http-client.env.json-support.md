@@ -37,6 +37,7 @@ define environment variables in it.
 
 ```json title="http-client.env.json"
 {
+  "$schema": "https://raw.githubusercontent.com/mistweaverco/kulala.nvim/main/schemas/http-client.env.schema.json",
   "dev": {
     "API_KEY": "your-api-key"
   },
@@ -90,15 +91,17 @@ Authorization: Bearer {{API_KEY}}
 
 You can define default HTTP headers in the `http-client.env.json` file.
 
-You need to put them in the special `_base` property and
-the `DEFAULT_HEADERS` will be merged with the headers from the HTTP requests.
+You need to put them in the special `$shared` property and
+the `$default_headers` will be merged with the headers from the HTTP requests.
 
 ```json title="http-client.env.json"
 {
-  "_base": {
-    "DEFAULT_HEADERS": {
+  "$schema": "https://raw.githubusercontent.com/mistweaverco/kulala.nvim/main/schemas/http-client.env.schema.json",
+  "$shared": {
+    "$default_headers": {
       "Content-Type": "application/json",
       "Accept": "application/json"
+    },
   },
   "dev": {
     "API_KEY": "your-api-key"
