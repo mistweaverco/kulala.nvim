@@ -39,16 +39,20 @@ define environment variables in it.
 {
   "$schema": "https://raw.githubusercontent.com/mistweaverco/kulala.nvim/main/schemas/http-client.env.schema.json",
   "dev": {
-    "API_KEY": "your-api-key"
+    "API_URL": "https://httpbin.org/post?env=dev",
+    "API_KEY": ""
   },
   "testing": {
-    "API_KEY": "your-api-key"
+    "API_URL": "https://httpbin.org/post?env=testing",
+    "API_KEY": ""
   },
   "staging": {
-    "API_KEY": "your-api-key"
+    "API_URL": "https://httpbin.org/post?env=staging",
+    "API_KEY": ""
   },
   "prod": {
-    "API_KEY": "your-api-key"
+    "API_URL": "https://httpbin.org/post?env=prod",
+    "API_KEY": ""
   }
 }
 ```
@@ -74,11 +78,44 @@ command to select an environment using a telescope prompt.
 
 :::
 
+As you can see in the example above,
+we defined the `API_URL` and `API_KEY` environment variables,
+but left the `API_KEY` empty.
+
+This is by intention, because we can define the `API_KEY` in the
+`http-client.env.private.json` file.
+
+:::danger
+
+You should never commit sensitive data like API keys to your repository.
+So always use the `http-client.env.private.json` file for that and
+add it to your `.gitignore` file.
+
+:::
+
+```json title="http-client.env.private.json"
+{
+  "$schema": "https://raw.githubusercontent.com/mistweaverco/kulala.nvim/main/schemas/http-client.env.schema.json",
+  "dev": {
+    "API_KEY": "d3v"
+  },
+  "testing": {
+    "API_KEY": "t3st1ng"
+  },
+  "staging": {
+    "API_KEY": "st4g1ng"
+  },
+  "prod": {
+    "API_KEY": "pr0d"
+  }
+}
+```
+
 Then, you can reference the environment variables
 in your HTTP requests like this:
 
 ```http title="examples.http"
-POST https://httpbin.org/post HTTP/1.1
+POST {{API_URL}} HTTP/1.1
 Content-Type: application/json
 Authorization: Bearer {{API_KEY}}
 
@@ -104,7 +141,8 @@ the `$default_headers` will be merged with the headers from the HTTP requests.
     },
   },
   "dev": {
-    "API_KEY": "your-api-key"
+    "API_URL": "https://httpbin.org/post?env=dev",
+    "API_KEY": ""
   }
 }
 ```
@@ -129,6 +167,7 @@ define environment variables in it.
 The file should look like this:
 
 ```env title=".env"
+API_URL=https://httpbin.org/post
 API_KEY=your-api-key
 ```
 
@@ -136,7 +175,7 @@ Then, you can reference the environment variables
 in your HTTP requests like this:
 
 ```http title="examples.http"
-POST https://httpbin.org/post HTTP/1.1
+POST {{API_URL}} HTTP/1.1
 Content-Type: application/json
 Authorization: Bearer {{API_KEY}}
 
