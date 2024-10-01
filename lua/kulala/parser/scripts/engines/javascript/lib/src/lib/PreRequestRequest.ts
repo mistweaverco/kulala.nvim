@@ -7,6 +7,7 @@ type RequestVariables = Record<string, string>;
 
 interface RequestJson {
   headers: Record<string, string>,
+  headers_raw: Record<string, string>,
   body_raw: string,
   body: string | object,
   method: string,
@@ -24,6 +25,30 @@ const getRequestVariables = (): RequestVariables => {
   }
   return reqVariables;
 };
+
+interface HeaderObject {
+  name: () => string,
+  getRawValue: () => string,
+  tryGetSubstituted: () => string,
+};
+
+const getHeaderObject = (headerName: string, headerRawValue: string, headerValue: string | undefined): HeaderObject | null => {
+  if (headerValue === undefined) {
+    return null;
+  }
+  return {
+    name: () => {
+      return headerName
+    },
+    getRawValue: () => {
+      return headerRawValue;
+    },
+    tryGetSubstituted: () => {
+      return headerValue;
+    },
+  };
+};
+
 const req = JSON.parse(fs.readFileSync(_REQUEST_FILEPATH, { encoding: 'utf8' })) as RequestJson;
 
 export const Request = {
@@ -37,10 +62,19 @@ export const Request = {
   },
   headers: {
     findByName: (headerName: string) => {
-      return req.headers[headerName];
+      const hnl = headerName.toLowerCase();
+      return getHeaderObject(hnl, req.headers_raw[hnl], req.headers[hnl]);
     },
-    all: function (): Record<string, string> {
-      return req.headers;
+    all: function (): HeaderObject[] {
+      const h = [];
+      for (const [key, value] of Object.entries(req.headers)) {
+        const lkey = key.toLowerCase();
+        const item = getHeaderObject(lkey, req.headers_raw[lkey], value);
+        if (item !== null) {
+          h.push(item);
+        }
+      }
+      return h;
     },
   },
   environment: {

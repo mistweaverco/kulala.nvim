@@ -214,6 +214,7 @@ M.get_document = function()
     local block_line_count = #lines
     local request = {
       headers = {},
+      headers_raw = {},
       metadata = {},
       body = nil,
       show_icon_line_number = nil,
@@ -342,6 +343,7 @@ M.get_document = function()
         local key, value = line:match("^([^:]+):%s*(.*)$")
         if key and value then
           request.headers[key:lower()] = value
+          request.headers_raw[key:lower()] = value
         end
       elseif is_request_line == true then
         -- Request line (e.g., GET http://example.com HTTP/1.1)
@@ -467,6 +469,7 @@ end
 ---@field url_raw string -- The raw URL as it appears in the document
 ---@field url string -- The URL with variables and dynamic variables replaced
 ---@field headers table -- The headers with variables and dynamic variables replaced
+---@field headers_raw table -- The headers as they appear in the document
 ---@field body_raw string|nil -- The raw body as it appears in the document
 ---@field body string|nil -- The body with variables and dynamic variables replaced
 ---@field environment table -- The environment- and document-variables
@@ -487,6 +490,7 @@ function M.get_basic_request_data(start_request_linenr)
     url = "",
     url_raw = "",
     headers = {},
+    headers_raw = {},
     body = nil,
     body_raw = nil,
     cmd = {},
@@ -521,6 +525,7 @@ function M.get_basic_request_data(start_request_linenr)
   res.scripts.post_request = req.scripts.post_request
   res.show_icon_line_number = req.show_icon_line_number
   res.headers = req.headers
+  res.headers_raw = req.headers_raw
   res.url_raw = req.url
   res.method = req.method
   res.http_version = req.http_version
