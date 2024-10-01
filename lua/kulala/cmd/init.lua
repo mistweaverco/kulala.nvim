@@ -4,7 +4,6 @@ local PARSER = require("kulala.parser")
 local EXT_PROCESSING = require("kulala.external_processing")
 local INT_PROCESSING = require("kulala.internal_processing")
 local Api = require("kulala.api")
-local Scripts = require("kulala.scripts")
 local INLAY = require("kulala.inlay")
 local UV = vim.loop
 local Logger = require("kulala.logger")
@@ -61,7 +60,7 @@ end
 
 ---Runs the command and returns the result
 ---@param cmd table command to run
----@param callback function callback function
+---@param callback function|nil callback function
 M.run = function(cmd, callback)
   vim.fn.jobstart(cmd, {
     on_stderr = function(_, datalist)
@@ -124,7 +123,7 @@ M.run_parser = function(req, callback)
           end
         end
         INT_PROCESSING.redirect_response_body_to_file(result.redirect_response_body_to_files)
-        Scripts.javascript.run("post_request", result.scripts.post_request)
+        PARSER.scripts.javascript.run("post_request", result.scripts.post_request)
         Api.trigger("after_request")
       end
       Fs.delete_request_scripts_files()
@@ -179,7 +178,7 @@ M.run_parser_all = function(doc, callback)
           end
         end
         INT_PROCESSING.redirect_response_body_to_file(result.redirect_response_body_to_files)
-        Scripts.javascript.run("post_request", result.scripts.post_request)
+        PARSER.scripts.javascript.run("post_request", result.scripts.post_request)
         Api.trigger("after_request")
       end
       Fs.delete_request_scripts_files()
