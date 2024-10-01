@@ -3,7 +3,12 @@ import * as path from 'path';
 const _RESPONSE_HEADERS_FILEPATH = path.join(__dirname, '..', '..', 'headers.txt');
 const _RESPONSE_BODY_FILEPATH = path.join(__dirname, '..', '..', 'body.txt');
 
-type Headers = Record<string, string>;
+interface HeaderObject {
+  name: string,
+  value: string,
+};
+
+type Headers = Record<string, HeaderObject>;
 type Body = null | string | object;
 
 let body: Body = null;
@@ -18,7 +23,11 @@ if (fs.existsSync(_RESPONSE_HEADERS_FILEPATH)) {
       continue;
     }
     const [key] = line.split(delimiter);
-    headers[key] = line.slice(key.length + delimiter.length).trim();
+    const lkey = key.toLowerCase();
+    headers[lkey] = {
+      name: key,
+      value: line.slice(key.length + delimiter.length).trim()
+    }
   }
 }
 
@@ -34,8 +43,19 @@ if (fs.existsSync(_RESPONSE_BODY_FILEPATH)) {
 export const Response = {
   body,
   headers: {
-    findByName: (headerName: string) => {
-      return headers[headerName];
+    valueOf: (headerName: string): string | null => {
+      const lkey = headerName.toLowerCase();
+      if (lkey in headers) {
+        return headers[lkey].value;
+      }
+      return null;
+    },
+    valuesOf: function (headerName: string): HeaderObject | null {
+      const lkey = headerName.toLowerCase();
+      if (lkey in headers) {
+        return headers[lkey];
+      }
+      return null;
     },
     all: function (): Headers {
       return headers;
