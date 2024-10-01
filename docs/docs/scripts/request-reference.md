@@ -47,7 +47,7 @@ client.log(request.body.tryGetSubstituted());
 
 
 Retrieves a value of the environment variable identified
-by its name or returns null if it does not exist.
+by its name or returns null if it doesn't exist.
 
 ```javascript
 client.log(request.environment.get("SOME_ENV_VAR"));
