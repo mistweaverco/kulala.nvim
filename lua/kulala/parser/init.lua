@@ -1,3 +1,5 @@
+local M = {}
+M.scripts = {}
 local CONFIG = require("kulala.config")
 local DB = require("kulala.db")
 local DYNAMIC_VARS = require("kulala.parser.dynamic_vars")
@@ -11,13 +13,13 @@ local PARSER_UTILS = require("kulala.parser.utils")
 local TS = require("kulala.parser.treesitter")
 local PLUGIN_TMP_DIR = FS.get_plugin_tmp_dir()
 local CURL_FORMAT_FILE = FS.get_plugin_path({ "parser", "curl-format.json" })
-local Scripts = require("kulala.scripts")
 local Logger = require("kulala.logger")
-local M = {}
 
-local function parse_string_variables(str, variables, env)
+M.scripts.javascript = require("kulala.parser.scripts.javascript")
+
+local function parse_string_variables(str, variables, env, silent)
   local function replace_placeholder(variable_name)
-    local value = ""
+    local value
     -- If the variable name contains a `$` symbol then try to parse it as a dynamic variable
     if variable_name:find("^%$") then
       local variable_value = DYNAMIC_VARS.read(variable_name)
@@ -32,11 +34,13 @@ local function parse_string_variables(str, variables, env)
       value = REQUEST_VARIABLES.parse(variable_name)
     else
       value = "{{" .. variable_name .. "}}"
-      Logger.info(
-        "The variable '"
-          .. variable_name
-          .. "' was not found in the document or in the environment. Returning the string as received ..."
-      )
+      if not silent then
+        Logger.info(
+          "The variable '"
+            .. variable_name
+            .. "' was not found in the document or in the environment. Returning the string as received ..."
+        )
+      end
     end
     return value
   end
@@ -44,10 +48,10 @@ local function parse_string_variables(str, variables, env)
   return result
 end
 
-local function parse_headers(headers, variables, env)
+local function parse_headers(headers, variables, env, silent)
   local h = {}
   for key, value in pairs(headers) do
-    h[key] = parse_string_variables(value, variables, env)
+    h[key] = parse_string_variables(value, variables, env, silent)
   end
   return h
 end
@@ -88,18 +92,25 @@ local function encode_url_params(url)
   return url .. anchor
 end
 
-local function parse_url(url, variables, env)
-  url = parse_string_variables(url, variables, env)
+local function parse_url(url, variables, env, silent)
+  url = parse_string_variables(url, variables, env, silent)
   url = encode_url_params(url)
   url = url:gsub('"', "")
   return url
 end
 
-local function parse_body(body, variables, env)
+--- Parse the body of the request
+---@param body string|nil -- The body of the request
+---@param variables table|nil -- The variables defined in the document
+---@param env table|nil -- The environment variables
+---@param silent boolean|nil -- Whether to suppress not found variable warnings
+local function parse_body(body, variables, env, silent)
   if body == nil then
     return nil
   end
-  return parse_string_variables(body, variables, env)
+  variables = variables or {}
+  env = env or {}
+  return parse_string_variables(body, variables, env, silent)
 end
 
 local function split_by_block_delimiters(text)
@@ -410,7 +421,11 @@ end
 
 -- extend the document_variables with the variables defined in the request
 -- via the # @file-to-variable variable_name file_path metadata syntax
+---@param document_variables table|nil
+---@param request Request
+---@return table
 local function extend_document_variables(document_variables, request)
+  document_variables = document_variables or {}
   for _, metadata in ipairs(request.metadata) do
     if metadata then
       if metadata.name == "file-to-variable" then
@@ -428,43 +443,55 @@ local function extend_document_variables(document_variables, request)
   return document_variables
 end
 
+local cleanup_request_files = function()
+  FS.delete_file(GLOBALS.HEADERS_FILE)
+  FS.delete_file(GLOBALS.BODY_FILE)
+  FS.delete_file(GLOBALS.COOKIES_JAR_FILE)
+end
+
 ---@class ResponseBodyToFile
 ---@field file string -- The file path to write the response body to
 ---@field overwrite boolean -- Whether to overwrite the file if it already exists
 
 ---@class ScriptsItems
 ---@field inline table -- Inline post-request handler scripts - each element is a line of the script
----@field file table -- File post-request handler scripts - each element is a file path
+---@field files table -- File post-request handler scripts - each element is a file path
 ---
 ---@class Scripts
----@field pre_request ScriptsItems[] -- Pre-request handler scripts
----@field post_request ScriptsItems[] -- Post-request handler scripts
+---@field pre_request ScriptsItems -- Pre-request handler scripts
+---@field post_request ScriptsItems -- Post-request handler scripts
 
 ---@class Request
----@field metadata table
----@field method string
----@field url table
----@field headers table
----@field body table
----@field cmd table
----@field ft string
----@field http_version string
----@field show_icon_line_number string
----@field scripts Scripts
+---@field metadata table[] -- Metadata of the request
+---@field method string -- The HTTP method of the request
+---@field url_raw string -- The raw URL as it appears in the document
+---@field url string -- The URL with variables and dynamic variables replaced
+---@field headers table -- The headers with variables and dynamic variables replaced
+---@field body_raw string|nil -- The raw body as it appears in the document
+---@field body string|nil -- The body with variables and dynamic variables replaced
+---@field environment table -- The environment- and document-variables
+---@field cmd table -- The command to execute the request
+---@field ft string -- The filetype of the document
+---@field http_version string -- The HTTP version of the request
+---@field show_icon_line_number string -- The line number to show the icon
+---@field scripts Scripts -- The scripts to run before and after the request
 ---@field redirect_response_body_to_files ResponseBodyToFile[]
 
 ---Parse a request and return the request on itself, its headers and body
 ---@param start_request_linenr number|nil The line number where the request starts
 ---@return Request|nil -- Table containing the request data or nil if parsing fails
-function M.parse(start_request_linenr)
+function M.get_basic_request_data(start_request_linenr)
   local res = {
     metadata = {},
     method = "GET",
-    url = {},
+    url = "",
+    url_raw = "",
     headers = {},
-    body = {},
+    body = nil,
+    body_raw = nil,
     cmd = {},
     ft = "text",
+    environment = {},
     redirect_response_body_to_files = {},
     scripts = {
       pre_request = {
@@ -478,13 +505,11 @@ function M.parse(start_request_linenr)
     },
   }
 
-  local req, document_variables
+  local req
   if CONFIG:get().treesitter then
-    document_variables = TS.get_document_variables()
     req = TS.get_request_at(start_request_linenr)
   else
-    local requests
-    document_variables, requests = M.get_document()
+    local _, requests = M.get_document()
     req = M.get_request_at(requests, start_request_linenr)
   end
 
@@ -492,47 +517,58 @@ function M.parse(start_request_linenr)
     return nil
   end
 
-  Scripts.javascript.run("pre_request", req.scripts.pre_request)
-  local env = ENV_PARSER.get_env()
-
-  DB.update().previous_request = DB.find_unique("current_request")
-
-  document_variables = extend_document_variables(document_variables, req)
-
   res.scripts.pre_request = req.scripts.pre_request
   res.scripts.post_request = req.scripts.post_request
   res.show_icon_line_number = req.show_icon_line_number
-  res.url = parse_url(req.url, document_variables, env)
+  res.headers = req.headers
+  res.url_raw = req.url
   res.method = req.method
   res.http_version = req.http_version
-  res.headers = parse_headers(req.headers, document_variables, env)
-  res.body = parse_body(req.body, document_variables, env)
+  res.body_raw = req.body
   res.metadata = req.metadata
   res.redirect_response_body_to_files = req.redirect_response_body_to_files
 
-  -- We need to append the contents of the file to
-  -- the body if it is a POST request,
-  -- or to the URL itself if it is a GET request
-  if req.body_type == "input" and not CONFIG:get().treesitter then
-    if req.body_path:match("%.graphql$") or req.body_path:match("%.gql$") then
-      local graphql_file = io.open(req.body_path, "r")
-      local graphql_query = graphql_file:read("*a")
-      graphql_file:close()
-      if res.method == "POST" then
-        res.body = '{ "query": "' .. graphql_query .. '" }'
-      else
-        graphql_query =
-          STRING_UTILS.url_encode(STRING_UTILS.remove_extra_space(STRING_UTILS.remove_newline(graphql_query)))
-        res.graphql_query = STRING_UTILS.url_decode(graphql_query)
-        res.url = res.url .. "?query=" .. graphql_query
-      end
-    else
-      local file = io.open(req.body_path, "r")
-      local body = file:read("*a")
-      file:close()
-      res.body = body
-    end
+  return res
+end
+
+local replace_variables_in_url_headers_body = function(res, document_variables, env, silent)
+  local url = parse_url(res.url_raw, document_variables, env, silent)
+  local headers = parse_headers(res.headers, document_variables, env, silent)
+  local body = parse_body(res.body_raw, document_variables, env, silent)
+  return url, headers, body
+end
+
+---Parse a request and return the request on itself, its headers and body
+---@param start_request_linenr number|nil The line number where the request starts
+---@return Request|nil -- Table containing the request data or nil if parsing fails
+M.parse = function(start_request_linenr)
+  local res = M.get_basic_request_data(start_request_linenr)
+
+  if res == nil then
+    return nil
   end
+
+  local has_pre_request_scripts = #res.scripts.pre_request.inline > 0 or #res.scripts.pre_request.files > 0
+
+  local document_variables
+  if CONFIG:get().treesitter then
+    document_variables = TS.get_document_variables()
+  else
+    document_variables = M.get_document()
+  end
+
+  DB.update().previous_request = DB.find_unique("current_request")
+
+  local env = ENV_PARSER.get_env()
+
+  document_variables = extend_document_variables(document_variables, res)
+  res.environment = vim.tbl_extend("force", env, document_variables)
+
+  -- INFO: if has_pre_request_script:
+  -- silently replace the variables in the URL, headers and body, otherwise warn the user
+  -- for non existing variables
+  res.url, res.headers, res.body =
+    replace_variables_in_url_headers_body(res, document_variables, env, has_pre_request_scripts)
 
   -- Merge headers from the $shared environment if it exists
   if DB.find_unique("http_client_env_shared") then
@@ -547,6 +583,23 @@ function M.parse(start_request_linenr)
     end
   end
 
+  FS.write_file(GLOBALS.REQUEST_FILE, vim.fn.json_encode(res), false)
+  -- PERF: We only want to run the scripts if they exist
+  -- Also we don't want to re-run the environment replace_variables_in_url_headers_body
+  -- if we don't actually have any scripts to run that could have changed the environment
+  if has_pre_request_scripts then
+    -- INFO:
+    -- This runs a client and request script that can be used to magic things
+    -- See: https://www.jetbrains.com/help/idea/http-response-reference.html
+    -- TODO: Copy these docs over to kulala.mwco.app
+    M.scripts.javascript.run("pre_request", res.scripts.pre_request)
+    -- INFO: now replace the variables in the URL, headers and body again,
+    -- because user scripts could have changed them,
+    -- but this time also warn the user if a variable is not found
+    env = ENV_PARSER.get_env()
+    res.url, res.headers, res.body = replace_variables_in_url_headers_body(res, document_variables, env, false)
+  end
+
   -- build the command to exectute the request
   table.insert(res.cmd, CONFIG.get().curl_path)
   table.insert(res.cmd, "-s")
@@ -559,7 +612,7 @@ function M.parse(start_request_linenr)
   table.insert(res.cmd, "-X")
   table.insert(res.cmd, res.method)
 
-  local is_graphql = PARSER_UTILS.contains_meta_tag(req, "graphql")
+  local is_graphql = PARSER_UTILS.contains_meta_tag(res, "graphql")
     or PARSER_UTILS.contains_header(res.headers, "x-request-type", "GraphQL")
   if CONFIG.get().treesitter then
     -- treesitter parser handles graphql requests before this point
@@ -650,7 +703,7 @@ function M.parse(start_request_linenr)
     protocol, host = res.url:match("^([^:]*)://([^:/]*)")
   end
   if protocol == "https" then
-    certificate = CONFIG.get().certificates[host .. ":" .. (port or "443")]
+    local certificate = CONFIG.get().certificates[host .. ":" .. (port or "443")]
     if not certificate then
       certificate = CONFIG.get().certificates[host]
     end
@@ -689,7 +742,7 @@ function M.parse(start_request_linenr)
   table.insert(res.cmd, "kulala.nvim/" .. GLOBALS.VERSION)
   -- if the user has not specified the no-cookie meta tag,
   -- then use the cookies jar file
-  if PARSER_UTILS.contains_meta_tag(req, "no-cookie-jar") == false then
+  if PARSER_UTILS.contains_meta_tag(res, "no-cookie-jar") == false then
     table.insert(res.cmd, "--cookie-jar")
     table.insert(res.cmd, GLOBALS.COOKIES_JAR_FILE)
   end
@@ -697,15 +750,7 @@ function M.parse(start_request_linenr)
     table.insert(res.cmd, additional_curl_option)
   end
   table.insert(res.cmd, res.url)
-  -- TODO:
-  -- Make a cleanup function that deletes the files
-  -- and mayebe sets up other things
-  FS.delete_file(GLOBALS.HEADERS_FILE)
-  FS.delete_file(GLOBALS.BODY_FILE)
-  FS.delete_file(GLOBALS.COOKIES_JAR_FILE)
-  if CONFIG.get().debug then
-    FS.write_file(PLUGIN_TMP_DIR .. "/request.txt", table.concat(res.cmd, " "), false)
-  end
+  cleanup_request_files()
   DB.update().current_request = res
   -- Save this to global,
   -- so .replay() can be triggered from any buffer or window

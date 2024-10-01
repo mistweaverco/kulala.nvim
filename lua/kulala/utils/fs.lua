@@ -93,13 +93,13 @@ end
 -- Writes string to file
 --- @param filename string
 --- @param content string
---- @param append boolean
+--- @param append boolean|nil
 --- @usage fs.write_file('Makefile', 'all: \n\t@echo "Hello World"')
 --- @usage fs.write_file('Makefile', 'all: \n\t@echo "Hello World"', true)
 --- @return boolean
 --- @usage local p = fs.write_file('Makefile', 'all: \n\t@echo "Hello World"')
 M.write_file = function(filename, content, append)
-  local f = nil
+  local f
   if append then
     f = io.open(filename, "a")
   else
@@ -150,7 +150,7 @@ M.get_plugin_tmp_dir = function()
 end
 
 M.get_scripts_dir = function()
-  local dir = M.join_paths(M.get_plugin_root_dir(), "scripts")
+  local dir = M.join_paths(M.get_plugin_root_dir(), "parser", "scripts")
   return dir
 end
 

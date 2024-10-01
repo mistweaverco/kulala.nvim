@@ -6,7 +6,7 @@ local CONFIG = require("kulala.config")
 local JUMPS = require("kulala.jumps")
 local Graphql = require("kulala.graphql")
 local Logger = require("kulala.logger")
-local ScriptsUtils = require("kulala.scripts.utils")
+local ScriptsUtils = require("kulala.parser.scripts.utils")
 local M = {}
 
 M.setup = function(config)
