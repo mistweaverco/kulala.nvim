@@ -113,14 +113,20 @@ M.run = function(type, data)
   end
 
   for _, script in ipairs(scripts) do
+    local cwd = script.cwd
+
+    if cwd == "kulala:" then
+      cwd = FS.get_plugin_tmp_dir()
+    end
+
     local output = vim
       .system({
         "node",
         script.path,
       }, {
-        cwd = script.cwd,
+        cwd = cwd,
         env = {
-          NODE_PATH = FS.join_paths(script.cwd, "node_modules"),
+          NODE_PATH = FS.join_paths(cwd, "node_modules"),
         },
       })
       :wait()
