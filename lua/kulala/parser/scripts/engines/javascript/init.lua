@@ -50,19 +50,20 @@ local generate_one = function(script_type, is_external_file, script_data)
     return nil, nil
   end
   local script_cwd
+  -- buf_dir is "kulala:" when the buffer is scratch buffer
+  -- in this case, use current working directory for script_cwd and base_dir
+  local buf_dir = FS.get_current_buffer_dir()
 
   if is_external_file then
     -- if script_data starts with ./ or ../, it is a relative path
     if string.match(script_data, "^%./") or string.match(script_data, "^%../") then
       local local_script_path = script_data:gsub("^%./", "")
-      script_data = FS.join_paths(FS.get_current_buffer_dir(), local_script_path)
+      local base_dir = buf_dir == "kulala:" and vim.loop.cwd() or buf_dir
+      script_data = FS.join_paths(base_dir, local_script_path)
     end
-    script_cwd = FS.get_dir_by_filepath(script_data)
+    script_cwd = buf_dir == "kulala:" and vim.loop.cwd() or FS.get_dir_by_filepath(script_data)
     userscript = FS.read_file(script_data)
   else
-    local buf_dir = FS.get_current_buffer_dir()
-    -- buf_dir is "kulala:" when the buffer is scratch buffer
-    -- in this case, use current working directory
     script_cwd = buf_dir == "kulala:" and vim.loop.cwd() or buf_dir
     userscript = vim.fn.join(script_data, "\n")
   end
