@@ -60,7 +60,10 @@ local generate_one = function(script_type, is_external_file, script_data)
     script_cwd = FS.get_dir_by_filepath(script_data)
     userscript = FS.read_file(script_data)
   else
-    script_cwd = FS.get_current_buffer_dir()
+    local buf_dir = FS.get_current_buffer_dir()
+    -- buf_dir is "kulala:" when the buffer is scratch buffer
+    -- in this case, use current working directory
+    script_cwd = buf_dir == "kulala:" and vim.loop.cwd() or buf_dir
     userscript = vim.fn.join(script_data, "\n")
   end
   base_file = base_file .. "\n" .. userscript
@@ -113,20 +116,14 @@ M.run = function(type, data)
   end
 
   for _, script in ipairs(scripts) do
-    local cwd = script.cwd
-
-    if cwd == "kulala:" then
-      cwd = FS.get_plugin_tmp_dir()
-    end
-
     local output = vim
       .system({
         "node",
         script.path,
       }, {
-        cwd = cwd,
+        cwd = script.cwd,
         env = {
-          NODE_PATH = FS.join_paths(cwd, "node_modules"),
+          NODE_PATH = FS.join_paths(script.cwd, "node_modules"),
         },
       })
       :wait()
