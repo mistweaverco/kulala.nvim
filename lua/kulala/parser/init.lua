@@ -596,7 +596,6 @@ M.parse = function(start_request_linenr)
     -- INFO:
     -- This runs a client and request script that can be used to magic things
     -- See: https://www.jetbrains.com/help/idea/http-response-reference.html
-    -- TODO: Copy these docs over to kulala.mwco.app
     M.scripts.javascript.run("pre_request", res.scripts.pre_request)
     -- INFO: now replace the variables in the URL, headers and body again,
     -- because user scripts could have changed them,
@@ -609,9 +608,9 @@ M.parse = function(start_request_linenr)
   table.insert(res.cmd, CONFIG.get().curl_path)
   table.insert(res.cmd, "-s")
   table.insert(res.cmd, "-D")
-  table.insert(res.cmd, PLUGIN_TMP_DIR .. "/headers.txt")
+  table.insert(res.cmd, GLOBALS.HEADERS_FILE)
   table.insert(res.cmd, "-o")
-  table.insert(res.cmd, PLUGIN_TMP_DIR .. "/body.txt")
+  table.insert(res.cmd, GLOBALS.BODY_FILE)
   table.insert(res.cmd, "-w")
   table.insert(res.cmd, "@" .. CURL_FORMAT_FILE)
   table.insert(res.cmd, "-X")
