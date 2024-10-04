@@ -1,12 +1,44 @@
 local M = {}
 
---- Path separator
-M.ps = package.config:sub(1, 1)
+---Get the OS
+---@return "windows" | "mac" | "unix" | "unknown"
+M.get_os = function()
+  if vim.fn.has("unix") == 1 then
+    return "unix"
+  end
+  if vim.fn.has("mac") == 1 then
+    return "mac"
+  end
+  if vim.fn.has("win32") == 1 or vim.fn.has("win64") then
+    return "windows"
+  end
+  return "unknown"
+end
+
+---The OS
+---@type "windows" | "mac" | "unix" | "unknown"
+M.os = M.get_os()
+
+---Get the path separator for the current OS
+---@return "\\" | "/"
+M.get_path_separator = function()
+  if M.os == "windows" then
+    return "\\"
+  end
+  return "/"
+end
+
+---Path separator
+---@type "\\" | "/"
+M.ps = M.get_path_separator()
 
 ---Join paths -- similar to os.path.join in python
 ---@vararg string
 ---@return string
 M.join_paths = function(...)
+  if M.get_os() == "windows" then
+    return table.concat({ ... }, M.ps)
+  end
   return table.concat({ ... }, M.ps)
 end
 
@@ -144,7 +176,7 @@ end
 --- @return string
 --- @usage local p = fs.get_plugin_tmp_dir()
 M.get_plugin_tmp_dir = function()
-  local dir = M.join_paths(vim.fn.stdpath("data"), "tmp", "kulala")
+  local dir = M.join_paths(M.get_plugin_root_dir(), "tmp")
   M.ensure_dir_exists(dir)
   return dir
 end
@@ -178,7 +210,7 @@ M.delete_files_in_directory = function(dir)
       end
       -- Only delete files, not directories
       if type == "file" then
-        local filepath = dir .. M.ps .. name
+        local filepath = M.join_paths(dir, name)
         local success, err = vim.loop.fs_unlink(filepath)
         if not success then
           print("Error deleting file:", filepath, err)
