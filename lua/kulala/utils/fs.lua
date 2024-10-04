@@ -176,7 +176,7 @@ end
 --- @return string
 --- @usage local p = fs.get_plugin_tmp_dir()
 M.get_plugin_tmp_dir = function()
-  local dir = M.join_paths(vim.fn.stdpath("data"), "tmp", "kulala")
+  local dir = M.join_paths(M.get_plugin_root_dir(), "tmp")
   M.ensure_dir_exists(dir)
   return dir
 end
