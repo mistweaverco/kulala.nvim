@@ -93,9 +93,17 @@ local generate_all = function(script_type, scripts_data)
   return scripts
 end
 
+local scripts_is_empty = function(scripts_data)
+  return #scripts_data.inline == 0 and #scripts_data.files == 0
+end
+
 ---@param type "pre_request_client_only" | "pre_request" | "post_request_client_only" | "post_request" -- type of script
 ---@param data ScriptData
 M.run = function(type, data)
+  if scripts_is_empty(data) then
+    return
+  end
+
   if not NODE_EXISTS then
     Logger.error("node not found, please install nodejs")
     return
@@ -112,7 +120,7 @@ M.run = function(type, data)
   end
 
   local scripts = generate_all(type, data)
-  if scripts == nil then
+  if #scripts == 0 then
     return
   end
 
