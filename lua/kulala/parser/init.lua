@@ -11,7 +11,6 @@ local REQUEST_VARIABLES = require("kulala.parser.request_variables")
 local STRING_UTILS = require("kulala.utils.string")
 local PARSER_UTILS = require("kulala.parser.utils")
 local TS = require("kulala.parser.treesitter")
-local PLUGIN_TMP_DIR = FS.get_plugin_tmp_dir()
 local CURL_FORMAT_FILE = FS.get_plugin_path({ "parser", "curl-format.json" })
 local Logger = require("kulala.logger")
 
@@ -342,8 +341,8 @@ M.get_document = function()
         -- dynamic variables are defined as `{{$variable_name}}`
         local key, value = line:match("^([^:]+):%s*(.*)$")
         if key and value then
-          request.headers[key:lower()] = value
-          request.headers_raw[key:lower()] = value
+          request.headers[key] = value
+          request.headers_raw[key] = value
         end
       elseif is_request_line == true then
         -- Request line (e.g., GET http://example.com HTTP/1.1)
@@ -455,13 +454,9 @@ end
 ---@field file string -- The file path to write the response body to
 ---@field overwrite boolean -- Whether to overwrite the file if it already exists
 
----@class ScriptsItems
----@field inline table -- Inline post-request handler scripts - each element is a line of the script
----@field files table -- File post-request handler scripts - each element is a file path
----
 ---@class Scripts
----@field pre_request ScriptsItems -- Pre-request handler scripts
----@field post_request ScriptsItems -- Post-request handler scripts
+---@field pre_request ScriptData -- Pre-request handler scripts
+---@field post_request ScriptData -- Post-request handler scripts
 
 ---@class Request
 ---@field metadata table[] -- Metadata of the request
@@ -575,12 +570,12 @@ M.parse = function(start_request_linenr)
   res.url, res.headers, res.body =
     replace_variables_in_url_headers_body(res, document_variables, env, has_pre_request_scripts)
 
-  -- Merge headers from the $shared environment if it exists
+  -- Merge headers from the $shared environment if it does not exist in the request
+  -- this ensures that you can always override the headers in the request
   if DB.find_unique("http_client_env_shared") then
     local default_headers = DB.find_unique("http_client_env_shared")["$default_headers"]
     if default_headers then
       for key, value in pairs(default_headers) do
-        key = key:lower()
         if res.headers[key] == nil then
           res.headers[key] = value
         end
@@ -617,13 +612,15 @@ M.parse = function(start_request_linenr)
   table.insert(res.cmd, res.method)
 
   local is_graphql = PARSER_UTILS.contains_meta_tag(res, "graphql")
-    or PARSER_UTILS.contains_header(res.headers, "x-request-type", "GraphQL")
+    or PARSER_UTILS.contains_header(res.headers, "x-request-type", "graphql")
   if CONFIG.get().treesitter then
     -- treesitter parser handles graphql requests before this point
     is_graphql = false
   end
 
-  if res.headers["content-type"] ~= nil and res.body ~= nil then
+  local content_type_header_name, content_type_header_value = PARSER_UTILS.get_header(res.headers, "content-type")
+
+  if content_type_header_name and content_type_header_value and res.body ~= nil then
     -- check if we are a graphql query
     -- we need this here, because the user could have defined the content-type
     -- as application/json, but the body is a graphql query
@@ -633,9 +630,9 @@ M.parse = function(start_request_linenr)
       if gql_json then
         table.insert(res.cmd, "--data")
         table.insert(res.cmd, gql_json)
-        res.headers["content-type"] = "application/json"
+        res.headers[content_type_header_name] = "application/json"
       end
-    elseif res.headers["content-type"]:find("^multipart/form%-data") then
+    elseif content_type_header_value:find("^multipart/form%-data") then
       local tmp_file = FS.get_binary_temp_file(res.body)
       if tmp_file ~= nil then
         table.insert(res.cmd, "--data-binary")
@@ -654,31 +651,32 @@ M.parse = function(start_request_linenr)
       if gql_json then
         table.insert(res.cmd, "--data")
         table.insert(res.cmd, gql_json)
-        res.headers["content-type"] = "application/json"
+        res.headers[content_type_header_name] = "application/json"
       end
     end
   end
 
-  if res.headers["authorization"] then
-    local auth_header = res.headers["authorization"]
-    local authtype = auth_header:match("^(%w+)%s+.*")
+  local auth_header_name, auth_header_value = PARSER_UTILS.get_header(res.headers, "authorization")
+
+  if auth_header_name and auth_header_value then
+    local authtype = auth_header_value:match("^(%w+)%s+.*")
     if authtype == nil then
-      authtype = auth_header:match("^(%w+)%s*$")
+      authtype = auth_header_value:match("^(%w+)%s*$")
     end
 
     if authtype ~= nil then
       authtype = authtype:lower()
 
       if authtype == "ntlm" or authtype == "negotiate" or authtype == "digest" or authtype == "basic" then
-        local match, authuser, authpw = auth_header:match("^(%w+)%s+([^%s:]+)%s*[:%s]%s*([^%s]+)%s*$")
+        local match, authuser, authpw = auth_header_value:match("^(%w+)%s+([^%s:]+)%s*[:%s]%s*([^%s]+)%s*$")
         if match ~= nil or (authtype == "ntlm" or authtype == "negotiate") then
           table.insert(res.cmd, "--" .. authtype)
           table.insert(res.cmd, "-u")
           table.insert(res.cmd, (authuser or "") .. ":" .. (authpw or ""))
-          res.headers["authorization"] = nil
+          res.headers[auth_header_name] = nil
         end
       elseif authtype == "aws" then
-        local key, secret, optional = auth_header:match("^%w+%s([^%s]+)%s*([^%s]+)[%s$]+(.*)$")
+        local key, secret, optional = auth_header_value:match("^%w+%s([^%s]+)%s*([^%s]+)[%s$]+(.*)$")
         local token = optional:match("token:([^%s]+)")
         local region = optional:match("region:([^%s]+)")
         local service = optional:match("service:([^%s]+)")
@@ -697,7 +695,7 @@ M.parse = function(start_request_linenr)
           table.insert(res.cmd, "-H")
           table.insert(res.cmd, "x-amz-security-token:" .. token)
         end
-        res.headers["authorization"] = nil
+        res.headers[auth_header_name] = nil
       end
     end
   end

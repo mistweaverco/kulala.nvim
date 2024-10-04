@@ -123,7 +123,12 @@ M.run_parser = function(req, callback)
           end
         end
         INT_PROCESSING.redirect_response_body_to_file(result.redirect_response_body_to_files)
-        PARSER.scripts.javascript.run("post_request", result.scripts.post_request)
+
+        local has_post_request_scripts = #result.scripts.post_request.inline > 0
+          or #result.scripts.pre_request.files > 0
+        if has_post_request_scripts then
+          PARSER.scripts.javascript.run("post_request", result.scripts.post_request)
+        end
         Api.trigger("after_request")
       end
       Fs.delete_request_scripts_files()
