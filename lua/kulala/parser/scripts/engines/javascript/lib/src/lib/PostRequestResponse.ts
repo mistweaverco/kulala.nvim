@@ -23,8 +23,7 @@ if (fs.existsSync(_RESPONSE_HEADERS_FILEPATH)) {
       continue;
     }
     const [key] = line.split(delimiter);
-    const lkey = key.toLowerCase();
-    headers[lkey] = {
+    headers[key] = {
       name: key,
       value: line.slice(key.length + delimiter.length).trim()
     }
@@ -44,16 +43,14 @@ export const Response = {
   body,
   headers: {
     valueOf: (headerName: string): string | null => {
-      const lkey = headerName.toLowerCase();
-      if (lkey in headers) {
-        return headers[lkey].value;
+      if (headerName in headers) {
+        return headers[headerName].value;
       }
       return null;
     },
     valuesOf: function (headerName: string): HeaderObject | null {
-      const lkey = headerName.toLowerCase();
-      if (lkey in headers) {
-        return headers[lkey];
+      if (headerName in headers) {
+        return headers[headerName];
       }
       return null;
     },

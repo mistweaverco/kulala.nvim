@@ -7,6 +7,7 @@ local JUMPS = require("kulala.jumps")
 local Graphql = require("kulala.graphql")
 local Logger = require("kulala.logger")
 local ScriptsUtils = require("kulala.parser.scripts.utils")
+local Fs = require("kulala.utils.fs")
 local M = {}
 
 M.setup = function(config)
@@ -99,6 +100,12 @@ M.set_selected_env = function(env)
     return
   end
   vim.g.kulala_selected_env = env
+end
+
+---Clears all cached files
+---Useful when you want to clear all cached files
+M.clear_cached_files = function()
+  Fs.clear_cached_files()
 end
 
 return M

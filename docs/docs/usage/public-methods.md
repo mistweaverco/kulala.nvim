@@ -89,6 +89,19 @@ Additionally, you can clear a list of global variables by
 passing a table of variable names like so:
 `require('kulala').scripts_clear_global({'variable_name1', 'variable_name2'})`.
 
+### clear_cached_files
+
+`require('kulala').clear_cached_files()`
+clears all cached files.
+
+These files include:
+
+- last response body
+- last response headers
+- last request data
+- global variables set via scripts
+- compiled pre- and post-request scripts
+
 ### download_graphql_schema
 
 You can download the schema of a GraphQL server with:

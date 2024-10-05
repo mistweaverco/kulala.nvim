@@ -1,3 +1,4 @@
+local Logger = require("kulala.logger")
 local M = {}
 
 ---Get the OS
@@ -198,7 +199,11 @@ M.get_request_scripts_dir = function()
   return dir
 end
 
-M.delete_files_in_directory = function(dir)
+---Delete all files in a directory
+---@param dir string
+---@param verbose boolean|nil
+---@usage fs.delete_files_in_directory('tmp', true)
+M.delete_files_in_directory = function(dir, verbose)
   -- Open the directory for scanning
   local scandir = vim.loop.fs_scandir(dir)
   if scandir then
@@ -208,12 +213,15 @@ M.delete_files_in_directory = function(dir)
       if not name then
         break
       end
-      -- Only delete files, not directories
-      if type == "file" then
+      -- Only delete files, not directories except .gitingore
+      if type == "file" and name:match(".gitignore$") == nil then
         local filepath = M.join_paths(dir, name)
         local success, err = vim.loop.fs_unlink(filepath)
         if not success then
           print("Error deleting file:", filepath, err)
+        end
+        if verbose and success then
+          Logger.info("Deleted file: " .. filepath)
         end
       end
     end
@@ -314,6 +322,18 @@ M.read_file_lines = function(filename)
   end
   f:close()
   return lines
+end
+
+---Clears all cached files
+M.clear_cached_files = function()
+  local tmp_dir = M.get_plugin_tmp_dir()
+  local scripts_dir = M.get_tmp_scripts_dir()
+  local request_scripts_dir = M.get_request_scripts_dir()
+  local compiled_pre_request_scripts = M.join_paths(M.get_scripts_dir(), "engines", "javascript", "lib", "dist")
+  M.delete_files_in_directory(tmp_dir, true)
+  M.delete_files_in_directory(scripts_dir, true)
+  M.delete_files_in_directory(request_scripts_dir, true)
+  M.delete_files_in_directory(compiled_pre_request_scripts, true)
 end
 
 return M
