@@ -26,7 +26,6 @@ end
 M.contains_header = function(headers, header, value)
   header = header:lower()
   value = value and value:lower() or nil
-  vim.print("header: " .. header .. " value: " .. value)
   if value == nil then
     for k, _ in pairs(headers) do
       if k:lower() == header then
