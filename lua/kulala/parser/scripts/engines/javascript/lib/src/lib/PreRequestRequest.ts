@@ -62,14 +62,12 @@ export const Request = {
   },
   headers: {
     findByName: (headerName: string) => {
-      const hnl = headerName.toLowerCase();
-      return getHeaderObject(hnl, req.headers_raw[hnl], req.headers[hnl]);
+      return getHeaderObject(headerName, req.headers_raw[headerName], req.headers[headerName]);
     },
     all: function (): HeaderObject[] {
       const h = [];
       for (const [key, value] of Object.entries(req.headers)) {
-        const lkey = key.toLowerCase();
-        const item = getHeaderObject(lkey, req.headers_raw[lkey], value);
+        const item = getHeaderObject(key, req.headers_raw[key], value);
         if (item !== null) {
           h.push(item);
         }
