@@ -64,7 +64,7 @@ help your prose match the rest of the documentation.
 When writing code,
 please follow these configurations:
 
-- [styllua](./stylua.toml)
+- [stylua](./stylua.toml)
 - [luacheck](./.luacheckrc)
 - [EditorConfig](./.editorconfig)
 - [yaml-lint](./.yamllint.yaml)
