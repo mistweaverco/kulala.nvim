@@ -9,6 +9,7 @@ interface RequestJson {
   headers: Record<string, string>,
   headers_raw: Record<string, string>,
   body_raw: string,
+  body_computed: string | undefined,
   body: string | object,
   method: string,
   url_raw: string,
@@ -58,6 +59,9 @@ export const Request = {
     },
     tryGetSubstituted: () => {
       return req.body;
+    },
+    getComputed: () => {
+      return req.body_computed;
     },
   },
   headers: {

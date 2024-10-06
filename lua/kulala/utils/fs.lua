@@ -201,9 +201,10 @@ end
 
 ---Delete all files in a directory
 ---@param dir string
----@param verbose boolean|nil
----@usage fs.delete_files_in_directory('tmp', true)
-M.delete_files_in_directory = function(dir, verbose)
+---@usage fs.delete_files_in_directory('tmp')
+---@return string[] deleted_files
+M.delete_files_in_directory = function(dir)
+  local deleted_files = {}
   -- Open the directory for scanning
   local scandir = vim.loop.fs_scandir(dir)
   if scandir then
@@ -219,15 +220,15 @@ M.delete_files_in_directory = function(dir, verbose)
         local success, err = vim.loop.fs_unlink(filepath)
         if not success then
           print("Error deleting file:", filepath, err)
-        end
-        if verbose and success then
-          Logger.info("Deleted file: " .. filepath)
+        else
+          table.insert(deleted_files, filepath)
         end
       end
     end
   else
     print("Error opening directory:", dir)
   end
+  return deleted_files
 end
 
 M.delete_request_scripts_files = function()
@@ -330,10 +331,18 @@ M.clear_cached_files = function()
   local scripts_dir = M.get_tmp_scripts_dir()
   local request_scripts_dir = M.get_request_scripts_dir()
   local compiled_pre_request_scripts = M.join_paths(M.get_scripts_dir(), "engines", "javascript", "lib", "dist")
-  M.delete_files_in_directory(tmp_dir, true)
-  M.delete_files_in_directory(scripts_dir, true)
-  M.delete_files_in_directory(request_scripts_dir, true)
-  M.delete_files_in_directory(compiled_pre_request_scripts, true)
+  local deleted_files = {}
+  deleted_files = vim.tbl_extend("force", deleted_files, M.delete_files_in_directory(tmp_dir))
+  deleted_files = vim.tbl_extend("force", deleted_files, M.delete_files_in_directory(scripts_dir))
+  deleted_files = vim.tbl_extend("force", deleted_files, M.delete_files_in_directory(request_scripts_dir))
+  deleted_files = vim.tbl_extend("force", deleted_files, M.delete_files_in_directory(compiled_pre_request_scripts))
+  local string_list = vim.fn.join(
+    vim.tbl_map(function(file)
+      return "- " .. file
+    end, deleted_files),
+    "\n"
+  )
+  Logger.info("Deleted files:\n" .. string_list)
 end
 
 return M

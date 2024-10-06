@@ -466,6 +466,7 @@ end
 ---@field headers table -- The headers with variables and dynamic variables replaced
 ---@field headers_raw table -- The headers as they appear in the document
 ---@field body_raw string|nil -- The raw body as it appears in the document
+---@field body_computed string|nil -- The computed body as sent by curl; with variables and dynamic variables replaced
 ---@field body string|nil -- The body with variables and dynamic variables replaced
 ---@field environment table -- The environment- and document-variables
 ---@field cmd table -- The command to execute the request
@@ -488,6 +489,7 @@ function M.get_basic_request_data(start_request_linenr)
     headers_raw = {},
     body = nil,
     body_raw = nil,
+    body_computed = nil,
     cmd = {},
     ft = "text",
     environment = {},
@@ -583,6 +585,23 @@ M.parse = function(start_request_linenr)
     end
   end
 
+  local is_graphql = PARSER_UTILS.contains_meta_tag(res, "graphql")
+    or PARSER_UTILS.contains_header(res.headers, "x-request-type", "graphql")
+  if res.body ~= nil then
+    if is_graphql then
+      local gql_json = GRAPHQL_PARSER.get_json(res.body)
+      if gql_json then
+        res.body_computed = gql_json
+      end
+    else
+      res.body_computed = res.body
+    end
+  end
+  if CONFIG.get().treesitter then
+    -- treesitter parser handles graphql requests before this point
+    is_graphql = false
+  end
+
   FS.write_file(GLOBALS.REQUEST_FILE, vim.fn.json_encode(res), false)
   -- PERF: We only want to run the scripts if they exist
   -- Also we don't want to re-run the environment replace_variables_in_url_headers_body
@@ -610,13 +629,6 @@ M.parse = function(start_request_linenr)
   table.insert(res.cmd, "@" .. CURL_FORMAT_FILE)
   table.insert(res.cmd, "-X")
   table.insert(res.cmd, res.method)
-
-  local is_graphql = PARSER_UTILS.contains_meta_tag(res, "graphql")
-    or PARSER_UTILS.contains_header(res.headers, "x-request-type", "graphql")
-  if CONFIG.get().treesitter then
-    -- treesitter parser handles graphql requests before this point
-    is_graphql = false
-  end
 
   local content_type_header_name, content_type_header_value = PARSER_UTILS.get_header(res.headers, "content-type")
 
@@ -651,7 +663,8 @@ M.parse = function(start_request_linenr)
       if gql_json then
         table.insert(res.cmd, "--data")
         table.insert(res.cmd, gql_json)
-        res.headers[content_type_header_name] = "application/json"
+        res.headers["content-type"] = "application/json"
+        res.body_computed = gql_json
       end
     end
   end
