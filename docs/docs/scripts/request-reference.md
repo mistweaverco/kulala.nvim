@@ -25,7 +25,8 @@ client.log(request.variables.get("SOME_TOKEN"));
 
 ## request.body.getRaw
 
-Returns the request body in the raw format:
+Returns the request body `string` in
+the raw format (or `undefined` if there is no body).
 
 If the body contains variables,
 their names are displayed instead of their values.
@@ -37,11 +38,84 @@ client.log(request.body.getRaw());
 
 ## request.body.tryGetSubstituted
 
-Returns the request body with variables substituted.
+Returns the request body with variables substituted
+(or `undefined` if there is no body).
 
 ```javascript
 client.log(request.body.tryGetSubstituted());
 ```
+
+## request.body.getComputed
+
+Returns the `string` request body as sent via curl; with variables substituted,
+or `undefined` if there is no body.
+
+:::tip
+
+Useful if you want to see the request body as it was sent to the server.
+
+The `tryGetSubstituted` method will substitute variables with their values,
+but leave the rest of the body as is.
+
+If you have a GraphQL query in the body, for example, the `getComputed`
+method will show the query as it was sent to the server,
+which is quite different from the substituted version.
+
+:::
+
+As an example, if you have a request body like this:
+
+```graphql
+query getRestClient($name: String!) {
+  restclient(name: $name) {
+    id
+    name
+    editorsSupported {
+      name
+    }
+  }
+}
+
+{
+  "variables": {
+    "name": "{{ENV_VAR_CLIENT_NAME}}"
+  }
+}
+```
+
+Then the `getComputed` method will
+return the body as it was sent to the server:
+
+```json
+{"query": "query getRestClient($name: String!) { restclient(name: $name) { id name editorsSupported { name } } } ", "variables": {"variables": {"name": "kulala"}}}
+```
+
+whereas the `tryGetSubstituted` method will
+return the body with variables substituted as seen in your script:
+
+```graphql
+query getRestClient($name: String!) {
+  restclient(name: $name) {
+    id
+    name
+    editorsSupported {
+      name
+    }
+  }
+}
+
+{
+  "variables": {
+    "name": "kulala"
+  }
+}
+```
+
+:::warning
+
+The `getComputed` method is always `undefined` for binary bodies.
+
+:::
 
 ## request.environment.get
 
