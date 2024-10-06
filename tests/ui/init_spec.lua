@@ -1,5 +1,6 @@
 local GLOBALS = require("kulala.globals")
 local UI = require("kulala.ui")
+local ui_helper = require("test_helper.ui")
 
 local assert = require("luassert")
 
@@ -13,73 +14,46 @@ describe("kulala.ui", function()
 
   after_each(function()
     snapshot:revert()
+    ui_helper.delete_all_bufs()
   end)
 
-  it("_buffer_exists", function()
-    local nvim_list_bufs = stub(vim.api, "nvim_list_bufs", function()
-      return { 1, 2 }
-    end)
-    local nvim_buf_get_name = stub(vim.api, "nvim_buf_get_name", function(bufnr)
-      if bufnr == 2 then
-        return GLOBALS.UI_ID
-      end
-    end)
+  describe("from_curl()", function()
+    it("pastes simple curl", function()
+      local bufnr = ui_helper.create_buf()
+      vim.fn.setreg("+", "curl http://example.com")
 
-    local exist = UI._buffer_exists()
-    assert.is_true(exist)
-    assert.stub(nvim_list_bufs).was.called(1)
-    assert.stub(nvim_buf_get_name).was.called_with(1)
-    assert.stub(nvim_buf_get_name).was.called_with(2)
+      UI.from_curl()
+
+      local expected = {
+        [[# curl http://example.com]],
+        [[GET http://example.com]],
+        [[]],
+        [[]],
+      }
+      assert.are.same(expected, ui_helper.get_buf_lines(bufnr))
+    end)
   end)
 
-  it("_buffer_not_exists", function()
-    local nvim_list_bufs = stub(vim.api, "nvim_list_bufs", function()
-      return { 1, 2 }
-    end)
-    local nvim_buf_get_name = stub(vim.api, "nvim_buf_get_name", function()
-      return nil
-    end)
+  describe("close()", function()
+    local extensions = { "http", "rest" }
+    for _, ext in ipairs(extensions) do
+      it(("closes ui and %s file"):format(ext), function()
+        ui_helper.create_buf({ "" }, "kulala://ui")
+        ui_helper.create_buf({ "" }, "file_for_requests." .. ext)
 
-    local exist = UI._buffer_exists()
-    assert.is_false(exist)
-    assert.stub(nvim_list_bufs).was.called(1)
-    assert.stub(nvim_buf_get_name).was.called_with(1)
-    assert.stub(nvim_buf_get_name).was.called_with(2)
-  end)
+        UI.close()
 
-  it("from_curl", function()
-    local getreg = stub(vim.fn, "getreg", function()
-      return "curl http://example.com"
-    end)
-    local nvim_put = stub(vim.api, "nvim_put")
+        local loaded_bufs = ui_helper.list_loaded_bufs()
+        for _, bufnr in ipairs(loaded_bufs) do
+          local bufname = vim.api.nvim_buf_get_name(bufnr)
 
-    UI.from_curl()
-
-    assert.stub(getreg).was.called_with("+")
-    local expected = {
-      [[# curl http://example.com]],
-      [[GET http://example.com]],
-      "",
-    }
-    assert.stub(nvim_put).was.called_with(expected, "l", false, false)
-  end)
-
-  it("close", function()
-    local buffer_exists = stub(UI, "_buffer_exists", function()
-      return true
-    end)
-    local close_buffer = stub(UI, "_close_buffer")
-    local expand = stub(vim.fn, "expand", function()
-      return "http"
-    end)
-    local cmd = stub(vim, "cmd")
-
-    UI.close()
-
-    assert.stub(buffer_exists).was.called(1)
-    assert.stub(close_buffer).was.called(1)
-    assert.stub(expand).was.called(1)
-    assert.stub(expand).was.called_with("%:e")
-    assert.stub(cmd).was.called_with("bdelete")
+          assert.is.True(bufname:find("kulala://ui") == nil, "should have closed the ui")
+          assert.is.True(
+            bufname:find("file_for_requests." .. ext) == nil,
+            "should have closed the file with extension: " .. ext
+          )
+        end
+      end)
+    end
   end)
 end)
