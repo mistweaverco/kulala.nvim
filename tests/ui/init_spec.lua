@@ -38,7 +38,7 @@ describe("kulala.ui", function()
     local extensions = { "http", "rest" }
     for _, ext in ipairs(extensions) do
       it(("closes ui and %s file"):format(ext), function()
-        ui_helper.create_buf({ "" }, "kulala://ui")
+        ui_helper.create_buf({ "" }, GLOBALS.UI_ID)
         ui_helper.create_buf({ "" }, "file_for_requests." .. ext)
 
         UI.close()
@@ -47,7 +47,7 @@ describe("kulala.ui", function()
         for _, bufnr in ipairs(loaded_bufs) do
           local bufname = vim.api.nvim_buf_get_name(bufnr)
 
-          assert.is.True(bufname:find("kulala://ui") == nil, "should have closed the ui")
+          assert.is.True(bufname:find(GLOBALS.UI_ID) == nil, "should have closed the ui")
           assert.is.True(
             bufname:find("file_for_requests." .. ext) == nil,
             "should have closed the file with extension: " .. ext
