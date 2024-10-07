@@ -87,7 +87,7 @@ local close_buffer = function()
   vim.cmd("bdelete! " .. GLOBALS.UI_ID)
 end
 
-local function buffer_exists()
+local buffer_exists = function()
   return get_buffer() ~= nil
 end
 
