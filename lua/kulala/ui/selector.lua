@@ -14,7 +14,6 @@ function M.select_env()
     if key ~= "$schema" and key ~= "$shared" then
       table.insert(envs, key)
     end
-    table.insert(envs, key)
   end
 
   local opts = {
