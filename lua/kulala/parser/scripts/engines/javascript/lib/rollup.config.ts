@@ -36,6 +36,7 @@ export default [
           reserved: [
             'client',
             'response',
+            'request',
           ],
         },
       }),
