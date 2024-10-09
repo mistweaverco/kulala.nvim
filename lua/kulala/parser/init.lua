@@ -16,7 +16,13 @@ local Logger = require("kulala.logger")
 
 M.scripts.javascript = require("kulala.parser.scripts.javascript")
 
-local function parse_string_variables(str, variables, env, silent)
+---Parse the variables in a string
+---@param str string -- The string to parse
+---@param variables table -- The variables defined in the document
+---@param env table -- The environment variables
+---@param silent boolean|nil -- Whether to suppress not found variable warnings
+---@param skip_blobs boolean|nil -- Whether to skip blobs, but still replace them with a placeholder
+local function parse_string_variables(str, variables, env, silent, skip_blobs)
   local function replace_placeholder(variable_name)
     local value
     -- If the variable name contains a `$` symbol then try to parse it as a dynamic variable
@@ -26,7 +32,15 @@ local function parse_string_variables(str, variables, env, silent)
         value = variable_value
       end
     elseif variables[variable_name] then
-      value = parse_string_variables(variables[variable_name], variables, env)
+      if FS.is_blob(variables[variable_name]) then
+        if skip_blobs then
+          value = "[[binary file skipped]]"
+        else
+          value = variables[variable_name]
+        end
+      else
+        value = parse_string_variables(variables[variable_name], variables, env)
+      end
     elseif env[variable_name] then
       value = env[variable_name]
     elseif REQUEST_VARIABLES.parse(variable_name) then
@@ -110,6 +124,20 @@ local function parse_body(body, variables, env, silent)
   variables = variables or {}
   env = env or {}
   return parse_string_variables(body, variables, env, silent)
+end
+
+--- Parse the body_display of the request
+---@param body_display string|nil -- The body of the request
+---@param variables table|nil -- The variables defined in the document
+---@param env table|nil -- The environment variables
+---@param silent boolean|nil -- Whether to suppress not found variable warnings
+local function parse_body_display(body_display, variables, env, silent)
+  if body_display == nil then
+    return nil
+  end
+  variables = variables or {}
+  env = env or {}
+  return parse_string_variables(body_display, variables, env, silent, true)
 end
 
 local function split_by_block_delimiters(text)
@@ -216,6 +244,7 @@ M.get_document = function()
       headers_raw = {},
       metadata = {},
       body = nil,
+      body_display = nil,
       show_icon_line_number = nil,
       start_line = line_offset + 1,
       block_line_count = block_line_count,
@@ -298,35 +327,50 @@ M.get_document = function()
           variables[variable_name] = variable_value
         end
       elseif is_body_section == true then
+        local _, content_type_header_value = PARSER_UTILS.get_header(request.headers, "content-type")
+        -- If the request body is nil, this also means that the body_display is nil
+        -- so we need to initialize it to an empty string, because the header value content-type
+        -- is present and implies that there is a body to be sent
         if request.body == nil then
           request.body = ""
+          request.body_display = ""
         end
-        if line:find("^<") then
-          if
-            request.headers["content-type"] ~= nil and request.headers["content-type"]:find("^multipart/form%-data")
-          then
+        -- Skip the line if it is a binary file, but add a placeholder
+        -- binary files should be skipped and used in a --data-binary @file notation
+        -- which is handled by the curl command and not sent as part of the request body string
+        if FS.is_blob(line) then
+          request.body = request.body .. "[[binary file skipped]]\r\n"
+          request.body_display = request.body_display .. "[[binary file skipped]]\r\n"
+        elseif line:find("^<") then
+          if content_type_header_value ~= nil and content_type_header_value:find("^multipart/form%-data") then
             request.body = request.body .. line .. "\r\n"
+            request.body_display = request.body_display .. line .. "\r\n"
           else
             local file_path = vim.trim(line:sub(2))
             local contents = FS.read_file(file_path)
-            if contents then
-              request.body = request.body .. contents
+            if contents ~= nil and FS.is_blob(contents) then
+              request.body = request.body .. "[[binary file skipped]]\r\n"
+              request.body_display = request.body_display .. "[[binary file skipped]]\r\n"
+            elseif contents ~= nil then
+              request.body = request.body .. contents .. "\r\n"
+              request.body_display = request.body_display .. contents .. "\r\n"
             else
-              vim.notify("The file '" .. file_path .. "' was not found. Skipping ...", "warn")
+              Logger.warn("The file '" .. file_path .. "' was not found. Skipping ...")
             end
           end
         else
-          if
-            request.headers["content-type"] ~= nil and request.headers["content-type"]:find("^multipart/form%-data")
-          then
+          if content_type_header_value ~= nil and content_type_header_value:find("^multipart/form%-data") then
             request.body = request.body .. line .. "\r\n"
+            request.body_display = request.body_display .. line .. "\r\n"
           elseif
-            request.headers["content-type"] ~= nil
-            and request.headers["content-type"]:find("^application/x%-www%-form%-urlencoded")
+            content_type_header_value ~= nil
+            and content_type_header_value:find("^application/x%-www%-form%-urlencoded")
           then
             request.body = request.body .. line
+            request.body_display = request.body_display .. line
           else
             request.body = request.body .. line .. "\r\n"
+            request.body_display = request.body_display .. line .. "\r\n"
           end
         end
       elseif is_request_line == false and line:match("^([^:]+):%s*(.*)$") then
@@ -367,6 +411,7 @@ M.get_document = function()
     end
     if request.body ~= nil then
       request.body = vim.trim(request.body)
+      request.body_display = vim.trim(request.body_display)
     end
     request.end_line = line_offset + block_line_count
     line_offset = request.end_line + 1 -- +1 for the '###' separator line
@@ -433,8 +478,9 @@ local function extend_document_variables(document_variables, request)
         local kv = vim.split(metadata.value, " ")
         local variable_name = kv[1]
         local file_path = kv[2]
+        local is_binary = #kv > 2 and kv[3] == "binary" or false
         file_path = FS.get_file_path(file_path)
-        local file_contents = FS.read_file(file_path)
+        local file_contents = FS.read_file(file_path, is_binary)
         if file_contents then
           document_variables[variable_name] = file_contents
         end
@@ -467,6 +513,7 @@ end
 ---@field headers_raw table -- The headers as they appear in the document
 ---@field body_raw string|nil -- The raw body as it appears in the document
 ---@field body_computed string|nil -- The computed body as sent by curl; with variables and dynamic variables replaced
+---@field body_display string|nil -- The body with variables and dynamic variables replaced and sanitized (e.g. with binary files replaced with a placeholder)
 ---@field body string|nil -- The body with variables and dynamic variables replaced
 ---@field environment table -- The environment- and document-variables
 ---@field cmd table -- The command to execute the request
@@ -490,6 +537,7 @@ function M.get_basic_request_data(start_request_linenr)
     body = nil,
     body_raw = nil,
     body_computed = nil,
+    body_display = nil,
     cmd = {},
     ft = "text",
     environment = {},
@@ -527,17 +575,25 @@ function M.get_basic_request_data(start_request_linenr)
   res.method = req.method
   res.http_version = req.http_version
   res.body_raw = req.body
+  res.body_display = req.body_display
   res.metadata = req.metadata
   res.redirect_response_body_to_files = req.redirect_response_body_to_files
 
   return res
 end
 
+---Replace the variables in the URL, headers and body
+---@param res Request -- The request object
+---@param document_variables table -- The variables defined in the document
+---@param env table -- The environment variables
+---@param silent boolean -- Whether to suppress not found variable warnings
+---@return string, table, string|nil, string|nil -- The URL, headers, body and body_display with variables replaced
 local replace_variables_in_url_headers_body = function(res, document_variables, env, silent)
   local url = parse_url(res.url_raw, document_variables, env, silent)
   local headers = parse_headers(res.headers, document_variables, env, silent)
   local body = parse_body(res.body_raw, document_variables, env, silent)
-  return url, headers, body
+  local body_display = parse_body_display(res.body_display, document_variables, env, silent)
+  return url, headers, body, body_display
 end
 
 ---Parse a request and return the request on itself, its headers and body
@@ -569,7 +625,7 @@ M.parse = function(start_request_linenr)
   -- INFO: if has_pre_request_script:
   -- silently replace the variables in the URL, headers and body, otherwise warn the user
   -- for non existing variables
-  res.url, res.headers, res.body =
+  res.url, res.headers, res.body, res.body_display =
     replace_variables_in_url_headers_body(res, document_variables, env, has_pre_request_scripts)
 
   -- Merge headers from the $shared environment if it does not exist in the request
@@ -615,7 +671,8 @@ M.parse = function(start_request_linenr)
     -- because user scripts could have changed them,
     -- but this time also warn the user if a variable is not found
     env = ENV_PARSER.get_env()
-    res.url, res.headers, res.body = replace_variables_in_url_headers_body(res, document_variables, env, false)
+    res.url, res.headers, res.body, res.body_display =
+      replace_variables_in_url_headers_body(res, document_variables, env, false)
   end
 
   -- build the command to exectute the request
