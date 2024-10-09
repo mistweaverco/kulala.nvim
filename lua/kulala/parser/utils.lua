@@ -5,6 +5,20 @@ local M = {}
 -- that would make the code more readable and easier to maintain
 -- but it would also make it slower
 
+---Get the value of a meta tag from the request
+---@param request table The request to check
+---@param tag string The meta tag to check for
+---@return string|nil
+M.get_meta_tag = function(request, tag)
+  tag = tag:lower()
+  for _, meta in ipairs(request.metadata) do
+    if meta.name:lower() == tag then
+      return meta.value
+    end
+  end
+  return nil
+end
+
 ---Check if a request has a specific meta tag
 ---@param request table The request to check
 ---@param tag string The meta tag to check for

@@ -513,7 +513,8 @@ end
 ---@field headers_raw table -- The headers as they appear in the document
 ---@field body_raw string|nil -- The raw body as it appears in the document
 ---@field body_computed string|nil -- The computed body as sent by curl; with variables and dynamic variables replaced
----@field body_display string|nil -- The body with variables and dynamic variables replaced and sanitized (e.g. with binary files replaced with a placeholder)
+---@field body_display string|nil -- The body with variables and dynamic variables replaced and sanitized
+---(e.g. with binary files replaced with a placeholder)
 ---@field body string|nil -- The body with variables and dynamic variables replaced
 ---@field environment table -- The environment- and document-variables
 ---@field cmd table -- The command to execute the request

@@ -62,8 +62,19 @@ the `body` and `headers` view of the last run request.
 
 ### search
 
-`require('kulala').search()` searches for all `.http` and `.rest` files
-in the current working directory.
+`require('kulala').search()` searches for all *named* requests in the current buffer.
+
+:::tip
+
+Named requests are those that have a name like so:
+
+```http
+# @name MY_REQUEST_NAME
+GET http://example.com
+```
+
+:::
+
 
 It tries to load up a telescope prompt to select a
 file or fallback to using `vim.ui.select`.
