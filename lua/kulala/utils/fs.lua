@@ -38,6 +38,21 @@ M.ps = M.get_path_separator()
 ---@return string
 M.join_paths = function(...)
   if M.get_os() == "windows" then
+    for i, v in ipairs({ ... }) do
+      -- if the path contains at least one forward slash,
+      -- then it needs to be converted to backslashes
+      if v:match("/") then
+        local parts = {}
+        for j, p in ipairs({ ... }) do
+          if j == i then
+            table.insert(parts, p:sub(2):gsub("/", "\\"))
+          else
+            table.insert(parts, p:gsub("/", "\\"))
+          end
+        end
+        return table.concat(parts, M.ps)
+      end
+    end
     return table.concat({ ... }, M.ps)
   end
   return table.concat({ ... }, M.ps)
@@ -167,6 +182,14 @@ M.file_exists = function(filename)
   return vim.fn.filereadable(filename) == 1
 end
 
+M.copy_dir = function(source, destination)
+  if M.os == "unix" or M.os == "mac" then
+    vim.system({ "cp", "-r", source .. M.ps .. ".", destination }):wait()
+  elseif M.os == "windows" then
+    vim.system({ "xcopy", "/H", "/E", "/I", source .. M.ps .. "*", destination }):wait()
+  end
+end
+
 M.ensure_dir_exists = function(dir)
   if vim.fn.isdirectory(dir) == 0 then
     vim.fn.mkdir(dir, "p")
@@ -177,13 +200,21 @@ end
 --- @return string
 --- @usage local p = fs.get_plugin_tmp_dir()
 M.get_plugin_tmp_dir = function()
-  local dir = M.join_paths(M.get_plugin_root_dir(), "tmp")
+  local cache = vim.fn.stdpath("cache")
+  ---@cast cache string
+  local dir = M.join_paths(cache, "kulala")
   M.ensure_dir_exists(dir)
   return dir
 end
 
 M.get_scripts_dir = function()
   local dir = M.join_paths(M.get_plugin_root_dir(), "parser", "scripts")
+  return dir
+end
+
+M.get_tmp_scripts_build_dir = function()
+  local dir = M.join_paths(M.get_plugin_tmp_dir(), "scripts", "build")
+  M.ensure_dir_exists(dir)
   return dir
 end
 
@@ -346,14 +377,7 @@ end
 ---Clears all cached files
 M.clear_cached_files = function()
   local tmp_dir = M.get_plugin_tmp_dir()
-  local scripts_dir = M.get_tmp_scripts_dir()
-  local request_scripts_dir = M.get_request_scripts_dir()
-  local compiled_pre_request_scripts = M.join_paths(M.get_scripts_dir(), "engines", "javascript", "lib", "dist")
-  local deleted_files = {}
-  deleted_files = vim.tbl_extend("force", deleted_files, M.delete_files_in_directory(tmp_dir))
-  deleted_files = vim.tbl_extend("force", deleted_files, M.delete_files_in_directory(scripts_dir))
-  deleted_files = vim.tbl_extend("force", deleted_files, M.delete_files_in_directory(request_scripts_dir))
-  deleted_files = vim.tbl_extend("force", deleted_files, M.delete_files_in_directory(compiled_pre_request_scripts))
+  local deleted_files = M.delete_files_in_directory(tmp_dir)
   local string_list = vim.fn.join(
     vim.tbl_map(function(file)
       return "- " .. file
