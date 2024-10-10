@@ -8,13 +8,12 @@ local NPM_EXISTS = vim.fn.executable("npm") == 1
 local NODE_EXISTS = vim.fn.executable("node") == 1
 local SCRIPTS_DIR = FS.get_scripts_dir()
 local REQUEST_SCRIPTS_DIR = FS.get_request_scripts_dir()
+local SCRIPTS_BUILD_DIR = FS.get_tmp_scripts_build_dir()
 local BASE_DIR = FS.join_paths(SCRIPTS_DIR, "engines", "javascript", "lib")
-local BASE_FILE_PRE_CLIENT_ONLY =
-  FS.join_paths(SCRIPTS_DIR, "engines", "javascript", "lib", "dist", "pre_request_client_only.js")
-local BASE_FILE_PRE = FS.join_paths(SCRIPTS_DIR, "engines", "javascript", "lib", "dist", "pre_request.js")
-local BASE_FILE_POST_CLIENT_ONLY =
-  FS.join_paths(SCRIPTS_DIR, "engines", "javascript", "lib", "dist", "post_request_client_only.js")
-local BASE_FILE_POST = FS.join_paths(SCRIPTS_DIR, "engines", "javascript", "lib", "dist", "post_request.js")
+local BASE_FILE_PRE_CLIENT_ONLY = FS.join_paths(SCRIPTS_BUILD_DIR, "dist", "pre_request_client_only.js")
+local BASE_FILE_PRE = FS.join_paths(SCRIPTS_BUILD_DIR, "dist", "pre_request.js")
+local BASE_FILE_POST_CLIENT_ONLY = FS.join_paths(SCRIPTS_BUILD_DIR, "dist", "post_request_client_only.js")
+local BASE_FILE_POST = FS.join_paths(SCRIPTS_BUILD_DIR, "dist", "post_request.js")
 local FILE_MAPPING = {
   pre_request_client_only = BASE_FILE_PRE_CLIENT_ONLY,
   pre_request = BASE_FILE_PRE,
@@ -23,8 +22,9 @@ local FILE_MAPPING = {
 }
 
 M.install = function()
-  vim.system({ "npm", "install", "--prefix", BASE_DIR }):wait()
-  vim.system({ "npm", "run", "build", "--prefix", BASE_DIR }):wait()
+  FS.copy_dir(BASE_DIR, SCRIPTS_BUILD_DIR)
+  vim.system({ "npm", "install", "--prefix", SCRIPTS_BUILD_DIR }):wait()
+  vim.system({ "npm", "run", "build", "--prefix", SCRIPTS_BUILD_DIR }):wait()
 end
 
 ---@class Scripts
