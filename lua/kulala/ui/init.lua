@@ -445,7 +445,7 @@ end
 
 M.scratchpad = function()
   vim.cmd("e " .. GLOBALS.SCRATCHPAD_ID)
-  vim.cmd("setlocal swapfile=false")
+  vim.cmd("setlocal noswapfile")
   vim.cmd("setlocal filetype=http")
   vim.api.nvim_buf_set_lines(0, 0, -1, false, CONFIG.get().scratchpad_default_contents)
 end
