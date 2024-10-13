@@ -14,6 +14,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Restore cache
+        id: cache-deps
         uses: actions/cache@v4
         with:
           path: |
@@ -22,10 +23,12 @@ jobs:
             ~\AppData\Roaming\LJ4W
             ~\AppData\Roaming\luarocks
           key: ${{ runner.os }}-tests
+      - name: Check if cache hit
+        if: steps.cache-deps.outputs.cache-hit == 'true'
+        run: echo "GH_CACHE_HIT=true" >> $Env:GITHUB_ENV
       - name: Install dependencies
         run: ./scripts/install-ci-test-requirements.ps1
       - name: Save cache
-        id: cache-primes-save
         uses: actions/cache/save@v4
         with:
           path: |
