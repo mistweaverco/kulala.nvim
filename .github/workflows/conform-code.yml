@@ -20,8 +20,8 @@ jobs:
             container-image: ghcr.io/mistweaverco/kulala-nvim-testrunner:latest
             run-script: ./scripts/tests.sh run
           - os: windows-latest
-            container-image: ghcr.io/mistweaverco/kulala-nvim-testrunner:latest
-            run-script: & "scripts\tests.ps1"
+            container-image: ghcr.io/mistweaverco/kulala-nvim-windows-testrunner:latest
+            run-script: .\scripts\tests.ps1
     container:
       image: ${{ matrix.container-image }}
     steps:
