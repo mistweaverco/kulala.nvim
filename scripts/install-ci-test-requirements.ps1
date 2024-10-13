@@ -7,19 +7,21 @@ if (!(Test-Path .tests)) {
 cd .tests
 
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression
 
-scoop install main/git
-scoop install main/neovim@0.10.2
+if (!(Test-Path ~/scoop)) {
+  Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression
 
-Invoke-RestMethod -Uri https://github.com/mistweaverco/luajit-for-win64/archive/refs/tags/v0.0.2.zip -outfile luajit.zip
-7z x luajit.zip
+  scoop install main/git
+  scoop install main/neovim@0.10.2
+}
 
-RM luajit.zip
-
-cd luajit-for-win64-0.0.2
-
-.\luajit-for-win64.cmd
+if (!(Test-Path luajit-for-win64-0.0.2)) {
+  Invoke-RestMethod -Uri https://github.com/mistweaverco/luajit-for-win64/archive/refs/tags/v0.0.2.zip -outfile luajit.zip
+  7z x luajit.zip
+  RM luajit.zip
+  cd luajit-for-win64-0.0.2
+  .\luajit-for-win64.cmd
+}
 
 $Env:KULALA_LUA_DIR = (Get-Location).Path
 

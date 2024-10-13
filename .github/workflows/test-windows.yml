@@ -18,7 +18,7 @@ jobs:
         with:
           path: |
             .tests
-            ~\scoop\apps
+            ~\scoop
             ~\AppData\Roaming\LJ4W
             ~\AppData\Roaming\luarocks
           key: ${{ runner.os }}-tests
@@ -30,7 +30,7 @@ jobs:
         with:
           path: |
             .tests
-            ~\scoop\apps
+            ~\scoop
             ~\AppData\Roaming\LJ4W
             ~\AppData\Roaming\luarocks
           key: ${{ runner.os }}-tests
