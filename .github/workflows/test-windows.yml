@@ -2,11 +2,13 @@
 name: Test on Windows
 
 on:
-  # Allows you to run this workflow manually from the Actions tab
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
-  test-linux:
+  test-windows:
     name: Test Windows
     runs-on: windows-latest
     steps:
@@ -16,8 +18,21 @@ jobs:
         with:
           path: |
             .tests
+            ~\scoop\apps
+            ~\AppData\Roaming\LJ4W
+            ~\AppData\Roaming\luarocks
           key: ${{ runner.os }}-tests
       - name: Install dependencies
         run: ./scripts/install-ci-test-requirements.ps1
+      - name: Save cache
+        id: cache-primes-save
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            .tests
+            ~\scoop\apps
+            ~\AppData\Roaming\LJ4W
+            ~\AppData\Roaming\luarocks
+          key: ${{ runner.os }}-tests
       - name: Run tests
         run: ./scripts/tests.ps1
