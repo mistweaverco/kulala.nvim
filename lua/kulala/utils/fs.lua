@@ -38,17 +38,13 @@ M.ps = M.get_path_separator()
 ---@return string
 M.join_paths = function(...)
   if M.get_os() == "windows" then
-    for i, v in ipairs({ ... }) do
+    for _, v in ipairs({ ... }) do
       -- if the path contains at least one forward slash,
       -- then it needs to be converted to backslashes
       if v:match("/") then
         local parts = {}
-        for j, p in ipairs({ ... }) do
-          if j == i then
-            table.insert(parts, p:sub(2):gsub("/", "\\"))
-          else
-            table.insert(parts, p:gsub("/", "\\"))
-          end
+        for _, p in ipairs({ ... }) do
+          table.insert(parts, p:gsub("/", "\\"))
         end
         return table.concat(parts, M.ps)
       end
