@@ -1,16 +1,43 @@
 ---
-name: Test on Windows
+name: Tests
 
 on:
   pull_request:
+    paths:
+      - '**/*.lua'
     branches:
       - main
-  workflow_dispatch:
 
 jobs:
+  test-linux:
+    name: Test Code on Linux
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/mistweaverco/kulala-nvim-testrunner:latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            .tests
+          key: ${{ runner.os }}-tests
+      - name: Run tests
+        run: ./scripts/tests.sh run
+  lint:
+    name: Lint Code
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/mistweaverco/kulala-nvim-testrunner:latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run linter
+        run: ./scripts/lint.sh check-code
   test-windows:
-    name: Test Windows
+    name: Test Code on Windows
     runs-on: windows-latest
+    if: ${{ github.event.label.name == 'needs-windows-test' }}
     steps:
       - uses: actions/checkout@v4
       - name: Restore cache
