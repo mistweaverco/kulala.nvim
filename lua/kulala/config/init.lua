@@ -63,7 +63,7 @@ M.defaults = {
   -- enable winbar
   winbar = false,
   -- Specify the panes to be displayed by default
-  -- Current avaliable pane contains { "body", "headers", "headers_body", "script_output" },
+  -- Current avaliable pane contains { "body", "headers", "headers_body", "script_output", "stats" },
   default_winbar_panes = { "body", "headers", "headers_body" },
   -- enable reading vscode rest client environment variables
   vscode_rest_client_environmentvars = false,
