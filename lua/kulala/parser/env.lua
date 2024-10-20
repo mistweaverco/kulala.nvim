@@ -57,7 +57,7 @@ M.get_env = function()
   if dotenv then
     local dotenv_env = vim.fn.readfile(dotenv)
     for _, line in ipairs(dotenv_env) do
-      -- if the line is not empy and not a comment, then
+      -- if the line is not empty and not a comment, then
       if not line:match("^%s*$") and not line:match("^%s*#") then
         local key, value = line:match("^%s*([^=]+)%s*=%s*(.*)%s*$")
         if key and value then
