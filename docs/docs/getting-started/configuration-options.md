@@ -4,12 +4,18 @@ Kulala can be configured with the following options.
 
 ### Full example
 
-Here is a full example of setting up the Kulala plugin with the available `opts`:
+Here is a full example of setting up
+the Kulala plugin with the available `opts`:
 
 ```lua title="kulala.lua"
 {
   "mistweaverco/kulala.nvim",
   opts = {
+    -- cURL path
+    -- if you have curl installed in a non-standard path,
+    -- you can specify it here
+    curl_path = "curl",
+
     -- split direction
     -- possible values: "vertical", "horizontal"
     split_direction = "vertical",
@@ -81,7 +87,7 @@ Here is a full example of setting up the Kulala plugin with the available `opts`
     winbar = false,
 
     -- Specify the panes to be displayed by default
-    -- Current avaliable pane contains { "body", "headers", "headers_body", "script_output" },
+    -- Current available pane contains { "body", "headers", "headers_body", "script_output", "stats" },
     default_winbar_panes = { "body", "headers", "headers_body" },
 
     -- enable reading vscode rest client environment variables
@@ -90,10 +96,35 @@ Here is a full example of setting up the Kulala plugin with the available `opts`
     -- disable the vim.print output of the scripts
     -- they will be still written to disk, but not printed immediately
     disable_script_print_output = false,
+
+    -- set scope for environment and request variables
+    -- possible values: b = buffer, g = global
+    environment_scope = "b",
+
+    -- certificates
+    certificates = {},
   },
 }
 ```
 
+### curl_path
+
+cURL path.
+
+If you have `curl` installed in a non-standard path, you can specify it here.
+
+Default: `curl`
+
+Example:
+
+```lua
+{
+  "mistweaverco/kulala.nvim",
+  opts = {
+    curl_path = "/home/bonobo/.local/bin/curl",
+  },
+}
+```
 ### split_direction
 
 Split direction.
@@ -125,6 +156,8 @@ Possible values:
 - `body`
 - `headers`
 - `headers_body`
+- `script_output`
+- `stats`
 
 Default: `body`
 
@@ -143,7 +176,7 @@ Example:
 
 Default environment.
 
-See: https://learn.microsoft.com/en-us/aspnet/core/test/http-files?view=aspnetcore-8.0#environment-files
+See: [Environment files][see-env-files].
 
 Possible values:
 
@@ -186,7 +219,8 @@ Example:
 
 ### contenttypes
 
-Filetypes, formatters and path resolvers are defined for each content-type in an hash array
+Filetypes, formatters and path resolvers are
+defined for each content-type in an hash array.
 
 Default:
 
@@ -250,13 +284,16 @@ Example:
 
 #### contenttypes.formatter
 
-Formatters take the response body and produce a beautified / more human readable output.
+Formatters take the response body and
+produce a beautified / more human readable output.
 
 Possible values:
 
 - You can define a commandline which processes the body.
-  The body will be piped as stdin and the output will be used as the formatted body.
-- You can define a lua function `formatted_body = function(body)` which returns the formatted body.
+  The body will be piped as stdin and
+  the output will be used as the formatted body.
+- You can define a lua function `formatted_body = function(body)`
+  which returns the formatted body.
 
 Default:
 
@@ -294,19 +331,27 @@ Example:
 #### contenttypes.pathresolver
 
 You can use Request Variables to read values from requests / responses.
-To access a specific value inside a body Kulala gives you the possibility to define a path for it.
-This is normally JSONPath for JSON or XPath for XML but can be individually defined for any content type.
+To access a specific value inside a body Kulala gives
+you the possibility to define a path for it.
+
+This is normally JSONPath for JSON or XPath for XML,
+but can be individually defined for any content type.
 
 Possible values:
 
-- You can use an external program which receives the full body as stdin and has to return the selected value in stdout.
-  The placeholder `{{path}}` can be used in any string of this defintion and will be replaced by the actual path (after `body.`).
+- You can use an external program which receives the
+  full body as stdin and has to return the selected value in stdout.
+  The placeholder `{{path}}` can be used in any string of
+  this definition and will be replaced by the actual path (after `body.`).
 - Alternative you can give a lua function of `value = function(body, path)`.
 
 Default:
 
-Kulala has implemented a simple JSONPath parser which supports object traversal including array index access.
-For full JSONPath support you need to use an external program like `jsonpath-cli` or `jp`.
+Kulala has implemented a basic JSONPath parser which
+supports object traversal including array index access.
+
+For full JSONPath support you need to use an
+external program like `jsonpath-cli` or `jp`.
 
 ```lua
 contenttypes = {
@@ -420,7 +465,7 @@ Example:
 
 Scratchpad default contents.
 
-The contents of the scratchpad when it is opened
+The contents of the scratchpad when it's opened
 via `:lua require('kulala').scratchpad()` command.
 
 Possible values:
@@ -490,9 +535,13 @@ Example:
 
 ### vscode_rest_client_environmentvars
 
-If enabled, Kulala searches for `.vscode/settings.json` or `*.code-workspace` files in the current directory and its parents to read the `rest-client.environmentVariables` definitions (`$shared` will be treated as `_base`).
+If enabled, Kulala searches for
+`.vscode/settings.json` or `*.code-workspace`
+files in the current directory and
+its parents to read the `rest-client.environmentVariables` definitions.
 
-If `http-client.env.json` is also present, it will be merged (and overwrites variables from VSCode).
+If `http-client.env.json` is also present,
+it'll be merged (and overwrites variables from VSCode).
 
 Possible values:
 
@@ -511,3 +560,72 @@ Example:
   },
 }
 ```
+
+### environment_scope
+
+While using request variables the results will be stored for later use.
+As usual variables they're file relevant and should be stored in the buffer.
+If you want to share the variables between buffers you can use the global scope.
+
+Possible values:
+
+- `"b"` (buffer)
+- `"g"` (global)
+
+Default: `"b"`
+
+Example:
+
+```lua
+{
+"mistweaverco/kulala.nvim",
+  opts = {
+    environment_scope = "b",
+  },
+}
+```
+
+
+### certificates
+
+A hash array of certificates to be used for requests.
+
+The key is the hostname and optional the port. 
+If no port is given, the certificate will be used for all ports where no dedicated one is defined.
+
+Each certificate definition needs 
+
+- `cert` the path to the certificate file
+- `key` the path to the key files
+
+Example:
+
+```lua
+{
+"mistweaverco/kulala.nvim",
+  opts = {
+    certificates = {
+      ["localhost"] = {
+        cert = vim.fn.stdpath("config") .. "/certs/localhost.crt",
+        key = vim.fn.stdpath("config") .. "/certs/localhost.key",
+      },
+      ["www.somewhere.com:8443"] = {
+        cert = "/home/userx/certs/somewhere.crt",
+        key = "/home/userx/certs/somewhere.key",
+      },
+    },
+  },
+}
+```
+
+Hostnames with prefix `*.` will be used as wildcard certificates for the host itself and all subdomains.
+
+`*.company.com` will match
+
+- `company.com`
+- `www.company.com`
+- `api.company.com`
+- `sub.api.company.com`
+- etc.
+
+[see-env-files]: https://learn.microsoft.com/en-us/aspnet/core/test/http-files?view=aspnetcore-8.0#environment-files

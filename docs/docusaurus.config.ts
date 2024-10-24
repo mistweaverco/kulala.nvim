@@ -105,12 +105,12 @@ const config: Config = {
           ],
         },
       ],
-      copyright: `Copyright © ${new Date().getFullYear()} mistweaver.co.`,
+      copyright: `Copyright © ${new Date().getFullYear()} mistweaverco.`,
     },
     prism: {
       theme: prismThemes.github,
       darkTheme: prismThemes.dracula,
-      additionalLanguages: ['lua', 'http'],
+      additionalLanguages: ['lua', 'http', 'json'],
     },
   } satisfies Preset.ThemeConfig,
 };

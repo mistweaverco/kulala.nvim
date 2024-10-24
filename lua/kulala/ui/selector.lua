@@ -1,16 +1,21 @@
 local DB = require("kulala.db")
 local FS = require("kulala.utils.fs")
+local Parser = require("kulala.parser")
+local ParserUtils = require("kulala.parser.utils")
 
 local M = {}
 
 function M.select_env()
-  if not DB.data.http_client_env then
+  local http_client_env = DB.find_unique("http_client_env")
+  if not http_client_env then
     return
   end
 
   local envs = {}
-  for key, _ in pairs(DB.data.http_client_env) do
-    table.insert(envs, key)
+  for key, _ in pairs(http_client_env) do
+    if key ~= "$schema" and key ~= "$shared" then
+      table.insert(envs, key)
+    end
   end
 
   local opts = {
@@ -25,15 +30,30 @@ function M.select_env()
 end
 
 M.search = function()
-  local files = FS.find_all_http_files()
-  if #files == 0 then
+  local _, requests = Parser.get_document()
+
+  if requests == nil then
     return
   end
-  vim.ui.select(files, { prompt = "Search" }, function(result)
+
+  local line_starts = {}
+  local names = {}
+
+  for _, request in ipairs(requests) do
+    local request_name = ParserUtils.get_meta_tag(request, "name")
+    if request_name ~= nil then
+      table.insert(names, request_name)
+      line_starts[request_name] = request.start_line
+    end
+  end
+  if #names == 0 then
+    return
+  end
+  vim.ui.select(names, { prompt = "Search" }, function(result)
     if not result then
       return
     end
-    vim.cmd("e " .. result)
+    vim.cmd("normal! " .. line_starts[result] + 1 .. "G")
   end)
 end
 

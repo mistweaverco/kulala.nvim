@@ -1,3 +1,4 @@
+local Config = require("kulala.config")
 local Shlex = require("kulala.lib.shlex")
 local Stringutils = require("kulala.utils.string")
 
@@ -27,9 +28,9 @@ function M.parse(curl)
   curl = string.gsub(curl, "%s+", " ")
 
   local parts = Shlex.split(curl)
-  -- if string doesn't start with curl, return nil
+  -- if string doesn't start with curl or different from curl_path, return nil
   -- it could also be curl-7.68.0 or something like that
-  if string.find(parts[1], "^curl.*") == nil then
+  if string.find(parts[1], "^curl.*") == nil and parts[1] ~= Config.get().curl_path then
     return nil, nil
   end
   local res = {
@@ -69,6 +70,9 @@ function M.parse(curl)
           res.headers["content-type"] = "application/x-www-form-urlencoded"
         end
       elseif arg == "--json" then
+        if res.method == "" then
+          res.method = "POST"
+        end
         state = State.Body
         res.headers["content-type"] = "application/json"
         res.headers["accept"] = "application/json"

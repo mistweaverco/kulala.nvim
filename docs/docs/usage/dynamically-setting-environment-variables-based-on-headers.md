@@ -4,11 +4,12 @@ You can set environment variables based on the headers of a HTTP request.
 
 Create a file with the `.http` extension and write your HTTP requests in it.
 
-## Simple example
+## Example
 
 The headers of the first request can be obtained and used in the second request.
 
-In this example, the `Content-Type` and `Date` headers are received in the first request.
+In this example, the `Content-Type` and `Date` headers are
+received in the first request.
 
 ```http title="simple.http"
 # @name REQUEST_ONE
