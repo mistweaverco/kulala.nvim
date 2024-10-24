@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "module": "esnext",
+    "strict": true,
+    "outDir": "./dist",
+    "rootDir": "./",
+    "skipLibCheck": true,
+    "moduleResolution": "node",
+    "target": "esnext",
+    "esModuleInterop": false
+  },
+  "types": ["node"],
+  "include": ["src/**/*.ts", "rollup.config.ts"],
+  "exclude": ["dist", "node_modules"]
+}

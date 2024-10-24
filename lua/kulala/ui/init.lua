@@ -52,9 +52,7 @@ local replace_buffer = function()
   local old_bufnr = get_buffer()
 
   local new_bufnr = vim.api.nvim_create_buf(true, false)
-  vim.api.nvim_set_option_value("buftype", "nofile", {
-    buf = new_bufnr,
-  })
+  vim.bo[new_bufnr].swapfile = false
 
   if old_bufnr ~= nil then
     for _, win in ipairs(vim.fn.win_findbuf(old_bufnr)) do
@@ -76,10 +74,11 @@ end
 local open_buffer = function()
   local prev_win = vim.api.nvim_get_current_win()
   local sd = CONFIG.get().split_direction == "vertical" and "vsplit" or "split"
-  vim.cmd(sd .. " " .. GLOBALS.UI_ID)
+  vim.cmd("keepalt " .. sd .. " " .. GLOBALS.UI_ID)
   if CONFIG.get().winbar then
     WINBAR.create_winbar(get_win())
   end
+  vim.bo[get_buffer()].modified = false
   vim.api.nvim_set_current_win(prev_win)
 end
 
@@ -87,7 +86,7 @@ local close_buffer = function()
   vim.cmd("bdelete! " .. GLOBALS.UI_ID)
 end
 
-local function buffer_exists()
+local buffer_exists = function()
   return get_buffer() ~= nil
 end
 
@@ -99,8 +98,9 @@ vim.api.nvim_create_autocmd("WinClosed", {
   group = augroup,
   callback = function(args)
     -- if the window path is the same as the GLOBALS.UI_ID and the buffer exists
-    if args.buf == get_buffer() then
-      vim.api.nvim_buf_delete(get_buffer(), { force = true })
+    local buf = get_buffer()
+    if buf and args.buf == buf then
+      vim.api.nvim_buf_delete(buf, { force = true })
     end
   end,
 })
@@ -108,13 +108,15 @@ vim.api.nvim_create_autocmd("WinClosed", {
 local function set_buffer_contents(contents, ft)
   if buffer_exists() then
     local buf = replace_buffer()
-    local lines = vim.split(contents, "\n")
-    vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+    -- setup filetype first so that treesitter foldexpr can calculate fold level per lines
     if ft ~= nil then
       vim.bo[buf].filetype = ft
     else
       vim.bo[buf].filetype = "text"
     end
+    local lines = vim.split(contents, "\n")
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+    vim.bo[buf].modified = false
   end
 end
 
@@ -443,7 +445,7 @@ end
 
 M.scratchpad = function()
   vim.cmd("e " .. GLOBALS.SCRATCHPAD_ID)
-  vim.cmd("setlocal buftype=nofile")
+  vim.cmd("setlocal noswapfile")
   vim.cmd("setlocal filetype=http")
   vim.api.nvim_buf_set_lines(0, 0, -1, false, CONFIG.get().scratchpad_default_contents)
 end

@@ -7,7 +7,8 @@
 
 ### Requests
 
-The format for an HTTP request is `HTTPMethod` `URL` `HTTPVersion`, all on one line, where:
+The format for an HTTP request is `HTTPMethod` `URL` `HTTPVersion`,
+all on one line, where:
 
 - `HTTPMethod` is the HTTP method to use, for example:
   - `OPTIONS`
@@ -19,8 +20,12 @@ The format for an HTTP request is `HTTPMethod` `URL` `HTTPVersion`, all on one l
   - `DELETE`
   - `TRACE`
   - `CONNECT`
-- `URL` is the URL to send the request to. The URL can include query string parameters. The URL doesn't have to point to a local web project. It can point to any URL that Visual Studio can access.
-- `HTTPVersion` is optional and specifies the HTTP version that should be used, that is, `HTTP/1.1`, `HTTP/2`, or `HTTP/3`.
+- `URL` is the URL to send the request to.
+  The URL can include query string parameters.
+  The URL doesn't have to point to a local web project.
+  It can point to any URL that Visual Studio can access.
+- `HTTPVersion` is optional and specifies the HTTP version that should be used,
+  that's, `HTTP/1.1`, `HTTP/2`, or `HTTP/3`.
 
 A file can contain multiple requests by using lines with `###` as delimiters.
 The following example showing three requests in a file illustrates this syntax:
@@ -42,7 +47,8 @@ GET https://localhost:7220/weatherforecast HTTP/3
 
 To add one or more headers,
 add each header on its own line immediately after the request line.
-Don't include any blank lines between the request line and the first header or between subsequent header lines.
+Don't include any blank lines between the request line and
+the first header or between subsequent header lines.
 The format is `header-name`: `value`, as shown in the following examples:
 
 ```http
@@ -58,8 +64,7 @@ Age: 100
 ###
 ```
 
-> When calling an API that authenticates with headers,
-> do not commit any secrets to a source code repository.
+> Don't add any secrets to a source code repository.
 
 ### Request body
 

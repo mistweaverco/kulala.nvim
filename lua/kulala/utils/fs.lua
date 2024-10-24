@@ -1,13 +1,79 @@
+local Logger = require("kulala.logger")
 local M = {}
 
---- Path separator
-M.ps = package.config:sub(1, 1)
+---Get the OS
+---@return "windows" | "mac" | "unix" | "unknown"
+M.get_os = function()
+  if vim.fn.has("unix") == 1 then
+    return "unix"
+  end
+  if vim.fn.has("mac") == 1 then
+    return "mac"
+  end
+  if vim.fn.has("win32") == 1 or vim.fn.has("win64") then
+    return "windows"
+  end
+  return "unknown"
+end
+
+---The OS
+---@type "windows" | "mac" | "unix" | "unknown"
+M.os = M.get_os()
+
+---Get the path separator for the current OS
+---@return "\\" | "/"
+M.get_path_separator = function()
+  if M.os == "windows" then
+    return "\\"
+  end
+  return "/"
+end
+
+---Path separator
+---@type "\\" | "/"
+M.ps = M.get_path_separator()
 
 ---Join paths -- similar to os.path.join in python
 ---@vararg string
 ---@return string
 M.join_paths = function(...)
+  if M.os == "windows" then
+    for _, v in ipairs({ ... }) do
+      -- if the path contains at least one forward slash,
+      -- then it needs to be converted to backslashes
+      if v:match("/") then
+        local parts = {}
+        for _, p in ipairs({ ... }) do
+          p = p:gsub("/", "\\")
+          table.insert(parts, p)
+        end
+        return table.concat(parts, M.ps)
+      end
+    end
+    return table.concat({ ... }, M.ps)
+  end
   return table.concat({ ... }, M.ps)
+end
+
+---Returns true if the path is absolute, false otherwise
+M.is_absolute_path = function(path)
+  if path:match("^/") or path:match("^%a:\\") then
+    return true
+  end
+  return false
+end
+
+---Either returns the absolute path if the path is already absolute or
+---joins the path with the current buffer directory
+M.get_file_path = function(path)
+  if M.is_absolute_path(path) then
+    return path
+  end
+  local buffer_dir = vim.fn.expand("%:p:h")
+  if path:sub(1, 2) == "./" or path:sub(1, 2) == ".\\" then
+    path = path:sub(3)
+  end
+  return M.join_paths(buffer_dir, path)
 end
 
 -- This is mainly used for determining if the current buffer is a non-http file
@@ -72,13 +138,13 @@ end
 -- Writes string to file
 --- @param filename string
 --- @param content string
---- @param append boolean
+--- @param append boolean|nil
 --- @usage fs.write_file('Makefile', 'all: \n\t@echo "Hello World"')
 --- @usage fs.write_file('Makefile', 'all: \n\t@echo "Hello World"', true)
 --- @return boolean
 --- @usage local p = fs.write_file('Makefile', 'all: \n\t@echo "Hello World"')
 M.write_file = function(filename, content, append)
-  local f = nil
+  local f
   if append then
     f = io.open(filename, "a")
   else
@@ -113,6 +179,14 @@ M.file_exists = function(filename)
   return vim.fn.filereadable(filename) == 1
 end
 
+M.copy_dir = function(source, destination)
+  if M.os == "unix" or M.os == "mac" then
+    vim.system({ "cp", "-r", source .. M.ps .. ".", destination }):wait()
+  elseif M.os == "windows" then
+    vim.system({ "xcopy", "/H", "/E", "/I", source .. M.ps .. "*", destination }):wait()
+  end
+end
+
 M.ensure_dir_exists = function(dir)
   if vim.fn.isdirectory(dir) == 0 then
     vim.fn.mkdir(dir, "p")
@@ -123,13 +197,21 @@ end
 --- @return string
 --- @usage local p = fs.get_plugin_tmp_dir()
 M.get_plugin_tmp_dir = function()
-  local dir = M.join_paths(vim.fn.stdpath("data"), "tmp", "kulala")
+  local cache = vim.fn.stdpath("cache")
+  ---@cast cache string
+  local dir = M.join_paths(cache, "kulala")
   M.ensure_dir_exists(dir)
   return dir
 end
 
 M.get_scripts_dir = function()
-  local dir = M.join_paths(M.get_plugin_root_dir(), "scripts")
+  local dir = M.join_paths(M.get_plugin_root_dir(), "parser", "scripts")
+  return dir
+end
+
+M.get_tmp_scripts_build_dir = function()
+  local dir = M.join_paths(M.get_plugin_tmp_dir(), "scripts", "build")
+  M.ensure_dir_exists(dir)
   return dir
 end
 
@@ -145,7 +227,12 @@ M.get_request_scripts_dir = function()
   return dir
 end
 
+---Delete all files in a directory
+---@param dir string
+---@usage fs.delete_files_in_directory('tmp')
+---@return string[] deleted_files
 M.delete_files_in_directory = function(dir)
+  local deleted_files = {}
   -- Open the directory for scanning
   local scandir = vim.loop.fs_scandir(dir)
   if scandir then
@@ -155,18 +242,21 @@ M.delete_files_in_directory = function(dir)
       if not name then
         break
       end
-      -- Only delete files, not directories
-      if type == "file" then
-        local filepath = dir .. M.ps .. name
+      -- Only delete files, not directories except .gitingore
+      if type == "file" and name:match(".gitignore$") == nil then
+        local filepath = M.join_paths(dir, name)
         local success, err = vim.loop.fs_unlink(filepath)
         if not success then
           print("Error deleting file:", filepath, err)
+        else
+          table.insert(deleted_files, filepath)
         end
       end
     end
   else
     print("Error opening directory:", dir)
   end
+  return deleted_files
 end
 
 M.delete_request_scripts_files = function()
@@ -202,6 +292,10 @@ M.command_exists = function(cmd)
   return vim.fn.executable(cmd) == 1
 end
 
+M.command_path = function(cmd)
+  return vim.fn.exepath(cmd)
+end
+
 M.get_plugin_root_dir = function()
   local source = debug.getinfo(1).source
   local dir_path = source:match("@(.*/)") or source:match("@(.*\\)")
@@ -218,18 +312,47 @@ M.get_plugin_path = function(paths)
   return M.get_plugin_root_dir() .. M.ps .. table.concat(paths, M.ps)
 end
 
--- Read a file
---- @param filename string
---- @return string|nil
---- @usage local p = fs.read_file('Makefile')
-M.read_file = function(filename)
-  local f = io.open(filename, "r")
+---Check if a string is a blob
+---@param s string
+---@return boolean
+M.is_blob = function(s)
+  -- Loop through each character in the string
+  for i = 1, #s do
+    local byte = s:byte(i)
+    -- Check if the byte is outside the printable ASCII range (32-126)
+    -- Allow tab (9), newline (10), and carriage return (13) as exceptions
+    if (byte < 32 or byte > 126) and byte ~= 9 and byte ~= 10 and byte ~= 13 then
+      return true -- If any non-printable character is found, it's likely a blob
+    end
+  end
+  return false -- If no non-printable characters are found, it's not a blob
+end
+
+---Read a file
+---@param filename string
+---@param is_binary boolean|nil
+---@return string|nil
+---@usage local p = fs.read_file('Makefile')
+M.read_file = function(filename, is_binary)
+  local read_mode = is_binary and "rb" or "r"
+  local f = io.open(filename, read_mode)
   if f == nil then
     return nil
   end
   local content = f:read("*a")
   f:close()
   return content
+end
+
+M.get_binary_temp_file = function(content)
+  local tmp_file = vim.fn.tempname()
+  local f = io.open(tmp_file, "wb")
+  if f == nil then
+    return nil
+  end
+  f:write(content)
+  f:close()
+  return tmp_file
 end
 
 ---Read file lines
@@ -246,6 +369,19 @@ M.read_file_lines = function(filename)
   end
   f:close()
   return lines
+end
+
+---Clears all cached files
+M.clear_cached_files = function()
+  local tmp_dir = M.get_plugin_tmp_dir()
+  local deleted_files = M.delete_files_in_directory(tmp_dir)
+  local string_list = vim.fn.join(
+    vim.tbl_map(function(file)
+      return "- " .. file
+    end, deleted_files),
+    "\n"
+  )
+  Logger.info("Deleted files:\n" .. string_list)
 end
 
 return M

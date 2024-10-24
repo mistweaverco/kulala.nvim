@@ -6,8 +6,10 @@ local CONFIG = require("kulala.config")
 local JUMPS = require("kulala.jumps")
 local Graphql = require("kulala.graphql")
 local Logger = require("kulala.logger")
-local ScriptsUtils = require("kulala.scripts.utils")
 local Augroups = require("kulala.augroups")
+local ScriptsUtils = require("kulala.parser.scripts.utils")
+local Fs = require("kulala.utils.fs")
+
 local M = {}
 
 M.setup = function(config)
@@ -105,6 +107,12 @@ end
 
 M.toggle_virtual_variable = function()
   Augroups.toggle_virtual_variable()
+end
+
+---Clears all cached files
+---Useful when you want to clear all cached files
+M.clear_cached_files = function()
+  Fs.clear_cached_files()
 end
 
 return M
