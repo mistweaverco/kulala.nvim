@@ -1,11 +1,15 @@
 # File to variable
 
-You can use the `@file-to-variable` directive to read the content of a file and assign it to a variable.
+You can use the `@file-to-variable` directive to
+read the content of a file and assign it to a variable.
 
-Create a file with the `.http` extension and write your JSON request in it.
+Create a file with the `.http` extension and
+write your JSON request in it.
 
 Then, use the `@file-to-variable` directive to specify the variable name
-that you want to use in the request. The second argument is the path to the file.
+that you want to use in the request.
+
+The second argument is the path to the file.
 
 
 ```http title="file-to-variable.http"
@@ -19,7 +23,8 @@ Accept: application/json
 }
 
 ```
-The `TEST_INCLUDE` variable will be replaced with the content of the `test-include.json` file.
+The `TEST_INCLUDE` variable will be replaced with
+the content of the `test-include.json` file.
 
 ```json title="test-include.json"
 {

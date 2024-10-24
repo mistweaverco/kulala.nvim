@@ -7,12 +7,17 @@ local FS = require("kulala.utils.fs")
 local STRING_UTILS = require("kulala.utils.string")
 
 local M = {}
+local QUERIES = {}
 
-local QUERIES = {
-  section = vim.treesitter.query.parse("http", "(section (request) @request) @section"),
-  variable = vim.treesitter.query.parse("http", "(variable_declaration) @variable"),
+local function init_queries()
+  if QUERIES.section ~= nil then
+    return
+  end
 
-  request = vim.treesitter.query.parse(
+  QUERIES.section = vim.treesitter.query.parse("http", "(section (request) @request) @section")
+  QUERIES.variable = vim.treesitter.query.parse("http", "(variable_declaration) @variable")
+
+  QUERIES.request = vim.treesitter.query.parse(
     "http",
     [[
     (comment name: (_) value: (_)) @meta
@@ -37,8 +42,8 @@ local QUERIES = {
     (res_redirect
       path: (path)) @redirect
   ]]
-  ),
-}
+  )
+end
 
 local function text(node, metadata)
   if not node then
@@ -196,6 +201,7 @@ local function parse_request(section_node)
 end
 
 M.get_document_variables = function(root)
+  init_queries()
   root = root or get_root_node()
   local vars = {}
 
@@ -208,6 +214,7 @@ M.get_document_variables = function(root)
 end
 
 M.get_request_at = function(line)
+  init_queries()
   line = line or (vim.fn.line(".") - 1)
   local root = get_root_node()
 
@@ -219,6 +226,7 @@ M.get_request_at = function(line)
 end
 
 M.get_all_requests = function(root)
+  init_queries()
   root = root or get_root_node()
   local requests = {}
 
@@ -237,6 +245,7 @@ M.get_all_requests = function(root)
 end
 
 M.get_document = function()
+  init_queries()
   local root = get_root_node()
   local variables = M.get_document_variables(root)
   local requests = M.get_all_requests(root)

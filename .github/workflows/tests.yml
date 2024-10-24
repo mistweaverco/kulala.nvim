@@ -1,23 +1,19 @@
 ---
-name: Test
+name: Tests
 
 on:
   pull_request:
+    paths:
+      - '**/*.lua'
     branches:
       - main
 
 jobs:
-  tests:
-    name: Tests
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-latest
-            container-image: ghcr.io/mistweaverco/kulala-nvim-testrunner:latest
+  test-linux:
+    name: Test Code on Linux
+    runs-on: ubuntu-latest
     container:
-      image: ${{ matrix.container-image }}
+      image: ghcr.io/mistweaverco/kulala-nvim-testrunner:latest
     steps:
       - uses: actions/checkout@v4
       - name: Restore cache
@@ -25,7 +21,48 @@ jobs:
         with:
           path: |
             .tests
-          key: ${{ runner.os }}-${{ matrix.container-image }}
-
+          key: ${{ runner.os }}-tests
       - name: Run tests
         run: ./scripts/tests.sh run
+  lint:
+    name: Lint Code
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/mistweaverco/kulala-nvim-testrunner:latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run linter
+        run: ./scripts/lint.sh check-code
+  test-windows:
+    name: Test Code on Windows
+    runs-on: windows-latest
+    if: ${{ github.event.label.name == 'needs-windows-test' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore cache
+        id: cache-deps
+        uses: actions/cache@v4
+        with:
+          path: |
+            .tests
+            ~\scoop
+            ~\AppData\Roaming\LJ4W
+            ~\AppData\Roaming\luarocks
+          key: ${{ runner.os }}-tests
+      - name: Check if cache hit
+        if: steps.cache-deps.outputs.cache-hit == 'true'
+        run: echo "GH_CACHE_HIT=true" >> $Env:GITHUB_ENV
+      - name: Install dependencies
+        run: ./scripts/install-ci-test-requirements.ps1
+      - name: Save cache
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            .tests
+            ~\scoop
+            ~\AppData\Roaming\LJ4W
+            ~\AppData\Roaming\luarocks
+          key: ${{ runner.os }}-tests
+      - name: Run tests
+        run: ./scripts/tests.ps1

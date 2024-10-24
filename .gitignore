@@ -1,7 +1,9 @@
 node_modules
 .env
 http-client.env.json
+!/schemas/http-client.env.json
 *.http
 *graphql-schema.json
 /http-examples
 .tests
+.nvim

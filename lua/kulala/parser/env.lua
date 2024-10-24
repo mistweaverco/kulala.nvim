@@ -6,6 +6,7 @@ local M = {}
 
 M.get_env = function()
   local http_client_env_json = FS.find_file_in_parent_dirs("http-client.env.json")
+  local http_client_private_env_json = FS.find_file_in_parent_dirs("http-client.private.env.json")
   local dotenv = FS.find_file_in_parent_dirs(".env")
   local env = {}
 
@@ -13,7 +14,7 @@ M.get_env = function()
     env[key] = value
   end
 
-  DB.update().http_client_env_base = {}
+  DB.update().http_client_env_shared = {}
   DB.update().http_client_env = {}
 
   if Config.get().vscode_rest_client_environmentvars then
@@ -29,8 +30,8 @@ M.get_env = function()
         if settings and settings["rest-client.environmentVariables"] then
           local f = settings["rest-client.environmentVariables"]
           if f["$shared"] then
-            DB.update().http_client_env_base =
-              vim.tbl_deep_extend("force", DB.find_unique("http_client_env_base"), f["$shared"])
+            DB.update().http_client_env_shared =
+              vim.tbl_deep_extend("force", DB.find_unique("http_client_env_shared"), f["$shared"])
           end
           f["$shared"] = nil
           DB.update().http_client_env = vim.tbl_deep_extend("force", DB.find_unique("http_client_env"), f)
@@ -44,8 +45,8 @@ M.get_env = function()
       if settings and settings["rest-client.environmentVariables"] then
         local f = settings["rest-client.environmentVariables"]
         if f["$shared"] then
-          DB.update().http_client_env_base =
-            vim.tbl_deep_extend("force", DB.find_unique("http_client_env_base"), f["$shared"])
+          DB.update().http_client_env_shared =
+            vim.tbl_deep_extend("force", DB.find_unique("http_client_env_shared"), f["$shared"])
         end
         f["$shared"] = nil
         DB.update().http_client_env = vim.tbl_deep_extend("force", DB.find_unique("http_client_env"), f)
@@ -56,7 +57,7 @@ M.get_env = function()
   if dotenv then
     local dotenv_env = vim.fn.readfile(dotenv)
     for _, line in ipairs(dotenv_env) do
-      -- if the line is not empy and not a comment, then
+      -- if the line is not empty and not a comment, then
       if not line:match("^%s*$") and not line:match("^%s*#") then
         local key, value = line:match("^%s*([^=]+)%s*=%s*(.*)%s*$")
         if key and value then
@@ -68,16 +69,27 @@ M.get_env = function()
 
   if http_client_env_json then
     local f = vim.fn.json_decode(vim.fn.readfile(http_client_env_json))
-    if f._base then
-      DB.update().http_client_env_base = vim.tbl_deep_extend("force", DB.find_unique("http_client_env_base"), f._base)
+    if f["$shared"] then
+      DB.update().http_client_env_shared =
+        vim.tbl_deep_extend("force", DB.find_unique("http_client_env_shared"), f["$shared"])
     end
-    f._base = nil
+    f["$shared"] = nil
     DB.update().http_client_env = vim.tbl_deep_extend("force", DB.find_unique("http_client_env"), f)
   end
 
-  local http_client_env_base = DB.find_unique("http_client_env_base") or {}
-  for key, value in pairs(http_client_env_base) do
-    if key ~= "DEFAULT_HEADERS" then
+  if http_client_private_env_json then
+    local f = vim.fn.json_decode(vim.fn.readfile(http_client_private_env_json))
+    if f["$shared"] then
+      DB.update().http_client_env_shared =
+        vim.tbl_deep_extend("force", DB.find_unique("http_client_env_shared"), f["$shared"])
+    end
+    f["$shared"] = nil
+    DB.update().http_client_env = vim.tbl_deep_extend("force", DB.find_unique("http_client_env"), f)
+  end
+
+  local http_client_env_shared = DB.find_unique("http_client_env_shared") or {}
+  for key, value in pairs(http_client_env_shared) do
+    if key ~= "$default_headers" then
       env[key] = value
     end
   end
