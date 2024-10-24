@@ -75,6 +75,8 @@ M.defaults = {
   -- this will show the variable name and value either as virtual text or float
   -- possible values: false, "virtual", "float"
   show_variable_info_text = false,
+  -- The maximum length of the virtual text display
+  virtual_variable_max_length = 100,
 }
 
 M.default_contenttype = {
