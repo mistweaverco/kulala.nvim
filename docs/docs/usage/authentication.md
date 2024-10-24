@@ -38,7 +38,7 @@ GET https://www/api HTTP/1.1
 Authorization: Basic TXlVc2VyOlByaXZhdGU=
 ```
 
-Futhermore you can enter username and password in
+Furthermore you can enter username and password in
 plain text in the `Authorization` header field,
 Kulala will automatically encode it for you.
 

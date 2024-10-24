@@ -676,7 +676,7 @@ M.parse = function(start_request_linenr)
       replace_variables_in_url_headers_body(res, document_variables, env, false)
   end
 
-  -- build the command to exectute the request
+  -- build the command to execute the request
   table.insert(res.cmd, CONFIG.get().curl_path)
   table.insert(res.cmd, "-s")
   table.insert(res.cmd, "-D")

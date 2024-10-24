@@ -87,7 +87,7 @@ the Kulala plugin with the available `opts`:
     winbar = false,
 
     -- Specify the panes to be displayed by default
-    -- Current avaliable pane contains { "body", "headers", "headers_body", "script_output" },
+    -- Current available pane contains { "body", "headers", "headers_body", "script_output", "stats" },
     default_winbar_panes = { "body", "headers", "headers_body" },
 
     -- enable reading vscode rest client environment variables
@@ -157,6 +157,7 @@ Possible values:
 - `headers`
 - `headers_body`
 - `script_output`
+- `stats`
 
 Default: `body`
 
@@ -341,7 +342,7 @@ Possible values:
 - You can use an external program which receives the
   full body as stdin and has to return the selected value in stdout.
   The placeholder `{{path}}` can be used in any string of
-  this defintion and will be replaced by the actual path (after `body.`).
+  this definition and will be replaced by the actual path (after `body.`).
 - Alternative you can give a lua function of `value = function(body, path)`.
 
 Default:

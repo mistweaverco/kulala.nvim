@@ -105,7 +105,7 @@ const config: Config = {
           ],
         },
       ],
-      copyright: `Copyright © ${new Date().getFullYear()} mistweaver.co.`,
+      copyright: `Copyright © ${new Date().getFullYear()} mistweaverco.`,
     },
     prism: {
       theme: prismThemes.github,
