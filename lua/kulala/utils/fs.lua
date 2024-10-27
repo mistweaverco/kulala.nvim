@@ -355,6 +355,17 @@ M.get_binary_temp_file = function(content)
   return tmp_file
 end
 
+M.get_text_temp_file = function(content)
+  local tmp_file = vim.fn.tempname()
+  local f = io.open(tmp_file, "w")
+  if f == nil then
+    return nil
+  end
+  f:write(content)
+  f:close()
+  return tmp_file
+end
+
 ---Read file lines
 ---@param filename string
 ---@return string[]

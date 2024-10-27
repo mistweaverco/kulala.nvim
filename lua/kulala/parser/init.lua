@@ -711,8 +711,13 @@ M.parse = function(start_request_linenr)
         Logger.error("Failed to create a temporary file for the binary request body")
       end
     else
-      table.insert(res.cmd, "--data")
-      table.insert(res.cmd, res.body)
+      local tmp_file = FS.get_text_temp_file(res.body)
+      if tmp_file ~= nil then
+        table.insert(res.cmd, "--data")
+        table.insert(res.cmd, "@" .. tmp_file)
+      else
+        Logger.error("Failed to create a temporary file for the request body")
+      end
     end
   else -- no content type supplied
     -- check if we are a graphql query
