@@ -710,7 +710,11 @@ M.parse = function(start_request_linenr)
       else
         Logger.error("Failed to create a temporary file for the binary request body")
       end
-    else
+    elseif #res.body > 128000 then
+      -- large commands run into "argument list too long" error
+      -- the actual size limit depends on kernel version and may vary based on the system
+      -- additionally this limit is affected by other arguments, and env variables
+      -- this value was determined to be safe threshold based on experimentation
       local tmp_file = FS.get_text_temp_file(res.body)
       if tmp_file ~= nil then
         table.insert(res.cmd, "--data")
@@ -718,6 +722,9 @@ M.parse = function(start_request_linenr)
       else
         Logger.error("Failed to create a temporary file for the request body")
       end
+    else
+      table.insert(res.cmd, "--data")
+      table.insert(res.cmd, res.body)
     end
   else -- no content type supplied
     -- check if we are a graphql query
