@@ -23,8 +23,16 @@ local FILE_MAPPING = {
 
 M.install = function()
   FS.copy_dir(BASE_DIR, SCRIPTS_BUILD_DIR)
-  vim.system({ "npm", "install", "--prefix", SCRIPTS_BUILD_DIR }):wait()
-  vim.system({ "npm", "run", "build", "--prefix", SCRIPTS_BUILD_DIR }):wait()
+  local res_install = vim.system({ "npm", "install", "--prefix", SCRIPTS_BUILD_DIR }):wait()
+  if res_install.code ~= 0 then
+    Logger.error("npm install fail with code " .. res_install.code)
+    return
+  end
+  local res_build = vim.system({ "npm", "run", "build", "--prefix", SCRIPTS_BUILD_DIR }):wait()
+  if res_build.code ~= 0 then
+    Logger.error("npm run build fail with code " .. res_build.code)
+    return
+  end
 end
 
 ---@class Scripts
