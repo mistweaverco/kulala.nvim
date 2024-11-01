@@ -16,6 +16,9 @@ the Kulala plugin with the available `opts`:
     -- you can specify it here
     curl_path = "curl",
 
+    -- Display mode, possible values: "split", "float"
+    display_mode = "split",
+
     -- split direction
     -- possible values: "vertical", "horizontal"
     split_direction = "vertical",
@@ -125,9 +128,31 @@ Example:
   },
 }
 ```
+
+### display_mode
+
+The display mode.
+
+Can be either `split` or `float`.
+
+Default: `split`
+
+Example:
+
+```lua
+{
+  "mistweaverco/kulala.nvim",
+  opts = {
+    display_mode = "float",
+  },
+}
+```
+
 ### split_direction
 
 Split direction.
+
+Only used when `display_mode` is set to `split`.
 
 Possible values:
 
