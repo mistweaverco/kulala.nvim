@@ -29,6 +29,26 @@ local get_win = function()
   return nil
 end
 
+local open_float = function()
+  local bufnr = vim.api.nvim_create_buf(false, false)
+  vim.api.nvim_buf_set_name(bufnr, "kulala://ui")
+
+  local width = vim.api.nvim_win_get_width(0) - 10
+  local height = vim.api.nvim_win_get_height(0) - 10
+
+  local winnr = vim.api.nvim_open_win(bufnr, true, {
+    title = "Kulala",
+    title_pos = "center",
+    relative = "editor",
+    border = "single",
+    width = width,
+    height = height,
+    row = math.floor(((vim.o.lines - height) / 2) - 1),
+    col = math.floor((vim.o.columns - width) / 2),
+    style = "minimal",
+  })
+end
+
 local get_buffer = function()
   -- Iterate through all buffers
   for _, buf in ipairs(vim.api.nvim_list_bufs()) do
@@ -70,7 +90,7 @@ local replace_buffer = function()
   return new_bufnr
 end
 
-local open_buffer = function()
+local open_split = function()
   local prev_win = vim.api.nvim_get_current_win()
   local sd = CONFIG.get().split_direction == "vertical" and "vsplit" or "split"
   vim.cmd("keepalt " .. sd .. " " .. GLOBALS.UI_ID)
@@ -78,6 +98,14 @@ local open_buffer = function()
     WINBAR.create_winbar(get_win())
   end
   vim.api.nvim_set_current_win(prev_win)
+end
+
+local open_buffer = function()
+  if CONFIG.get().display_mode == "split" then
+    open_split()
+  else
+    open_float()
+  end
 end
 
 local close_buffer = function()

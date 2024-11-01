@@ -6,6 +6,9 @@ M.defaults = {
   -- if you have curl installed in a non-standard path,
   -- you can specify it here
   curl_path = "curl",
+  -- Display mode
+  -- possible values: "split", "float"
+  display_mode = "split",
   -- split direction
   -- possible values: "vertical", "horizontal"
   split_direction = "vertical",
