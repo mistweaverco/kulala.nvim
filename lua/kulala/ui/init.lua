@@ -56,10 +56,15 @@ local get_buffer = function()
     local name = vim.api.nvim_buf_get_name(buf)
     -- Check if the name matches
     if name == GLOBALS.UI_ID then
-      return buf
+      -- Get windows displaying this buffer
+      local wins = vim.fn.win_findbuf(buf)
+      -- Return buffer only if it's visible (has windows)
+      if #wins > 0 then
+        return buf
+      end
     end
   end
-  -- Return nil if no buffer is found with the given name
+  -- Return nil if no visible buffer is found with the given name
   return nil
 end
 
