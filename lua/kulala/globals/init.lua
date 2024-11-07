@@ -4,7 +4,7 @@ local M = {}
 
 local plugin_tmp_dir = FS.get_plugin_tmp_dir()
 
-M.VERSION = "4.4.0"
+M.VERSION = "4.4.1"
 M.UI_ID = "kulala://ui"
 M.SCRATCHPAD_ID = "kulala://scratchpad"
 M.HEADERS_FILE = plugin_tmp_dir .. "/headers.txt"

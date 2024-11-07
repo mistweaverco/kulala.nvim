@@ -6,6 +6,8 @@ local M = {}
 
 local NPM_EXISTS = vim.fn.executable("npm") == 1
 local NODE_EXISTS = vim.fn.executable("node") == 1
+local NPM_BIN = vim.fn.exepath("npm")
+local NODE_BIN = vim.fn.exepath("node")
 local SCRIPTS_DIR = FS.get_scripts_dir()
 local REQUEST_SCRIPTS_DIR = FS.get_request_scripts_dir()
 local SCRIPTS_BUILD_DIR = FS.get_tmp_scripts_build_dir()
@@ -23,12 +25,12 @@ local FILE_MAPPING = {
 
 M.install = function()
   FS.copy_dir(BASE_DIR, SCRIPTS_BUILD_DIR)
-  local res_install = vim.system({ "npm", "install", "--prefix", SCRIPTS_BUILD_DIR }):wait()
+  local res_install = vim.system({ NPM_BIN, "install", "--prefix", SCRIPTS_BUILD_DIR }):wait()
   if res_install.code ~= 0 then
     Logger.error("npm install fail with code " .. res_install.code)
     return
   end
-  local res_build = vim.system({ "npm", "run", "build", "--prefix", SCRIPTS_BUILD_DIR }):wait()
+  local res_build = vim.system({ NPM_BIN, "run", "build", "--prefix", SCRIPTS_BUILD_DIR }):wait()
   if res_build.code ~= 0 then
     Logger.error("npm run build fail with code " .. res_build.code)
     return
@@ -135,7 +137,7 @@ M.run = function(type, data)
   for _, script in ipairs(scripts) do
     local output = vim
       .system({
-        "node",
+        NODE_BIN,
         script.path,
       }, {
         cwd = script.cwd,
