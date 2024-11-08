@@ -30,6 +30,7 @@ const sidebars: SidebarsConfig = {
       items: [
         "usage/public-methods",
         "usage/api",
+        "usage/huge-request-body",
         "usage/authentication",
         "usage/automatic-response-formatting",
         "usage/dotenv-and-http-client.env.json-support",

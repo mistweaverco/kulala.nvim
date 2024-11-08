@@ -21,8 +21,7 @@ M.scripts.javascript = require("kulala.parser.scripts.javascript")
 ---@param variables table -- The variables defined in the document
 ---@param env table -- The environment variables
 ---@param silent boolean|nil -- Whether to suppress not found variable warnings
----@param skip_blobs boolean|nil -- Whether to skip blobs, but still replace them with a placeholder
-local function parse_string_variables(str, variables, env, silent, skip_blobs)
+local function parse_string_variables(str, variables, env, silent)
   local function replace_placeholder(variable_name)
     local value
     -- If the variable name contains a `$` symbol then try to parse it as a dynamic variable
@@ -32,15 +31,7 @@ local function parse_string_variables(str, variables, env, silent, skip_blobs)
         value = variable_value
       end
     elseif variables[variable_name] then
-      if FS.is_blob(variables[variable_name]) then
-        if skip_blobs then
-          value = "[[binary file skipped]]"
-        else
-          value = variables[variable_name]
-        end
-      else
-        value = parse_string_variables(variables[variable_name], variables, env)
-      end
+      value = parse_string_variables(variables[variable_name], variables, env)
     elseif env[variable_name] then
       value = env[variable_name]
     elseif REQUEST_VARIABLES.parse(variable_name) then
@@ -137,7 +128,7 @@ local function parse_body_display(body_display, variables, env, silent)
   end
   variables = variables or {}
   env = env or {}
-  return parse_string_variables(body_display, variables, env, silent, true)
+  return parse_string_variables(body_display, variables, env, silent)
 end
 
 local function split_by_block_delimiters(text)
@@ -335,25 +326,16 @@ M.get_document = function()
           request.body = ""
           request.body_display = ""
         end
-        -- Skip the line if it is a binary file, but add a placeholder
-        -- binary files should be skipped and used in a --data-binary @file notation
-        -- which is handled by the curl command and not sent as part of the request body string
-        if FS.is_blob(line) then
-          request.body = request.body .. "[[binary file skipped]]\r\n"
-          request.body_display = request.body_display .. "[[binary file skipped]]\r\n"
-        elseif line:find("^<") then
+        if line:find("^<") then
           if content_type_header_value ~= nil and content_type_header_value:find("^multipart/form%-data") then
             request.body = request.body .. line .. "\r\n"
             request.body_display = request.body_display .. line .. "\r\n"
           else
             local file_path = vim.trim(line:sub(2))
             local contents = FS.read_file(file_path)
-            if contents ~= nil and FS.is_blob(contents) then
-              request.body = request.body .. "[[binary file skipped]]\r\n"
-              request.body_display = request.body_display .. "[[binary file skipped]]\r\n"
-            elseif contents ~= nil then
+            if contents ~= nil then
               request.body = request.body .. contents .. "\r\n"
-              request.body_display = request.body_display .. contents .. "\r\n"
+              request.body_display = request.body_display .. "[[external file skipped]]\r\n"
             else
               Logger.warn("The file '" .. file_path .. "' was not found. Skipping ...")
             end
@@ -698,9 +680,20 @@ M.parse = function(start_request_linenr)
     if is_graphql then
       local gql_json = GRAPHQL_PARSER.get_json(res.body)
       if gql_json then
-        table.insert(res.cmd, "--data")
-        table.insert(res.cmd, gql_json)
-        res.headers[content_type_header_name] = "application/json"
+        if PARSER_UTILS.contains_meta_tag(res, "write-body-to-temporary-file") then
+          local tmp_file = FS.get_temp_file(res.body)
+          if tmp_file ~= nil then
+            table.insert(res.cmd, "--data")
+            table.insert(res.cmd, "@" .. tmp_file)
+            res.headers[content_type_header_name] = "application/json"
+          else
+            Logger.error("Failed to create a temporary file for the request body")
+          end
+        else
+          table.insert(res.cmd, "--data")
+          table.insert(res.cmd, gql_json)
+          res.headers[content_type_header_name] = "application/json"
+        end
       end
     elseif content_type_header_value:find("^multipart/form%-data") then
       local tmp_file = FS.get_binary_temp_file(res.body)
@@ -711,18 +704,33 @@ M.parse = function(start_request_linenr)
         Logger.error("Failed to create a temporary file for the binary request body")
       end
     else
-      table.insert(res.cmd, "--data")
-      table.insert(res.cmd, res.body)
+      if PARSER_UTILS.contains_meta_tag(res, "write-body-to-temporary-file") then
+        local tmp_file = FS.get_temp_file(res.body)
+        if tmp_file ~= nil then
+          table.insert(res.cmd, "--data")
+          table.insert(res.cmd, "@" .. tmp_file)
+        else
+          Logger.error("Failed to create a temporary file for the request body")
+        end
+      else
+        table.insert(res.cmd, "--data")
+        table.insert(res.cmd, res.body)
+      end
     end
   else -- no content type supplied
     -- check if we are a graphql query
     if is_graphql then
       local gql_json = GRAPHQL_PARSER.get_json(res.body)
       if gql_json then
-        table.insert(res.cmd, "--data")
-        table.insert(res.cmd, gql_json)
-        res.headers["content-type"] = "application/json"
-        res.body_computed = gql_json
+        local tmp_file = FS.get_temp_file(res.body)
+        if tmp_file ~= nil then
+          table.insert(res.cmd, "--data")
+          table.insert(res.cmd, "@" .. tmp_file)
+          res.headers["content-type"] = "application/json"
+          res.body_computed = gql_json
+        else
+          Logger.error("Failed to create a temporary file for the request body")
+        end
       end
     end
   end

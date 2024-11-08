@@ -10,7 +10,6 @@ local FS = require("kulala.utils.fs")
 local DB = require("kulala.db")
 local INT_PROCESSING = require("kulala.internal_processing")
 local FORMATTER = require("kulala.formatter")
-local TS = require("kulala.parser.treesitter")
 local Logger = require("kulala.logger")
 local AsciiUtils = require("kulala.utils.ascii")
 local Inspect = require("kulala.parser.inspect")
@@ -28,6 +27,26 @@ local get_win = function()
   end
   -- Return nil if no windows is found with the given buffer name
   return nil
+end
+
+local open_float = function()
+  local bufnr = vim.api.nvim_create_buf(false, false)
+  vim.api.nvim_buf_set_name(bufnr, "kulala://ui")
+
+  local width = vim.api.nvim_win_get_width(0) - 10
+  local height = vim.api.nvim_win_get_height(0) - 10
+
+  local winnr = vim.api.nvim_open_win(bufnr, true, {
+    title = "Kulala",
+    title_pos = "center",
+    relative = "editor",
+    border = "single",
+    width = width,
+    height = height,
+    row = math.floor(((vim.o.lines - height) / 2) - 1),
+    col = math.floor((vim.o.columns - width) / 2),
+    style = "minimal",
+  })
 end
 
 local get_buffer = function()
@@ -52,7 +71,7 @@ local replace_buffer = function()
   local old_bufnr = get_buffer()
 
   local new_bufnr = vim.api.nvim_create_buf(true, false)
-  vim.bo[new_bufnr].swapfile = false
+  vim.bo[new_bufnr].buftype = "nofile"
 
   if old_bufnr ~= nil then
     for _, win in ipairs(vim.fn.win_findbuf(old_bufnr)) do
@@ -71,15 +90,22 @@ local replace_buffer = function()
   return new_bufnr
 end
 
-local open_buffer = function()
+local open_split = function()
   local prev_win = vim.api.nvim_get_current_win()
   local sd = CONFIG.get().split_direction == "vertical" and "vsplit" or "split"
   vim.cmd("keepalt " .. sd .. " " .. GLOBALS.UI_ID)
   if CONFIG.get().winbar then
     WINBAR.create_winbar(get_win())
   end
-  vim.bo[get_buffer()].modified = false
   vim.api.nvim_set_current_win(prev_win)
+end
+
+local open_buffer = function()
+  if CONFIG.get().display_mode == "split" then
+    open_split()
+  else
+    open_float()
+  end
 end
 
 local close_buffer = function()
@@ -116,7 +142,6 @@ local function set_buffer_contents(contents, ft)
     end
     local lines = vim.split(contents, "\n")
     vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
-    vim.bo[buf].modified = false
   end
 end
 
@@ -445,7 +470,6 @@ end
 
 M.scratchpad = function()
   vim.cmd("e " .. GLOBALS.SCRATCHPAD_ID)
-  vim.cmd("setlocal noswapfile")
   vim.cmd("setlocal filetype=http")
   vim.api.nvim_buf_set_lines(0, 0, -1, false, CONFIG.get().scratchpad_default_contents)
 end
