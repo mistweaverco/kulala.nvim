@@ -2,6 +2,13 @@ local FS = require("kulala.utils.fs")
 local M = {}
 
 M.defaults = {
+  -- cURL path
+  -- if you have curl installed in a non-standard path,
+  -- you can specify it here
+  curl_path = "curl",
+  -- Display mode
+  -- possible values: "split", "float"
+  display_mode = "split",
   -- split direction
   -- possible values: "vertical", "horizontal"
   split_direction = "vertical",
@@ -59,7 +66,7 @@ M.defaults = {
   -- enable winbar
   winbar = false,
   -- Specify the panes to be displayed by default
-  -- Current avaliable pane contains { "body", "headers", "headers_body", "script_output" },
+  -- Current available pane contains { "body", "headers", "headers_body", "script_output", "stats" },
   default_winbar_panes = { "body", "headers", "headers_body" },
   -- enable reading vscode rest client environment variables
   vscode_rest_client_environmentvars = false,
@@ -75,6 +82,10 @@ M.defaults = {
   -- this will show the variable name and value either as virtual text or float
   -- possible values: false, "virtual", "float"
   show_variable_info_text = false,
+  -- The maximum length of the virtual text display
+  virtual_variable_max_length = 100,
+  -- certificates
+  certificates = {},
 }
 
 M.default_contenttype = {

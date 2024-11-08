@@ -3,6 +3,7 @@ local FS = require("kulala.utils.fs")
 local GLOBALS = require("kulala.globals")
 local DB = require("kulala.db")
 local CONFIG = require("kulala.config")
+local STRING_UTILS = require("kulala.utils.string")
 local M = {}
 
 -- Function to access a nested key in a table dynamically
@@ -18,18 +19,39 @@ local function get_nested_value(t, key)
   return value
 end
 
-local get_headers_as_table = function()
+---Function to get the last headers as a table
+---@description Reads the headers file and returns the headers as a table.
+---In some cases the headers file might contain multiple header sections,
+---e.g. if you have follow-redirections enabled.
+---This function will return the headers of the last response.
+---@return table
+local get_last_headers_as_table = function()
   local headers_file = FS.read_file(GLOBALS.HEADERS_FILE):gsub("\r\n", "\n")
   local lines = vim.split(headers_file, "\n")
   local headers_table = {}
+  -- INFO:
+  -- We only want the headers of the last response
+  -- so we reset the headers_table only each time the previous line was empty
+  -- and we also have new headers data
+  local previously_empty = false
   for _, header in ipairs(lines) do
-    if header:find(":") ~= nil then
-      local kv = vim.split(header, ":")
-      local key = kv[1]
-      -- the value should be everything after the first colon
-      -- but we can't use slice and join because the value might contain colons
-      local value = header:sub(#key + 2)
-      headers_table[key] = vim.trim(value)
+    local empty_line = header == ""
+    if empty_line then
+      previously_empty = true
+    else
+      if previously_empty then
+        headers_table = {}
+      end
+      previously_empty = false
+      if header:find(":") ~= nil then
+        local kv = vim.split(header, ":")
+        local key = kv[1]
+        -- INFO:
+        -- the value should be everything after the first colon
+        -- but we can't use slice and join because the value might contain colons
+        local value = header:sub(#key + 2)
+        headers_table[key] = vim.trim(value)
+      end
     end
   end
   return headers_table
@@ -78,7 +100,7 @@ local get_cookies_as_table = function()
 end
 
 local get_lower_headers_as_table = function()
-  local headers = get_headers_as_table()
+  local headers = get_last_headers_as_table()
   local headers_table = {}
   for key, value in pairs(headers) do
     headers_table[key:lower()] = value
@@ -90,6 +112,7 @@ M.get_config_contenttype = function()
   local headers = get_lower_headers_as_table()
   if headers["content-type"] then
     local content_type = vim.split(headers["content-type"], ";")[1]
+    content_type = STRING_UTILS.trim(content_type)
     local config = CONFIG.get().contenttypes[content_type]
     if config then
       return config
@@ -101,7 +124,7 @@ end
 M.set_env_for_named_request = function(name, body)
   local named_request = {
     response = {
-      headers = get_headers_as_table(),
+      headers = get_last_headers_as_table(),
       body = body,
       cookies = get_cookies_as_table(),
     },

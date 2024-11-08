@@ -87,10 +87,11 @@ M.create_winbar = function(win_id)
     local default_view = CONFIG.get().default_view
     M.winbar_sethl()
     M.toggle_winbar_tab(win_id, default_view)
-    UICallbacks.add("on_replace_buffer", function(_, new_buffer)
-      M.winbar_set_key_mapping(new_buffer)
-    end)
   end
 end
+
+UICallbacks.add("on_replace_buffer", function(_, new_buffer)
+  M.winbar_set_key_mapping(new_buffer)
+end)
 
 return M

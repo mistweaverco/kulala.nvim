@@ -15,6 +15,7 @@ const sidebars: SidebarsConfig = {
         'getting-started/install',
         'getting-started/requirements',
         'getting-started/configuration-options',
+        'getting-started/example-configuration',
       ],
     },
     {
@@ -29,6 +30,7 @@ const sidebars: SidebarsConfig = {
       items: [
         "usage/public-methods",
         "usage/api",
+        "usage/huge-request-body",
         "usage/authentication",
         "usage/automatic-response-formatting",
         "usage/dotenv-and-http-client.env.json-support",

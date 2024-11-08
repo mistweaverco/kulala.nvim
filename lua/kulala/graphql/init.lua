@@ -1,3 +1,4 @@
+local Config = require("kulala.config")
 local Parser = require("kulala.parser")
 local Parserutils = require("kulala.parser.utils")
 local Cmd = require("kulala.cmd")
@@ -16,9 +17,12 @@ M.download_schema = function()
     Logger.warn("Not a GraphQL request")
     return
   end
+  if not Parserutils.contains_header(req.headers, "content-type", "application/json") then
+    req.headers["Content-Type"] = "application/json"
+  end
   local filename = vim.fn.expand("%:t:r") .. ".graphql-schema.json"
   local c = {
-    "curl",
+    Config.get().curl_path,
     "-s",
     "-o",
     filename,

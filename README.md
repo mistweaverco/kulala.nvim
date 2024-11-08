@@ -51,7 +51,7 @@ See [configuration options](https://kulala.mwco.app/docs/getting-started/configu
 
 For getting this project started.
 
-This project was heaviliy inspired by the idea of having a REST client in Neovim.
+This project was heavily inspired by the idea of having a REST client in Neovim.
 
 The actual state of [rest.nvim](https://github.com/rest-nvim/rest.nvim)
 as archived kicked off the development of kulala.nvim.

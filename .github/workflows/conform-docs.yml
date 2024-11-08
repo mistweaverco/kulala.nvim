@@ -1,0 +1,21 @@
+---
+name: Conform Docs
+
+on:
+  pull_request:
+    paths:
+      - 'docs/**/*.md'
+    branches:
+      - main
+
+jobs:
+  lint:
+    name: Lint Docs
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/mistweaverco/kulala-nvim-testrunner:latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run linter
+        run: ./scripts/lint.sh check-docs
