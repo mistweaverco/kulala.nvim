@@ -3,6 +3,7 @@ local FS = require("kulala.utils.fs")
 local GLOBALS = require("kulala.globals")
 local DB = require("kulala.db")
 local CONFIG = require("kulala.config")
+local STRING_UTILS = require("kulala.utils.string")
 local M = {}
 
 -- Function to access a nested key in a table dynamically
@@ -111,6 +112,7 @@ M.get_config_contenttype = function()
   local headers = get_lower_headers_as_table()
   if headers["content-type"] then
     local content_type = vim.split(headers["content-type"], ";")[1]
+    content_type = STRING_UTILS.trim(content_type)
     local config = CONFIG.get().contenttypes[content_type]
     if config then
       return config

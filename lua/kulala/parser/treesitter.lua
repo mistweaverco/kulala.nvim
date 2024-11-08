@@ -63,6 +63,7 @@ local REQUEST_VISITORS = {
     req.method = fields.method
     req.http_version = fields.http_version
     req.body = fields.body
+    req.body_display = fields.body
     req.start_line = start_line
     req.block_line_count = end_line - start_line
     req.lines_length = end_line - start_line
