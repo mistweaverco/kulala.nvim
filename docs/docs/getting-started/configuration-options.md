@@ -106,6 +106,10 @@ the Kulala plugin with the available `opts`:
 
     -- certificates
     certificates = {},
+
+    -- Specify how to escape query parameters
+    -- possible values: always, skipencoded = keep %xx as is
+    urlencode = "always",
   },
 }
 ```
@@ -652,5 +656,27 @@ Hostnames with prefix `*.` will be used as wildcard certificates for the host it
 - `api.company.com`
 - `sub.api.company.com`
 - etc.
+
+### urlencode
+
+Specify how to escape query parameters.
+
+Possible values:
+
+- `always`
+- `skipencoded` = keep already encoded `%xx` as is
+
+Default: `always`
+
+Example:
+
+```lua
+{
+  "mistweaverco/kulala.nvim",
+  opts = {
+    urlencode = "skipencoded",
+  },
+}
+```
 
 [see-env-files]: https://learn.microsoft.com/en-us/aspnet/core/test/http-files?view=aspnetcore-8.0#environment-files

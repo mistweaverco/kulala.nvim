@@ -60,11 +60,19 @@ local function parse_headers(headers, variables, env, silent)
   return h
 end
 
+local function url_encode(str)
+  if CONFIG.get().urlencode == "skipencoded" then
+    return STRING_UTILS.url_encode_skipencoded(str)
+  else
+    return STRING_UTILS.url_encode(str)
+  end
+end
+
 local function encode_url_params(url)
   local anchor = ""
   local index = url:find("#")
   if index then
-    anchor = "#" .. STRING_UTILS.url_encode(url:sub(index + 1))
+    anchor = "#" .. url_encode(url:sub(index + 1))
     url = url:sub(1, index - 1)
   end
   index = url:find("?")
@@ -83,11 +91,11 @@ local function encode_url_params(url)
     if index then
       query_params = query_params
         .. "&"
-        .. STRING_UTILS.url_encode(query_part:sub(1, index - 1))
+        .. url_encode(query_part:sub(1, index - 1))
         .. "="
-        .. STRING_UTILS.url_encode(query_part:sub(index + 1))
+        .. url_encode(query_part:sub(index + 1))
     else
-      query_params = query_params .. "&" .. STRING_UTILS.url_encode(query_part)
+      query_params = query_params .. "&" .. url_encode(query_part)
     end
   end
   if query_params ~= "" then

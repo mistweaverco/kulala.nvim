@@ -80,6 +80,9 @@ M.defaults = {
   environment_scope = "b",
   -- certificates
   certificates = {},
+  -- Specify how to escape query parameters
+  -- possible values: always, skipencoded = keep %xx as is
+  urlencode = "always",
 }
 
 M.default_contenttype = {
