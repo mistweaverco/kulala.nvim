@@ -43,8 +43,8 @@ M.get_waterfall_timings = function(timings, opts)
       local proportion = action.duration / total_time
       local width = math.floor(proportion * available_bar_width * scale_factor)
 
-      -- Convert the duration to seconds with 2 decimal places
-      local duration_str = string.format("%.2fs", action.duration)
+      -- Convert the duration to milliseconds
+      local duration_str = string.format("%.0fms", action.duration * 1000)
       -- Create the line with the action name and corresponding bar
       local line = string.format(
         "%-15s | %s%s %s",
@@ -62,7 +62,7 @@ M.get_waterfall_timings = function(timings, opts)
 
   -- Add the total time to the end
   table.insert(lines, string.rep("-", max_width))
-  table.insert(lines, string.format("%-15s | Total Time: %sms", "", total_time))
+  table.insert(lines, string.format("%-15s | Total Time: %.0fms", "", total_time * 1000))
 
   return lines
 end
