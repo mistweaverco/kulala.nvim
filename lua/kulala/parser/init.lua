@@ -689,7 +689,7 @@ M.parse = function(start_request_linenr)
       local gql_json = GRAPHQL_PARSER.get_json(res.body)
       if gql_json then
         if PARSER_UTILS.contains_meta_tag(res, "write-body-to-temporary-file") then
-          local tmp_file = FS.get_temp_file(res.body)
+          local tmp_file = FS.get_temp_file(gql_json)
           if tmp_file ~= nil then
             table.insert(res.cmd, "--data")
             table.insert(res.cmd, "@" .. tmp_file)
@@ -730,7 +730,7 @@ M.parse = function(start_request_linenr)
     if is_graphql then
       local gql_json = GRAPHQL_PARSER.get_json(res.body)
       if gql_json then
-        local tmp_file = FS.get_temp_file(res.body)
+        local tmp_file = FS.get_temp_file(gql_json)
         if tmp_file ~= nil then
           table.insert(res.cmd, "--data")
           table.insert(res.cmd, "@" .. tmp_file)
