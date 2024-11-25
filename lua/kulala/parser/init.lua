@@ -760,7 +760,6 @@ M.parse = function(start_request_linenr)
           table.insert(res.cmd, "--" .. authtype)
           table.insert(res.cmd, "-u")
           table.insert(res.cmd, (authuser or "") .. ":" .. (authpw or ""))
-          res.headers[auth_header_name] = nil
         end
       elseif authtype == "aws" then
         local key, secret, optional = auth_header_value:match("^%w+%s([^%s]+)%s*([^%s]+)[%s$]+(.*)$")
@@ -782,7 +781,6 @@ M.parse = function(start_request_linenr)
           table.insert(res.cmd, "-H")
           table.insert(res.cmd, "x-amz-security-token:" .. token)
         end
-        res.headers[auth_header_name] = nil
       end
     end
   end
@@ -821,8 +819,11 @@ M.parse = function(start_request_linenr)
   end
 
   for key, value in pairs(res.headers) do
-    table.insert(res.cmd, "-H")
-    table.insert(res.cmd, key .. ":" .. value)
+    -- Authorization should already have been handled
+    if key ~= auth_header_name then
+      table.insert(res.cmd, "-H")
+      table.insert(res.cmd, key .. ":" .. value)
+    end
   end
   if res.http_version ~= nil then
     table.insert(res.cmd, "--http" .. res.http_version)
