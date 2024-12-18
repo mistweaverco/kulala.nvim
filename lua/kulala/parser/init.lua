@@ -363,6 +363,18 @@ M.get_document = function()
             request.body_display = request.body_display .. line .. "\r\n"
           end
         end
+      elseif is_request_line == false and line:match("^%s*[?&]") and #request.headers == 0 and request.url then
+        -- Query parameters for URL as separate lines
+        local querypart, http_version = line:match("^%s*(.+)%s+HTTP/(%d[.%d]*)%s*$")
+        if querypart == nil then
+          querypart = line:match("^%s*(.+)%s*$")
+        end
+        if querypart then
+          request.url = request.url .. querypart
+        end
+        if http_version then
+          request.http_version = http_version
+        end
       elseif is_request_line == false and line:match("^([^:]+):%s*(.*)$") then
         -- Header
         -- Headers are defined as `key: value`
