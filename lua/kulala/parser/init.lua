@@ -512,6 +512,7 @@ end
 ---@field url_raw string -- The raw URL as it appears in the document
 ---@field url string -- The URL with variables and dynamic variables replaced
 ---@field headers table -- The headers with variables and dynamic variables replaced
+---@field headers_display table -- The headers with variables and dynamic variables replaced and sanitized
 ---@field headers_raw table -- The headers as they appear in the document
 ---@field body_raw string|nil -- The raw body as it appears in the document
 ---@field body_computed string|nil -- The computed body as sent by curl; with variables and dynamic variables replaced
@@ -536,6 +537,7 @@ function M.get_basic_request_data(start_request_linenr)
     url = "",
     url_raw = "",
     headers = {},
+    headers_display = {},
     headers_raw = {},
     body = nil,
     body_raw = nil,
@@ -630,6 +632,8 @@ M.parse = function(start_request_linenr)
   -- for non existing variables
   res.url, res.headers, res.body, res.body_display =
     replace_variables_in_url_headers_body(res, document_variables, env, has_pre_request_scripts)
+
+  res.headers_display = vim.deepcopy(res.headers)
 
   -- Merge headers from the $shared environment if it does not exist in the request
   -- this ensures that you can always override the headers in the request
