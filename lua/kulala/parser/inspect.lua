@@ -8,7 +8,7 @@ M.get_contents = function()
     return contents
   end
   table.insert(contents, req.method .. " " .. req.url .. (req.http_version and " HTTP/" .. req.http_version or ""))
-  for header_key, header_value in pairs(req.headers) do
+  for header_key, header_value in pairs(req.headers_display) do
     table.insert(contents, header_key .. ": " .. header_value)
   end
   -- Use the body_display, because it's meant to be human-readable
