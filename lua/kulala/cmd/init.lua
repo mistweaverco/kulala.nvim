@@ -85,6 +85,7 @@ M.run_parser = function(req, callback)
     return
   end
   local result = req.cmd ~= nil and req or PARSER.parse(req.start_line)
+  local start = vim.loop.hrtime()
   vim.fn.jobstart(result.cmd, {
     on_stderr = function(_, datalist)
       if callback then
@@ -133,7 +134,7 @@ M.run_parser = function(req, callback)
       end
       Fs.delete_request_scripts_files()
       if callback then
-        callback(success)
+        callback(success, start)
       end
     end,
   })
