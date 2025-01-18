@@ -217,7 +217,6 @@ end
 M.open = function()
   INLAY.clear()
   vim.schedule(function()
-    local start = vim.loop.hrtime()
     local _, requests = PARSER.get_document()
     local req = PARSER.get_request_at(requests)
     if req == nil then
@@ -227,7 +226,7 @@ M.open = function()
     if req.show_icon_line_number then
       INLAY:show_loading(req.show_icon_line_number)
     end
-    CMD.run_parser(req, function(success)
+    CMD.run_parser(req, function(success, start)
       if not success then
         if req.show_icon_line_number then
           INLAY:show_error(req.show_icon_line_number)
