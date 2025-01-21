@@ -142,6 +142,15 @@ local function set_buffer_contents(contents, ft)
     end
     local lines = vim.split(contents, "\n")
     vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+
+    -- setup filetype second to trigger filetype autocmd
+    -- first setup's filetype buffer is empty
+    if ft ~= nil then
+      vim.bo[buf].filetype = ft
+    else
+      vim.bo[buf].filetype = "text"
+    end
+
   end
 end
 
