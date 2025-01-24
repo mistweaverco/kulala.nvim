@@ -223,6 +223,17 @@ M.from_curl = function()
   print_http_spec(spec, curl)
 end
 
+local function open_default_view()
+  local default_view = CONFIG.get().default_view
+
+  if not buffer_exists() then
+    open_buffer()
+  end
+
+  local open_view = M["show_" .. default_view]
+  if open_view then open_view() end
+end
+
 M.open = function()
   INLAY.clear()
   vim.schedule(function()
@@ -247,22 +258,8 @@ M.open = function()
         if req.show_icon_line_number then
           INLAY:show_done(req.show_icon_line_number, elapsed_ms)
         end
-        if not buffer_exists() then
-          open_buffer()
-        end
 
-        local default_view = CONFIG.get().default_view
-        if default_view == "body" then
-          M.show_body()
-        elseif default_view == "headers" then
-          M.show_headers()
-        elseif default_view == "headers_body" then
-          M.show_headers_body()
-        elseif default_view == "script_output" then
-          M.show_script_output()
-        elseif CONFIG.get().default_view == "stats" then
-          M.show_stats()
-        end
+        open_default_view()
       end
     end)
   end)
@@ -283,20 +280,8 @@ M.open_all = function()
       if icon_linenr then
         INLAY:show_done(icon_linenr, elapsed_ms)
       end
-      if not buffer_exists() then
-        open_buffer()
-      end
-      if CONFIG.get().default_view == "body" then
-        M.show_body()
-      elseif CONFIG.get().default_view == "headers" then
-        M.show_headers()
-      elseif CONFIG.get().default_view == "headers_body" then
-        M.show_headers_body()
-      elseif CONFIG.get().default_view == "script_output" then
-        M.show_script_output()
-      elseif CONFIG.get().default_view == "stats" then
-        M.show_stats()
-      end
+
+      open_default_view()
     end
   end)
 end
@@ -353,14 +338,14 @@ M.show_headers_body = function()
     if not buffer_exists() then
       open_buffer()
     end
-    local h = FS.read_file(GLOBALS.HEADERS_FILE)
-    h = h:gsub("\r\n", "\n")
+    local headers = FS.read_file(GLOBALS.HEADERS_FILE)
+    headers = headers:gsub("\r\n", "\n")
     local body = FS.read_file(GLOBALS.BODY_FILE)
     local contenttype = INT_PROCESSING.get_config_contenttype()
     if contenttype.formatter then
       body = FORMATTER.format(contenttype.formatter, body)
     end
-    set_buffer_contents(h .. "\n" .. body, contenttype.ft)
+    set_buffer_contents(headers .. "\n" .. body, contenttype.ft)
     if CONFIG.get().winbar then
       WINBAR.toggle_winbar_tab(get_win(), "headers_body")
     end
@@ -368,6 +353,32 @@ M.show_headers_body = function()
   else
     vim.notify("No headers or body found", vim.log.levels.WARN)
   end
+end
+
+M.show_verbose = function()
+  if not FS.file_exists(GLOBALS.BODY_FILE) then
+    return vim.notify("No body found", vim.log.levels.WARN)
+  end
+
+  if not buffer_exists() then
+    open_buffer()
+  end
+
+  local errors = FS.file_exists(GLOBALS.ERRORS_FILE) and (FS.read_file(GLOBALS.ERRORS_FILE):gsub("\r", "") .. "\n") or ""
+  local body = FS.read_file(GLOBALS.BODY_FILE)
+
+  local contenttype = INT_PROCESSING.get_config_contenttype()
+  if contenttype.formatter then
+    body = FORMATTER.format(contenttype.formatter, body)
+  end
+
+  set_buffer_contents(errors .. body, contenttype.ft)
+
+  if CONFIG.get().winbar then
+    WINBAR.toggle_winbar_tab(get_win(), "verbose")
+  end
+
+  CONFIG.options.default_view = "verbose"
 end
 
 M.show_stats = function()
@@ -459,18 +470,7 @@ M.replay = function()
         vim.notify("Failed to replay request", vim.log.levels.ERROR, { title = "kulala" })
         return
       else
-        if not buffer_exists() then
-          open_buffer()
-        end
-        if CONFIG.get().default_view == "body" then
-          M.show_body()
-        elseif CONFIG.get().default_view == "headers" then
-          M.show_headers()
-        elseif CONFIG.get().default_view == "headers_body" then
-          M.show_headers_body()
-        elseif CONFIG.get().default_view == "script_output" then
-          M.show_script_output()
-        end
+        open_default_view()
       end
     end)
   end)

@@ -24,6 +24,13 @@ local winbar_info = {
     end,
     keymap = "A",
   },
+  verbose = {
+    desc = "Verbose (V)",
+    action = function()
+      require("kulala.ui").show_verbose()
+    end,
+    keymap = "V",
+  },
   script_output = {
     desc = "Script Output (O)",
     action = function()

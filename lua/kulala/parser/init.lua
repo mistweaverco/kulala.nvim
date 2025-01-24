@@ -693,6 +693,7 @@ M.parse = function(start_request_linenr)
   table.insert(res.cmd, "@" .. CURL_FORMAT_FILE)
   table.insert(res.cmd, "-X")
   table.insert(res.cmd, res.method)
+  table.insert(res.cmd, "-v")
 
   local content_type_header_name, content_type_header_value = PARSER_UTILS.get_header(res.headers, "content-type")
 
