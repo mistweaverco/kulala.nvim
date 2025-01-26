@@ -9,6 +9,9 @@ M.defaults = {
   -- Display mode
   -- possible values: "split", "float"
   display_mode = "split",
+  -- q to close the float (only used when display_mode is set to "float")
+  -- possible values: true, false
+  q_to_close_float = false,
   -- split direction
   -- possible values: "vertical", "horizontal"
   split_direction = "vertical",
