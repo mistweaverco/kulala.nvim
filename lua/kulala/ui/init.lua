@@ -2,6 +2,7 @@ local UICallbacks = require("kulala.ui.callbacks")
 local WINBAR = require("kulala.ui.winbar")
 local GLOBALS = require("kulala.globals")
 local CONFIG = require("kulala.config")
+local Q_TO_CLOSE_FLOAT = CONFIG.get().display_mode == "float" and CONFIG.get().q_to_close_float
 local INLAY = require("kulala.inlay")
 local PARSER = require("kulala.parser")
 local CURL_PARSER = require("kulala.parser.curl")
@@ -87,6 +88,11 @@ local replace_buffer = function()
   for _, callback in ipairs(callbacks) do
     callback(old_bufnr, new_bufnr)
   end
+
+  if Q_TO_CLOSE_FLOAT then
+    vim.api.nvim_buf_set_keymap(new_bufnr, "n", "q", ":bd<CR>", { noremap = true, silent = true })
+  end
+
   return new_bufnr
 end
 

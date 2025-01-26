@@ -19,6 +19,10 @@ the Kulala plugin with the available `opts`:
     -- Display mode, possible values: "split", "float"
     display_mode = "split",
 
+    -- q to close the float (only used when display_mode is set to "float")
+    -- possible values: true, false
+    q_to_close_float = false,
+
     -- split direction
     -- possible values: "vertical", "horizontal"
     split_direction = "vertical",
@@ -148,6 +152,26 @@ Example:
   "mistweaverco/kulala.nvim",
   opts = {
     display_mode = "float",
+  },
+}
+```
+
+### q_to_close_float
+
+Close float with `q`.
+
+Can be either `true` or `false`.
+
+Default: `false`
+
+Example:
+
+```lua
+{
+  "mistweaverco/kulala.nvim",
+  opts = {
+    display_mode = "float",
+    q_to_close_float = true,
   },
 }
 ```
