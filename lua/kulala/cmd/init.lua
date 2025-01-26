@@ -1,4 +1,5 @@
 local GLOBALS = require("kulala.globals")
+local CONFIG = require("kulala.config")
 local Fs = require("kulala.utils.fs")
 local PARSER = require("kulala.parser")
 local EXT_PROCESSING = require("kulala.external_processing")
@@ -79,18 +80,23 @@ end
 
 ---Runs the parser and returns the result
 M.run_parser = function(req, callback)
-  local stats
+  local stats, errors
+  local verbose_mode = CONFIG.get().default_view == "verbose"
+
   if process_prompt_vars(req) == false then
     Logger.warn("Prompt failed.")
     return
   end
+
   local result = req.cmd ~= nil and req or PARSER.parse(req.start_line)
   local start = vim.loop.hrtime()
+
   vim.fn.jobstart(result.cmd, {
     on_stderr = function(_, datalist)
       if callback then
-        if #datalist > 0 and #datalist[1] > 0 then
-          vim.notify(vim.inspect(datalist), vim.log.levels.ERROR)
+        if datalist then
+          errors = errors or {}
+          vim.list_extend(errors, datalist)
         end
       end
     end,
@@ -107,6 +113,9 @@ M.run_parser = function(req, callback)
         local body = Fs.read_file(GLOBALS.BODY_FILE)
         if stats then
           Fs.write_file(GLOBALS.STATS_FILE, vim.fn.json_encode(stats), false)
+        end
+        if verbose_mode and errors then
+          Fs.write_file(GLOBALS.ERRORS_FILE, table.concat(errors, "\n"), false)
         end
         for _, metadata in ipairs(result.metadata) do
           if metadata then
@@ -142,6 +151,8 @@ end
 
 ---Runs the parser and returns the result
 M.run_parser_all = function(doc, callback)
+  local verbose_mode = CONFIG.get().default_view == "verbose"
+
   for _, req in ipairs(doc) do
     offload_task(function()
       if process_prompt_vars(req) == false then
@@ -158,15 +169,28 @@ M.run_parser_all = function(doc, callback)
       end
       local start = vim.loop.hrtime()
       local success = false
+      local errors
+
       local stats = vim
-        .system(result.cmd, { text = true }, function(data)
+        .system(result.cmd, {
+          text = true,
+          stderr = function(_, data)
+            if data then
+              errors = (errors or "") .. data
+            end
+          end,
+        }, function(data)
           success = data.code == 0
         end)
         :wait()
+
       if success then
         local body = Fs.read_file(GLOBALS.BODY_FILE)
         if stats then
           Fs.write_file(GLOBALS.STATS_FILE, vim.fn.json_encode(stats), false)
+        end
+        if verbose_mode and errors then
+          Fs.write_file(GLOBALS.ERRORS_FILE, errors, false)
         end
         for _, metadata in ipairs(result.metadata) do
           if metadata then

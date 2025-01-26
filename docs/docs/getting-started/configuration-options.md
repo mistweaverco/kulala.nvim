@@ -23,7 +23,7 @@ the Kulala plugin with the available `opts`:
     -- possible values: "vertical", "horizontal"
     split_direction = "vertical",
 
-    -- default_view, body or headers or headers_body
+    -- default_view, body or headers or headers_body or verbose
     default_view = "body",
 
     -- dev, test, prod, can be anything
@@ -91,7 +91,7 @@ the Kulala plugin with the available `opts`:
 
     -- Specify the panes to be displayed by default
     -- Current available pane contains { "body", "headers", "headers_body", "script_output", "stats" },
-    default_winbar_panes = { "body", "headers", "headers_body" },
+    default_winbar_panes = { "body", "headers", "headers_body", "verbose" },
 
     -- enable reading vscode rest client environment variables
     vscode_rest_client_environmentvars = false,
@@ -185,6 +185,7 @@ Possible values:
 - `body`
 - `headers`
 - `headers_body`
+- `verbose`
 - `script_output`
 - `stats`
 

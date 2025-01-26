@@ -1,0 +1,23 @@
+*   Trying 127.0.0.1:3001...
+
+* Connected to localhost (127.0.0.1) port 3001 (#0)
+> GET /greeting HTTP/1.1
+> Host: localhost:3001
+> User-Agent: kulala.nvim/4.5.1
+> Accept: */*
+> 
+
+* Mark bundle as not supporting multiuse
+< HTTP/1.1 200 OK
+
+< Date: Sun, 26 Jan 2025 01:10:55 GMT
+< Transfer-Encoding: chunked
+< Server: Jetty(9.4.36.v20210114)
+< 
+{
+[16 bytes data]
+
+* Connection #0 to host localhost left intact
+
+
+Hello, World!
