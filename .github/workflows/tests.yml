@@ -28,7 +28,7 @@ jobs:
     name: Lint Code
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/mistweaverco/kulala-nvim-linux-testrunner:latest
+      image: gorillamoe/kulala-nvim-linux-testrunner:latest
     steps:
       - uses: actions/checkout@v4
 
