@@ -242,7 +242,9 @@ local function open_default_view()
 end
 
 M.open = function()
+  DB.current_buffer = vim.fn.bufnr()
   INLAY.clear()
+
   vim.schedule(function()
     local _, requests = PARSER.get_document()
     local req = PARSER.get_request_at(requests)
@@ -253,7 +255,7 @@ M.open = function()
     if req.show_icon_line_number then
       INLAY:show_loading(req.show_icon_line_number)
     end
-    CMD.run_parser(req, function(success, start)
+    CMD.run_parser(requests, req, function(success, start)
       if not success then
         if req.show_icon_line_number then
           INLAY:show_error(req.show_icon_line_number)
@@ -273,9 +275,16 @@ M.open = function()
 end
 
 M.open_all = function()
+  DB.current_buffer = vim.fn.bufnr()
   INLAY.clear()
-  local _, requests = PARSER.get_document()
-  CMD.run_parser_all(requests, function(success, start, icon_linenr)
+
+  local variables, requests = PARSER.get_document()
+
+  if not requests then
+    return Logger.error("No requests found in the documents")
+  end
+
+  CMD.run_parser_all(requests, variables, function(success, start, icon_linenr)
     if not success then
       if icon_linenr then
         INLAY:show_error(icon_linenr)
@@ -473,7 +482,7 @@ M.replay = function()
     return
   end
   vim.schedule(function()
-    CMD.run_parser(result, function(success)
+    CMD.run_parser({}, result, function(success)
       if not success then
         vim.notify("Failed to replay request", vim.log.levels.ERROR, { title = "kulala" })
         return

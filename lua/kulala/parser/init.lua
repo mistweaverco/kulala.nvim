@@ -530,7 +530,7 @@ end
 ---Parse a request and return the request on itself, its headers and body
 ---@param start_request_linenr number|nil The line number where the request starts
 ---@return Request|nil -- Table containing the request data or nil if parsing fails
-function M.get_basic_request_data(start_request_linenr)
+function M.get_basic_request_data(requests, start_request_linenr)
   local res = {
     metadata = {},
     method = "GET",
@@ -563,7 +563,6 @@ function M.get_basic_request_data(start_request_linenr)
   if CONFIG:get().treesitter then
     req = TS.get_request_at(start_request_linenr)
   else
-    local _, requests = M.get_document()
     req = M.get_request_at(requests, start_request_linenr)
   end
 
@@ -604,22 +603,19 @@ end
 ---Parse a request and return the request on itself, its headers and body
 ---@param start_request_linenr number|nil The line number where the request starts
 ---@return Request|nil -- Table containing the request data or nil if parsing fails
-M.parse = function(start_request_linenr)
-  local res = M.get_basic_request_data(start_request_linenr)
+M.parse = function(requests, start_request_linenr, document_variables)
+  if not requests then
+    local get_document = CONFIG:get().treesitter and TS.get_document or M.get_document
+    requests, document_variables = get_document()
+  end
+
+  local res = M.get_basic_request_data(requests, start_request_linenr)
 
   if res == nil then
     return nil
   end
 
   local has_pre_request_scripts = #res.scripts.pre_request.inline > 0 or #res.scripts.pre_request.files > 0
-
-  local document_variables
-  if CONFIG:get().treesitter then
-    document_variables = TS.get_document_variables()
-  else
-    document_variables = M.get_document()
-  end
-
   DB.update().previous_request = DB.find_unique("current_request")
 
   local env = ENV_PARSER.get_env()

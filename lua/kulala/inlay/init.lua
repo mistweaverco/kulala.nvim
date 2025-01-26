@@ -1,5 +1,6 @@
-local NS = vim.api.nvim_create_namespace("kulala_inlay_hints")
 local CONFIG = require("kulala.config")
+local DB = require("kulala.db")
+local NS = vim.api.nvim_create_namespace("kulala_inlay_hints")
 
 local M = {}
 
@@ -37,7 +38,8 @@ M.show_done = function(self, linenr, elapsed_time)
 end
 
 M.show = function(t, linenr)
-  local bufnr = vim.api.nvim_get_current_buf()
+  local bufnr = DB.current_buffer
+
   M.clear_if_marked(bufnr, linenr)
   vim.api.nvim_buf_set_extmark(bufnr, NS, linenr - 1, 0, {
     virt_text = { { t } },

@@ -9,51 +9,95 @@ local assert = require("luassert")
 
 describe("kulala.ui", function()
   describe("show output of requests", function()
-    local jobstart, fs
-    local result, expected
+    local curl, jobstart, system, fs
+    local result, expected, ui_buf
 
     before_each(function()
-      jobstart = s.Jobstart:stub("test_cmd", {
-        on_stdout = {},
-        on_stderr = { "Test stderr" },
+      curl = s.Curl:stub({
+        ["*"] = {
+          headers = h.load_fixture("request_1_headers.txt"),
+          stats = h.load_fixture("request_1_stats.txt"),
+        },
+        ["http://localhost:3001/greeting"] = {
+          body = h.load_fixture("request_1_body.txt"),
+          errors = h.load_fixture("request_1_errors.txt"),
+        },
+        ["http://localhost:3001/echo"] = {
+          body = h.load_fixture("request_2_body.txt"),
+          errors = h.load_fixture("request_2_errors.txt"),
+        },
+      })
+
+      jobstart = s.Jobstart:stub({ "curl" }, {
+        on_call = function(self)
+          curl:request(self)
+        end,
         on_exit = 0,
       })
 
-      fs = s.Fs:stub_read_file({
-        [GLOBALS.HEADERS_FILE] = h.to_string([[
-          HTTP/1.1 200 OK
-          Date: Sun, 26 Jan 2025 00:14:41 GMT
-          Transfer-Encoding: chunked
-          Server: Jetty(9.4.36.v20210114)
-        ]]),
-        [GLOBALS.BODY_FILE] = "Hello, World!",
-        [GLOBALS.ERRORS_FILE] = h.load_fixture("request_1_errors.txt"),
+      system = s.System:stub({ "curl" }, {
+        on_call = function(self)
+          curl:request(self)
+        end,
       })
     end)
 
     after_each(function()
+      h.delete_all_bufs()
+      curl:reset()
       jobstart:reset()
-      fs:read_file_reset()
+      system:reset()
     end)
 
-    it("shows output in verbose mode", function()
-      local lines = h.to_table([[
-        GET http://localhost:3001/echo
-
-        ###
-
+    it("shows request output in verbose mode for run_one", function()
+      local lines = h.to_table(
+        [[
         GET http://localhost:3001/greeting
-      ]])
+      ]],
+        true
+      )
 
-      h.create_buf(lines, vim.uv.cwd() .. "test.http")
+      h.create_buf(lines, "test.http")
       CONFIG.options.default_view = "verbose"
 
       kulala.run()
-      jobstart:wait(1000)
+      jobstart:wait(3000, function()
+        ui_buf = vim.fn.bufnr(GLOBALS.UI_ID)
+        return ui_buf > 0
+      end)
 
-      result = h.to_string(h.get_buf_lines(vim.fn.bufnr("kulala://ui")), false)
+      result = h.get_buf_lines(ui_buf):to_string()
       expected = h.load_fixture("request_1_verbose.txt")
 
+      assert.is_same(expected, result)
+    end)
+
+    it("shows last request output in verbose mode for run_all", function()
+      local lines = h.to_table(
+        [[
+        GET http://localhost:3001/greeting
+
+        ###
+
+        GET http://localhost:3001/echo
+      ]],
+        true
+      )
+
+      h.create_buf(lines, "test.http")
+      CONFIG.options.default_view = "verbose"
+
+      kulala.run_all()
+
+      system:wait(3000, function()
+        ui_buf = vim.fn.bufnr(GLOBALS.UI_ID)
+        return curl.requests_no == 2 and ui_buf ~= -1
+      end)
+
+      expected = h.load_fixture("request_2_verbose.txt")
+      result = h.get_buf_lines(ui_buf):to_string()
+
+      assert.is_same(2, curl.requests_no)
       assert.is_same(expected, result)
     end)
   end)

@@ -37,7 +37,7 @@ end
 
 local function save_data()
   if CONFIG.get().environment_scope == "b" then
-    if vim.fn.bufexists(M.data.scope_nr) ~= -1 then
+    if vim.fn.bufexists(M.data.scope_nr) > 0 then
       vim.b[M.data.scope_nr].kulala_data = M.data
     end
   elseif CONFIG.get().environment_scope == "g" then
