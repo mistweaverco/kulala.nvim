@@ -150,7 +150,6 @@ local function set_buffer_contents(contents, ft)
     else
       vim.bo[buf].filetype = "text"
     end
-
   end
 end
 
@@ -231,7 +230,9 @@ local function open_default_view()
   end
 
   local open_view = M["show_" .. default_view]
-  if open_view then open_view() end
+  if open_view then
+    open_view()
+  end
 end
 
 M.open = function()
@@ -364,7 +365,8 @@ M.show_verbose = function()
     open_buffer()
   end
 
-  local errors = FS.file_exists(GLOBALS.ERRORS_FILE) and (FS.read_file(GLOBALS.ERRORS_FILE):gsub("\r", "") .. "\n") or ""
+  local errors = FS.file_exists(GLOBALS.ERRORS_FILE) and (FS.read_file(GLOBALS.ERRORS_FILE):gsub("\r", "") .. "\n")
+    or ""
   local body = FS.read_file(GLOBALS.BODY_FILE)
 
   local contenttype = INT_PROCESSING.get_config_contenttype()
@@ -372,7 +374,7 @@ M.show_verbose = function()
     body = FORMATTER.format(contenttype.formatter, body)
   end
 
-  set_buffer_contents(errors .. body, contenttype.ft)
+  set_buffer_contents(errors .. body, "kulala_verbose_result")
 
   if CONFIG.get().winbar then
     WINBAR.toggle_winbar_tab(get_win(), "verbose")

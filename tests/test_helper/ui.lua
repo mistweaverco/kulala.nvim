@@ -11,7 +11,11 @@ string.clean = function(str) --luacheck: ignore
 end
 
 local function default_true(arg)
-  if arg == false then return false else return true end
+  if arg == false then
+    return false
+  else
+    return true
+  end
 end
 
 ---@param tbl string[]|string
@@ -27,11 +31,14 @@ end
 
 h.to_table = function(str, clean)
   clean = default_true(clean)
-  str = type(str) == 'table' and h.to_string(str, clean) or str
+  str = type(str) == "table" and h.to_string(str, clean) or str
 
-  return vim.iter(vim.split(str or "", "\n", { trimempty = clean })):map(function(line)
+  return vim
+    .iter(vim.split(str or "", "\n", { trimempty = clean }))
+    :map(function(line)
       return clean and tostring(line:clean()) or line
-    end):totable()
+    end)
+    :totable()
 end
 
 h.load_fixture = function(fixture_name)

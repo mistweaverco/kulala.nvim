@@ -81,7 +81,7 @@ end
 ---Runs the parser and returns the result
 M.run_parser = function(req, callback)
   local stats, errors
-  local verbose_mode = CONFIG.get().default_view == 'verbose'
+  local verbose_mode = CONFIG.get().default_view == "verbose"
 
   if process_prompt_vars(req) == false then
     Logger.warn("Prompt failed.")
@@ -96,7 +96,7 @@ M.run_parser = function(req, callback)
       if callback then
         if datalist then
           errors = errors or {}
-          vim.list_extend(errors,  datalist)
+          vim.list_extend(errors, datalist)
         end
       end
     end,
@@ -151,7 +151,7 @@ end
 
 ---Runs the parser and returns the result
 M.run_parser_all = function(doc, callback)
-  local verbose_mode = CONFIG.get().default_view == 'verbose'
+  local verbose_mode = CONFIG.get().default_view == "verbose"
 
   for _, req in ipairs(doc) do
     offload_task(function()
@@ -171,7 +171,8 @@ M.run_parser_all = function(doc, callback)
       local success = false
       local errors
 
-      local stats = vim.system(result.cmd, {
+      local stats = vim
+        .system(result.cmd, {
           text = true,
           stderr = function(_, data)
             if data then
@@ -180,7 +181,8 @@ M.run_parser_all = function(doc, callback)
           end,
         }, function(data)
           success = data.code == 0
-        end):wait()
+        end)
+        :wait()
 
       if success then
         local body = Fs.read_file(GLOBALS.BODY_FILE)

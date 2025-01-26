@@ -19,16 +19,16 @@ describe("kulala.ui", function()
         on_exit = 0,
       })
 
-      fs = s.Fs:stub_read_file {
-        [GLOBALS.HEADERS_FILE] = h.to_string[[
+      fs = s.Fs:stub_read_file({
+        [GLOBALS.HEADERS_FILE] = h.to_string([[
           HTTP/1.1 200 OK
           Date: Sun, 26 Jan 2025 00:14:41 GMT
           Transfer-Encoding: chunked
           Server: Jetty(9.4.36.v20210114)
-        ]],
+        ]]),
         [GLOBALS.BODY_FILE] = "Hello, World!",
-        [GLOBALS.ERRORS_FILE] = h.load_fixture("request_1_errors.txt")
-      }
+        [GLOBALS.ERRORS_FILE] = h.load_fixture("request_1_errors.txt"),
+      })
     end)
 
     after_each(function()
@@ -37,13 +37,13 @@ describe("kulala.ui", function()
     end)
 
     it("shows output in verbose mode", function()
-      local lines = h.to_table[[
+      local lines = h.to_table([[
         GET http://localhost:3001/echo
 
         ###
 
         GET http://localhost:3001/greeting
-      ]]
+      ]])
 
       h.create_buf(lines, vim.uv.cwd() .. "test.http")
       CONFIG.options.default_view = "verbose"
