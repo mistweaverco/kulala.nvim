@@ -33,7 +33,7 @@ make docker-build OS=windows
 
 > [!WARNING]
 > You need to have write access to the docker registry at
-> `ghcr.io/mistweaverco/kulala-nvim-windows-testrunner`.
+> `gorillamoe/kulala-nvim-windows-testrunner`.
 
 ```bash
 make docker-push OS=windows
