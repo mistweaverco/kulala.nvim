@@ -1,0 +1,36 @@
+@foobar=bar
+@ENV_USER = some_username
+@ENV_PROJECT = project_name
+
+POST https://httpbin.org/advanced_1 HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+
+{
+  "project": "{{ENV_PROJECT}}",
+    "results": [
+    {
+      "id": 1,
+      "desc": "some_username"
+    },
+    {
+      "id": 2,
+      "desc": "another_username"
+    }
+    ]
+}
+
+> {%
+client.global.set("AID", response.body.json.results.filter(item => item.desc === request.environment.get("ENV_USER"))[0].id);
+%}
+
+###
+
+POST https://httpbin.org/advanced_2 HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+
+{
+  "id": "1",
+  "project": "{{ENV_PROJECT}}"
+}

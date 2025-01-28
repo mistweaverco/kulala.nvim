@@ -1,0 +1,13 @@
+{
+  current_request = {
+    body_computed = '{\r\n  "named_request_response_var": "TEST_JS_SET_REQUEST_VAR",\r\n  "js_computed_val": "TEST_JS_RESPONSE_VAL: TEST_DOCUMENT_VAR",\r\n  "env_json_key": "PROMPT_VAR",\r\n  "dev_env.json": "ditto"\r\n}',
+    http_version = "1.1",
+    metadata = {},
+    method = "POST",
+    url = "https://httpbin.org/post",
+    url_raw = "https://httpbin.org/post"
+  },
+  env = {
+    AUTH_TOKEN = "PROMPT_VAR",
+  },
+}

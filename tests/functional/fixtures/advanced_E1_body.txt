@@ -1,0 +1,25 @@
+{
+  "args": {
+    "baz": "bax",
+    "foo": "bar"
+  },
+  "data": "{\r\n  \"document_var\": \"TEST_DOCUMENT_VAR\",\r\n  \"js_set_request_var\": \"TEST_JS_SET_REQUEST_VAR\",\r\n  \"prompt_var\": \"PROMPT_VAR\"\r\n}",
+  "files": {},
+  "form": {},
+  "headers": {
+    "Accept": "application/json",
+    "Content-Length": "126",
+    "Content-Type": "application/json",
+    "Host": "httpbin.org",
+    "User-Agent": "kulala.nvim/4.7.0",
+    "X-Amzn-Trace-Id": "Root=1-679e2bd1-6e067dac0513b01a58b01247"
+  },
+  "json": {
+    "document_var": "TEST_DOCUMENT_VAR",
+    "js_set_request_var": "TEST_JS_SET_REQUEST_VAR",
+    "prompt_var": "PROMPT_VAR"
+  },
+  "origin": "77.231.37.125",
+  "url": "https://httpbin.org/advanced_e1?foo=bar&baz=bax"
+}
+

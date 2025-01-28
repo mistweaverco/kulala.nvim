@@ -1,0 +1,24 @@
+{
+  "args": {
+    "key1": "value1"
+  },
+  "data": "{\r\n  \"foobar\": \"lul\"\r\n  \"password\": \"TEST_PASSWORD\"\r\n}",
+  "files": {},
+  "form": {},
+  "headers": {
+    "Accept": "application/json",
+    "Content-Length": "23",
+    "Content-Type": "application/json",
+    "Host": "httpbin.org",
+    "Token": "POSTTHIS_IS_A_TOKENvalue11738400456",
+    "User-Agent": "kulala.nvim/4.7.0",
+    "X-Amzn-Trace-Id": "Root=1-679de2c6-3a1a842335b87ce25349c30e"
+  },
+  "json": {
+    "foobar": "lul"
+    "password": "TEST_PASSWORD"
+  },
+  "origin": "77.231.37.125",
+  "url": "https://httpbin.org/advanced_d?key1=value1"
+}
+

@@ -1,0 +1,16 @@
+< {%
+request.variables.set('TOKEN_RAW', 'THIS_IS_A_TOKEN');
+%}
+< ./../scripts/advanced_D_pre.js
+# @prompt PASSWORD Password prompt
+POST https://httpbin.org/advanced_d?key1=value1 HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+Token: {{COMPUTED_TOKEN}}
+
+{
+  "foobar": "lul"
+  "password": "{{PASSWORD}}"
+}
+
+> ./../scripts/advanced_D_post.js

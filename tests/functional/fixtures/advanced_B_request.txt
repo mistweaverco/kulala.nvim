@@ -1,0 +1,62 @@
+{
+  current_request = {
+    body = '{\r\n  "foo": 1,\r\n  "foobar": "bar"\r\n}',
+    body_computed = '{\r\n  "foo": 1,\r\n  "foobar": "bar"\r\n}',
+    body_display = '{\r\n  "foo": 1,\r\n  "foobar": "bar"\r\n}',
+    body_raw = '{\r\n  "foo": {{DEFAULT_TIMEOUT}},\r\n  "foobar": "{{foobar}}"\r\n}',
+    cmd = { "curl", "-s", "-D", "/home/yaro/.cache/nvim/kulala/headers.txt", "-o", "/home/yaro/.cache/nvim/kulala/body.txt", "-w", "@/home/yaro/projects/kulala.nvim/lua/kulala/utils/../parser/curl-format.json", "-X", "POST", "-v", "--data", '{\r\n  "foo": 1,\r\n  "foobar": "bar"\r\n}', "-H", "Accept:application/json", "-H", "Content-Type:application/json", "-H", "Date:Foobar", "--http1.1", "-A", "kulala.nvim/4.7.0", "--cookie-jar", "/home/yaro/.cache/nvim/kulala/cookies.txt", "https://httpbin.org/post" },
+    ft = "text",
+    headers = {
+      Accept = "application/json",
+      ["Content-Type"] = "application/json",
+      Date = "Foobar"
+    },
+    headers_display = {
+      Date = "Foobar"
+    },
+    headers_raw = {
+      Date = "Foobar"
+    },
+    http_version = "1.1",
+    metadata = { {
+        name = "name",
+        value = "REQUEST_FOOBAR"
+      } },
+    method = "POST",
+    redirect_response_body_to_files = {},
+    url = "https://httpbin.org/post",
+    url_raw = "https://httpbin.org/post"
+  },
+  env = {
+    REQUEST_FOOBAR = {
+      request = {
+        body = '{\r\n  "foo": 1,\r\n  "foobar": "bar"\r\n}',
+        headers = {
+          Accept = "application/json",
+          ["Content-Type"] = "application/json",
+          Date = "Foobar"
+        },
+      },
+      response = {
+        body = '{\n  "args": {}, \n  "data": "{\\r\\n  \\"foo\\": 1,\\r\\n  \\"foobar\\": \\"bar\\"\\r\\n}", \n  "files": {}, \n  "form": {}, \n  "headers": {\n    "Accept": "application/json", \n    "Content-Length": "36", \n    "Content-Type": "application/json", \n    "Date": "Foobar", \n    "Host": "httpbin.org", \n    "User-Agent": "kulala.nvim/4.7.0", \n    "X-Amzn-Trace-Id": "Root=1-679ccf6c-2874db1a7d0120f77a94b002"\n  }, \n  "json": {\n    "foo": 1, \n    "foobar": "bar"\n  }, \n  "origin": "77.231.37.125", \n  "url": "https://httpbin.org/post"\n}\n',
+        cookies = {},
+        headers = {
+          ["Access-Control-Allow-Credentials"] = "true",
+          ["Access-Control-Allow-Origin"] = "*",
+          Connection = "keep-alive",
+          ["Content-Length"] = "515",
+          ["Content-Type"] = "application/json",
+          Date = "Fri, 31 Jan 2025 13:26:04 GMT",
+          Server = "gunicorn/19.9.0"
+        }
+      }
+    }
+  },
+  http_client_env_shared = {
+    ["$default_headers"] = {
+      Accept = "application/json",
+      ["Content-Type"] = "application/json"
+    },
+    DEFAULT_TIMEOUT = 1
+  },
+}

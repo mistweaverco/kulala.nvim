@@ -27,14 +27,14 @@ M.stdin_cmd = function(cmdstring, contents)
   table.insert(cmd, cmdstring)
 
   -- Execute the command with the provided contents as stdin
-  local res = vim.system(cmd, { stdin = contents, text = true }):wait().stdout
+  local res = vim.system(cmd, { stdin = contents, text = true }):wait()
 
-  if not res then
-    Logger.error("stdin_cmd --> Command failed: " .. cmdstring .. ".")
+  if res.code ~= 0 then
+    Logger.error(("stdin_cmd --> Command failed: %s. Error: %s"):format(cmdstring, res.stderr))
     return ""
   else
     -- Remove trailing newline and return the result
-    return res:gsub("[\r\n]$", "")
+    return res.stdout:gsub("[\r\n]$", "")
   end
 end
 

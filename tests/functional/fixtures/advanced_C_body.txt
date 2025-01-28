@@ -1,0 +1,25 @@
+{
+  "args": {},
+  "data": "",
+  "files": {
+    "someFile": "PNG\r\n\u001a\n\u0000\u0000\u0000\rIHDR\u0000\u0000\u0000\u0000\u0000\u0000\b\u0003\u0000\u0000\u0000Bâðæ\u0000\u0000\u0000PLTEÿÿÿS¡ø\u001dN\u007fG{ø\u0000Dyúûüø\u0000<uºÊÖãéîíñôø\u0017òõ÷®ÁÏÚâé¦»ÃÑÛÒÜäy³gª¢¸Èo®ø\u0000^¦ÿû÷ÊÖßþôë.nþíß³ÄûÎ¦ú·výäÎü×¶ûÇù0ûÀù¤Iù­^ù¡?ýßÄú­eú¼}ù©P÷\u0000ù²iBu¾{\u0000\u0000\n\r\n"
+  },
+  "form": {
+    "h": "514.5666666666667",
+    "w": "514.5666666666667",
+    "x": "0",
+    "y": "1.4333333333333333"
+  },
+  "headers": {
+    "Accept": "application/json",
+    "Content-Length": "869",
+    "Content-Type": "multipart/form-data; boundary=----WebKitFormBoundary$TIMESTAMP",
+    "Host": "httpbin.org",
+    "User-Agent": "kulala.nvim/4.7.0",
+    "X-Amzn-Trace-Id": "Root=1-679d40fa-26a1a47e39f1f2b2717ed140"
+  },
+  "json": null,
+  "origin": "77.231.37.125",
+  "url": "https://httpbin.org/post"
+}
+

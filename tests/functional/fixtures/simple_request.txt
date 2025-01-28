@@ -1,0 +1,21 @@
+{
+  current_request = {
+    body = '{\r\n  "foo": "bar"\r\n}',
+    body_computed = '{\r\n  "foo": "bar"\r\n}',
+    body_raw = '{\r\n  "foo": "bar"\r\n}',
+    headers = {
+      Accept = "application/json",
+      Authorization = "Bearer Foo:bar=baz",
+      ["Content-Type"] = "application/json",
+    },
+    headers_raw = {
+      Accept = "application/json",
+      Authorization = "Bearer {{BASIC_TEST_TOKEN}}",
+      ["Content-Type"] = "application/json",
+    },
+    method = "POST",
+    url = "https://httpbin.org/simple",
+    url_raw = "{{SCHEMA_FOO}}://{{URL_ENDPOINT}}",
+  },
+  env = {},
+}
