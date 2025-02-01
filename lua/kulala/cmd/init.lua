@@ -85,169 +85,105 @@ M.run = function(cmd, callback)
   })
 end
 
----Runs the parser and returns the result
-M.run_parser = function(requests, req, variables, callback)
-  local stats, errors
+local function process_metadata(result)
+  local body = Fs.read_file(GLOBALS.BODY_FILE)
+
+  local int_meta_processors = {
+    ["name"] = "set_env_for_named_request",
+    ["env-json-key"] = "env_json_key",
+    ["env-header-key"] = "env_header_key",
+  }
+
+  local ext_meta_processors = {
+    ["stdin-cmd"] = "stdin_cmd",
+    ["env-stdin-cmd"] = "env_stdin_cmd",
+  }
+
+  local processor
+  for _, metadata in ipairs(result.metadata) do
+    processor = int_meta_processors[metadata.name]
+    _ = processor and INT_PROCESSING[processor](metadata.value, body)
+
+    processor = ext_meta_processors[metadata.name]
+    _ = processor and EXT_PROCESSING[processor](metadata.value, body)
+  end
+end
+
+local function process_external(result)
+  INT_PROCESSING.redirect_response_body_to_file(result.redirect_response_body_to_files)
+  PARSER.scripts.javascript.run("post_request", result.scripts.post_request)
+  Fs.delete_request_scripts_files()
+end
+
+local function process_api()
+  Api.trigger("after_next_request")
+  Api.trigger("after_request")
+end
+
+local function process_request(requests, request, variables, callback)
   local verbose_mode = CONFIG.get().default_view == "verbose"
+  local unbuffered_mode
 
-  Fs.clear_cached_files(true)
+  offload_task(function()
+    if not process_prompt_vars(request) then
+      Logger.warn("Prompt failed. Skipping this and all following requests.")
+      return false
+    end
 
-  if process_prompt_vars(req) == false then
-    Logger.warn("Prompt failed.")
-    return
-  end
+    local result = PARSER.parse(requests, variables, request.start_line)
+    if not result then
+      Logger.warn(("Request at line: %s could not be parsed"):format(request.start_line))
+      return false
+    end
 
-  local result = PARSER.parse(requests, variables, req.start_line)
-  if not result then
-    Logger.warn(("Request at line: %s could not be parsed"):format(req.start_line))
-    return false
-  end
+    local icon_linenr = result.show_icon_line_number
+    local start_time = vim.loop.hrtime()
 
-  local start = vim.loop.hrtime()
+    INLAY:show_loading(icon_linenr)
 
-  vim.fn.jobstart(result.cmd, {
-    on_stderr = function(_, datalist)
-      if datalist then
-        errors = errors or {}
-        vim.list_extend(errors, datalist)
-      end
-    end,
-    on_stdout = function(_, lines, _)
-      local contents = table.concat(lines, "\n")
-      if contents == "" then
-        return
-      end
-      stats = vim.fn.json_decode(contents)
-    end,
-    on_exit = function(_, code)
-      local success = code == 0
-      if success then
-        local body = Fs.read_file(GLOBALS.BODY_FILE)
-        if stats then
-          Fs.write_file(GLOBALS.STATS_FILE, vim.fn.json_encode(stats), false)
-        end
-        if verbose_mode and errors then
-          Fs.write_file(GLOBALS.ERRORS_FILE, table.concat(errors, "\n"), false)
-        end
-        for _, metadata in ipairs(result.metadata) do
-          if metadata then
-            if metadata.name == "name" then
-              INT_PROCESSING.set_env_for_named_request(metadata.value, body)
-            elseif metadata.name == "env-json-key" then
-              INT_PROCESSING.env_json_key(metadata.value, body)
-            elseif metadata.name == "env-header-key" then
-              INT_PROCESSING.env_header_key(metadata.value)
-            elseif metadata.name == "stdin-cmd" then
-              EXT_PROCESSING.stdin_cmd(metadata.value, body)
-            elseif metadata.name == "env-stdin-cmd" then
-              EXT_PROCESSING.env_stdin_cmd(metadata.value, body)
-            end
+    local success, errors = false, nil
+    local stats = vim
+      .system(result.cmd, {
+        text = true,
+        stderr = function(_, data)
+          if data then
+            errors = (errors or "") .. data
           end
-        end
-        INT_PROCESSING.redirect_response_body_to_file(result.redirect_response_body_to_files)
+        end,
+      }, function(data)
+        success = data.code == 0
+      end)
+      :wait()
 
-        local has_post_request_scripts = #result.scripts.post_request.inline > 0
-          or #result.scripts.pre_request.files > 0
-        if has_post_request_scripts then
-          PARSER.scripts.javascript.run("post_request", result.scripts.post_request)
-        end
-        Api.trigger("after_next_request")
-        Api.trigger("after_request")
-      else
-        Logger.error(
-          ("Errors in request %s at line: %s\n%s"):format(req.url, req.start_line, table.concat(errors, "\n"))
-        )
+    if success then
+      Fs.write_file(GLOBALS.STATS_FILE, vim.fn.json_encode(stats), false)
+      if verbose_mode and errors then
+        Fs.write_file(GLOBALS.ERRORS_FILE, errors, false)
       end
-      Fs.delete_request_scripts_files()
-      if callback then
-        return callback(success, start)
-      end
-    end,
-  })
+
+      process_metadata(result)
+      process_external(result)
+      process_api()
+    else
+      Logger.error(("Errors in request %s at line: %s\n%s"):format(request.url, request.start_line, errors or ""))
+    end
+
+    if callback then
+      return callback(success, start_time, icon_linenr)
+    end
+
+    return true
+  end)
 end
 
 ---Runs the parser and returns the result
-M.run_parser_all = function(requests, variables, callback)
-  local verbose_mode = CONFIG.get().default_view == "verbose"
-
+M.run_parser = function(requests, request, variables, callback)
   Fs.clear_cached_files(true)
 
-  for _, req in ipairs(requests) do
-    offload_task(function()
-      if process_prompt_vars(req) == false then
-        if req.show_icon_line_number then
-          INLAY:show_error(req.show_icon_line_number)
-        end
-        Logger.warn("Prompt failed. Skipping this and all following requests.")
-        return false
-      end
+  local reqs_to_process = request and { request } or requests
 
-      local result = PARSER.parse(requests, variables, req.start_line)
-      if not result then
-        Logger.warn(("Request at line: %s could not be parsed"):format(req.start_line))
-        return false
-      end
-
-      local icon_linenr = result.show_icon_line_number
-      if icon_linenr then
-        INLAY:show_loading(icon_linenr)
-      end
-      local start = vim.loop.hrtime()
-      local success = false
-      local errors
-
-      local stats = vim
-        .system(result.cmd, {
-          text = true,
-          stderr = function(_, data)
-            if data then
-              errors = (errors or "") .. data
-            end
-          end,
-        }, function(data)
-          success = data.code == 0
-        end)
-        :wait()
-
-      if success then
-        local body = Fs.read_file(GLOBALS.BODY_FILE)
-        if stats then
-          Fs.write_file(GLOBALS.STATS_FILE, vim.fn.json_encode(stats), false)
-        end
-        if verbose_mode and errors then
-          Fs.write_file(GLOBALS.ERRORS_FILE, errors, false)
-        end
-        for _, metadata in ipairs(result.metadata) do
-          if metadata then
-            if metadata.name == "name" then
-              INT_PROCESSING.set_env_for_named_request(metadata.value, body)
-            elseif metadata.name == "env-json-key" then
-              INT_PROCESSING.env_json_key(metadata.value, body)
-            elseif metadata.name == "env-header-key" then
-              INT_PROCESSING.env_header_key(metadata.value)
-            elseif metadata.name == "stdin-cmd" then
-              EXT_PROCESSING.stdin_cmd(metadata.value, body)
-            elseif metadata.name == "env-stdin-cmd" then
-              EXT_PROCESSING.env_stdin_cmd(metadata.value, body)
-            end
-          end
-        end
-        INT_PROCESSING.redirect_response_body_to_file(result.redirect_response_body_to_files)
-        PARSER.scripts.javascript.run("post_request", result.scripts.post_request)
-        Api.trigger("after_next_request")
-        Api.trigger("after_request")
-      else
-        Logger.error(("Errors in request %s at line: %s\n%s"):format(req.url, req.start_line, errors or ""))
-      end
-
-      Fs.delete_request_scripts_files()
-
-      if callback then
-        return callback(success, start, icon_linenr)
-      end
-
-      return true
-    end)
+  for _, req in ipairs(reqs_to_process) do
+    process_request(requests, req, variables, callback)
   end
 end
 

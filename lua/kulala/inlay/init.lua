@@ -22,11 +22,11 @@ M.clear_if_marked = function(bufnr, linenr)
 end
 
 M.show_loading = function(self, linenr)
-  M.show(CONFIG.get().icons.inlay.loading, linenr)
+  _ = linenr and M.show(CONFIG.get().icons.inlay.loading, linenr)
 end
 
 M.show_error = function(self, linenr)
-  M.show(CONFIG.get().icons.inlay.error, linenr)
+  _ = linenr and M.show(CONFIG.get().icons.inlay.error, linenr)
 end
 
 M.show_done = function(self, linenr, elapsed_time)
@@ -34,7 +34,7 @@ M.show_done = function(self, linenr, elapsed_time)
   if string.len(CONFIG.get().icons.inlay.done) > 0 then
     icon = CONFIG.get().icons.inlay.done .. " "
   end
-  M.show(icon .. elapsed_time, linenr)
+  _ = linenr and M.show(icon .. elapsed_time, linenr)
 end
 
 M.show = function(t, linenr)

@@ -665,7 +665,7 @@ M.parse = function(requests, document_variables, start_request_linenr)
   end
 
   local json = vim.fn.json_encode(res)
-  local a = FS.write_file(GLOBALS.REQUEST_FILE, json, false)
+  FS.write_file(GLOBALS.REQUEST_FILE, json, false)
   -- PERF: We only want to run the scripts if they exist
   -- Also we don't want to re-run the environment replace_variables_in_url_headers_body
   -- if we don't actually have any scripts to run that could have changed the environment

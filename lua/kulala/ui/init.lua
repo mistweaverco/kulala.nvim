@@ -297,19 +297,15 @@ M.open_all = function()
     return Logger.error("No requests found in the document")
   end
 
-  CMD.run_parser_all(requests, variables, function(success, start, icon_linenr)
+  CMD.run_parser(requests, nil, variables, function(success, start, icon_linenr)
     if not success then
-      if icon_linenr then
-        INLAY:show_error(icon_linenr)
-      end
+      INLAY:show_error(icon_linenr)
       return
     else
       local elapsed = vim.loop.hrtime() - start
       local elapsed_ms = pretty_ms(elapsed / 1e6)
-      if icon_linenr then
-        INLAY:show_done(icon_linenr, elapsed_ms)
-      end
 
+      INLAY:show_done(icon_linenr, elapsed_ms)
       M.open_default_view()
     end
 
