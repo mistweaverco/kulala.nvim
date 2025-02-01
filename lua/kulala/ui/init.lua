@@ -124,7 +124,13 @@ local close_buffer = function()
 end
 
 local buffer_exists = function()
-  return get_buffer() ~= nil
+  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+    local name = vim.api.nvim_buf_get_name(buf)
+    if name == GLOBALS.UI_ID then
+      return true
+    end
+  end
+  return false
 end
 
 -- Create an autocmd to delete the buffer when the window is closed
