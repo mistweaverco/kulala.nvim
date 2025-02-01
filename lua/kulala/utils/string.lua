@@ -29,6 +29,21 @@ M.url_encode = function(str)
   return str
 end
 
+M.url_encode_skipencoded = function(str)
+  local res = ""
+  repeat
+    local startpos, endpos = str:find("%%%x%x")
+    if startpos and endpos then
+      res = res .. M.url_encode(str:sub(1, startpos - 1)) .. str:sub(startpos, endpos)
+      str = str:sub(endpos + 1)
+    else
+      res = res .. M.url_encode(str)
+      str = ""
+    end
+  until str == ""
+  return res
+end
+
 M.url_decode = function(str)
   if str then
     str = string.gsub(str, "%%(%x%x)", function(h)

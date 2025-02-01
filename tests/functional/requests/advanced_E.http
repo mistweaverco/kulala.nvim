@@ -1,0 +1,42 @@
+@DOCUMENT_VAR = TEST_DOCUMENT_VAR
+< ./../scripts/advanced_E_pre.js
+# @prompt PROMPT_VAR PROMPT_VAR prompt
+# @name REQUEST_ONE
+POST https://httpbin.org/advanced_e1?foo=bar&baz=bax HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+
+{
+  "document_var": "{{DOCUMENT_VAR}}",
+  "js_set_request_var": "{{JS_SET_REQUEST_VAR}}",
+  "prompt_var": "{{PROMPT_VAR}}"
+}
+
+> ./../scripts/advanced_E_post.js
+
+### This is a comment for the next request
+
+# @name REQUEST_TWO
+POST https://httpbin.org/advanced_e2 HTTP/1.1
+accept: application/json
+content-type: application/json
+# @env-json-key AUTH_TOKEN json.env_json_key
+
+{
+  "named_request_response_var": "{{REQUEST_ONE.response.body.$.json.js_set_request_var}}",
+  "js_computed_val": "{{JS_RESPONSE_VAR}}",
+  "env_json_key": "{{PROMPT_VAR}}"
+}
+
+### This is a comment for the next request
+
+POST https://httpbin.org/advanced_e3 HTTP/1.1
+accept: application/json
+content-type: application/json
+
+{
+  "named_request_response_var": "{{REQUEST_TWO.response.body.$.json.named_request_response_var}}",
+  "js_computed_val": "{{REQUEST_TWO.response.body.$.json.js_computed_val}}",
+  "env_json_key": "{{AUTH_TOKEN}}",
+  "dev_env.json": "{{pokemon}}"
+}

@@ -13,7 +13,7 @@ jobs:
     name: Lint Docs
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/mistweaverco/kulala-nvim-testrunner:latest
+      image: gorillamoe/kulala-nvim-linux-testrunner:latest
     steps:
       - uses: actions/checkout@v4
 

@@ -9,10 +9,13 @@ M.defaults = {
   -- Display mode
   -- possible values: "split", "float"
   display_mode = "split",
+  -- q to close the float (only used when display_mode is set to "float")
+  -- possible values: true, false
+  q_to_close_float = false,
   -- split direction
   -- possible values: "vertical", "horizontal"
   split_direction = "vertical",
-  -- default_view, body or headers or headers_body
+  -- default_view, body or headers or headers_body or verbose
   default_view = "body",
   -- dev, test, prod, can be anything
   -- see: https://learn.microsoft.com/en-us/aspnet/core/test/http-files?view=aspnetcore-8.0#environment-files
@@ -66,8 +69,8 @@ M.defaults = {
   -- enable winbar
   winbar = false,
   -- Specify the panes to be displayed by default
-  -- Current available pane contains { "body", "headers", "headers_body", "script_output", "stats" },
-  default_winbar_panes = { "body", "headers", "headers_body" },
+  -- Current available pane contains { "body", "headers", "headers_body", "script_output", "stats", "verbose" },
+  default_winbar_panes = { "body", "headers", "headers_body", "verbose" },
   -- enable reading vscode rest client environment variables
   vscode_rest_client_environmentvars = false,
   -- parse requests with tree-sitter
@@ -80,6 +83,9 @@ M.defaults = {
   environment_scope = "b",
   -- certificates
   certificates = {},
+  -- Specify how to escape query parameters
+  -- possible values: always, skipencoded = keep %xx as is
+  urlencode = "always",
 }
 
 M.default_contenttype = {

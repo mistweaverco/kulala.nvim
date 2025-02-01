@@ -1,0 +1,16 @@
+{
+  current_request = {
+    body = '{\r\n  "id": "1",\r\n  "project": "project_name"\r\n}',
+    body_computed = '{\r\n  "id": "1",\r\n  "project": "project_name"\r\n}',
+    body_display = '{\r\n  "id": "1"\r\n}',
+    body_raw = '{\r\n  "id": "{{AID}}"\r\n}',
+    ft = "text",
+    headers = {
+      Accept = "application/json",
+      ["Content-Type"] = "application/json"
+    },
+    method = "POST",
+    url = "https://httpbin.org/advanced_2",
+    url_raw = "https://httpbin.org/advanced_2"
+  },
+}

@@ -13,7 +13,7 @@ jobs:
     name: Test Code on Linux
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/mistweaverco/kulala-nvim-testrunner:latest
+      image: gorillamoe/kulala-nvim-linux-testrunner:latest
     steps:
       - uses: actions/checkout@v4
       - name: Restore cache
@@ -28,7 +28,7 @@ jobs:
     name: Lint Code
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/mistweaverco/kulala-nvim-testrunner:latest
+      image: gorillamoe/kulala-nvim-linux-testrunner:latest
     steps:
       - uses: actions/checkout@v4
 

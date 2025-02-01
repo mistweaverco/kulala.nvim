@@ -1,0 +1,20 @@
+{
+  "args": {},
+  "data": "{\r\n  \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoiZ29yaWxsYSIsIm5hbWUiOiJHb3JpbGxhIE1vZSIsImN0eCI6IlNvbWUgY29udGV4dCIsIndlYnNpdGUiOiJodHRwczovL2dvcmlsbGEubW9lIn0.YmEG9bOo1o9opeWnCsfW621A-sB_5WXSBI2FjtvwXlk\"\r\n}",
+  "files": {},
+  "form": {},
+  "headers": {
+    "Accept": "application/json",
+    "Content-Length": "223",
+    "Content-Type": "application/json",
+    "Host": "httpbin.org",
+    "User-Agent": "kulala.nvim/4.7.0",
+    "X-Amzn-Trace-Id": "Root=1-679ba6d0-03c7698a47d1de040de351f3"
+  },
+  "json": {
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoiZ29yaWxsYSIsIm5hbWUiOiJHb3JpbGxhIE1vZSIsImN0eCI6IlNvbWUgY29udGV4dCIsIndlYnNpdGUiOiJodHRwczovL2dvcmlsbGEubW9lIn0.YmEG9bOo1o9opeWnCsfW621A-sB_5WXSBI2FjtvwXlk"
+  },
+  "origin": "77.231.37.125",
+  "url": "https://httpbin.org/post"
+}
+

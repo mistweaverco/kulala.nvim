@@ -7,13 +7,8 @@ M.get_contents = function()
   if req == nil then
     return contents
   end
-  if req.http_version ~= nil then
-    req.http_version = " " .. req.http_version
-  else
-    req.http_version = ""
-  end
-  table.insert(contents, req.method .. " " .. req.url .. req.http_version)
-  for header_key, header_value in pairs(req.headers) do
+  table.insert(contents, req.method .. " " .. req.url .. (req.http_version and " HTTP/" .. req.http_version or ""))
+  for header_key, header_value in pairs(req.headers_display) do
     table.insert(contents, header_key .. ": " .. header_value)
   end
   -- Use the body_display, because it's meant to be human-readable

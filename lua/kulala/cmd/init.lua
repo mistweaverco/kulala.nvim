@@ -1,4 +1,5 @@
 local GLOBALS = require("kulala.globals")
+local CONFIG = require("kulala.config")
 local Fs = require("kulala.utils.fs")
 local PARSER = require("kulala.parser")
 local EXT_PROCESSING = require("kulala.external_processing")
@@ -17,17 +18,24 @@ local function run_next_task()
   if #TASK_QUEUE > 0 then
     RUNNING_TASK = true
     local task = table.remove(TASK_QUEUE, 1)
+
     UV.new_timer():start(0, 0, function()
       vim.schedule(function()
-        local res = task.fn() -- Execute the task in the main thread
-        if res == false then
-          RUNNING_TASK = false
+        local status, res = xpcall(task.fn, debug.traceback)
+
+        local cb_status, cb_res = true, ""
+        if task.callback then
+          cb_status, res = xpcall(task.callback, debug.traceback) -- Execute the callback in the main thread
+        end
+
+        if not (status and res and cb_status) then
           TASK_QUEUE = {} -- Clear the task queue and
+          RUNNING_TASK = false
+
+          Logger.error(("Errors running a scheduled task: %s %s"):format(res or "", cb_res or ""))
           return
         end
-        if task.callback then
-          task.callback() -- Execute the callback in the main thread
-        end
+
         RUNNING_TASK = false
         run_next_task() -- Proceed to the next task in the queue
       end)
@@ -78,19 +86,30 @@ M.run = function(cmd, callback)
 end
 
 ---Runs the parser and returns the result
-M.run_parser = function(req, callback)
-  local stats
+M.run_parser = function(requests, req, variables, callback)
+  local stats, errors
+  local verbose_mode = CONFIG.get().default_view == "verbose"
+
+  Fs.clear_cached_files(true)
+
   if process_prompt_vars(req) == false then
     Logger.warn("Prompt failed.")
     return
   end
-  local result = req.cmd ~= nil and req or PARSER.parse(req.start_line)
+
+  local result = PARSER.parse(requests, variables, req.start_line)
+  if not result then
+    Logger.warn(("Request at line: %s could not be parsed"):format(req.start_line))
+    return false
+  end
+
+  local start = vim.loop.hrtime()
+
   vim.fn.jobstart(result.cmd, {
     on_stderr = function(_, datalist)
-      if callback then
-        if #datalist > 0 and #datalist[1] > 0 then
-          vim.notify(vim.inspect(datalist), vim.log.levels.ERROR)
-        end
+      if datalist then
+        errors = errors or {}
+        vim.list_extend(errors, datalist)
       end
     end,
     on_stdout = function(_, lines, _)
@@ -106,6 +125,9 @@ M.run_parser = function(req, callback)
         local body = Fs.read_file(GLOBALS.BODY_FILE)
         if stats then
           Fs.write_file(GLOBALS.STATS_FILE, vim.fn.json_encode(stats), false)
+        end
+        if verbose_mode and errors then
+          Fs.write_file(GLOBALS.ERRORS_FILE, table.concat(errors, "\n"), false)
         end
         for _, metadata in ipairs(result.metadata) do
           if metadata then
@@ -129,19 +151,28 @@ M.run_parser = function(req, callback)
         if has_post_request_scripts then
           PARSER.scripts.javascript.run("post_request", result.scripts.post_request)
         end
+        Api.trigger("after_next_request")
         Api.trigger("after_request")
+      else
+        Logger.error(
+          ("Errors in request %s at line: %s\n%s"):format(req.url, req.start_line, table.concat(errors, "\n"))
+        )
       end
       Fs.delete_request_scripts_files()
       if callback then
-        callback(success)
+        return callback(success, start)
       end
     end,
   })
 end
 
 ---Runs the parser and returns the result
-M.run_parser_all = function(doc, callback)
-  for _, req in ipairs(doc) do
+M.run_parser_all = function(requests, variables, callback)
+  local verbose_mode = CONFIG.get().default_view == "verbose"
+
+  Fs.clear_cached_files(true)
+
+  for _, req in ipairs(requests) do
     offload_task(function()
       if process_prompt_vars(req) == false then
         if req.show_icon_line_number then
@@ -150,22 +181,41 @@ M.run_parser_all = function(doc, callback)
         Logger.warn("Prompt failed. Skipping this and all following requests.")
         return false
       end
-      local result = PARSER.parse(req.start_line)
+
+      local result = PARSER.parse(requests, variables, req.start_line)
+      if not result then
+        Logger.warn(("Request at line: %s could not be parsed"):format(req.start_line))
+        return false
+      end
+
       local icon_linenr = result.show_icon_line_number
       if icon_linenr then
         INLAY:show_loading(icon_linenr)
       end
       local start = vim.loop.hrtime()
       local success = false
+      local errors
+
       local stats = vim
-        .system(result.cmd, { text = true }, function(data)
+        .system(result.cmd, {
+          text = true,
+          stderr = function(_, data)
+            if data then
+              errors = (errors or "") .. data
+            end
+          end,
+        }, function(data)
           success = data.code == 0
         end)
         :wait()
+
       if success then
         local body = Fs.read_file(GLOBALS.BODY_FILE)
         if stats then
           Fs.write_file(GLOBALS.STATS_FILE, vim.fn.json_encode(stats), false)
+        end
+        if verbose_mode and errors then
+          Fs.write_file(GLOBALS.ERRORS_FILE, errors, false)
         end
         for _, metadata in ipairs(result.metadata) do
           if metadata then
@@ -184,12 +234,18 @@ M.run_parser_all = function(doc, callback)
         end
         INT_PROCESSING.redirect_response_body_to_file(result.redirect_response_body_to_files)
         PARSER.scripts.javascript.run("post_request", result.scripts.post_request)
+        Api.trigger("after_next_request")
         Api.trigger("after_request")
+      else
+        Logger.error(("Errors in request %s at line: %s\n%s"):format(req.url, req.start_line, errors or ""))
       end
+
       Fs.delete_request_scripts_files()
+
       if callback then
-        callback(success, start, icon_linenr)
+        return callback(success, start, icon_linenr)
       end
+
       return true
     end)
   end

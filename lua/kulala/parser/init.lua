@@ -16,6 +16,11 @@ local Logger = require("kulala.logger")
 
 M.scripts.javascript = require("kulala.parser.scripts.javascript")
 
+local function get_current_line_number()
+  local win_id = vim.fn.bufwinid(DB.current_buffer)
+  return vim.api.nvim_win_get_cursor(win_id)[1]
+end
+
 ---Parse the variables in a string
 ---@param str string -- The string to parse
 ---@param variables table -- The variables defined in the document
@@ -60,11 +65,19 @@ local function parse_headers(headers, variables, env, silent)
   return h
 end
 
+local function url_encode(str)
+  if CONFIG.get().urlencode == "skipencoded" then
+    return STRING_UTILS.url_encode_skipencoded(str)
+  else
+    return STRING_UTILS.url_encode(str)
+  end
+end
+
 local function encode_url_params(url)
   local anchor = ""
   local index = url:find("#")
   if index then
-    anchor = "#" .. STRING_UTILS.url_encode(url:sub(index + 1))
+    anchor = "#" .. url_encode(url:sub(index + 1))
     url = url:sub(1, index - 1)
   end
   index = url:find("?")
@@ -83,11 +96,11 @@ local function encode_url_params(url)
     if index then
       query_params = query_params
         .. "&"
-        .. STRING_UTILS.url_encode(query_part:sub(1, index - 1))
+        .. url_encode(query_part:sub(1, index - 1))
         .. "="
-        .. STRING_UTILS.url_encode(query_part:sub(index + 1))
+        .. url_encode(query_part:sub(index + 1))
     else
-      query_params = query_params .. "&" .. STRING_UTILS.url_encode(query_part)
+      query_params = query_params .. "&" .. url_encode(query_part)
     end
   end
   if query_params ~= "" then
@@ -114,6 +127,7 @@ local function parse_body(body, variables, env, silent)
   end
   variables = variables or {}
   env = env or {}
+
   return parse_string_variables(body, variables, env, silent)
 end
 
@@ -159,16 +173,16 @@ local function split_by_block_delimiters(text)
 end
 
 local function get_request_from_fenced_code_block()
-  local cursor_pos = vim.api.nvim_win_get_cursor(0)
-  local start_line = cursor_pos[1]
+  local buf = DB.current_buffer
+  local start_line = get_current_line_number()
 
   -- Get the total number of lines in the current buffer
-  local total_lines = vim.api.nvim_buf_line_count(0)
+  local total_lines = vim.api.nvim_buf_line_count(buf)
 
   -- Search for the start of the fenced code block (``` or similar)
   local block_start = nil
   for i = start_line, 1, -1 do
-    local line = vim.api.nvim_buf_get_lines(0, i - 1, i, false)[1]
+    local line = vim.api.nvim_buf_get_lines(buf, i - 1, i, false)[1]
     if line:match("^%s*```") then
       block_start = i
       break
@@ -183,7 +197,7 @@ local function get_request_from_fenced_code_block()
   -- Search for the end of the fenced code block
   local block_end = nil
   for i = start_line, total_lines do
-    local line = vim.api.nvim_buf_get_lines(0, i - 1, i, false)[1]
+    local line = vim.api.nvim_buf_get_lines(buf, i - 1, i, false)[1]
     if line:match("^%s*```") then
       block_end = i
       break
@@ -195,7 +209,7 @@ local function get_request_from_fenced_code_block()
     return nil, nil
   end
 
-  return vim.api.nvim_buf_get_lines(0, block_start, block_end - 1, false), block_start
+  return vim.api.nvim_buf_get_lines(buf, block_start, block_end - 1, false), block_start
 end
 
 M.get_document = function()
@@ -211,7 +225,7 @@ M.get_document = function()
   if maybe_from_fenced_code_block then
     content_lines, line_offset = get_request_from_fenced_code_block()
   else
-    content_lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+    content_lines = vim.api.nvim_buf_get_lines(DB.current_buffer, 0, -1, false)
     line_offset = 0
   end
 
@@ -355,6 +369,18 @@ M.get_document = function()
             request.body_display = request.body_display .. line .. "\r\n"
           end
         end
+      elseif is_request_line == false and line:match("^%s*[?&]") and #request.headers == 0 and request.url then
+        -- Query parameters for URL as separate lines
+        local querypart, http_version = line:match("^%s*(.+)%s+HTTP/(%d[.%d]*)%s*$")
+        if querypart == nil then
+          querypart = line:match("^%s*(.+)%s*$")
+        end
+        if querypart then
+          request.url = request.url .. querypart
+        end
+        if http_version then
+          request.http_version = http_version
+        end
       elseif is_request_line == false and line:match("^([^:]+):%s*(.*)$") then
         -- Header
         -- Headers are defined as `key: value`
@@ -408,7 +434,7 @@ M.get_request_at = function(requests, linenr)
     return nil
   end
   if linenr == nil then
-    linenr = vim.api.nvim_win_get_cursor(0)[1]
+    linenr = get_current_line_number()
   end
   if CONFIG.get().treesitter then
     return TS.get_request_at(linenr - 1)
@@ -422,8 +448,8 @@ M.get_request_at = function(requests, linenr)
 end
 
 M.get_previous_request = function(requests)
-  local cursor_pos = vim.api.nvim_win_get_cursor(0) -- {line, col}
-  local cursor_line = cursor_pos[1]
+  local cursor_line = get_current_line_number()
+
   for i, request in ipairs(requests) do
     if cursor_line >= request.start_line and cursor_line <= request.end_line then
       if i > 1 then
@@ -435,8 +461,8 @@ M.get_previous_request = function(requests)
 end
 
 M.get_next_request = function(requests)
-  local cursor_pos = vim.api.nvim_win_get_cursor(0) -- {line, col}
-  local cursor_line = cursor_pos[1]
+  local cursor_line = get_current_line_number()
+
   for i, request in ipairs(requests) do
     if cursor_line >= request.start_line and cursor_line <= request.end_line then
       if i < #requests then
@@ -492,6 +518,7 @@ end
 ---@field url_raw string -- The raw URL as it appears in the document
 ---@field url string -- The URL with variables and dynamic variables replaced
 ---@field headers table -- The headers with variables and dynamic variables replaced
+---@field headers_display table -- The headers with variables and dynamic variables replaced and sanitized
 ---@field headers_raw table -- The headers as they appear in the document
 ---@field body_raw string|nil -- The raw body as it appears in the document
 ---@field body_computed string|nil -- The computed body as sent by curl; with variables and dynamic variables replaced
@@ -509,13 +536,14 @@ end
 ---Parse a request and return the request on itself, its headers and body
 ---@param start_request_linenr number|nil The line number where the request starts
 ---@return Request|nil -- Table containing the request data or nil if parsing fails
-function M.get_basic_request_data(start_request_linenr)
+function M.get_basic_request_data(requests, start_request_linenr)
   local res = {
     metadata = {},
     method = "GET",
     url = "",
     url_raw = "",
     headers = {},
+    headers_display = {},
     headers_raw = {},
     body = nil,
     body_raw = nil,
@@ -541,7 +569,6 @@ function M.get_basic_request_data(start_request_linenr)
   if CONFIG:get().treesitter then
     req = TS.get_request_at(start_request_linenr)
   else
-    local _, requests = M.get_document()
     req = M.get_request_at(requests, start_request_linenr)
   end
 
@@ -580,24 +607,18 @@ local replace_variables_in_url_headers_body = function(res, document_variables, 
 end
 
 ---Parse a request and return the request on itself, its headers and body
+---@param requests table Parsed documents requests
+---@param document_variables table Parsed document variables
 ---@param start_request_linenr number|nil The line number where the request starts
 ---@return Request|nil -- Table containing the request data or nil if parsing fails
-M.parse = function(start_request_linenr)
-  local res = M.get_basic_request_data(start_request_linenr)
+M.parse = function(requests, document_variables, start_request_linenr)
+  local res = M.get_basic_request_data(requests, start_request_linenr)
 
-  if res == nil then
+  if not res or not res.url_raw then
     return nil
   end
 
   local has_pre_request_scripts = #res.scripts.pre_request.inline > 0 or #res.scripts.pre_request.files > 0
-
-  local document_variables
-  if CONFIG:get().treesitter then
-    document_variables = TS.get_document_variables()
-  else
-    document_variables = M.get_document()
-  end
-
   DB.update().previous_request = DB.find_unique("current_request")
 
   local env = ENV_PARSER.get_env()
@@ -610,6 +631,8 @@ M.parse = function(start_request_linenr)
   -- for non existing variables
   res.url, res.headers, res.body, res.body_display =
     replace_variables_in_url_headers_body(res, document_variables, env, has_pre_request_scripts)
+
+  res.headers_display = vim.deepcopy(res.headers)
 
   -- Merge headers from the $shared environment if it does not exist in the request
   -- this ensures that you can always override the headers in the request
@@ -641,7 +664,8 @@ M.parse = function(start_request_linenr)
     is_graphql = false
   end
 
-  FS.write_file(GLOBALS.REQUEST_FILE, vim.fn.json_encode(res), false)
+  local json = vim.fn.json_encode(res)
+  local a = FS.write_file(GLOBALS.REQUEST_FILE, json, false)
   -- PERF: We only want to run the scripts if they exist
   -- Also we don't want to re-run the environment replace_variables_in_url_headers_body
   -- if we don't actually have any scripts to run that could have changed the environment
@@ -669,6 +693,7 @@ M.parse = function(start_request_linenr)
   table.insert(res.cmd, "@" .. CURL_FORMAT_FILE)
   table.insert(res.cmd, "-X")
   table.insert(res.cmd, res.method)
+  table.insert(res.cmd, "-v")
 
   local content_type_header_name, content_type_header_value = PARSER_UTILS.get_header(res.headers, "content-type")
 
@@ -681,7 +706,7 @@ M.parse = function(start_request_linenr)
       local gql_json = GRAPHQL_PARSER.get_json(res.body)
       if gql_json then
         if PARSER_UTILS.contains_meta_tag(res, "write-body-to-temporary-file") then
-          local tmp_file = FS.get_temp_file(res.body)
+          local tmp_file = FS.get_temp_file(gql_json)
           if tmp_file ~= nil then
             table.insert(res.cmd, "--data")
             table.insert(res.cmd, "@" .. tmp_file)
@@ -722,7 +747,7 @@ M.parse = function(start_request_linenr)
     if is_graphql then
       local gql_json = GRAPHQL_PARSER.get_json(res.body)
       if gql_json then
-        local tmp_file = FS.get_temp_file(res.body)
+        local tmp_file = FS.get_temp_file(gql_json)
         if tmp_file ~= nil then
           table.insert(res.cmd, "--data")
           table.insert(res.cmd, "@" .. tmp_file)

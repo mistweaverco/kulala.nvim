@@ -4,18 +4,21 @@ local GLOBALS = require("kulala.globals")
 local DB = require("kulala.db")
 local CONFIG = require("kulala.config")
 local STRING_UTILS = require("kulala.utils.string")
+
 local M = {}
 
 -- Function to access a nested key in a table dynamically
 local function get_nested_value(t, key)
   local keys = vim.split(key, "%.")
   local value = t
+
   for _, k in ipairs(keys) do
     value = value[k]
-    if value == nil then
+    if value == nil or value == vim.NIL then
       return nil
     end
   end
+
   return value
 end
 
@@ -168,9 +171,10 @@ M.redirect_response_body_to_file = function(data)
 end
 
 M.env_json_key = function(cmd, body)
-  local json = vim.fn.json_decode(body)
-  if json == nil then
-    vim.notify("env-json-key --> JSON parsing failed.", vim.log.levels.ERROR)
+  local status, json = pcall(vim.fn.json_decode, body)
+
+  if not status or json == nil then
+    Logger.error("env-json-key --> JSON parsing failed.")
   else
     local kv = vim.split(cmd, " ")
     local value = get_nested_value(json, kv[2])
@@ -180,13 +184,17 @@ end
 
 M.prompt_var = function(metadata_value)
   local kv = vim.split(metadata_value, " ")
-  local key = kv[1]
+
+  local var_name = kv[1]
   local prompt = table.concat(kv, " ", 2)
+
   local value = vim.fn.input(prompt)
+
   if value == nil or value == "" then
     return false
   end
-  DB.update().env[key] = value
+
+  DB.update().env[var_name] = value
   return true
 end
 

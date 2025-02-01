@@ -1,5 +1,10 @@
 local Logger = require("kulala.logger")
+
 local M = {}
+
+M.get_current_buffer = function()
+  return require("kulala.db").current_buffer
+end
 
 ---Get the OS
 ---@return "windows" | "mac" | "unix" | "unknown"
@@ -69,19 +74,24 @@ M.get_file_path = function(path)
   if M.is_absolute_path(path) then
     return path
   end
-  local buffer_dir = vim.fn.expand("%:p:h")
+
   if path:sub(1, 2) == "./" or path:sub(1, 2) == ".\\" then
     path = path:sub(3)
   end
-  return M.join_paths(buffer_dir, path)
+
+  return M.join_paths(M.get_current_buffer_dir(), path)
 end
 
 -- This is mainly used for determining if the current buffer is a non-http file
 -- and therefore maybe we need to parse a fenced code block
 M.is_non_http_file = function()
-  local ft = vim.bo.filetype
-  local ext = vim.fn.expand("%:e")
-  return ext ~= "http" and ext ~= "rest" and ft ~= "http" and ft ~= "rest"
+  local extensions = { "http", "rest" }
+  local ft = vim.bo[M.get_current_buffer()].filetype
+  local ext = vim.fn.fnamemodify(M.get_current_buffer_path(), ":e")
+
+  return vim.iter(extensions):all(function(e)
+    return ext ~= e and ft ~= e
+  end)
 end
 
 -- find nearest file in parent directories, starting from the current buffer file path
@@ -92,7 +102,7 @@ M.find_file_in_parent_dirs = function(filename)
   return vim.fs.find(filename, {
     upward = true,
     limit = 1,
-    path = vim.fn.expand("%:p:h"),
+    path = M.get_current_buffer_dir(),
   })[1]
 end
 
@@ -100,14 +110,19 @@ M.copy_file = function(source, destination)
   return vim.loop.fs_copyfile(source, destination, 0)
 end
 
----Get the current buffer directory
+---Get the current buffer directory or current working dir if path is not valid
 ---@return string
 M.get_current_buffer_dir = function()
   -- Get the full path of the current buffer
-  local buffer_path = vim.api.nvim_buf_get_name(0)
+  local buf_path = M.get_current_buffer_path()
+  buf_path = vim.fn.filereadable(buf_path) ~= 0 and buf_path or vim.uv.cwd()
+
   -- Extract the directory part from the buffer path
-  local buffer_dir = vim.fn.fnamemodify(buffer_path, ":h")
-  return buffer_dir
+  return vim.fn.fnamemodify(buf_path, ":p:h")
+end
+
+M.get_current_buffer_path = function()
+  return vim.api.nvim_buf_get_name(M.get_current_buffer())
 end
 
 ---Get UUID
@@ -132,7 +147,7 @@ end
 M.find_all_http_files = function()
   return vim.fs.find(function(name)
     return name:match("%.http$") or name:match("%.rest$")
-  end, { path = vim.fn.getcwd(), type = "file", limit = 1000 })
+  end, { path = M.get_current_buffer_dir(), type = "file", limit = 1000 })
 end
 
 -- Writes string to file
@@ -367,7 +382,7 @@ M.read_file_lines = function(filename)
 end
 
 ---Clears all cached files
-M.clear_cached_files = function()
+M.clear_cached_files = function(silent)
   local tmp_dir = M.get_plugin_tmp_dir()
   local deleted_files = M.delete_files_in_directory(tmp_dir)
   local string_list = vim.fn.join(
@@ -376,7 +391,10 @@ M.clear_cached_files = function()
     end, deleted_files),
     "\n"
   )
-  Logger.info("Deleted files:\n" .. string_list)
+
+  if not silent then
+    Logger.info("Deleted files:\n" .. string_list)
+  end
 end
 
 return M

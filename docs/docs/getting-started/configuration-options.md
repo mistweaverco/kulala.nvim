@@ -19,11 +19,15 @@ the Kulala plugin with the available `opts`:
     -- Display mode, possible values: "split", "float"
     display_mode = "split",
 
+    -- q to close the float (only used when display_mode is set to "float")
+    -- possible values: true, false
+    q_to_close_float = false,
+
     -- split direction
     -- possible values: "vertical", "horizontal"
     split_direction = "vertical",
 
-    -- default_view, body or headers or headers_body
+    -- default_view, body or headers or headers_body or verbose
     default_view = "body",
 
     -- dev, test, prod, can be anything
@@ -91,7 +95,7 @@ the Kulala plugin with the available `opts`:
 
     -- Specify the panes to be displayed by default
     -- Current available pane contains { "body", "headers", "headers_body", "script_output", "stats" },
-    default_winbar_panes = { "body", "headers", "headers_body" },
+    default_winbar_panes = { "body", "headers", "headers_body", "verbose" },
 
     -- enable reading vscode rest client environment variables
     vscode_rest_client_environmentvars = false,
@@ -106,6 +110,10 @@ the Kulala plugin with the available `opts`:
 
     -- certificates
     certificates = {},
+
+    -- Specify how to escape query parameters
+    -- possible values: always, skipencoded = keep %xx as is
+    urlencode = "always",
   },
 }
 ```
@@ -148,6 +156,26 @@ Example:
 }
 ```
 
+### q_to_close_float
+
+Close float with `q`.
+
+Can be either `true` or `false`.
+
+Default: `false`
+
+Example:
+
+```lua
+{
+  "mistweaverco/kulala.nvim",
+  opts = {
+    display_mode = "float",
+    q_to_close_float = true,
+  },
+}
+```
+
 ### split_direction
 
 Split direction.
@@ -181,6 +209,7 @@ Possible values:
 - `body`
 - `headers`
 - `headers_body`
+- `verbose`
 - `script_output`
 - `stats`
 
@@ -652,5 +681,27 @@ Hostnames with prefix `*.` will be used as wildcard certificates for the host it
 - `api.company.com`
 - `sub.api.company.com`
 - etc.
+
+### urlencode
+
+Specify how to escape query parameters.
+
+Possible values:
+
+- `always`
+- `skipencoded` = keep already encoded `%xx` as is
+
+Default: `always`
+
+Example:
+
+```lua
+{
+  "mistweaverco/kulala.nvim",
+  opts = {
+    urlencode = "skipencoded",
+  },
+}
+```
 
 [see-env-files]: https://learn.microsoft.com/en-us/aspnet/core/test/http-files?view=aspnetcore-8.0#environment-files

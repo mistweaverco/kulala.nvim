@@ -1,0 +1,14 @@
+@foobar=bar
+# @name REQUEST_FOOBAR
+POST https://httpbin.org/advanced_b HTTP/1.1
+Date: Foobar
+
+{
+  "foo": {{DEFAULT_TIMEOUT}},
+  "foobar": "{{foobar}}"
+}
+
+> {%
+client.log(request.headers.findByName("Date").getRawValue());
+client.log(response.headers.valuesOf("Date").value);
+%}

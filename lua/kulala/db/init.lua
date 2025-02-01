@@ -4,6 +4,7 @@ local M = {}
 
 M.data = nil
 M.global_data = {}
+M.current_buffer = nil
 
 local function default_data()
   return {
@@ -17,7 +18,7 @@ end
 
 local function get_current_scope_nr()
   if CONFIG.get().environment_scope == "b" then
-    return vim.fn.bufnr()
+    return M.current_buffer
   elseif CONFIG.get().environment_scope == "g" then
     return 0
   end
@@ -25,7 +26,8 @@ end
 
 local function load_data()
   if CONFIG.get().environment_scope == "b" then
-    M.data = vim.b.kulala_data or default_data()
+    local kulala_data = vim.b[M.current_buffer].kulala_data
+    M.data = kulala_data and kulala_data or default_data()
   elseif CONFIG.get().environment_scope == "g" then
     -- keep in lua only
     if not M.data then
@@ -37,7 +39,7 @@ end
 
 local function save_data()
   if CONFIG.get().environment_scope == "b" then
-    if vim.fn.bufexists(M.data.scope_nr) ~= -1 then
+    if vim.fn.bufexists(M.data.scope_nr) > 0 then
       vim.b[M.data.scope_nr].kulala_data = M.data
     end
   elseif CONFIG.get().environment_scope == "g" then

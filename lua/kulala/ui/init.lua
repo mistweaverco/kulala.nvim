@@ -2,6 +2,7 @@ local UICallbacks = require("kulala.ui.callbacks")
 local WINBAR = require("kulala.ui.winbar")
 local GLOBALS = require("kulala.globals")
 local CONFIG = require("kulala.config")
+local Q_TO_CLOSE_FLOAT = CONFIG.get().display_mode == "float" and CONFIG.get().q_to_close_float
 local INLAY = require("kulala.inlay")
 local PARSER = require("kulala.parser")
 local CURL_PARSER = require("kulala.parser.curl")
@@ -33,8 +34,8 @@ local open_float = function()
   local bufnr = vim.api.nvim_create_buf(false, false)
   vim.api.nvim_buf_set_name(bufnr, "kulala://ui")
 
-  local width = vim.api.nvim_win_get_width(0) - 10
-  local height = vim.api.nvim_win_get_height(0) - 10
+  local width = math.max(vim.api.nvim_win_get_width(0) - 10, 1)
+  local height = math.max(vim.api.nvim_win_get_height(0) - 10, 1)
 
   local winnr = vim.api.nvim_open_win(bufnr, true, {
     title = "Kulala",
@@ -92,6 +93,11 @@ local replace_buffer = function()
   for _, callback in ipairs(callbacks) do
     callback(old_bufnr, new_bufnr)
   end
+
+  if Q_TO_CLOSE_FLOAT then
+    vim.api.nvim_buf_set_keymap(new_bufnr, "n", "q", ":bd<CR>", { noremap = true, silent = true })
+  end
+
   return new_bufnr
 end
 
@@ -147,6 +153,14 @@ local function set_buffer_contents(contents, ft)
     end
     local lines = vim.split(contents, "\n")
     vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+
+    -- setup filetype second to trigger filetype autocmd
+    -- first setup's filetype buffer is empty
+    if ft ~= nil then
+      vim.bo[buf].filetype = ft
+    else
+      vim.bo[buf].filetype = "text"
+    end
   end
 end
 
@@ -219,11 +233,25 @@ M.from_curl = function()
   print_http_spec(spec, curl)
 end
 
+M.open_default_view = function()
+  local default_view = CONFIG.get().default_view
+
+  if not buffer_exists() then
+    open_buffer()
+  end
+
+  local open_view = M["show_" .. default_view]
+  if open_view then
+    open_view()
+  end
+end
+
 M.open = function()
+  DB.current_buffer = vim.fn.bufnr()
   INLAY.clear()
+
   vim.schedule(function()
-    local start = vim.loop.hrtime()
-    local _, requests = PARSER.get_document()
+    local variables, requests = PARSER.get_document()
     local req = PARSER.get_request_at(requests)
     if req == nil then
       Logger.error("No request found")
@@ -232,7 +260,7 @@ M.open = function()
     if req.show_icon_line_number then
       INLAY:show_loading(req.show_icon_line_number)
     end
-    CMD.run_parser(req, function(success)
+    CMD.run_parser(requests, req, variables, function(success, start)
       if not success then
         if req.show_icon_line_number then
           INLAY:show_error(req.show_icon_line_number)
@@ -244,31 +272,26 @@ M.open = function()
         if req.show_icon_line_number then
           INLAY:show_done(req.show_icon_line_number, elapsed_ms)
         end
-        if not buffer_exists() then
-          open_buffer()
-        end
 
-        local default_view = CONFIG.get().default_view
-        if default_view == "body" then
-          M.show_body()
-        elseif default_view == "headers" then
-          M.show_headers()
-        elseif default_view == "headers_body" then
-          M.show_headers_body()
-        elseif default_view == "script_output" then
-          M.show_script_output()
-        elseif CONFIG.get().default_view == "stats" then
-          M.show_stats()
-        end
+        M.open_default_view()
       end
+
+      return true
     end)
   end)
 end
 
 M.open_all = function()
+  DB.current_buffer = vim.fn.bufnr()
   INLAY.clear()
-  local _, requests = PARSER.get_document()
-  CMD.run_parser_all(requests, function(success, start, icon_linenr)
+
+  local variables, requests = PARSER.get_document()
+
+  if not requests then
+    return Logger.error("No requests found in the document")
+  end
+
+  CMD.run_parser_all(requests, variables, function(success, start, icon_linenr)
     if not success then
       if icon_linenr then
         INLAY:show_error(icon_linenr)
@@ -280,21 +303,11 @@ M.open_all = function()
       if icon_linenr then
         INLAY:show_done(icon_linenr, elapsed_ms)
       end
-      if not buffer_exists() then
-        open_buffer()
-      end
-      if CONFIG.get().default_view == "body" then
-        M.show_body()
-      elseif CONFIG.get().default_view == "headers" then
-        M.show_headers()
-      elseif CONFIG.get().default_view == "headers_body" then
-        M.show_headers_body()
-      elseif CONFIG.get().default_view == "script_output" then
-        M.show_script_output()
-      elseif CONFIG.get().default_view == "stats" then
-        M.show_stats()
-      end
+
+      M.open_default_view()
     end
+
+    return true
   end)
 end
 
@@ -350,14 +363,14 @@ M.show_headers_body = function()
     if not buffer_exists() then
       open_buffer()
     end
-    local h = FS.read_file(GLOBALS.HEADERS_FILE)
-    h = h:gsub("\r\n", "\n")
+    local headers = FS.read_file(GLOBALS.HEADERS_FILE)
+    headers = headers:gsub("\r\n", "\n")
     local body = FS.read_file(GLOBALS.BODY_FILE)
     local contenttype = INT_PROCESSING.get_config_contenttype()
     if contenttype.formatter then
       body = FORMATTER.format(contenttype.formatter, body)
     end
-    set_buffer_contents(h .. "\n" .. body, contenttype.ft)
+    set_buffer_contents(headers .. "\n" .. body, contenttype.ft)
     if CONFIG.get().winbar then
       WINBAR.toggle_winbar_tab(get_win(), "headers_body")
     end
@@ -365,6 +378,33 @@ M.show_headers_body = function()
   else
     vim.notify("No headers or body found", vim.log.levels.WARN)
   end
+end
+
+M.show_verbose = function()
+  if not FS.file_exists(GLOBALS.BODY_FILE) then
+    return vim.notify("No body found", vim.log.levels.WARN)
+  end
+
+  if not buffer_exists() then
+    open_buffer()
+  end
+
+  local errors = FS.file_exists(GLOBALS.ERRORS_FILE) and (FS.read_file(GLOBALS.ERRORS_FILE):gsub("\r", "") .. "\n")
+    or ""
+  local body = FS.read_file(GLOBALS.BODY_FILE)
+
+  local contenttype = INT_PROCESSING.get_config_contenttype()
+  if contenttype.formatter then
+    body = FORMATTER.format(contenttype.formatter, body)
+  end
+
+  set_buffer_contents(errors .. body, "kulala_verbose_result")
+
+  if CONFIG.get().winbar then
+    WINBAR.toggle_winbar_tab(get_win(), "verbose")
+  end
+
+  CONFIG.options.default_view = "verbose"
 end
 
 M.show_stats = function()
@@ -451,23 +491,13 @@ M.replay = function()
     return
   end
   vim.schedule(function()
-    CMD.run_parser(result, function(success)
+    local variables, requests = PARSER.get_document()
+    CMD.run_parser(requests, result, variables, function(success)
       if not success then
         vim.notify("Failed to replay request", vim.log.levels.ERROR, { title = "kulala" })
         return
       else
-        if not buffer_exists() then
-          open_buffer()
-        end
-        if CONFIG.get().default_view == "body" then
-          M.show_body()
-        elseif CONFIG.get().default_view == "headers" then
-          M.show_headers()
-        elseif CONFIG.get().default_view == "headers_body" then
-          M.show_headers_body()
-        elseif CONFIG.get().default_view == "script_output" then
-          M.show_script_output()
-        end
+        M.open_default_view()
       end
     end)
   end)
