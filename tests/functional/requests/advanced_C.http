@@ -1,0 +1,27 @@
+# @file-to-variable FILEVAR ./demo.png
+POST https://httpbin.org/advanced_c HTTP/1.1
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary{{$timestamp}}
+
+------WebKitFormBoundary{{$timestamp}}
+Content-Disposition: form-data; name="someFile"; filename="logo.png"
+Content-Type: image/jpeg
+
+{{FILEVAR}}
+
+------WebKitFormBoundary{{$timestamp}}
+Content-Disposition: form-data; name="x"
+
+0
+------WebKitFormBoundary{{$timestamp}}
+Content-Disposition: form-data; name="y"
+
+1.4333333333333333
+------WebKitFormBoundary{{$timestamp}}
+Content-Disposition: form-data; name="w"
+
+514.5666666666667
+------WebKitFormBoundary{{$timestamp}}
+Content-Disposition: form-data; name="h"
+
+514.5666666666667
+------WebKitFormBoundary{{$timestamp}}--

@@ -1,5 +1,6 @@
 local DB = require("kulala.db")
 local CONFIG = require("kulala.config")
+local Logger = require("kulala.logger")
 
 local M = {}
 
@@ -67,13 +68,20 @@ local function get_body_value_from_path(name, method, subpath)
     return contenttype.pathresolver(base_table[method].body, subpath)
   elseif type(contenttype.pathresolver) == "table" then
     local cmd = {}
+
     for k, v in pairs(contenttype.pathresolver) do
       if type(v) == "string" then
         v = string.gsub(v, "{{path}}", subpath)
       end
       cmd[k] = v
     end
-    return vim.system(cmd, { stdin = base_table[method].body, text = true }):wait().stdout
+
+    local ret = vim.system(cmd, { stdin = base_table[method].body, text = true }):wait()
+    if ret.code ~= 0 then
+      return Logger.error(("Error sourcing body contents from: %s"):format(ret.stderr))
+    end
+
+    return ret.stdout
   end
 
   return nil

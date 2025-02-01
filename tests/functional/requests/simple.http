@@ -1,0 +1,12 @@
+@BASIC_TEST_TOKEN=Foo:bar=baz
+@URL_ENDPOINT=httpbin.org/simple
+@SCHEMA_FOO=https
+
+POST {{SCHEMA_FOO}}://{{URL_ENDPOINT}} HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{BASIC_TEST_TOKEN}}
+
+{
+  "foo": "bar"
+}

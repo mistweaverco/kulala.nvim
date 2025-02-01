@@ -1,0 +1,21 @@
+{
+  "args": {},
+  "data": "{\r\n  \"id\": \"1\"\r\n}",
+  "files": {},
+  "form": {},
+  "headers": {
+    "Accept": "application/json",
+    "Content-Length": "17",
+    "Content-Type": "application/json",
+    "Host": "httpbin.org",
+    "User-Agent": "kulala.nvim/4.7.0",
+    "X-Amzn-Trace-Id": "Root=1-679ca94c-6205268a7aa4d54e512a4276"
+  },
+  {
+    "id": "1",
+    "project": "{{ENV_PROJECT}}"
+  },
+  "origin": "77.231.37.125",
+  "url": "https://httpbin.org/advanced_2"
+}
+

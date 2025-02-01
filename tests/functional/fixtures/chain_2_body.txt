@@ -1,0 +1,21 @@
+{
+  "args": {},
+  "data": "{\r\n  \"success\": true,\r\n  \"context\": \"Some context\"\r\n}",
+  "files": {},
+  "form": {},
+  "headers": {
+    "Accept": "application/json",
+    "Content-Length": "53",
+    "Content-Type": "application/json",
+    "Host": "httpbin.org",
+    "User-Agent": "kulala.nvim/4.7.0",
+    "X-Amzn-Trace-Id": "Root=1-679b7ab1-1b82f892321e24e707dbf29d"
+  },
+  "json": {
+    "context": "Some context",
+    "success": true
+  },
+  "origin": "77.231.37.125",
+  "url": "https://httpbin.org/post"
+}
+

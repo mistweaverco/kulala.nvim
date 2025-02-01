@@ -2,8 +2,11 @@ node_modules
 .env
 http-client.env.json
 !/schemas/http-client.env.json
+!/tests/functional/requests/http-client.env.json
 *.http
+!/tests/functional/requests/*.http
 *graphql-schema.json
 /http-examples
 .tests
 .nvim
+package-lock.json

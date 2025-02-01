@@ -14,6 +14,10 @@ M.setup = function(config)
   CONFIG.setup(config)
 end
 
+M.open = function()
+  UI:open_default_view()
+end
+
 M.run = function()
   UI:open()
 end

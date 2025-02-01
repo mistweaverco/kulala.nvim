@@ -1,0 +1,21 @@
+{
+  "args": {},
+  "data": "{\r\n  \"foo\": \"bar\"\r\n}",
+  "files": {},
+  "form": {},
+  "headers": {
+    "Accept": "application/json",
+    "Authorization": "Bearer Foo:bar=baz",
+    "Content-Length": "20",
+    "Content-Type": "application/json",
+    "Host": "httpbin.org",
+    "User-Agent": "kulala.nvim/4.7.0",
+    "X-Amzn-Trace-Id": "Root=1-679b749b-1f6d64c06de619b0699d51a6"
+  },
+  "json": {
+    "foo": "bar"
+  },
+  "origin": "77.231.37.125",
+  "url": "https://httpbin.org/simple"
+}
+

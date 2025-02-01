@@ -1,0 +1,19 @@
+{
+  current_request = {
+    body = '{\r\n  "success": true,\r\n  "context": "Some context"\r\n}',
+    body_computed = '{\r\n  "success": true,\r\n  "context": "Some context"\r\n}',
+    body_raw = '{\r\n  "success": true,\r\n  "context": "{{JWT_CONTEXT}}"\r\n}',
+    cmd = { "curl", "-s", "-D", "/home/yaro/.cache/nvim/kulala/headers.txt", "-o", "/home/yaro/.cache/nvim/kulala/body.txt", "-w", "@/home/yaro/projects/kulala.nvim/lua/kulala/utils/../parser/curl-format.json", "-X", "POST", "-v", "--data", '{\r\n  "success": true,\r\n  "context": "Some context"\r\n}', "-H", "Accept:application/json", "-H", "Content-Type:application/json", "--http1.1", "-A", "kulala.nvim/4.7.0", "--cookie-jar", "/home/yaro/.cache/nvim/kulala/cookies.txt", "https://httpbin.org/post" },
+    headers = {
+      Accept = "application/json",
+      ["Content-Type"] = "application/json"
+    },
+    http_version = "1.1",
+    method = "POST",
+    url = "https://httpbin.org/request_2",
+    url_raw = "https://httpbin.org/request_2"
+  },
+  env = {
+    JWT_CONTEXT = "Some context"
+  },
+}

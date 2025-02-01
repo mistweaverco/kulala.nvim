@@ -18,17 +18,24 @@ local function run_next_task()
   if #TASK_QUEUE > 0 then
     RUNNING_TASK = true
     local task = table.remove(TASK_QUEUE, 1)
+
     UV.new_timer():start(0, 0, function()
       vim.schedule(function()
-        local res = task.fn() -- Execute the task in the main thread
-        if res == false then
-          RUNNING_TASK = false
+        local status, res = xpcall(task.fn, debug.traceback)
+
+        local cb_status, cb_res = true, ""
+        if task.callback then
+          cb_status, res = xpcall(task.callback, debug.traceback) -- Execute the callback in the main thread
+        end
+
+        if not (status and res and cb_status) then
           TASK_QUEUE = {} -- Clear the task queue and
+          RUNNING_TASK = false
+
+          Logger.error(("Errors running a scheduled task: %s %s"):format(res or "", cb_res or ""))
           return
         end
-        if task.callback then
-          task.callback() -- Execute the callback in the main thread
-        end
+
         RUNNING_TASK = false
         run_next_task() -- Proceed to the next task in the queue
       end)
@@ -79,25 +86,30 @@ M.run = function(cmd, callback)
 end
 
 ---Runs the parser and returns the result
-M.run_parser = function(req, callback)
+M.run_parser = function(requests, req, variables, callback)
   local stats, errors
   local verbose_mode = CONFIG.get().default_view == "verbose"
+
+  Fs.clear_cached_files(true)
 
   if process_prompt_vars(req) == false then
     Logger.warn("Prompt failed.")
     return
   end
 
-  local result = req.cmd ~= nil and req or PARSER.parse(req.start_line)
+  local result = PARSER.parse(requests, variables, req.start_line)
+  if not result then
+    Logger.warn(("Request at line: %s could not be parsed"):format(req.start_line))
+    return false
+  end
+
   local start = vim.loop.hrtime()
 
   vim.fn.jobstart(result.cmd, {
     on_stderr = function(_, datalist)
-      if callback then
-        if datalist then
-          errors = errors or {}
-          vim.list_extend(errors, datalist)
-        end
+      if datalist then
+        errors = errors or {}
+        vim.list_extend(errors, datalist)
       end
     end,
     on_stdout = function(_, lines, _)
@@ -141,20 +153,26 @@ M.run_parser = function(req, callback)
         end
         Api.trigger("after_next_request")
         Api.trigger("after_request")
+      else
+        Logger.error(
+          ("Errors in request %s at line: %s\n%s"):format(req.url, req.start_line, table.concat(errors, "\n"))
+        )
       end
       Fs.delete_request_scripts_files()
       if callback then
-        callback(success, start)
+        return callback(success, start)
       end
     end,
   })
 end
 
 ---Runs the parser and returns the result
-M.run_parser_all = function(doc, callback)
+M.run_parser_all = function(requests, variables, callback)
   local verbose_mode = CONFIG.get().default_view == "verbose"
 
-  for _, req in ipairs(doc) do
+  Fs.clear_cached_files(true)
+
+  for _, req in ipairs(requests) do
     offload_task(function()
       if process_prompt_vars(req) == false then
         if req.show_icon_line_number then
@@ -163,7 +181,13 @@ M.run_parser_all = function(doc, callback)
         Logger.warn("Prompt failed. Skipping this and all following requests.")
         return false
       end
-      local result = PARSER.parse(req.start_line)
+
+      local result = PARSER.parse(requests, variables, req.start_line)
+      if not result then
+        Logger.warn(("Request at line: %s could not be parsed"):format(req.start_line))
+        return false
+      end
+
       local icon_linenr = result.show_icon_line_number
       if icon_linenr then
         INLAY:show_loading(icon_linenr)
@@ -212,11 +236,16 @@ M.run_parser_all = function(doc, callback)
         PARSER.scripts.javascript.run("post_request", result.scripts.post_request)
         Api.trigger("after_next_request")
         Api.trigger("after_request")
+      else
+        Logger.error(("Errors in request %s at line: %s\n%s"):format(req.url, req.start_line, errors or ""))
       end
+
       Fs.delete_request_scripts_files()
+
       if callback then
-        callback(success, start, icon_linenr)
+        return callback(success, start, icon_linenr)
       end
+
       return true
     end)
   end

@@ -14,6 +14,10 @@ All public methods are available via the `kulala` module.
 
 `require('kulala').replay()` replays the last run request.
 
+### open
+
+`require('kulala').open()` opens default UI in default view
+
 ### inspect
 
 `require('kulala').inspect()` inspects the current request.
@@ -109,6 +113,7 @@ These files include:
 
 - last response body
 - last response headers
+- last response erorrs
 - last request data
 - global variables set via scripts
 - compiled pre- and post-request scripts

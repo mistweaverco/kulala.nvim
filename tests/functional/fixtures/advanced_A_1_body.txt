@@ -1,0 +1,30 @@
+{
+  "args": {},
+  "data": "{\r\n  \"project\": \"project_name\",\r\n    \"results\": [\r\n    {\r\n      \"id\": 1,\r\n      \"desc\": \"some_username\"\r\n    },\r\n    {\r\n      \"id\": 2,\r\n      \"desc\": \"another_username\"\r\n    }\r\n    ]\r\n}",
+  "files": {},
+  "form": {},
+  "headers": {
+    "Accept": "application/json",
+    "Content-Length": "185",
+    "Content-Type": "application/json",
+    "Host": "httpbin.org",
+    "User-Agent": "kulala.nvim/4.7.0",
+    "X-Amzn-Trace-Id": "Root=1-679ca835-3dda066e4b4f02bd55578f79"
+  },
+  "json": {
+    "project": "project_name",
+    "results": [
+      {
+        "desc": "some_username",
+        "id": 1
+      },
+      {
+        "desc": "another_username",
+        "id": 2
+      }
+    ]
+  },
+  "origin": "77.231.37.125",
+  "url": "https://httpbin.org/advanced_a_1"
+}
+

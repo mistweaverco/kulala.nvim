@@ -1,0 +1,27 @@
+{
+  current_request = {
+    body_computed = '{\r\n  \"foobar\": \"lul\"\r\n  \"password\": \"TEST_PASSWORD\"\r\n}',
+    ft = "text",
+    headers = {
+      Accept = "application/json",
+      ["Content-Type"] = "application/json",
+      Token = "POSTTHIS_IS_A_TOKENvalue1125000"
+    },
+    http_version = "1.1",
+    metadata = {},
+    method = "POST",
+    redirect_response_body_to_files = {},
+    scripts = {
+      post_request = {
+        files = { "./../scripts/advanced_D_post.js" },
+        inline = {}
+      },
+      pre_request = {
+        files = { "./../scripts/advanced_D_pre.js" },
+        inline = { "request.variables.set('TOKEN_RAW', 'THIS_IS_A_TOKEN');" }
+      }
+    },
+    url = "https://httpbin.org/advanced_d?key1=value1",
+    url_raw = "https://httpbin.org/advanced_d?key1=value1"
+  },
+}
