@@ -14,7 +14,7 @@ local function get_nested_value(t, key)
 
   for _, k in ipairs(keys) do
     value = value[k]
-    if value == nil or value == vim.NIL then
+    if not value then
       return nil
     end
   end
@@ -171,7 +171,7 @@ M.redirect_response_body_to_file = function(data)
 end
 
 M.env_json_key = function(cmd, body)
-  local status, json = pcall(vim.fn.json_decode, body)
+  local status, json = pcall(vim.json.decode, body, { object = true, array = true })
 
   if not status or json == nil then
     Logger.error("env-json-key --> JSON parsing failed.")

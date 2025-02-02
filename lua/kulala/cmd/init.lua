@@ -19,6 +19,7 @@ local function run_next_task()
     RUNNING_TASK = true
     local task = table.remove(TASK_QUEUE, 1)
 
+    ---@diagnostic disable-next-line: undefined-field
     UV.new_timer():start(0, 0, function()
       vim.schedule(function()
         local status, res = xpcall(task.fn, debug.traceback)
@@ -111,6 +112,7 @@ end
 
 local function process_external(result)
   INT_PROCESSING.redirect_response_body_to_file(result.redirect_response_body_to_files)
+
   PARSER.scripts.javascript.run("post_request", result.scripts.post_request)
   Fs.delete_request_scripts_files()
 end
@@ -120,57 +122,72 @@ local function process_api()
   Api.trigger("after_request")
 end
 
-local function process_request(requests, request, variables, callback)
+local function process_response(request_status, parsed_request, callback)
   local verbose_mode = CONFIG.get().default_view == "verbose"
-  local unbuffered_mode
+  local success = request_status.code == 0
 
+  if success then
+    Fs.write_file(GLOBALS.STATS_FILE, request_status.stdout, false)
+
+    if verbose_mode and request_status.errors then
+      Fs.write_file(GLOBALS.ERRORS_FILE, request_status.errors, false)
+    end
+
+    process_metadata(parsed_request)
+    process_external(parsed_request)
+    process_api()
+  else
+    local message = ("Errors in request %s at line: %s\n%s"):format(
+      parsed_request.url,
+      parsed_request.start_line,
+      request_status.errors or ""
+    )
+    Logger.error(message)
+  end
+
+  vim.schedule(function()
+    callback(success, request_status.start_time, parsed_request.show_icon_line_number)
+  end)
+end
+
+local function process_request(requests, request, variables, callback)
   offload_task(function()
     if not process_prompt_vars(request) then
       Logger.warn("Prompt failed. Skipping this and all following requests.")
-      return false
+      return
     end
 
-    local result = PARSER.parse(requests, variables, request.start_line)
-    if not result then
+    local parsed_request = PARSER.parse(requests, variables, request.start_line)
+    if not parsed_request then
       Logger.warn(("Request at line: %s could not be parsed"):format(request.start_line))
-      return false
+      return
     end
 
-    local icon_linenr = result.show_icon_line_number
+    INLAY:show_loading(parsed_request.show_icon_line_number)
+
     local start_time = vim.loop.hrtime()
+    local unbuffered = vim.tbl_contains(parsed_request.cmd, "-N")
+    local errors
 
-    INLAY:show_loading(icon_linenr)
+    vim.system(parsed_request.cmd, {
+      text = true,
+      stderr = function(_, data)
+        if data then
+          errors = (errors or "") .. data
 
-    local success, errors = false, nil
-    local stats = vim
-      .system(result.cmd, {
-        text = true,
-        stderr = function(_, data)
-          if data then
-            errors = (errors or "") .. data
+          if unbuffered and errors:find("Connected") and Fs.file_exists(GLOBALS.BODY_FILE) then
+            vim.schedule(function()
+              callback(true, start_time, parsed_request.show_icon_line_number)
+            end)
           end
-        end,
-      }, function(data)
-        success = data.code == 0
-      end)
-      :wait()
+        end
+      end,
+    }, function(job_status)
+      job_status.start_time = start_time
+      job_status.errors = errors
 
-    if success then
-      Fs.write_file(GLOBALS.STATS_FILE, vim.fn.json_encode(stats), false)
-      if verbose_mode and errors then
-        Fs.write_file(GLOBALS.ERRORS_FILE, errors, false)
-      end
-
-      process_metadata(result)
-      process_external(result)
-      process_api()
-    else
-      Logger.error(("Errors in request %s at line: %s\n%s"):format(request.url, request.start_line, errors or ""))
-    end
-
-    if callback then
-      return callback(success, start_time, icon_linenr)
-    end
+      process_response(job_status, parsed_request, callback)
+    end)
 
     return true
   end)

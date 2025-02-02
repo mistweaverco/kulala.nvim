@@ -1,0 +1,2 @@
+# @accept chunked
+GET http://localhost:3001/chunked HTTP/1.1

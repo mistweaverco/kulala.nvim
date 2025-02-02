@@ -684,7 +684,6 @@ M.parse = function(requests, document_variables, start_request_linenr)
 
   -- build the command to execute the request
   table.insert(res.cmd, CONFIG.get().curl_path)
-  table.insert(res.cmd, "-s")
   table.insert(res.cmd, "-D")
   table.insert(res.cmd, GLOBALS.HEADERS_FILE)
   table.insert(res.cmd, "-o")
@@ -694,6 +693,16 @@ M.parse = function(requests, document_variables, start_request_linenr)
   table.insert(res.cmd, "-X")
   table.insert(res.cmd, res.method)
   table.insert(res.cmd, "-v")
+
+  local chunked = vim.iter(res.metadata):find(function(m)
+    return m.name == "accept" and m.value == "chunked"
+  end)
+
+  if chunked then
+    table.insert(res.cmd, "-N") -- Non-buffered mode: to support Transfer-Encoding: chunked
+  else
+    table.insert(res.cmd, "-s") -- silent mode: must be off when in Non-buffeed mode
+  end
 
   local content_type_header_name, content_type_header_value = PARSER_UTILS.get_header(res.headers, "content-type")
 

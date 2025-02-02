@@ -355,7 +355,7 @@ describe("requests", function()
       assert.is_same(expected, result)
     end)
 
-    it("shows chunks as they arrive", function()
+    it("#wip shows chunks as they arrive", function()
       -- path = '/home/yaro/projects/kulala.nvim/test.txt'
       -- return vim.system({'curl', '-o', path, '-N', 'http://127.0.0.1:3001/'}, {
       --   stdout = function(_, data)

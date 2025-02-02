@@ -68,11 +68,13 @@ end
 ---@param win_id integer|nil Window id
 ---@param view string Body or headers
 M.toggle_winbar_tab = function(win_id, view)
-  if win_id then
+  if win_id and CONFIG.get().winbar then
     local winbar = CONFIG.get().default_winbar_panes
     local winbar_title = {}
+
     for _, key in ipairs(winbar) do
       local info = winbar_info[key]
+
       if info ~= nil then
         local desc = info.desc .. " %*"
         if view == key then
@@ -83,6 +85,7 @@ M.toggle_winbar_tab = function(win_id, view)
         table.insert(winbar_title, desc)
       end
     end
+
     local value = table.concat(winbar_title, " ")
     vim.api.nvim_set_option_value("winbar", value, { win = win_id })
   end
@@ -90,8 +93,9 @@ end
 
 ---@param win_id integer|nil Window id
 M.create_winbar = function(win_id)
-  if win_id then
+  if win_id and CONFIG.get().winbar then
     local default_view = CONFIG.get().default_view
+
     M.winbar_sethl()
     M.toggle_winbar_tab(win_id, default_view)
   end
