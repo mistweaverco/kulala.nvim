@@ -1,18 +1,22 @@
----@diagnostic disable: inject-field, redefined-local
+---@diagnostic disable: undefined-field, redefined-local
 local GLOBALS = require("kulala.globals")
 local CONFIG = require("kulala.config")
 local DB = require("kulala.db")
 local kulala = require("kulala")
 
+local kulala_name = GLOBALS.UI_ID
+
 local h = require("test_helper.ui")
 local s = require("test_helper.stubs")
 
 local assert = require("luassert")
-assert.is_same = assert.is_same
+assert.is_true(vim.fn.executable("npm") == 1)
+
+--TODO: add GraphQL schema download
 
 describe("requests", function()
   describe("show output of requests", function()
-    local curl, jobstart, system
+    local curl, system, wait_for_requests
     local input, notify, dynamic_vars
     local result, expected, ui_buf
 
@@ -25,7 +29,7 @@ describe("requests", function()
 
       curl = s.Curl.stub({
         ["*"] = {
-          stats = h.load_fixture("fixtures/request_1_stats.txt"),
+          stats = h.load_fixture("fixtures/stats.json"),
           headers = h.load_fixture("fixtures/request_2_headers.txt"),
         },
         ["http://localhost:3001/request_1"] = {
@@ -38,119 +42,33 @@ describe("requests", function()
         },
       })
 
-      jobstart = s.Jobstart.stub({ "curl" }, {
-        on_call = function(jobstart)
-          curl.request(jobstart)
-        end,
-        on_exit = 0,
-      })
-
       system = s.System.stub({ "curl" }, {
         on_call = function(system)
           curl.request(system)
         end,
       })
+
+      wait_for_requests = function(requests_no)
+        system:wait(3000, function()
+          ui_buf = vim.fn.bufnr(kulala_name)
+          return curl.requests_no == requests_no and ui_buf > 0
+        end)
+      end
+
+      CONFIG.options.default_view = "body"
     end)
 
     after_each(function()
       h.delete_all_bufs()
       curl.reset()
-      jobstart.reset()
       system.reset()
       input.reset()
       notify.reset()
       dynamic_vars.reset()
     end)
 
-    it("shows last request output in body_headers mode for run_all", function()
-      local lines = h.to_table(
-        [[
-        GET http://localhost:3001/request_1
-
-        ###
-
-        GET http://localhost:3001/request_2
-      ]],
-        true
-      )
-
-      h.create_buf(lines, "test.http")
-      CONFIG.options.default_view = "headers_body"
-      CONFIG.options.display_mode = "float"
-
-      kulala.run_all()
-
-      system:wait(3000, function()
-        ui_buf = vim.fn.bufnr(GLOBALS.UI_ID)
-        return curl.requests_no == 2 and ui_buf ~= -1
-      end)
-
-      expected = h.load_fixture("fixtures/request_2_headers_body.txt")
-      result = h.get_buf_lines(ui_buf):to_string()
-
-      assert.is_same(2, curl.requests_no)
-      assert.is_same(expected, result)
-    end)
-
-    it("shows request output in verbose mode for run_one", function()
-      local lines = h.to_table(
-        [[
-        GET http://localhost:3001/request_1
-      ]],
-        true
-      )
-
-      h.create_buf(lines, "test.http")
-      CONFIG.options.default_view = "verbose"
-      CONFIG.options.display_mode = "float"
-
-      kulala.run()
-      jobstart.wait(3000, function()
-        ui_buf = vim.fn.bufnr(GLOBALS.UI_ID)
-        return ui_buf > 0
-      end)
-
-      result = h.get_buf_lines(ui_buf):to_string()
-      expected = h.load_fixture("fixtures/request_1_verbose.txt")
-
-      assert.is_same(expected, result)
-    end)
-
-    it("shows last request output in verbose mode for run_all", function()
-      local lines = h.to_table(
-        [[
-        GET http://localhost:3001/request_1
-
-        ###
-
-        GET http://localhost:3001/request_2
-      ]],
-        true
-      )
-
-      h.create_buf(lines, "test.http")
-      CONFIG.options.default_view = "verbose"
-      CONFIG.options.display_mode = "float"
-
-      kulala.run_all()
-
-      system:wait(3000, function()
-        ui_buf = vim.fn.bufnr(GLOBALS.UI_ID)
-        return curl.requests_no == 2 and ui_buf ~= -1
-      end)
-
-      expected = h.load_fixture("fixtures/request_2_verbose.txt")
-      result = h.get_buf_lines(ui_buf):to_string()
-
-      assert.is_same(2, curl.requests_no)
-      assert.is_same(expected, result)
-    end)
-
     it("it substitues document variables and does authorization", function()
-      assert.is_true(vim.fn.executable("npm") == 1)
-
       vim.cmd.edit(h.expand_path("requests/simple.http"))
-      CONFIG.options.default_view = "body"
 
       curl.stub({
         ["https://httpbin.org/simple"] = {
@@ -159,10 +77,7 @@ describe("requests", function()
       })
 
       kulala.run()
-      jobstart.wait(3000, function()
-        ui_buf = vim.fn.bufnr(GLOBALS.UI_ID)
-        return ui_buf ~= -1
-      end)
+      wait_for_requests(1)
 
       local expected_request = h.load_fixture("fixtures/simple_request.txt"):to_object().current_request
       local computed_request = DB.data.current_request
@@ -177,7 +92,6 @@ describe("requests", function()
 
     it("sets env variable with @env-stdin-cmd", function()
       vim.cmd.edit(h.expand_path("requests/chain.http"))
-      CONFIG.options.default_view = "body"
 
       curl.stub({
         ["https://httpbin.org/chain_1"] = {
@@ -189,10 +103,7 @@ describe("requests", function()
       })
 
       kulala.run_all()
-      system:wait(3000, function()
-        ui_buf = vim.fn.bufnr(GLOBALS.UI_ID)
-        return curl.requests_no == 2 and ui_buf ~= -1
-      end)
+      wait_for_requests(2)
 
       local expected_request = h.load_fixture("fixtures/chain_2_request.txt"):to_object().current_request
       local computed_request = DB.data.current_request
@@ -201,12 +112,12 @@ describe("requests", function()
       result = h.get_buf_lines(ui_buf):to_string()
 
       assert.is_same(expected_request.body_computed, computed_request.body_computed)
+      assert.is_same(2, curl.requests_no)
       assert.is_same(expected, result)
     end)
 
     it("sets environment variables from response", function()
       vim.cmd.edit(h.expand_path("requests/advanced_A.http"))
-      CONFIG.options.default_view = "body"
 
       curl.stub({
         ["https://httpbin.org/advanced_1"] = {
@@ -218,10 +129,7 @@ describe("requests", function()
       })
 
       kulala.run_all()
-      system:wait(3000, function()
-        ui_buf = vim.fn.bufnr(GLOBALS.UI_ID)
-        return curl.requests_no == 2 and ui_buf ~= -1
-      end)
+      wait_for_requests(2)
 
       local expected_request = h.load_fixture("fixtures/advanced_A_2_request.txt"):to_object().current_request
       local computed_request = DB.data.current_request
@@ -230,12 +138,12 @@ describe("requests", function()
       result = h.get_buf_lines(ui_buf):to_string()
 
       assert.is_same(expected_request.body_computed, computed_request.body_computed)
+      assert.is_same(2, curl.requests_no)
       assert.is_same(result, expected)
     end)
 
     it("substitutes http.client.json variables, accesses request/response from js and logs to client", function()
       vim.cmd.edit(h.expand_path("requests/advanced_B.http"))
-      CONFIG.options.default_view = "body"
 
       curl.stub({
         ["https://httpbin.org/advanced_b"] = {
@@ -244,10 +152,7 @@ describe("requests", function()
       })
 
       kulala.run_all()
-      system:wait(3000, function()
-        ui_buf = vim.fn.bufnr(GLOBALS.UI_ID)
-        return curl.requests_no == 1 and ui_buf ~= -1
-      end)
+      wait_for_requests(1)
 
       local expected_request = h.load_fixture("fixtures/advanced_B_request.txt"):to_object().current_request
       local computed_request = DB.data.current_request
@@ -264,7 +169,6 @@ describe("requests", function()
 
     it("load a file with @file-to-variable", function()
       vim.cmd.edit(h.expand_path("requests/advanced_C.http"))
-      CONFIG.options.default_view = "body"
 
       dynamic_vars.stub({ ["$timestamp"] = "$TIMESTAMP" })
       curl.stub({
@@ -274,10 +178,7 @@ describe("requests", function()
       })
 
       kulala.run_all()
-      system:wait(3000, function()
-        ui_buf = vim.fn.bufnr(GLOBALS.UI_ID)
-        return curl.requests_no == 1 and ui_buf ~= -1
-      end)
+      wait_for_requests(1)
 
       local expected_request = h.load_fixture("fixtures/advanced_C_request.txt"):to_object().current_request
       local computed_request = DB.data.current_request
@@ -291,7 +192,6 @@ describe("requests", function()
 
     it("prompts for vars, computes request vars, logs to client", function()
       vim.cmd.edit(h.expand_path("requests/advanced_D.http"))
-      CONFIG.options.default_view = "body"
 
       input.stub({ ["Password prompt"] = "TEST_PASSWORD" })
       curl.stub({
@@ -301,10 +201,7 @@ describe("requests", function()
       })
 
       kulala.run_all()
-      system:wait(3000, function()
-        ui_buf = vim.fn.bufnr(GLOBALS.UI_ID)
-        return curl.requests_no == 1 and ui_buf ~= -1
-      end)
+      wait_for_requests(1)
 
       local expected_request = h.load_fixture("fixtures/advanced_D_request.txt"):to_object().current_request
       local computed_request = DB.data.current_request
@@ -321,9 +218,8 @@ describe("requests", function()
 
     it("makes named requests, prompts for vars, uses scripts, uses env json", function()
       vim.cmd.edit(h.expand_path("requests/advanced_E.http"))
-      CONFIG.options.default_view = "body"
 
-      input.stub({ ["PROMPT_VAR prompt"] = "s" })
+      input.stub({ ["PROMPT_VAR prompt"] = "TEST_PROMPT_VAR" })
       curl.stub({
         ["*"] = {
           headers = h.load_fixture("fixtures/advanced_E_headers.txt"),
@@ -340,10 +236,7 @@ describe("requests", function()
       })
 
       kulala.run_all()
-      system:wait(3000, function()
-        ui_buf = vim.fn.bufnr(GLOBALS.UI_ID)
-        return curl.requests_no == 3 and ui_buf ~= -1
-      end)
+      wait_for_requests(3)
 
       local expected_request = h.load_fixture("fixtures/advanced_E3_request.txt"):to_object().current_request
       local computed_request = DB.data.current_request
@@ -352,25 +245,63 @@ describe("requests", function()
       result = h.get_buf_lines(ui_buf):to_string()
 
       assert.is_same(expected_request.body_computed, computed_request.body_computed)
+      assert.is_same(3, curl.requests_no)
       assert.is_same(expected, result)
     end)
 
-    it("#wip shows chunks as they arrive", function()
-      -- path = '/home/yaro/projects/kulala.nvim/test.txt'
-      -- return vim.system({'curl', '-o', path, '-N', 'http://127.0.0.1:3001/'}, {
-      --   stdout = function(_, data)
-      --     -- LOG('stdout', data)
-      --   end,
-      --   stderr = function(_, data)
-      --     -- LOG('stderr', data)
-      --     if not data then return end
-      --     if data:find('100') or data:find('Total') then
-      --       LOG('file', io.open(path):read("*a"))
-      --     end
-      --   end,
-      -- }, function(system)
-      --   LOG("system: ", system)
-      -- end)
+    it("shows chunks as they arrive", function()
+      local lines = h.to_table(
+        [[
+        # @accept chunked
+        GET http://localhost:3001/chunked
+      ]],
+        true
+      )
+
+      local last_buf = -1
+      local assert_chunk = function(system, errors, chunk, expected)
+        curl.stub({ ["*"] = { body = chunk } })
+        curl.request(system)
+
+        system.args.opts.stderr(_, errors)
+
+        vim.wait(1000, function()
+          ui_buf = vim.fn.bufnr(kulala_name)
+          return ui_buf ~= last_buf
+        end)
+
+        result = ui_buf ~= -1 and h.get_buf_lines(ui_buf):to_string() or nil
+        assert.is_same(expected, result)
+
+        last_buf = ui_buf
+      end
+
+      system.stub({ "curl" }, {
+        on_call = function(system)
+          if vim.tbl_contains(system.args.cmd, "-N") then
+            assert_chunk(system, "Waiting..", "Waiting..", nil)
+            assert_chunk(system, "Connected..", "Body 1", "Body 1")
+            assert_chunk(system, "Connected..", "Body 1 Body 2", "Body 1 Body 2")
+          end
+        end,
+      })
+
+      h.create_buf(lines, "test.http")
+      kulala.run_all()
+
+      system:wait(3000, function()
+        ui_buf = vim.fn.bufnr(kulala_name)
+        return curl.requests_no == 3
+      end)
+
+      local curl_cmd = DB.data.current_request.cmd
+      assert.is_true(vim.tbl_contains(curl_cmd, "-N"))
+
+      expected = "Body 1 Body 2"
+      result = h.get_buf_lines(ui_buf):to_string()
+
+      assert.is_same(expected, result)
+      assert.is_true(ui_buf ~= last_buf)
     end)
   end)
 end)

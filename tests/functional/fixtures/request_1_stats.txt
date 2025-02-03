@@ -1,1 +1,7 @@
-{"stderr": "", "signal": 0, "code": 0, "stdout": "[  {    \"name\": \"namelookup\",    \"duration\": \"0.000035\"  },  {    \"name\": \"connect\",    \"duration\": \"0.000210\"  },  {    \"name\": \"appconnect\",    \"duration\": \"0.000000\"  },  {    \"name\": \"pretransfer\",    \"duration\": \"0.000345\"  },  {    \"name\": \"redirect\",    \"duration\": \"0.000000\"  },  {    \"name\": \"starttransfer\",    \"duration\": \"0.006757\"  }]"}
+namelookup      |  5ms
+connect         | ████ 36ms
+appconnect      |     █████████████████ 150ms
+pretransfer     |                      █████████████████ 150ms
+starttransfer   |                                       █████████████████ 151ms
+--------------------------------------------------------------------------------
+                | Total Time: 492ms

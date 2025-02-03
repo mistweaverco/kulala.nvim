@@ -1,5 +1,3 @@
-local M = {}
-M.scripts = {}
 local CONFIG = require("kulala.config")
 local DB = require("kulala.db")
 local DYNAMIC_VARS = require("kulala.parser.dynamic_vars")
@@ -10,11 +8,126 @@ local GRAPHQL_PARSER = require("kulala.parser.graphql")
 local REQUEST_VARIABLES = require("kulala.parser.request_variables")
 local STRING_UTILS = require("kulala.utils.string")
 local PARSER_UTILS = require("kulala.parser.utils")
-local TS = require("kulala.parser.treesitter")
 local CURL_FORMAT_FILE = FS.get_plugin_path({ "parser", "curl-format.json" })
 local Logger = require("kulala.logger")
 
+local M = {}
+
+M.scripts = {}
 M.scripts.javascript = require("kulala.parser.scripts.javascript")
+
+---@class Scripts
+---@field pre_request ScriptData
+---@field post_request ScriptData
+
+---@class ScriptData
+---@field inline string[]
+---@field files string[]
+
+---@class DocumentRequest
+---@field headers table<string, string>
+---@field headers_raw table<string, string>
+---@field metadata table<{name: string, value: string}>
+---@field body string
+---@field body_display string
+---@field start_line number
+---@field end_line number
+---@field show_icon_line_number number
+---@field block_line_count number
+---@field lines_length number
+---@field variables DocumentVariables
+---@field redirect_response_body_to_files ResponseBodyToFile[]
+---@field scripts Scripts
+---@field url string
+---@field method string
+---@field http_version string
+
+---@alias DocumentVariables table<string, string|number|boolean>
+
+---@class ResponseBodyToFile
+---@field file string -- The file path to write the response body to
+---@field overwrite boolean -- Whether to overwrite the file if it already exists
+
+---@type DocumentRequest
+local default_document_request = {
+  headers = {},
+  headers_raw = {},
+  metadata = {},
+  body = "",
+  body_display = "",
+  start_line = 0,
+  end_line = 0,
+  show_icon_line_number = 0,
+  block_line_count = 0,
+  lines_length = 0,
+  variables = {},
+  redirect_response_body_to_files = {},
+  scripts = {
+    pre_request = {
+      inline = {},
+      files = {},
+    },
+    post_request = {
+      inline = {},
+      files = {},
+    },
+  },
+  url = "",
+  http_version = "",
+  method = "",
+}
+
+---@class Request
+---@field metadata table<{name: string, value: string}> -- Metadata of the request
+---@field method string -- The HTTP method of the request
+---@field url_raw string -- The raw URL as it appears in the document
+---@field url string -- The URL with variables and dynamic variables replaced
+---@field headers table<string, string> -- The headers with variables and dynamic variables replaced
+---@field headers_display table<string, string> -- The headers with variables and dynamic variables replaced and sanitized
+---@field headers_raw table<string, string> -- The headers as they appear in the document
+---@field body_raw string|nil -- The raw body as it appears in the document
+---@field body_computed string|nil -- The computed body as sent by curl; with variables and dynamic variables replaced
+---@field body_display string|nil -- The body with variables and dynamic variables replaced and sanitized
+---(e.g. with binary files replaced with a placeholder)
+---@field body string|nil -- The body with variables and dynamic variables replaced
+---@field environment table<string, string|number> -- The environment- and document-variables
+---@field cmd string[] -- The command to execute the request
+---@field ft string -- The filetype of the document
+---@field http_version string -- The HTTP version of the request
+---@field show_icon_line_number number -- The line number to show the icon
+---@field scripts Scripts -- The scripts to run before and after the request
+---@field redirect_response_body_to_files ResponseBodyToFile[]
+
+---@type Request
+local default_request = {
+  metadata = {},
+  method = "GET",
+  http_version = "",
+  url = "",
+  url_raw = "",
+  headers = {},
+  headers_display = {},
+  headers_raw = {},
+  body = nil,
+  body_raw = nil,
+  body_computed = nil,
+  body_display = nil,
+  cmd = {},
+  ft = "text",
+  environment = {},
+  redirect_response_body_to_files = {},
+  scripts = {
+    pre_request = {
+      inline = {},
+      files = {},
+    },
+    post_request = {
+      inline = {},
+      files = {},
+    },
+  },
+  show_icon_line_number = 0,
+}
 
 local function get_current_line_number()
   local win_id = vim.fn.bufwinid(DB.current_buffer)
@@ -212,13 +325,11 @@ local function get_request_from_fenced_code_block()
   return vim.api.nvim_buf_get_lines(buf, block_start, block_end - 1, false), block_start
 end
 
+---Parses the DB.current_buffer document and returns a list of DocumentRequests or nil if no valid requests found
+---@return DocumentVariables|nil, DocumentRequest[]|nil
 M.get_document = function()
   local line_offset
   local content_lines
-
-  if CONFIG.get().treesitter then
-    return TS.get_document()
-  end
 
   local maybe_from_fenced_code_block = FS.is_non_http_file()
 
@@ -244,29 +355,12 @@ M.get_document = function()
     local is_body_section = false
     local lines = vim.split(block, "\n")
     local block_line_count = #lines
-    local request = {
-      headers = {},
-      headers_raw = {},
-      metadata = {},
-      body = nil,
-      body_display = nil,
-      show_icon_line_number = nil,
-      start_line = line_offset + 1,
-      block_line_count = block_line_count,
-      lines_length = #lines,
-      variables = {},
-      redirect_response_body_to_files = {},
-      scripts = {
-        pre_request = {
-          inline = {},
-          files = {},
-        },
-        post_request = {
-          inline = {},
-          files = {},
-        },
-      },
-    }
+
+    local request = vim.deepcopy(default_document_request)
+    request.start_line = line_offset + 1
+    request.block_line_count = block_line_count
+    request.lines_length = #lines
+
     for relative_linenr, line in ipairs(lines) do
       -- end of inline scripting
       if is_request_line == true and line:match("^%%}$") then
@@ -428,23 +522,21 @@ M.get_document = function()
   return variables, requests
 end
 
+---Returns a DocumentRequest within specified line number from a list of DocumentRequests
+---or returns the first DocumentRequest in the list if no line number is provided
+---@param requests DocumentRequest[]
+---@param linenr? number|nil
+---@return DocumentRequest|nil
 M.get_request_at = function(requests, linenr)
-  if requests == nil then
-    Logger.error("No requests found in the document")
-    return nil
+  if not linenr then
+    return requests[1]
   end
-  if linenr == nil then
-    linenr = get_current_line_number()
-  end
-  if CONFIG.get().treesitter then
-    return TS.get_request_at(linenr - 1)
-  end
+
   for _, request in ipairs(requests) do
     if linenr >= request.start_line and linenr <= request.end_line then
       return request
     end
   end
-  return nil
 end
 
 M.get_previous_request = function(requests)
@@ -504,92 +596,32 @@ local cleanup_request_files = function()
   FS.delete_file(GLOBALS.COOKIES_JAR_FILE)
 end
 
----@class ResponseBodyToFile
----@field file string -- The file path to write the response body to
----@field overwrite boolean -- Whether to overwrite the file if it already exists
-
----@class Scripts
----@field pre_request ScriptData -- Pre-request handler scripts
----@field post_request ScriptData -- Post-request handler scripts
-
----@class Request
----@field metadata table[] -- Metadata of the request
----@field method string -- The HTTP method of the request
----@field url_raw string -- The raw URL as it appears in the document
----@field url string -- The URL with variables and dynamic variables replaced
----@field headers table -- The headers with variables and dynamic variables replaced
----@field headers_display table -- The headers with variables and dynamic variables replaced and sanitized
----@field headers_raw table -- The headers as they appear in the document
----@field body_raw string|nil -- The raw body as it appears in the document
----@field body_computed string|nil -- The computed body as sent by curl; with variables and dynamic variables replaced
----@field body_display string|nil -- The body with variables and dynamic variables replaced and sanitized
----(e.g. with binary files replaced with a placeholder)
----@field body string|nil -- The body with variables and dynamic variables replaced
----@field environment table -- The environment- and document-variables
----@field cmd table -- The command to execute the request
----@field ft string -- The filetype of the document
----@field http_version string -- The HTTP version of the request
----@field show_icon_line_number string -- The line number to show the icon
----@field scripts Scripts -- The scripts to run before and after the request
----@field redirect_response_body_to_files ResponseBodyToFile[]
-
----Parse a request and return the request on itself, its headers and body
----@param start_request_linenr number|nil The line number where the request starts
+---Returns a DocumentRequest within specified line or the first request in the list if no line is given
+---@param requests DocumentRequest[] List of document requests
+---@param line_nr number|nil The line number where the request starts
 ---@return Request|nil -- Table containing the request data or nil if parsing fails
-function M.get_basic_request_data(requests, start_request_linenr)
-  local res = {
-    metadata = {},
-    method = "GET",
-    url = "",
-    url_raw = "",
-    headers = {},
-    headers_display = {},
-    headers_raw = {},
-    body = nil,
-    body_raw = nil,
-    body_computed = nil,
-    body_display = nil,
-    cmd = {},
-    ft = "text",
-    environment = {},
-    redirect_response_body_to_files = {},
-    scripts = {
-      pre_request = {
-        inline = {},
-        files = {},
-      },
-      post_request = {
-        inline = {},
-        files = {},
-      },
-    },
-  }
+function M.get_basic_request_data(requests, line_nr)
+  local request = vim.deepcopy(default_request)
+  local document_request = M.get_request_at(requests, line_nr)
 
-  local req
-  if CONFIG:get().treesitter then
-    req = TS.get_request_at(start_request_linenr)
-  else
-    req = M.get_request_at(requests, start_request_linenr)
+  if not document_request then
+    return
   end
 
-  if req == nil then
-    return nil
-  end
+  request.scripts.pre_request = document_request.scripts.pre_request
+  request.scripts.post_request = document_request.scripts.post_request
+  request.show_icon_line_number = document_request.show_icon_line_number
+  request.headers = document_request.headers
+  request.headers_raw = document_request.headers_raw
+  request.url_raw = document_request.url
+  request.method = document_request.method
+  request.http_version = document_request.http_version
+  request.body_raw = document_request.body
+  request.body_display = document_request.body_display
+  request.metadata = document_request.metadata
+  request.redirect_response_body_to_files = document_request.redirect_response_body_to_files
 
-  res.scripts.pre_request = req.scripts.pre_request
-  res.scripts.post_request = req.scripts.post_request
-  res.show_icon_line_number = req.show_icon_line_number
-  res.headers = req.headers
-  res.headers_raw = req.headers_raw
-  res.url_raw = req.url
-  res.method = req.method
-  res.http_version = req.http_version
-  res.body_raw = req.body
-  res.body_display = req.body_display
-  res.metadata = req.metadata
-  res.redirect_response_body_to_files = req.redirect_response_body_to_files
-
-  return res
+  return request
 end
 
 ---Replace the variables in the URL, headers and body
@@ -606,16 +638,28 @@ local replace_variables_in_url_headers_body = function(res, document_variables, 
   return url, headers, body, body_display
 end
 
----Parse a request and return the request on itself, its headers and body
----@param requests table Parsed documents requests
----@param document_variables table Parsed document variables
----@param start_request_linenr number|nil The line number where the request starts
+---Parses a document request within specified line and returns the request ready to be processed
+---or the first request in the list if no line number is provided
+---or the request at DB.current_buffer current line if no arguments are provided
+---@param requests? DocumentRequest[]|nil Document requests
+---@param document_variables? DocumentVariables|nil Document variables
+---@param line_nr? number|nil The line number within the document to locate the request
 ---@return Request|nil -- Table containing the request data or nil if parsing fails
-M.parse = function(requests, document_variables, start_request_linenr)
-  local res = M.get_basic_request_data(requests, start_request_linenr)
+M.parse = function(requests, document_variables, line_nr)
+  if not requests then
+    DB.current_buffer = vim.fn.bufnr()
+    document_variables, requests = M.get_document()
+    line_nr = get_current_line_number()
+  end
+
+  if not requests then
+    return
+  end
+
+  local res = M.get_basic_request_data(requests, line_nr)
 
   if not res or not res.url_raw then
-    return nil
+    return
   end
 
   local has_pre_request_scripts = #res.scripts.pre_request.inline > 0 or #res.scripts.pre_request.files > 0
@@ -664,8 +708,9 @@ M.parse = function(requests, document_variables, start_request_linenr)
     is_graphql = false
   end
 
-  local json = vim.fn.json_encode(res)
+  local json = vim.json.encode(res)
   FS.write_file(GLOBALS.REQUEST_FILE, json, false)
+
   -- PERF: We only want to run the scripts if they exist
   -- Also we don't want to re-run the environment replace_variables_in_url_headers_body
   -- if we don't actually have any scripts to run that could have changed the environment
@@ -692,14 +737,14 @@ M.parse = function(requests, document_variables, start_request_linenr)
   table.insert(res.cmd, "@" .. CURL_FORMAT_FILE)
   table.insert(res.cmd, "-X")
   table.insert(res.cmd, res.method)
-  table.insert(res.cmd, "-v")
+  table.insert(res.cmd, "-v") -- verbose mode
 
   local chunked = vim.iter(res.metadata):find(function(m)
     return m.name == "accept" and m.value == "chunked"
   end)
 
   if chunked then
-    table.insert(res.cmd, "-N") -- Non-buffered mode: to support Transfer-Encoding: chunked
+    table.insert(res.cmd, "-N") -- non-buffered mode: to support Transfer-Encoding: chunked
   else
     table.insert(res.cmd, "-s") -- silent mode: must be off when in Non-buffeed mode
   end
@@ -867,9 +912,13 @@ M.parse = function(requests, document_variables, start_request_linenr)
   table.insert(res.cmd, res.url)
   cleanup_request_files()
   DB.update().current_request = res
+
   -- Save this to global,
   -- so .replay() can be triggered from any buffer or window
-  DB.global_update().replay = res
+  local replay_request = vim.deepcopy(res)
+  DB.global_update().replay = replay_request
+  DB.global_update().replay.show_icon_line_number = nil
+
   return res
 end
 

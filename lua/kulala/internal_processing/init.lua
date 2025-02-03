@@ -15,7 +15,7 @@ local function get_nested_value(t, key)
   for _, k in ipairs(keys) do
     value = value[k]
     if not value then
-      return nil
+      return
     end
   end
 
@@ -27,9 +27,14 @@ end
 ---In some cases the headers file might contain multiple header sections,
 ---e.g. if you have follow-redirections enabled.
 ---This function will return the headers of the last response.
----@return table
+---@return table|nil
 local get_last_headers_as_table = function()
-  local headers_file = FS.read_file(GLOBALS.HEADERS_FILE):gsub("\r\n", "\n")
+  local headers_file = FS.read_file(GLOBALS.HEADERS_FILE)
+  if not headers_file then
+    return
+  end
+
+  headers_file = headers_file:gsub("\r\n", "\n")
   local lines = vim.split(headers_file, "\n")
   local headers_table = {}
   -- INFO:
@@ -103,7 +108,7 @@ local get_cookies_as_table = function()
 end
 
 local get_lower_headers_as_table = function()
-  local headers = get_last_headers_as_table()
+  local headers = get_last_headers_as_table() or {}
   local headers_table = {}
   for key, value in pairs(headers) do
     headers_table[key:lower()] = value

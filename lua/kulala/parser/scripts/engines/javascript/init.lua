@@ -44,18 +44,11 @@ M.install_dependencies = function()
   end
 end
 
----@class Scripts
----@field path string -- path to script
----@field cwd string -- current working directory
-
----@class ScriptData table -- data for script
----@field inline string<table> -- inline scripts
----@field files string<table> -- paths to script files
-
 ---@param script_type "pre_request_client_only" | "pre_request" | "post_request_client_only" | "post_request"
 ---type of script
 ---@param is_external_file boolean -- is external file
----@param script_data string<table> | string -- either inline script or path to script file
+---@param script_data string[]|string -- either list of inline scripts or path to script file
+---@return string|nil, string|nil
 local generate_one = function(script_type, is_external_file, script_data)
   local userscript
   local base_file_path = FILE_MAPPING[script_type]
@@ -100,10 +93,13 @@ local generate_one = function(script_type, is_external_file, script_data)
   return script_path, script_cwd
 end
 
----@param script_type "pre_request_client_only" | "pre_request" | "post_request_client_only" | "post_request"
----type of script
+---@class JsScripts
+---@field path string -- path to script
+---@field cwd string -- current working directory
+
+---@param script_type "pre_request_client_only" | "pre_request" | "post_request_client_only" | "post_request" -- type of script
 ---@param scripts_data ScriptData -- data for scripts
----@return Scripts<table> -- paths to scripts
+---@return JsScripts<table> -- paths to scripts
 local generate_all = function(script_type, scripts_data)
   local scripts = {}
   local script_path, script_cwd = generate_one(script_type, false, scripts_data.inline)
@@ -180,11 +176,11 @@ M.run = function(type, data)
         Logger.info("JS: " .. output.stdout)
       end
 
+      if not FS.write_file(GLOBALS.SCRIPT_PRE_OUTPUT_FILE, output.stdout) then
+        Logger.error("write " .. GLOBALS.SCRIPT_PRE_OUTPUT_FILE .. " fail")
+      end
+    elseif type == "post_request" then
       if type == "pre_request" then
-        if not FS.write_file(GLOBALS.SCRIPT_PRE_OUTPUT_FILE, output.stdout) then
-          Logger.error("write " .. GLOBALS.SCRIPT_PRE_OUTPUT_FILE .. " fail")
-        end
-      elseif type == "post_request" then
         if not FS.write_file(GLOBALS.SCRIPT_POST_OUTPUT_FILE, output.stdout) then
           Logger.error("write " .. GLOBALS.SCRIPT_POST_OUTPUT_FILE .. " fail")
         end

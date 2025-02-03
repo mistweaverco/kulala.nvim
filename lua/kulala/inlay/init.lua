@@ -21,15 +21,15 @@ M.clear_if_marked = function(bufnr, linenr)
   end
 end
 
-M.show_loading = function(self, linenr)
+M.show_loading = function(_, linenr)
   _ = linenr and M.show(CONFIG.get().icons.inlay.loading, linenr)
 end
 
-M.show_error = function(self, linenr)
+M.show_error = function(_, linenr)
   _ = linenr and M.show(CONFIG.get().icons.inlay.error, linenr)
 end
 
-M.show_done = function(self, linenr, elapsed_time)
+M.show_done = function(_, linenr, elapsed_time)
   local icon = ""
   if string.len(CONFIG.get().icons.inlay.done) > 0 then
     icon = CONFIG.get().icons.inlay.done .. " "

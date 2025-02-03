@@ -23,12 +23,16 @@ string.clean = function(str) --luacheck: ignore
   return tostring(str)
 end
 
+string.to_string = function(self, clean)
+  return h.to_string(self, clean)
+end
+
 string.to_table = function(self, clean)
   return h.to_table(tostring(self), clean)
 end
 
-string.to_object = function(str)
-  return loadstring("return " .. str:gsub("[\n\r]*", ""))()
+string.to_object = function(self)
+  return loadstring("return " .. self:gsub("[\n\r]*", ""))()
 end
 
 ---@param tbl string[]|string
@@ -36,7 +40,7 @@ h.to_string = function(tbl, clean)
   tbl = tbl or {}
   tbl = type(tbl) == "table" and tbl or { tbl }
 
-  tbl = clean and h.to_table(table.concat(tbl, "\n")) or tbl
+  tbl = clean and h.to_table(table.concat(tbl, "\n"), true) or tbl
 
   return table.concat(tbl, "\n")
 end
@@ -120,7 +124,7 @@ end
 ---@param bufnr integer
 ---@param lines string[]
 UITestHelper.set_buf_lines = function(bufnr, lines)
-  return vim.api.nvim_buf_set_lines(bufnr, 0, 0, false, h.to_table(lines))
+  return vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, h.to_table(lines))
 end
 
 ---@return integer[] bufnr list
