@@ -178,9 +178,10 @@ local function process_request(requests, request, variables, callback)
   end)
 end
 
----Executes a DocumentRequest from the list within specified buffer line
----or all DocumentRequests in DB.current_buffer if list is not provided and line_nr = 0
----or first request in the list if line_nr not provided
+---Parses and executes DocumentRequest/s:
+---if requests are provied then runs the first request in the list
+---if line_nr is provided then runs the request from current buffer within the line number
+---or runs all requests in the document
 ---@param requests? DocumentRequest[]|nil
 ---@param line_nr? number|nil
 ---@param callback function

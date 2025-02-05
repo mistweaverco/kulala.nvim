@@ -316,7 +316,7 @@ describe("requests", function()
     it("copies curl command", function()
       kulala.copy()
 
-      expected = "curl -X 'GET' -v -s -A 'kulala.nvim/4.8.0' 'http://localhost:3001/request_1'"
+      expected = "curl -X 'GET' -v -s -A 'kulala.nvim/" .. GLOBALS.VERSION .. "' 'http://localhost:3001/request_1'"
       result = vim.fn.getreg("+")
       assert.are.same(expected, result)
     end)
