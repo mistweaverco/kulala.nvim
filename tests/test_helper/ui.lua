@@ -149,7 +149,14 @@ end
 ---@return table [id:name]
 UITestHelper.list_loaded_buf_names = function()
   return vim.iter(vim.api.nvim_list_bufs()):fold({}, function(acc, id)
-    acc[tostring(id)] = vim.fn.bufname(id)
+    local name = vim.fn.bufname(id)
+    local current_buf = vim.api.nvim_get_current_buf()
+
+    if id == current_buf then
+      name = "*" .. name
+    end
+
+    acc[tostring(id)] = name
     return acc
   end)
 end
