@@ -94,15 +94,15 @@ end
 
 M.set_selected_env = function(env)
   ENV.get_env()
-  if env == nil then
+
+  if not env then
     local has_telescope, telescope = pcall(require, "telescope")
-    if has_telescope then
-      telescope.extensions.kulala.select_env()
-    else
-      SELECTOR.select_env()
-    end
+    local selector = has_telescope and telescope.extensions.kulala or SELECTOR
+
+    selector.select_env()
     return
   end
+
   vim.g.kulala_selected_env = env
 end
 

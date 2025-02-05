@@ -56,45 +56,45 @@ end
 ---set local key mapping
 ---@param buf integer|nil Buffer
 M.winbar_set_key_mapping = function(buf)
-  if buf then
+  if buf and CONFIG.get().winbar then
     for _, value in pairs(winbar_info) do
-      vim.keymap.set("n", value.keymap, function()
-        value.action()
-      end, { silent = true, buffer = buf })
+      vim.keymap.set("n", value.keymap, value.action, { silent = true, buffer = buf })
     end
   end
 end
 
+---@param buf integer Buffer id
 ---@param win_id integer|nil Window id
 ---@param view string Body or headers
-M.toggle_winbar_tab = function(win_id, view)
-  if win_id then
-    local winbar = CONFIG.get().default_winbar_panes
-    local winbar_title = {}
-    for _, key in ipairs(winbar) do
-      local info = winbar_info[key]
-      if info ~= nil then
-        local desc = info.desc .. " %*"
-        if view == key then
-          desc = "%#KulalaTabSel# " .. desc
-        else
-          desc = "%#KulalaTab# " .. desc
-        end
-        table.insert(winbar_title, desc)
-      end
-    end
-    local value = table.concat(winbar_title, " ")
-    vim.api.nvim_set_option_value("winbar", value, { win = win_id })
+M.toggle_winbar_tab = function(buf, win_id, view)
+  if not (win_id and CONFIG.get().winbar) then
+    return
   end
-end
 
----@param win_id integer|nil Window id
-M.create_winbar = function(win_id)
-  if win_id then
-    local default_view = CONFIG.get().default_view
-    M.winbar_sethl()
-    M.toggle_winbar_tab(win_id, default_view)
+  local winbar = CONFIG.get().default_winbar_panes
+  local winbar_title = {}
+
+  for _, key in ipairs(winbar) do
+    local info = winbar_info[key]
+
+    if info ~= nil then
+      local desc = info.desc .. " %*"
+
+      if view == key then
+        desc = "%#KulalaTabSel# " .. desc
+      else
+        desc = "%#KulalaTab# " .. desc
+      end
+
+      table.insert(winbar_title, desc)
+    end
   end
+
+  local value = table.concat(winbar_title, " ")
+  vim.api.nvim_set_option_value("winbar", value, { win = win_id })
+
+  M.winbar_sethl()
+  M.winbar_set_key_mapping(buf)
 end
 
 UICallbacks.add("on_replace_buffer", function(_, new_buffer)

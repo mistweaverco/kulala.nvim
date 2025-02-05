@@ -126,7 +126,7 @@ function Fs.file_exists(path)
 end
 
 function Curl.stub(opts)
-  Curl.url_mappings = vim.tbl_extend("force", Curl.url_mappings, opts)
+  Curl.url_mappings = vim.tbl_deep_extend("force", Curl.url_mappings, opts)
   return Curl
 end
 
@@ -155,7 +155,7 @@ end
 function Curl.request(job)
   local cmd = job.args.cmd
   local url = vim.split(cmd[#cmd], "?")[1]
-  local mappings = vim.tbl_extend("force", Curl.url_mappings["*"], Curl.url_mappings[url] or {})
+  local mappings = vim.tbl_deep_extend("force", Curl.url_mappings["*"], Curl.url_mappings[url] or {})
 
   if not mappings then
     return
@@ -165,13 +165,14 @@ function Curl.request(job)
     job.opts.on_stdout = mappings.stats
     job.opts.on_stderr = mappings.errors
   else
-    job.opts.stderr = mappings.errors
+    job.stdout = mappings.stats
+    job.stderr = mappings.errors
   end
 
   local curl_flags = parse_curl_cmd(cmd)
 
-  _ = mappings.headers and fs.write_file(curl_flags.headers_path, mappings.headers)
-  _ = mappings.body and fs.write_file(curl_flags.body_path, mappings.body)
+  _ = (mappings.headers and curl_flags.headers_path) and fs.write_file(curl_flags.headers_path, mappings.headers)
+  _ = (mappings.body and curl_flags.body_path) and fs.write_file(curl_flags.body_path, mappings.body)
 
   vim.list_extend(Curl.paths, { curl_flags.headers_path, curl_flags.body_path })
 
@@ -265,16 +266,16 @@ function System.run(cmd, opts, on_exit)
 
   _ = System.opts.on_call and System.opts.on_call(System)
 
-  System.stats = {
+  System.completed = {
     code = System.code,
     signal = System.signal,
-    stderr = System.opts.stderr,
-    stdout = System.opts.stdout,
+    stderr = System.stderr,
+    stdout = System.stdout,
   }
 
-  _ = opts.stdout and opts.stdout(_, System.opts.stdout)
-  _ = opts.stderr and opts.stderr(_, System.opts.stderr)
-  _ = on_exit and on_exit(System.stats)
+  _ = opts.stdout and opts.stdout(_, System.stdout)
+  _ = opts.stderr and opts.stderr(_, System.stderr)
+  _ = on_exit and on_exit(System.completed)
 
   System.jobs[job_id] = nil
   return System
@@ -287,7 +288,7 @@ function System.wait(_, timeout, predicate)
     return vim.tbl_count(System.jobs) == 0 and predicate()
   end)
 
-  return System.stats
+  return System.completed
 end
 
 return {

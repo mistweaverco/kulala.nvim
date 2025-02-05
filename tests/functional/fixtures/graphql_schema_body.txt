@@ -1,0 +1,21 @@
+{
+  "data": {
+    "countries": [
+      {
+        "name": "Andorra",
+        "native": "Andorra",
+        "capital": "Andorra la Vella"
+      },
+      {
+        "name": "United Arab Emirates",
+        "native": "دولة الإمارات العربية المتحدة",
+        "capital": "Abu Dhabi"
+      },
+      {
+        "name": "Afghanistan",
+        "native": "افغانستان",
+        "capital": "Kabul"
+      },
+    ]
+  }
+}

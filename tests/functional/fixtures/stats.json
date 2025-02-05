@@ -1,1 +1,26 @@
-{"stderr": "", "signal": 0, "code": 0, "stdout": "[  {    \"name\": \"namelookup\",    \"duration\": \"0.000035\"  },  {    \"name\": \"connect\",    \"duration\": \"0.000210\"  },  {    \"name\": \"appconnect\",    \"duration\": \"0.000000\"  },  {    \"name\": \"pretransfer\",    \"duration\": \"0.000345\"  },  {    \"name\": \"redirect\",    \"duration\": \"0.000000\"  },  {    \"name\": \"starttransfer\",    \"duration\": \"0.006757\"  }]"}
+[
+  {
+    "name": "namelookup",
+    "duration": "0.005449"
+  },
+  {
+    "name": "connect",
+    "duration": "0.035805"
+  },
+  {
+    "name": "appconnect",
+    "duration": "0.150167"
+  },
+  {
+    "name": "pretransfer",
+    "duration": "0.150432"
+  },
+  {
+    "name": "redirect",
+    "duration": "0.000000"
+  },
+  {
+    "name": "starttransfer",
+    "duration": "0.150565"
+  }
+]

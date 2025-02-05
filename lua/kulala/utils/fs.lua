@@ -3,7 +3,7 @@ local Logger = require("kulala.logger")
 local M = {}
 
 M.get_current_buffer = function()
-  return require("kulala.db").current_buffer
+  return require("kulala.db").get_current_buffer()
 end
 
 ---Get the OS
@@ -85,8 +85,10 @@ end
 -- This is mainly used for determining if the current buffer is a non-http file
 -- and therefore maybe we need to parse a fenced code block
 M.is_non_http_file = function()
+  local buf = M.get_current_buffer()
+
   local extensions = { "http", "rest" }
-  local ft = vim.bo[M.get_current_buffer()].filetype
+  local ft = vim.bo[buf].filetype
   local ext = vim.fn.fnamemodify(M.get_current_buffer_path(), ":e")
 
   return vim.iter(extensions):all(function(e)
@@ -95,7 +97,7 @@ M.is_non_http_file = function()
 end
 
 -- find nearest file in parent directories, starting from the current buffer file path
---- @param filename string
+--- @param filename string|function
 --- @return string|nil
 --- @usage local p = fs.find_file_in_parent_dirs('Makefile')
 M.find_file_in_parent_dirs = function(filename)
@@ -122,7 +124,8 @@ M.get_current_buffer_dir = function()
 end
 
 M.get_current_buffer_path = function()
-  return vim.api.nvim_buf_get_name(M.get_current_buffer())
+  local buf = M.get_current_buffer()
+  return buf and vim.api.nvim_buf_get_name(buf)
 end
 
 ---Get UUID
