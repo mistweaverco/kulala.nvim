@@ -5,14 +5,13 @@ local DB = require("kulala.db")
 local kulala = require("kulala")
 
 local kulala_name = GLOBALS.UI_ID
+local kulala_config = CONFIG.options
 
 local h = require("test_helper.ui")
 local s = require("test_helper.stubs")
 
 local assert = require("luassert")
 assert.is_true(vim.fn.executable("npm") == 1)
-
---TODO: add GraphQL schema download
 
 describe("requests", function()
   describe("show output of requests", function()
@@ -55,7 +54,7 @@ describe("requests", function()
         end)
       end
 
-      CONFIG.options.default_view = "body"
+      kulala_config.default_view = "body"
     end)
 
     after_each(function()
@@ -302,6 +301,83 @@ describe("requests", function()
 
       assert.is_same(expected, result)
       assert.is_true(ui_buf ~= last_buf)
+    end)
+
+    it("downloads GraphQL schema", function()
+      curl.stub({
+        ["https://countries.trevorblades.com"] = {
+          body = h.load_fixture("fixtures/graphql_schema_body.txt"),
+        },
+      })
+
+      h.create_buf(
+        ([[
+          POST https://countries.trevorblades.com
+          X-REQUEST-TYPE: GraphQL
+
+          query Person($id: ID) {
+            person(personID: $id) {
+              name
+            }
+          }
+
+          {
+            "id": 1
+          }
+      ]]):to_table(true),
+        "test.http"
+      )
+
+      kulala.download_graphql_schema()
+
+      system:wait(2000, function()
+        return curl.requests_no == 1
+      end)
+
+      local request_cmd = system.args.cmd
+      assert.is_true(vim.tbl_contains(request_cmd, function(flag)
+        return flag:find("IntrospectionQuery")
+      end, { predicate = true }))
+
+      expected = h.load_fixture("fixtures/graphql_schema_body.txt")
+      result = h.load_fixture(vim.uv.cwd() .. "/test.graphql-schema.json")
+
+      assert.is_same(expected, result)
+    end)
+
+    it("parses GraphQL request", function()
+      curl.stub({
+        ["POST https://countries.trevorblades.com"] = {
+          body = h.load_fixture("fixtures/graphql_schema_body.txt"),
+        },
+      })
+
+      h.create_buf(
+        ([[
+          POST https://countries.trevorblades.com
+          X-REQUEST-TYPE: GraphQL
+
+          query Person($id: ID) {
+            person(personID: $id) {
+              name
+            }
+          }
+
+          {
+            "id": 1
+          }
+      ]]):to_table(true),
+        "test.http"
+      )
+
+      kulala.run()
+      wait_for_requests(1)
+
+      local expected_body_computed =
+        '{"query": "query Person($id: ID) { person(personID: $id) { name } } ", "variables": {"id": 1}}'
+      local request_body_computed = DB.data.current_request.body_computed
+
+      assert.is_same(expected_body_computed, request_body_computed)
     end)
   end)
 end)

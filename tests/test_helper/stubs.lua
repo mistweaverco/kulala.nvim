@@ -171,8 +171,8 @@ function Curl.request(job)
 
   local curl_flags = parse_curl_cmd(cmd)
 
-  _ = mappings.headers and fs.write_file(curl_flags.headers_path, mappings.headers)
-  _ = mappings.body and fs.write_file(curl_flags.body_path, mappings.body)
+  _ = (mappings.headers and curl_flags.headers_path) and fs.write_file(curl_flags.headers_path, mappings.headers)
+  _ = (mappings.body and curl_flags.body_path) and fs.write_file(curl_flags.body_path, mappings.body)
 
   vim.list_extend(Curl.paths, { curl_flags.headers_path, curl_flags.body_path })
 

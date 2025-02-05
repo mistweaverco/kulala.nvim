@@ -130,7 +130,7 @@ local default_request = {
 }
 
 local function get_current_line_number()
-  local win_id = vim.fn.bufwinid(DB.current_buffer)
+  local win_id = vim.fn.bufwinid(DB.get_current_buffer())
   return vim.api.nvim_win_get_cursor(win_id)[1]
 end
 
@@ -286,7 +286,7 @@ local function split_by_block_delimiters(text)
 end
 
 local function get_request_from_fenced_code_block()
-  local buf = DB.current_buffer
+  local buf = DB.get_current_buffer()
   local start_line = get_current_line_number()
 
   -- Get the total number of lines in the current buffer
@@ -328,6 +328,8 @@ end
 ---Parses the DB.current_buffer document and returns a list of DocumentRequests or nil if no valid requests found
 ---@return DocumentVariables|nil, DocumentRequest[]|nil
 M.get_document = function()
+  local buf = DB.get_current_buffer()
+
   local line_offset
   local content_lines
 
@@ -336,7 +338,7 @@ M.get_document = function()
   if maybe_from_fenced_code_block then
     content_lines, line_offset = get_request_from_fenced_code_block()
   else
-    content_lines = vim.api.nvim_buf_get_lines(DB.current_buffer, 0, -1, false)
+    content_lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
     line_offset = 0
   end
 
@@ -640,14 +642,15 @@ end
 
 ---Parses a document request within specified line and returns the request ready to be processed
 ---or the first request in the list if no line number is provided
----or the request at DB.current_buffer current line if no arguments are provided
+---or the request in DB.current_buffer current line if no arguments are provided
+---or the request in current buffer at current line
 ---@param requests? DocumentRequest[]|nil Document requests
 ---@param document_variables? DocumentVariables|nil Document variables
 ---@param line_nr? number|nil The line number within the document to locate the request
 ---@return Request|nil -- Table containing the request data or nil if parsing fails
 M.parse = function(requests, document_variables, line_nr)
   if not requests then
-    DB.current_buffer = vim.fn.bufnr()
+    DB.set_current_buffer()
     document_variables, requests = M.get_document()
     line_nr = get_current_line_number()
   end

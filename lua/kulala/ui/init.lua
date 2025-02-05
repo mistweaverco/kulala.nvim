@@ -17,12 +17,12 @@ local M = {}
 
 local function get_kulala_buffer()
   local buf = vim.fn.bufnr(GLOBALS.UI_ID)
-  return buf > 0 and buf or nil
+  return buf > 0 and buf
 end
 
 local function get_kulala_window()
   local win = vim.fn.bufwinid(get_kulala_buffer() or -1)
-  return win > 0 and win or nil
+  return win > 0 and win
 end
 
 local function get_current_line()
@@ -263,7 +263,7 @@ end
 M.open_all = function(_, line_nr)
   line_nr = line_nr or 0
 
-  DB.current_buffer = vim.fn.bufnr()
+  DB.set_current_buffer()
   INLAY.clear()
 
   CMD.run_parser(nil, line_nr, function(success, start_time, icon_linenr)
@@ -308,7 +308,7 @@ M.close = function()
 
   local ext = vim.fn.expand("%:e")
   if ext == "http" or ext == "rest" then
-    vim.cmd("bdelete")
+    vim.api.nvim_buf_delete(vim.fn.bufnr(), {})
   end
 end
 
@@ -420,16 +420,16 @@ end
 M.inspect = function()
   local inspect_name = "kulala://inspect"
 
+  local content = Inspect.get_contents()
+  if #content == 0 then
+    return
+  end
+
   -- Create a new buffer
   local buf = vim.fn.bufnr(inspect_name)
 
   _ = buf > 0 and vim.api.nvim_buf_delete(buf, { force = true })
   buf = vim.api.nvim_create_buf(false, true)
-
-  local content = Inspect.get_contents()
-  if #content == 0 then
-    return
-  end
 
   -- Set the content of the buffer
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, content)

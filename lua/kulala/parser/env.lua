@@ -19,7 +19,7 @@ M.get_env = function()
 
   if Config.get().vscode_rest_client_environmentvars then
     local vscode_dir = FS.find_file_in_parent_dirs(".vscode")
-    local code_workspace_file = FS.find_file_in_parent_dirs(function(name, path)
+    local code_workspace_file = FS.find_file_in_parent_dirs(function(name, _)
       return name:match(".*%.code%-workspace$")
     end)
 
@@ -94,7 +94,9 @@ M.get_env = function()
     end
   end
 
-  local selected_env = DB.find_unique("http_client_env")[vim.g.kulala_selected_env or Config.get().default_env]
+  local cur_env = vim.g.kulala_selected_env or Config.get().default_env
+  local selected_env = DB.find_unique("http_client_env") and DB.find_unique("http_client_env")[cur_env]
+
   if selected_env then
     env = vim.tbl_extend("force", env, selected_env)
   end

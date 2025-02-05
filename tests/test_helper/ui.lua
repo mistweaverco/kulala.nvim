@@ -56,6 +56,11 @@ h.to_table = function(str, clean)
     :totable()
 end
 
+h.send_keys = function(keys)
+  local cmd = "'normal " .. keys .. "'"
+  vim.cmd.exe(cmd)
+end
+
 UITestHelper.expand_path = function(path)
   if vim.fn.filereadable(path) == 0 then
     local spec_path

@@ -6,6 +6,20 @@ M.data = nil
 M.global_data = {}
 M.current_buffer = nil
 
+---Gets DB.current_buffer or if it does not exist, then sets it to current buffer
+---@return number
+M.get_current_buffer = function()
+  local buf = M.current_buffer
+  return vim.fn.bufexists(buf) > 0 and buf or M.set_current_buffer()
+end
+
+---Sets DB.current_buffer to provided buffer_id or to current buffer
+---@param id number|nil
+M.set_current_buffer = function(id)
+  M.current_buffer = id and id or vim.fn.bufnr()
+  return M.current_buffer
+end
+
 local function default_data()
   return {
     selected_env = nil, -- string - name of selected env
@@ -18,7 +32,7 @@ end
 
 local function get_current_scope_nr()
   if CONFIG.get().environment_scope == "b" then
-    return M.current_buffer
+    return M.get_current_buffer()
   elseif CONFIG.get().environment_scope == "g" then
     return 0
   end
@@ -26,7 +40,8 @@ end
 
 local function load_data()
   if CONFIG.get().environment_scope == "b" then
-    local kulala_data = vim.b[M.current_buffer].kulala_data
+    local buf = M.get_current_buffer()
+    local kulala_data = buf and vim.b[buf].kulala_data
     M.data = kulala_data and kulala_data or default_data()
   elseif CONFIG.get().environment_scope == "g" then
     -- keep in lua only
