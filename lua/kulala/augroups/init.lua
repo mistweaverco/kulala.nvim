@@ -1,21 +1,15 @@
 local Config = require("kulala.config")
 local Parser = require("kulala.parser")
 local Float = require("kulala.ui.float")
-local Db = require("kulala.db")
+local Env = require("kulala.parser.env")
 
 local M = {}
 
 local show_variable_info_text = function()
   local line = vim.api.nvim_get_current_line()
-  local db_env = Db.find_unique("env")
-  if db_env == nil then
-    return nil
-  end
-  local variables = Parser.get_document()
-  if variables == nil then
-    return nil
-  end
-  variables = vim.tbl_extend("force", variables, db_env)
+  local env = Env.get_env() or {}
+  local variables = Parser.get_document() or {}
+  variables = vim.tbl_extend("force", variables, env)
   -- get variable under cursor
   -- a variable is a string that starts with two {{ and ends with two }}
   local cursor = vim.api.nvim_win_get_cursor(0)
