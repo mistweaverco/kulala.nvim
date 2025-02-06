@@ -139,8 +139,6 @@ local function process_request(requests, request, variables, callback)
       return
     end
 
-    INLAY:show_loading(parsed_request.show_icon_line_number)
-
     ---@diagnostic disable-next-line: undefined-field
     local start_time = vim.loop.hrtime()
     local unbuffered = vim.tbl_contains(parsed_request.cmd, "-N")
@@ -210,6 +208,7 @@ M.run_parser = function(requests, line_nr, callback)
   reqs_to_process = reqs_to_process or requests
 
   for _, req in ipairs(reqs_to_process) do
+    INLAY:show_loading(req.show_icon_line_number)
     process_request(requests, req, variables, callback)
   end
 end
