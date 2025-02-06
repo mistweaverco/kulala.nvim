@@ -44,6 +44,22 @@ M.setup = function()
     local augroup = vim.api.nvim_create_augroup("kulala_show_variable_info_text", { clear = true })
     local float_win_id = nil
     local timer = nil
+    -- on buffer close
+    -- close the float window and stop the timer
+    -- this is necessary to avoid memory leaks
+    vim.api.nvim_create_autocmd("BufDelete", {
+      group = augroup,
+      callback = function()
+        if float_win_id then
+          vim.api.nvim_win_close(float_win_id, true)
+          float_win_id = nil
+        end
+        if timer then
+          vim.fn.timer_stop(timer)
+          timer = nil
+        end
+      end,
+    })
     vim.api.nvim_create_autocmd("CursorMoved", {
       group = augroup,
       callback = function()
