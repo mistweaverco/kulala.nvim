@@ -143,7 +143,7 @@ describe("requests", function()
       assert.is_same("https://httpbin.org/advanced_1", cmd[#cmd])
     end)
 
-    it("#wip for current selection in in non-http buffer", function()
+    it("for current selection in in non-http buffer", function()
       kulala_config.default_view = "body"
 
       curl.stub({
@@ -157,10 +157,12 @@ describe("requests", function()
           Some text
           Some text
 
+        //###
+
           -- @foobar=bar
           ##@ENV_PROJECT = project_name
 
-          # @accept chunked
+          ;# @accept chunked
           /* POST https://httpbin.org/advanced_1 HTTP/1.1
           #  Content-Type: application/json
 
@@ -180,7 +182,7 @@ describe("requests", function()
         "test.lua"
       )
 
-      h.send_keys("3jV18j")
+      h.send_keys("3jV20j")
 
       kulala.run()
       wait_for_requests(1)

@@ -125,7 +125,7 @@ local default_request = {
       files = {},
     },
   },
-  show_icon_line_number = 0,
+  show_icon_line_number = 1,
 }
 
 local function get_current_line_number()
@@ -290,19 +290,21 @@ end
 
 ---Strips invalid characters at the beginning of the line, e.g. comment characters
 local function strip_invalid_chars(tbl)
-  local valid_1 = { "# @", "###", "%%}", "%-%-%-%-%-%-" }
-  local valid_2 = [["%[%]<>{%%}@?%w]]
+  local valid_1 = { "# @", "###", "------" }
+  local valid_2 = [["%[%]<>{%%}@?%w%d]]
 
   return vim
     .iter(tbl)
     :map(function(line)
-      local has_valid_chars = vim.iter(valid_1):any(function(chars)
-        return line:match("^%s*(" .. chars .. ").*$")
+      local has_valid, s
+
+      vim.iter(valid_1):each(function(pattern)
+        s = line:find(pattern, 1, true)
+        line = s and line:sub(s) or line
+        has_valid = s or has_valid
       end)
 
-      if not has_valid_chars then
-        _, line = line:match("^%s*([^" .. valid_2 .. "]*)(.*)$")
-      end
+      line = has_valid and line or line:gsub("^%s*([^" .. valid_2 .. "]*)(.*)$", "%2")
 
       return line
     end)
