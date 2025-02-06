@@ -19,6 +19,8 @@ M.create = function(opts)
   -- Create a new buffer
   local buf = vim.api.nvim_create_buf(false, true)
 
+  local win_config_relative = "editor"
+
   -- Set the content of the buffer
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, opts.contents)
 
@@ -54,14 +56,15 @@ M.create = function(opts)
     row = math.floor((total_height - win_height) / 2)
     col = math.floor((total_width - win_width) / 2)
   elseif opts.position == FLOAT_POSITION.Cursor then
-    -- Calculate the window position to center it around the cursor
-    row = vim.fn.line(".") - math.floor(win_height / 2)
-    col = vim.fn.col(".") - math.floor(win_width / 2)
+    -- Adjust the position relative to the cursor
+    win_config_relative = "cursor"
+    row = 1 -- Move the float one line below the cursor
+    col = 1 -- Move the float one column to the right of the cursor
   end
 
   -- Define the floating window configuration
   local win_config = {
-    relative = "editor",
+    relative = win_config_relative,
     width = win_width,
     height = win_height,
     row = row,
