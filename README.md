@@ -8,7 +8,7 @@
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/mistweaverco/kulala.nvim?style=for-the-badge)](https://github.com/mistweaverco/kulala.nvim/releases/latest)
 [![Discord](assets/badge-discord.svg)](https://discord.gg/QyVQmfY4Rt)
 
-[Requirements](https://kulala.mwco.app/docs/getting-started/requirements) • [Install](#install) • [Usage](https://kulala.mwco.app/docs/usage/) • [HTTP File Spec](https://kulala.mwco.app/docs/usage/http-file-spec)
+[Requirements](https://neovim.getkulala.net/docs/getting-started/requirements) • [Install](#install) • [Usage](https://neovim.getkulala.net/docs/usage) • [HTTP File Spec](https://neovim.getkulala.net/docs/usage/http-file-spec)
 
 <p></p>
 
@@ -31,7 +31,7 @@ It allows you to make HTTP requests from within Neovim.
 > [!WARNING]
 > Requires Neovim 0.10.0+ and cURL.
 >
-> See [requirements](https://kulala.mwco.app/docs/getting-started/requirements).
+> See [requirements](https://neovim.getkulala.net/docs/getting-started/requirements).
 
 Via [lazy.nvim](https://github.com/folke/lazy.nvim):
 
@@ -43,7 +43,7 @@ Via [lazy.nvim](https://github.com/folke/lazy.nvim):
 > [!NOTE]
 > `opts` needs to be at least an empty table `{}` and can't be completely omitted.
 
-See [configuration options](https://kulala.mwco.app/docs/getting-started/configuration-options) for more information.
+See [configuration options](https://neovim.getkulala.net/docs/getting-started/configuration-options) for more information.
 
 ## Honorable mentions
 
