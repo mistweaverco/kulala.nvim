@@ -2,14 +2,15 @@ local Config = require("kulala.config")
 local Parser = require("kulala.parser")
 local Float = require("kulala.ui.float")
 local Env = require("kulala.parser.env")
+local StringVariablesParser = require("kulala.parser.string_variables_parser")
 
 local M = {}
 
 local show_variable_info_text = function()
   local line = vim.api.nvim_get_current_line()
   local env = Env.get_env() or {}
-  local variables = Parser.get_document() or {}
-  variables = vim.tbl_extend("force", variables, env)
+  local document_variables = Parser.get_document() or {}
+  local variables = vim.tbl_extend("force", document_variables, env)
   -- get variable under cursor
   -- a variable is a string that starts with two {{ and ends with two }}
   local cursor = vim.api.nvim_win_get_cursor(0)
@@ -26,7 +27,7 @@ local show_variable_info_text = function()
   end
   local variable = line:sub(start_col + 1, end_col - 1)
   local computed_variable = "{{" .. variable .. "}}"
-  local variable_value = variables[variable] or computed_variable
+  local variable_value = StringVariablesParser.parse(computed_variable, variables, env, true)
   return Float.create({
     contents = { variable_value },
     position = "cursor",

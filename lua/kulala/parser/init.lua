@@ -1,15 +1,14 @@
 local CONFIG = require("kulala.config")
 local DB = require("kulala.db")
-local DYNAMIC_VARS = require("kulala.parser.dynamic_vars")
 local ENV_PARSER = require("kulala.parser.env")
 local FS = require("kulala.utils.fs")
 local GLOBALS = require("kulala.globals")
 local GRAPHQL_PARSER = require("kulala.parser.graphql")
-local REQUEST_VARIABLES = require("kulala.parser.request_variables")
 local STRING_UTILS = require("kulala.utils.string")
 local PARSER_UTILS = require("kulala.parser.utils")
 local CURL_FORMAT_FILE = FS.get_plugin_path({ "parser", "curl-format.json" })
 local Logger = require("kulala.logger")
+local StringVariablesParser = require("kulala.parser.string_variables_parser")
 
 local M = {}
 
@@ -134,46 +133,10 @@ local function get_current_line_number()
   return vim.api.nvim_win_get_cursor(win_id)[1]
 end
 
----Parse the variables in a string
----@param str string -- The string to parse
----@param variables table -- The variables defined in the document
----@param env table -- The environment variables
----@param silent boolean|nil -- Whether to suppress not found variable warnings
-local function parse_string_variables(str, variables, env, silent)
-  local function replace_placeholder(variable_name)
-    local value
-    -- If the variable name contains a `$` symbol then try to parse it as a dynamic variable
-    if variable_name:find("^%$") then
-      local variable_value = DYNAMIC_VARS.read(variable_name)
-      if variable_value then
-        value = variable_value
-      end
-    elseif variables[variable_name] then
-      value = parse_string_variables(variables[variable_name], variables, env)
-    elseif env[variable_name] then
-      value = env[variable_name]
-    elseif REQUEST_VARIABLES.parse(variable_name) then
-      value = REQUEST_VARIABLES.parse(variable_name)
-    else
-      value = "{{" .. variable_name .. "}}"
-      if not silent then
-        Logger.info(
-          "The variable '"
-            .. variable_name
-            .. "' was not found in the document or in the environment. Returning the string as received ..."
-        )
-      end
-    end
-    return value
-  end
-  local result = str:gsub("{{(.-)}}", replace_placeholder)
-  return result
-end
-
 local function parse_headers(headers, variables, env, silent)
   local h = {}
   for key, value in pairs(headers) do
-    h[key] = parse_string_variables(value, variables, env, silent)
+    h[key] = StringVariablesParser.parse(value, variables, env, silent)
   end
   return h
 end
@@ -223,7 +186,7 @@ local function encode_url_params(url)
 end
 
 local function parse_url(url, variables, env, silent)
-  url = parse_string_variables(url, variables, env, silent)
+  url = StringVariablesParser.parse(url, variables, env, silent)
   url = encode_url_params(url)
   url = url:gsub('"', "")
   return url
@@ -241,7 +204,7 @@ local function parse_body(body, variables, env, silent)
   variables = variables or {}
   env = env or {}
 
-  return parse_string_variables(body, variables, env, silent)
+  return StringVariablesParser.parse(body, variables, env, silent)
 end
 
 --- Parse the body_display of the request
@@ -255,7 +218,7 @@ local function parse_body_display(body_display, variables, env, silent)
   end
   variables = variables or {}
   env = env or {}
-  return parse_string_variables(body_display, variables, env, silent)
+  return StringVariablesParser.parse(body_display, variables, env, silent)
 end
 
 local function split_by_block_delimiters(text)
