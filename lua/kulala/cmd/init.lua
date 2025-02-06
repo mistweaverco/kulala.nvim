@@ -6,6 +6,7 @@ local INT_PROCESSING = require("kulala.internal_processing")
 local Api = require("kulala.api")
 local INLAY = require("kulala.inlay")
 local Logger = require("kulala.logger")
+local UiHighlight = require("kulala.ui.highlight")
 
 local M = {}
 
@@ -139,8 +140,6 @@ local function process_request(requests, request, variables, callback)
       return
     end
 
-    INLAY:show_loading(parsed_request.show_icon_line_number)
-
     ---@diagnostic disable-next-line: undefined-field
     local start_time = vim.loop.hrtime()
     local unbuffered = vim.tbl_contains(parsed_request.cmd, "-N")
@@ -210,7 +209,19 @@ M.run_parser = function(requests, line_nr, callback)
   reqs_to_process = reqs_to_process or requests
 
   for _, req in ipairs(reqs_to_process) do
-    process_request(requests, req, variables, callback)
+    --- create namespace
+    local ns = vim.api.nvim_create_namespace("kulala_highlights")
+    INLAY:show_loading(req.show_icon_line_number)
+    UiHighlight.highlight_range(
+      0,
+      { row = req.start_line, col = 0 },
+      { row = req.end_line, col = 0 },
+      ns,
+      100,
+      function()
+        process_request(requests, req, variables, callback)
+      end
+    )
   end
 end
 
