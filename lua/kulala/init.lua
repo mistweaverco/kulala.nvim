@@ -8,10 +8,12 @@ local Graphql = require("kulala.graphql")
 local Logger = require("kulala.logger")
 local ScriptsUtils = require("kulala.parser.scripts.utils")
 local Fs = require("kulala.utils.fs")
+local Augroups = require("kulala.augroups")
 local M = {}
 
 M.setup = function(config)
   CONFIG.setup(config)
+  Augroups.setup()
 end
 
 M.open = function()

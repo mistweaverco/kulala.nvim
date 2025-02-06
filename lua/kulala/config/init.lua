@@ -86,6 +86,10 @@ M.defaults = {
   -- Specify how to escape query parameters
   -- possible values: always, skipencoded = keep %xx as is
   urlencode = "always",
+  -- enable/disable variable info text
+  -- this will show the variable name and value as float
+  -- possible values: false, "float"
+  show_variable_info_text = false,
 }
 
 M.default_contenttype = {

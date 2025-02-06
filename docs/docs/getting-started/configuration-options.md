@@ -114,6 +114,11 @@ the Kulala plugin with the available `opts`:
     -- Specify how to escape query parameters
     -- possible values: always, skipencoded = keep %xx as is
     urlencode = "always",
+
+    -- enable/disable variable info text
+    -- this will show the variable name and value as float
+    -- possible values: false, "float"
+    show_variable_info_text = false,
   },
 }
 ```
@@ -700,6 +705,28 @@ Example:
   "mistweaverco/kulala.nvim",
   opts = {
     urlencode = "skipencoded",
+  },
+}
+```
+
+### show_variable_info_text
+
+Enable/disable variable info text.
+
+Possible values:
+
+- `false` = disable variable info text
+- `"float"` = show the variable name and value as float
+
+Default: `always`
+
+Example:
+
+```lua
+{
+  "mistweaverco/kulala.nvim",
+  opts = {
+    show_variable_info_text = false,
   },
 }
 ```
