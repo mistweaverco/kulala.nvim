@@ -47,6 +47,12 @@ M.setup = function()
     vim.api.nvim_create_autocmd("CursorMoved", {
       group = augroup,
       callback = function()
+        -- if not in http or rest filetype, exit early
+        -- This should not happen, when the user loads kulala only for .http or .rest buffers,
+        -- but you never know, so better safe than sorry
+        if vim.bo.filetype ~= "http" and vim.bo.filetype ~= "rest" then
+          return
+        end
         if float_win_id then
           vim.api.nvim_win_close(float_win_id, true)
           float_win_id = nil
