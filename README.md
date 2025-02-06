@@ -8,7 +8,7 @@
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/mistweaverco/kulala.nvim?style=for-the-badge)](https://github.com/mistweaverco/kulala.nvim/releases/latest)
 [![Discord](assets/badge-discord.svg)](https://discord.gg/QyVQmfY4Rt)
 
-[Requirements](https://kulala.mwco.app/docs/getting-started/requirements) • [Install](#install) • [Usage](https://kulala.mwco.app/docs/usage/) • [HTTP File Spec](https://kulala.mwco.app/docs/usage/http-file-spec)
+[Requirements](https://kulala.mwco.app/docs/getting-started/requirements) • [Install](#install) • [Usage](https://neovim.getkulala.net/docs/usage) • [HTTP File Spec](https://kulala.mwco.app/docs/usage/http-file-spec)
 
 <p></p>
 
