@@ -57,7 +57,7 @@ local default_document_request = {
   body_display = "",
   start_line = 0,
   end_line = 0,
-  show_icon_line_number = 0,
+  show_icon_line_number = 1,
   block_line_count = 0,
   lines_length = 0,
   variables = {},
@@ -325,22 +325,63 @@ local function get_request_from_fenced_code_block()
   return vim.api.nvim_buf_get_lines(buf, block_start, block_end - 1, false), block_start
 end
 
+---Strips invalid characters at the beginning of the line, e.g. comment characters
+local function strip_invalid_chars(tbl)
+  local valid_1 = { "# @", "###", "%%}", "%-%-%-%-%-%-" }
+  local valid_2 = [["%[%]<>{%%}@?%w]]
+
+  return vim
+    .iter(tbl)
+    :map(function(line)
+      local has_valid_chars = vim.iter(valid_1):any(function(chars)
+        return line:match("^%s*(" .. chars .. ").*$")
+      end)
+
+      if not has_valid_chars then
+        _, line = line:match("^%s*([^" .. valid_2 .. "]*)(.*)$")
+      end
+
+      return line
+    end)
+    :totable()
+end
+
+local function get_selection()
+  local line_s, line_e
+
+  if vim.api.nvim_get_mode().mode == "V" then
+    vim.api.nvim_input("<Esc>")
+  end
+
+  line_s, line_e = vim.fn.getpos(".")[2], vim.fn.getpos("v")[2]
+
+  if line_s > line_e then
+    line_s, line_e = line_e, line_s
+  end
+
+  local contents = vim.api.nvim_buf_get_lines(DB.get_current_buffer(), line_s - 1, line_e, false)
+  contents = strip_invalid_chars(contents)
+
+  return contents, line_s - 1
+end
+
 ---Parses the DB.current_buffer document and returns a list of DocumentRequests or nil if no valid requests found
 ---@return DocumentVariables|nil, DocumentRequest[]|nil
 M.get_document = function()
   local buf = DB.get_current_buffer()
 
-  local line_offset
+  local line_offset = 0
   local content_lines
 
-  local maybe_from_fenced_code_block = FS.is_non_http_file()
-
-  if maybe_from_fenced_code_block then
+  if FS.is_non_http_file() then
     content_lines, line_offset = get_request_from_fenced_code_block()
-  else
-    content_lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
-    line_offset = 0
+
+    if not content_lines then
+      content_lines, line_offset = get_selection()
+    end
   end
+
+  content_lines = content_lines or vim.api.nvim_buf_get_lines(buf, 0, -1, false)
 
   if not content_lines then
     return nil, nil
@@ -388,7 +429,7 @@ M.get_document = function()
       -- we're still in(/before) the request line and we have a pre-request inline handler script
       elseif is_request_line == true and line:match("^< %{%%$") then
         is_prerequest_handler_script_inline = true
-      -- we're still in(/before) the request line and we have a pre-request file handler script
+        -- we're still in(/before) the request line and we have a pre-request file handler script
       elseif is_request_line == true and line:match("^< (.*)$") then
         local scriptfile = line:match("^< (.*)$")
         table.insert(request.scripts.pre_request.files, scriptfile)
@@ -396,24 +437,24 @@ M.get_document = function()
         if is_request_line == false then
           is_body_section = true
         end
-      -- redirect response body to file, without overwriting
+        -- redirect response body to file, without overwriting
       elseif line:match("^>> (.*)$") then
         local write_to_file = line:match("^>> (.*)$")
         table.insert(request.redirect_response_body_to_files, {
           file = write_to_file,
           overwrite = false,
         })
-      -- redirect response body to file, with overwriting
+        -- redirect response body to file, with overwriting
       elseif line:match("^>>! (.*)$") then
         local write_to_file = line:match("^>>! (.*)$")
         table.insert(request.redirect_response_body_to_files, {
           file = write_to_file,
           overwrite = true,
         })
-      -- start of inline scripting
+        -- start of inline scripting
       elseif line:match("^> {%%$") then
         is_postrequest_handler_script_inline = true
-      -- file scripting notation
+        -- file scripting notation
       elseif line:match("^> (.*)$") then
         local scriptfile = line:match("^> (.*)$")
         table.insert(request.scripts.post_request.files, scriptfile)

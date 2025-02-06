@@ -1,6 +1,7 @@
 ---@diagnostic disable: undefined-field, redefined-local
 local GLOBALS = require("kulala.globals")
 local CONFIG = require("kulala.config")
+local DB = require("kulala.db")
 local kulala = require("kulala")
 
 local kulala_name = GLOBALS.UI_ID
@@ -112,6 +113,87 @@ describe("requests", function()
       expected = h.load_fixture("fixtures/request_2_body.txt")
 
       assert.is_same(expected, result)
+    end)
+
+    it("for current line in in non-http buffer and strips comments chars", function()
+      kulala_config.default_view = "body"
+
+      curl.stub({
+        ["https://httpbin.org/advanced_1"] = {
+          body = h.load_fixture("fixtures/advanced_A_1_body.txt"),
+        },
+      })
+
+      h.create_buf(
+        ([[
+          -- @foobar=bar
+          ;; @ENV_PROJECT = project_name
+          
+          #- POST https://httpbin.org/advanced_1 HTTP/1.1
+          /*-- Content-Type: application/json
+        ]]):to_table(),
+        "test.lua"
+      )
+
+      h.send_keys("3j")
+      kulala.run()
+      wait_for_requests(1)
+
+      local cmd = DB.data.current_request.cmd
+      assert.is_same("https://httpbin.org/advanced_1", cmd[#cmd])
+    end)
+
+    it("#wip for current selection in in non-http buffer", function()
+      kulala_config.default_view = "body"
+
+      curl.stub({
+        ["https://httpbin.org/advanced_1"] = {
+          body = h.load_fixture("fixtures/advanced_A_1_body.txt"),
+        },
+      })
+
+      h.create_buf(
+        ([[
+          Some text
+          Some text
+
+          -- @foobar=bar
+          ##@ENV_PROJECT = project_name
+
+          # @accept chunked
+          /* POST https://httpbin.org/advanced_1 HTTP/1.1
+          #  Content-Type: application/json
+
+        // {
+        (*   "project": "{{ENV_PROJECT}}",
+        ;;     "results": [
+             {
+        ;;       "id": 1,
+        ;;       "desc": "{{foobar}}"
+             },
+             ]
+        ;; }
+          > {%
+          client.log("TEST LOG")
+          %}
+        ]]):to_table(true),
+        "test.lua"
+      )
+
+      h.send_keys("3jV18j")
+
+      kulala.run()
+      wait_for_requests(1)
+
+      local cmd = DB.data.current_request.cmd
+      assert.is_same("https://httpbin.org/advanced_1", cmd[#cmd])
+
+      local computed_body = DB.data.current_request.body_computed
+      local expected_computed_body =
+        '{\r\n"project": "project_name",\r\n"results": [\r\n{\r\n"id": 1,\r\n"desc": "bar"\r\n},\r\n]\r\n}'
+
+      assert.is_same(expected_computed_body, computed_body)
+      assert.is_true(notify.has_message("TEST LOG"))
     end)
 
     it("last request in body_headers mode for run_all", function()
@@ -316,7 +398,7 @@ describe("requests", function()
     it("copies curl command", function()
       kulala.copy()
 
-      expected = "curl -X 'GET' -v -s -A 'kulala.nvim/4.8.0' 'http://localhost:3001/request_1'"
+      expected = "curl -X 'GET' -v -s -A 'kulala.nvim/" .. GLOBALS.VERSION .. "' 'http://localhost:3001/request_1'"
       result = vim.fn.getreg("+")
       assert.are.same(expected, result)
     end)
