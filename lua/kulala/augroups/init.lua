@@ -31,7 +31,8 @@ local show_variable_info_text = function()
     return nil
   end
   local variable = line:sub(start_col + 1, end_col - 1)
-  local variable_value = variables[variable] or "{{" .. variable .. "}}"
+  local computed_variable = "{{" .. variable .. "}}"
+  local variable_value = variables[variable] or computed_variable
   return Float.create({
     contents = { variable_value },
     position = "cursor",
@@ -40,7 +41,7 @@ end
 
 M.setup = function()
   if Config.get().show_variable_info_text == "float" then
-    local augroup = vim.api.nvim_create_augroup("kulala_show_float_variable_info_text", { clear = true })
+    local augroup = vim.api.nvim_create_augroup("kulala_show_variable_info_text", { clear = true })
     local float_win_id = nil
     local timer = nil
     vim.api.nvim_create_autocmd("CursorMoved", {
