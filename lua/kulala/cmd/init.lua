@@ -6,6 +6,7 @@ local INT_PROCESSING = require("kulala.internal_processing")
 local Api = require("kulala.api")
 local INLAY = require("kulala.inlay")
 local Logger = require("kulala.logger")
+local UiHighlight = require("kulala.ui.highlight")
 
 local M = {}
 
@@ -208,8 +209,19 @@ M.run_parser = function(requests, line_nr, callback)
   reqs_to_process = reqs_to_process or requests
 
   for _, req in ipairs(reqs_to_process) do
+    --- create namespace
+    local ns = vim.api.nvim_create_namespace("kulala_highlights")
     INLAY:show_loading(req.show_icon_line_number)
-    process_request(requests, req, variables, callback)
+    UiHighlight.highlight_range(
+      0,
+      { row = req.start_line, col = 0 },
+      { row = req.end_line, col = 0 },
+      ns,
+      100,
+      function()
+        process_request(requests, req, variables, callback)
+      end
+    )
   end
 end
 
