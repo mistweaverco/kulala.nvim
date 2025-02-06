@@ -136,7 +136,8 @@ end
 local function parse_headers(headers, variables, env, silent)
   local h = {}
   for key, value in pairs(headers) do
-    h[key] = StringVariablesParser.parse(value, variables, env, silent)
+    h[StringVariablesParser.parse(key, variables, env, silent)] =
+      StringVariablesParser.parse(value, variables, env, silent)
   end
   return h
 end
