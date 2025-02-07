@@ -4,10 +4,6 @@ local api = vim.api
 local UITestHelper = {}
 local h = UITestHelper
 
-local function true_if_nil(arg)
-  return (arg or arg == nil) and true or arg
-end
-
 local function extend_table(tbl)
   local mt = {}
   mt = {
@@ -61,6 +57,32 @@ h.send_keys = function(keys)
   vim.cmd.exe(cmd)
 end
 
+---@param buf? number|nil -- get global maps if nil
+---@param mode? string -- default 'n'
+---@param replace_leader? boolean|nil -- replaces leader symbol with <leader>
+h.get_maps = function(buf, mode, replace_leader)
+  replace_leader = replace_leader ~= false
+  mode = mode or "n"
+
+  local maps = {}
+  local list = buf and vim.api.nvim_buf_get_keymap(buf, mode) or vim.api.nvim_get_keymap(mode)
+
+  vim.tbl_map(function(map)
+    map.lhs = replace_leader and map.lhs:gsub(vim.g.mapleader, "<leader>") or map.lhs
+    maps[map.lhs] = map.desc
+  end, list)
+
+  return maps
+end
+
+h.delete_all_maps = function()
+  vim.iter({ "n", "v" }):each(function(mode)
+    vim.iter(h.get_maps(nil, mode)):each(function(lhs, _)
+      vim.keymap.del(mode, lhs)
+    end)
+  end)
+end
+
 UITestHelper.expand_path = function(path)
   if vim.fn.filereadable(path) == 0 then
     local spec_path
@@ -104,7 +126,7 @@ end
 ---@return integer bufnr
 UITestHelper.create_buf = function(lines, bufname, scratch)
   lines = lines or {}
-  scratch = true_if_nil(scratch)
+  scratch = scratch ~= false
 
   local bufnr = vim.api.nvim_create_buf(true, scratch)
 

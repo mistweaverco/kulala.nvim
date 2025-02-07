@@ -1,6 +1,7 @@
 local WINBAR = require("kulala.ui.winbar")
 local GLOBALS = require("kulala.globals")
 local CONFIG = require("kulala.config")
+local KEYMAPS = require("kulala.config.keymaps")
 local INLAY = require("kulala.inlay")
 local PARSER = require("kulala.parser")
 local CURL_PARSER = require("kulala.parser.curl")
@@ -29,7 +30,7 @@ local function get_current_line()
   return vim.fn.line(".")
 end
 
-local close_kulala_buffer = function()
+M.close_kulala_buffer = function()
   local buf = get_kulala_buffer()
   if buf then
     vim.api.nvim_buf_delete(buf, { force = true })
@@ -40,15 +41,10 @@ end
 -- This is necessary to prevent the buffer from being left behind
 -- when the window is closed
 local function set_maps_autocommands(buf)
-  local config = CONFIG.get()
-  local augroup = vim.api.nvim_create_augroup("kulala_window_closed", { clear = true })
-
-  if config.display_mode == "float" and config.q_to_close_float then
-    vim.keymap.set("n", "q", close_kulala_buffer, { buffer = buf, noremap = true, silent = true })
-  end
+  KEYMAPS.setup_kulala_keymaps(buf)
 
   vim.api.nvim_create_autocmd("WinClosed", {
-    group = augroup,
+    group = vim.api.nvim_create_augroup("kulala_window_closed", { clear = true }),
     buffer = buf,
     callback = function()
       if vim.fn.bufexists(buf) > 0 then
@@ -73,7 +69,7 @@ local open_kulala_buffer = function(filetype)
   ---This makes sure to replace current kulala buffer with a new one
   ---This is necessary to prevent bugs like this:
   ---https://github.com/mistweaverco/kulala.nvim/issues/128
-  close_kulala_buffer()
+  M.close_kulala_buffer()
   vim.api.nvim_buf_set_name(buf, GLOBALS.UI_ID)
 
   return buf
@@ -304,7 +300,7 @@ M.replay = function()
 end
 
 M.close = function()
-  close_kulala_buffer()
+  M.close_kulala_buffer()
 
   local ext = vim.fn.expand("%:e")
   if ext == "http" or ext == "rest" then
