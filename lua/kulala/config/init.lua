@@ -1,4 +1,5 @@
 local FS = require("kulala.utils.fs")
+local keymaps = require("kulala.config.keymaps")
 local M = {}
 
 M.defaults = {
@@ -9,9 +10,6 @@ M.defaults = {
   -- Display mode
   -- possible values: "split", "float"
   display_mode = "split",
-  -- q to close the float (only used when display_mode is set to "float")
-  -- possible values: true, false
-  q_to_close_float = false,
   -- split direction
   -- possible values: "vertical", "horizontal"
   split_direction = "vertical",
@@ -90,6 +88,42 @@ M.defaults = {
   -- this will show the variable name and value as float
   -- possible values: false, "float"
   show_variable_info_text = false,
+
+  -- set to true to enable default keymaps (check docs or {plugins_path}/kulala.nvim/lua/kulala/config/keymaps.lua for details)
+  -- or override default keymaps as shown in the example below.
+  ---@type boolean|table
+  global_keymaps = false,
+  --[[
+    {
+      ["Send request"] = { -- sets global mapping
+        "<leader>Rs",
+        function() require("kulala").run() end,
+        mode = { "n", "v" }, -- optional mode, default is v
+        desc = "Send request" -- optional description, otherwise inferred from the key
+      },
+      ["Send all requests"] = {
+        "<leader>Ra",
+        function() require("kulala").run_all() end,
+        mode = { "n", "v" },
+        ft = "http", -- sets mapping for *.http files only
+      },
+      ["Replay the last request"] = {
+        "<leader>Rr",
+        function() require("kulala").replay() end,
+        ft = { "http", "rest" }, -- sets mapping for specified file types
+      },
+    ["Find request"] = false -- set to false to disable
+    },
+  ]]
+
+  -- Kulala UI keymaps, override with custom keymaps as required (check docs or {plugins_path}/kulala.nvim/lua/kulala/config/keymaps.lua for details)
+  ---@type boolean|table
+  kulala_keymaps = true,
+  --[[
+    {
+      ["Show headers"] = { "H", function() require("kulala.ui").show_headers() end, },
+    }
+  ]]
 }
 
 M.default_contenttype = {
@@ -102,6 +136,7 @@ M.options = M.defaults
 
 M.setup = function(config)
   M.options = vim.tbl_deep_extend("force", M.defaults, config or {})
+  keymaps.setup_global_keymaps()
 end
 
 M.set = function(config)
