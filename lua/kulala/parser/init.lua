@@ -320,20 +320,118 @@ local function get_selection()
   return contents, line_s - 1
 end
 
-local function include_file(line)
-  if content_type_header_value ~= nil and content_type_header_value:find("^multipart/form%-data") then
+local function include_file(request, line)
+  local _, content_type_header_value = PARSER_UTILS.get_header(request.headers, "content-type")
+
+  if content_type_header_value and content_type_header_value:find("^multipart/form%-data") then
     request.body = request.body .. line .. "\r\n"
     request.body_display = request.body_display .. line .. "\r\n"
   else
     local file_path = vim.trim(line:sub(2))
     local contents = FS.read_file(file_path)
-    if contents ~= nil then
+
+    if contents then
       request.body = request.body .. contents .. "\r\n"
-      request.body_display = request.body_display .. "[[external file skipped]]\r\n"
+      request.body_display = request.body_display .. "[[external file skipped]]\r\n" --TODO: check size and skip only big files
     else
       Logger.warn("The file '" .. file_path .. "' was not found. Skipping ...")
     end
   end
+end
+
+local function parse_redirect_response(request, line)
+  local overwrite, write_to_file = line:match("^>>(!?) (.*)$")
+
+  table.insert(request.redirect_response_body_to_files, {
+    file = write_to_file,
+    overwrite = overwrite == "!",
+  })
+end
+
+-- Variable
+-- Variables are defined as `@variable_name=value`
+-- The value can be a string, a number or boolean
+local function parse_request_variables(variables, line)
+  local variable_name, variable_value = line:match("^@([%w_]+)%s*=%s*(.*)$")
+  if variable_name and variable_value then
+    -- remove the @ symbol from the variable name
+    variable_name = variable_name:sub(1)
+    variables[variable_name] = variable_value
+  end
+end
+
+-- Metadata (e.g., # @this-is-name this is the value)
+-- See: https://httpyac.github.io/guide/metaData.html
+local function parse_request_metadata(request, line)
+  if line:sub(1, 3) == "# @" then
+    local meta_name, meta_value = line:match("^# @([%w+%-]+)%s*(.*)$")
+    if meta_name and meta_value then table.insert(request.metadata, { name = meta_name, value = meta_value }) end
+  end
+end
+
+-- Header
+-- Headers are defined as `key: value`
+-- The key is case-insensitive
+-- The key can be anything except a colon
+-- The value can be a string or a number
+-- The value can be a variable
+-- The value can be a dynamic variable
+-- variables are defined as `{{variable_name}}`
+-- dynamic variables are defined as `{{$variable_name}}`
+local function parse_request_headers(request, line)
+  local key, value = line:match("^([^:]+):%s*(.*)$")
+  if key and value then
+    request.headers[key] = value
+    request.headers_raw[key] = value
+  end
+end
+
+local function parse_query_params(request, line)
+  -- Query parameters for URL as separate lines
+  local querypart, http_version = line:match("^%s*(.+)%s+HTTP/(%d[.%d]*)%s*$")
+
+  querypart = querypart or line:match("^%s*(.+)%s*$")
+  request.url = querypart and (request.url .. querypart) or request.url
+  request.http_version = http_version or request.http_version
+end
+
+local function parse_request_body(request, line)
+  local _, content_type_header_value = PARSER_UTILS.get_header(request.headers, "content-type")
+  content_type_header_value = content_type_header_value or ""
+
+  -- If the request body is nil, this also means that the body_display is nil
+  -- so we need to initialize it to an empty string, because the header value content-type
+  -- is present and implies that there is a body to be sent
+  request.body = request.body or ""
+  request.body_display = request.body_display or ""
+
+  local line_ending = "\n"
+
+  if content_type_header_value:find("^multipart/form%-data") then
+    local multipart_boundary = content_type_header_value:match('^[^=]+boundary="?(.+)"?$')
+
+    -- per RFC2616 3.7.2. multipart buoundaries must end with \r\n
+    line_ending = line:find(multipart_boundary, 1, true) and "\r\n" or "\n"
+
+    request.body = request.body .. line .. line_ending
+    request.body_display = request.body_display .. line_ending
+  else
+    request.body = request.body .. line .. "\n"
+    request.body_display = request.body_display .. line .. "\n"
+  end
+end
+
+-- Request line (e.g., GET http://example.com HTTP/1.1)
+-- Split the line into method, URL and HTTP version
+-- HTTP Version is optional
+local function parse_request_method(request, line, relative_linenr)
+  request.method, request.url, request.http_version = line:match("^([A-Z]+)%s+(.+)%s+HTTP/(%d[.%d]*)%s*$")
+
+  if not request.method then
+    request.method, request.url = line:match("^([A-Z]+)%s+(.+)$")
+  end
+
+  request.show_icon_line_number = request.start_line + relative_linenr
 end
 
 ---Parses the DB.current_buffer document and returns a list of DocumentRequests or nil if no valid requests found
@@ -360,15 +458,18 @@ M.get_document = function()
   local variables = {}
   local requests = {}
   local blocks = split_by_block_delimiters(content)
+
   for _, block in ipairs(blocks) do
     local is_request_line = true
     local is_prerequest_handler_script_inline = false
     local is_postrequest_handler_script_inline = false
     local is_body_section = false
+
     local lines = vim.split(block, "\n")
     local block_line_count = #lines
 
     local request = vim.deepcopy(default_document_request)
+
     request.start_line = line_offset + 1
     request.block_line_count = block_line_count
     request.lines_length = #lines
@@ -387,12 +488,7 @@ M.get_document = function()
       elseif is_prerequest_handler_script_inline then
         table.insert(request.scripts.pre_request.inline, line)
       elseif line:sub(1, 1) == "#" then
-        -- Metadata (e.g., # @this-is-name this is the value)
-        -- See: https://httpyac.github.io/guide/metaData.html
-        if line:sub(1, 3) == "# @" then
-          local meta_name, meta_value = line:match("^# @([%w+%-]+)%s*(.*)$")
-          if meta_name and meta_value then table.insert(request.metadata, { name = meta_name, value = meta_value }) end
-        end
+        parse_request_metadata(request, line)
       -- we're still in(/before) the request line and we have a pre-request inline handler script
       elseif is_request_line == true and line:match("^< %{%%$") then
         is_prerequest_handler_script_inline = true
@@ -402,20 +498,9 @@ M.get_document = function()
         table.insert(request.scripts.pre_request.files, scriptfile)
       elseif line == "" and is_body_section == false then
         if is_request_line == false then is_body_section = true end
-        -- redirect response body to file, without overwriting
+        -- redirect response body to file
       elseif line:match("^>> (.*)$") then
-        local write_to_file = line:match("^>> (.*)$")
-        table.insert(request.redirect_response_body_to_files, {
-          file = write_to_file,
-          overwrite = false,
-        })
-        -- redirect response body to file, with overwriting
-      elseif line:match("^>>! (.*)$") then
-        local write_to_file = line:match("^>>! (.*)$")
-        table.insert(request.redirect_response_body_to_files, {
-          file = write_to_file,
-          overwrite = true,
-        })
+        parse_redirect_response(request, line)
         -- start of inline scripting
       elseif line:match("^> {%%$") then
         is_postrequest_handler_script_inline = true
@@ -424,92 +509,30 @@ M.get_document = function()
         local scriptfile = line:match("^> (.*)$")
         table.insert(request.scripts.post_request.files, scriptfile)
       elseif line:match("^@([%w_]+)") then
-        -- Variable
-        -- Variables are defined as `@variable_name=value`
-        -- The value can be a string, a number or boolean
-        local variable_name, variable_value = line:match("^@([%w_]+)%s*=%s*(.*)$")
-        if variable_name and variable_value then
-          -- remove the @ symbol from the variable name
-          variable_name = variable_name:sub(1)
-          variables[variable_name] = variable_value
-        end
+        parse_request_variables(variables, line)
       elseif is_body_section == true then
-        local _, content_type_header_value = PARSER_UTILS.get_header(request.headers, "content-type")
-        -- If the request body is nil, this also means that the body_display is nil
-        -- so we need to initialize it to an empty string, because the header value content-type
-        -- is present and implies that there is a body to be sent
-        if request.body == nil then
-          request.body = ""
-          request.body_display = ""
-        end
-
-        if line:find("^<") then
-          include_file(line)
-        else
-          if content_type_header_value ~= nil and content_type_header_value:find("^multipart/form%-data") then
-            request.body = request.body .. line .. "\r\n"
-            request.body_display = request.body_display .. line .. "\r\n"
-          elseif
-            content_type_header_value ~= nil
-            and content_type_header_value:find("^application/x%-www%-form%-urlencoded")
-          then
-            request.body = request.body .. line
-            request.body_display = request.body_display .. line
-          else
-            request.body = request.body .. line .. "\r\n"
-            request.body_display = request.body_display .. line .. "\r\n"
-          end
-        end
+        parse_request_body(request, line)
       elseif is_request_line == false and line:match("^%s*[?&]") and #request.headers == 0 and request.url then
-        -- Query parameters for URL as separate lines
-        local querypart, http_version = line:match("^%s*(.+)%s+HTTP/(%d[.%d]*)%s*$")
-        if querypart == nil then querypart = line:match("^%s*(.+)%s*$") end
-        if querypart then request.url = request.url .. querypart end
-        if http_version then request.http_version = http_version end
+        parse_query_params(request, line)
       elseif is_request_line == false and line:match("^([^:]+):%s*(.*)$") then
-        -- Header
-        -- Headers are defined as `key: value`
-        -- The key is case-insensitive
-        -- The key can be anything except a colon
-        -- The value can be a string or a number
-        -- The value can be a variable
-        -- The value can be a dynamic variable
-        -- variables are defined as `{{variable_name}}`
-        -- dynamic variables are defined as `{{$variable_name}}`
-        local key, value = line:match("^([^:]+):%s*(.*)$")
-        if key and value then
-          request.headers[key] = value
-          request.headers_raw[key] = value
-        end
-      elseif is_request_line == true then
-        -- Request line (e.g., GET http://example.com HTTP/1.1)
-        -- Split the line into method, URL and HTTP version
-        -- HTTP Version is optional
-        request.method, request.url, request.http_version = line:match("^([A-Z]+)%s+(.+)%s+HTTP/(%d[.%d]*)%s*$")
-        if request.method == nil then
-          request.method, request.url = line:match("^([A-Z]+)%s+(.+)$")
-        end
-        local show_icons = CONFIG.get().show_icons
-        if show_icons ~= nil then
-          if show_icons == "on_request" then
-            request.show_icon_line_number = request.start_line + relative_linenr - 1
-          elseif show_icons == "above_request" then
-            request.show_icon_line_number = request.start_line + relative_linenr - 2
-          elseif show_icons == "below_request" then
-            request.show_icon_line_number = request.start_line + relative_linenr
-          end
-        end
+        parse_request_headers(request, line)
+      elseif is_request_line then
+        parse_request_method(request, line, relative_linenr)
         is_request_line = false
       end
     end
-    if request.body ~= nil then
+
+    if request.body then
       request.body = vim.trim(request.body)
       request.body_display = vim.trim(request.body_display)
     end
+
     request.end_line = line_offset + block_line_count
     line_offset = request.end_line + 1 -- +1 for the '###' separator line
+
     table.insert(requests, request)
   end
+
   return variables, requests
 end
 
@@ -548,6 +571,7 @@ M.get_next_request = function(requests)
   return nil
 end
 
+-- Deprecated: use "< path/to/file" in place instead of @file-to-variable
 -- extend the document_variables with the variables defined in the request
 -- via the # @file-to-variable variable_name file_path metadata syntax
 ---@param document_variables table|nil
@@ -555,19 +579,17 @@ end
 ---@return table
 local function extend_document_variables(document_variables, request)
   document_variables = document_variables or {}
+
   for _, metadata in ipairs(request.metadata) do
-    if metadata then
-      if metadata.name == "file-to-variable" then
-        local kv = vim.split(metadata.value, " ")
-        local variable_name = kv[1]
-        local file_path = kv[2]
-        local is_binary = #kv > 2 and kv[3] == "binary" or false
-        file_path = FS.get_file_path(file_path)
-        local file_contents = FS.read_file(file_path, is_binary)
-        if file_contents then document_variables[variable_name] = file_contents end
-      end
+    if metadata.name == "file-to-variable" then
+      local kv = vim.split(metadata.value, " ")
+      local variable_name = kv[1]
+      local file_path = kv[2]
+
+      document_variables[variable_name] = "< " .. file_path
     end
   end
+
   return document_variables
 end
 
@@ -617,6 +639,84 @@ local replace_variables_in_url_headers_body = function(res, document_variables, 
   return url, headers, body, body_display
 end
 
+local function process_auth_headers(request)
+  local auth_header_name, auth_header_value = PARSER_UTILS.get_header(request.headers, "authorization")
+  if not (auth_header_name and auth_header_value) then return end
+
+  local authtype = auth_header_value:match("^(%w+)%s+.*")
+  if authtype == nil then authtype = auth_header_value:match("^(%w+)%s*$") end
+
+  if authtype ~= nil then
+    authtype = authtype:lower()
+
+    if authtype == "ntlm" or authtype == "negotiate" or authtype == "digest" or authtype == "basic" then
+      local match, authuser, authpw = auth_header_value:match("^(%w+)%s+([^%s:]+)%s*[:%s]%s*([^%s]+)%s*$")
+
+      if match ~= nil or (authtype == "ntlm" or authtype == "negotiate") then
+        table.insert(request.cmd, "--" .. authtype)
+        table.insert(request.cmd, "-u")
+        table.insert(request.cmd, (authuser or "") .. ":" .. (authpw or ""))
+        request.headers[auth_header_name] = nil
+      end
+    elseif authtype == "aws" then
+      local key, secret, optional = auth_header_value:match("^%w+%s([^%s]+)%s*([^%s]+)[%s$]+(.*)$")
+      local token = optional:match("token:([^%s]+)")
+      local region = optional:match("region:([^%s]+)")
+      local service = optional:match("service:([^%s]+)")
+      local provider = "aws:amz"
+
+      if region then provider = provider .. ":" .. region end
+      if service then provider = provider .. ":" .. service end
+
+      table.insert(request.cmd, "--aws-sigv4")
+      table.insert(request.cmd, provider)
+      table.insert(request.cmd, "-u")
+      table.insert(request.cmd, key .. ":" .. secret)
+
+      if token then
+        table.insert(request.cmd, "-H")
+        table.insert(request.cmd, "x-amz-security-token:" .. token)
+      end
+
+      request.headers[auth_header_name] = nil
+    end
+  end
+end
+
+local function process_protocol(request)
+  local protocol, host, port = request.url:match("^([^:]*)://([^:/]*):([^/]*)")
+
+  if not protocol then
+    protocol, host = request.url:match("^([^:]*)://([^:/]*)")
+  end
+
+  if protocol ~= "https" then return end
+
+  local certificate = CONFIG.get().certificates[host .. ":" .. (port or "443")]
+  if not certificate then certificate = CONFIG.get().certificates[host] end
+
+  if not certificate then
+    while host ~= "" do
+      certificate = CONFIG.get().certificates["*." .. host .. ":" .. (port or "443")]
+      if not certificate then certificate = CONFIG.get().certificates["*." .. host] end
+      if certificate then break end
+      host = host:gsub("^[^%.]+%.?", "")
+    end
+  end
+
+  if certificate then
+    if certificate.cert then
+      table.insert(request.cmd, "--cert")
+      table.insert(request.cmd, certificate.cert)
+    end
+
+    if certificate.key then
+      table.insert(request.cmd, "--key")
+      table.insert(request.cmd, certificate.key)
+    end
+  end
+end
+
 ---Parses a document request within specified line and returns the request ready to be processed
 ---or the first request in the list if no line number is provided
 ---or the request in DB.current_buffer current line if no arguments are provided
@@ -628,30 +728,31 @@ end
 M.parse = function(requests, document_variables, line_nr)
   if not requests then
     DB.set_current_buffer()
+
     document_variables, requests = M.get_document()
     line_nr = get_current_line_number()
   end
 
   if not requests then return end
 
-  local res = M.get_basic_request_data(requests, line_nr)
-  if not res or not res.url_raw then return end
+  local request = M.get_basic_request_data(requests, line_nr)
+  if not request or not request.url_raw then return end
 
-  local has_pre_request_scripts = #res.scripts.pre_request.inline > 0 or #res.scripts.pre_request.files > 0
+  local has_pre_request_scripts = #request.scripts.pre_request.inline > 0 or #request.scripts.pre_request.files > 0
   DB.update().previous_request = DB.find_unique("current_request")
 
   local env = ENV_PARSER.get_env()
 
-  document_variables = extend_document_variables(document_variables, res)
-  res.environment = vim.tbl_extend("force", env, document_variables)
+  document_variables = extend_document_variables(document_variables, request)
+  request.environment = vim.tbl_extend("force", env, document_variables)
 
   -- INFO: if has_pre_request_script:
   -- silently replace the variables in the URL, headers and body, otherwise warn the user
   -- for non existing variables
-  res.url, res.headers, res.body, res.body_display =
-    replace_variables_in_url_headers_body(res, document_variables, env, has_pre_request_scripts)
+  request.url, request.headers, request.body, request.body_display =
+    replace_variables_in_url_headers_body(request, document_variables, env, has_pre_request_scripts)
 
-  res.headers_display = vim.deepcopy(res.headers)
+  request.headers_display = vim.deepcopy(request.headers)
 
   -- Merge headers from the $shared environment if it does not exist in the request
   -- this ensures that you can always override the headers in the request
@@ -659,27 +760,24 @@ M.parse = function(requests, document_variables, line_nr)
     local default_headers = DB.find_unique("http_client_env_shared")["$default_headers"]
     if default_headers then
       for key, value in pairs(default_headers) do
-        if res.headers[key] == nil then res.headers[key] = value end
+        if request.headers[key] == nil then request.headers[key] = value end
       end
     end
   end
 
-  local is_graphql = PARSER_UTILS.contains_meta_tag(res, "graphql")
-    or PARSER_UTILS.contains_header(res.headers, "x-request-type", "graphql")
-  if res.body ~= nil then
+  local is_graphql = PARSER_UTILS.contains_meta_tag(request, "graphql")
+    or PARSER_UTILS.contains_header(request.headers, "x-request-type", "graphql")
+
+  if request.body ~= nil then
     if is_graphql then
-      local gql_json = GRAPHQL_PARSER.get_json(res.body)
-      if gql_json then res.body_computed = gql_json end
+      local gql_json = GRAPHQL_PARSER.get_json(request.body)
+      if gql_json then request.body_computed = gql_json end
     else
-      res.body_computed = res.body
+      request.body_computed = request.body
     end
   end
-  if CONFIG.get().treesitter then
-    -- treesitter parser handles graphql requests before this point
-    is_graphql = false
-  end
 
-  local json = vim.json.encode(res)
+  local json = vim.json.encode(request)
   FS.write_file(GLOBALS.REQUEST_FILE, json, false)
 
   -- PERF: We only want to run the scripts if they exist
@@ -689,166 +787,98 @@ M.parse = function(requests, document_variables, line_nr)
     -- INFO:
     -- This runs a client and request script that can be used to magic things
     -- See: https://www.jetbrains.com/help/idea/http-response-reference.html
-    M.scripts.javascript.run("pre_request", res.scripts.pre_request)
+    M.scripts.javascript.run("pre_request", request.scripts.pre_request)
     -- INFO: now replace the variables in the URL, headers and body again,
     -- because user scripts could have changed them,
     -- but this time also warn the user if a variable is not found
     env = ENV_PARSER.get_env()
-    res.url, res.headers, res.body, res.body_display =
-      replace_variables_in_url_headers_body(res, document_variables, env, false)
+    request.url, request.headers, request.body, request.body_display =
+      replace_variables_in_url_headers_body(request, document_variables, env, false)
   end
 
   -- build the command to execute the request
-  table.insert(res.cmd, CONFIG.get().curl_path)
-  table.insert(res.cmd, "-D")
-  table.insert(res.cmd, GLOBALS.HEADERS_FILE)
-  table.insert(res.cmd, "-o")
-  table.insert(res.cmd, GLOBALS.BODY_FILE)
-  table.insert(res.cmd, "-w")
-  table.insert(res.cmd, "@" .. CURL_FORMAT_FILE)
-  table.insert(res.cmd, "-X")
-  table.insert(res.cmd, res.method)
-  table.insert(res.cmd, "-v") -- verbose mode
+  table.insert(request.cmd, CONFIG.get().curl_path)
+  table.insert(request.cmd, "-D")
+  table.insert(request.cmd, GLOBALS.HEADERS_FILE)
+  table.insert(request.cmd, "-o")
+  table.insert(request.cmd, GLOBALS.BODY_FILE)
+  table.insert(request.cmd, "-w")
+  table.insert(request.cmd, "@" .. CURL_FORMAT_FILE)
+  table.insert(request.cmd, "-X")
+  table.insert(request.cmd, request.method)
+  table.insert(request.cmd, "-v") -- verbose mode
 
-  local chunked = vim.iter(res.metadata):find(function(m)
+  local chunked = vim.iter(request.metadata):find(function(m)
     return m.name == "accept" and m.value == "chunked"
   end)
 
   if chunked then
-    table.insert(res.cmd, "-N") -- non-buffered mode: to support Transfer-Encoding: chunked
+    table.insert(request.cmd, "-N") -- non-buffered mode: to support Transfer-Encoding: chunked
   else
-    table.insert(res.cmd, "-s") -- silent mode: must be off when in Non-buffeed mode
+    table.insert(request.cmd, "-s") -- silent mode: must be off when in Non-buffeed mode
   end
 
-  local content_type_header_name, content_type_header_value = PARSER_UTILS.get_header(res.headers, "content-type")
+  local content_type_header_name, content_type_header_value = PARSER_UTILS.get_header(request.headers, "content-type")
 
   if is_graphql then
-    local gql_json = GRAPHQL_PARSER.get_json(res.body)
+    local gql_json = GRAPHQL_PARSER.get_json(request.body)
 
     if gql_json then
-      res.headers[content_type_header_name or "content-type"] = "application/json"
-      res.body = gql_json
-      res.body_computed = gql_json
+      request.headers[content_type_header_name or "content-type"] = "application/json"
+      request.body = gql_json
+      request.body_computed = gql_json
     end
   end
 
-  if content_type_header_name and content_type_header_value and res.body ~= nil then
-    local tmp_file = FS.get_temp_file(res.body, true)
+  if content_type_header_name and content_type_header_value and request.body then
+    --TODO: include files
+    local tmp_file = FS.get_temp_file(request.body, true)
+
     if tmp_file then
-      -- table.insert(res.cmd, "--data")
-      table.insert(res.cmd, "--data-binary")
-      table.insert(res.cmd, "@" .. tmp_file)
+      -- table.insert(request.cmd, "--data")
+      table.insert(request.cmd, "--data-binary")
+      table.insert(request.cmd, "@" .. tmp_file)
     else
       Logger.error("Failed to create a temporary file for the request body")
     end
   end
 
-  local auth_header_name, auth_header_value = PARSER_UTILS.get_header(res.headers, "authorization")
+  process_auth_headers(request)
+  process_protocol(request)
 
-  if auth_header_name and auth_header_value then
-    local authtype = auth_header_value:match("^(%w+)%s+.*")
-    if authtype == nil then authtype = auth_header_value:match("^(%w+)%s*$") end
-
-    if authtype ~= nil then
-      authtype = authtype:lower()
-
-      if authtype == "ntlm" or authtype == "negotiate" or authtype == "digest" or authtype == "basic" then
-        local match, authuser, authpw = auth_header_value:match("^(%w+)%s+([^%s:]+)%s*[:%s]%s*([^%s]+)%s*$")
-
-        if match ~= nil or (authtype == "ntlm" or authtype == "negotiate") then
-          table.insert(res.cmd, "--" .. authtype)
-          table.insert(res.cmd, "-u")
-          table.insert(res.cmd, (authuser or "") .. ":" .. (authpw or ""))
-          res.headers[auth_header_name] = nil
-        end
-      elseif authtype == "aws" then
-        local key, secret, optional = auth_header_value:match("^%w+%s([^%s]+)%s*([^%s]+)[%s$]+(.*)$")
-        local token = optional:match("token:([^%s]+)")
-        local region = optional:match("region:([^%s]+)")
-        local service = optional:match("service:([^%s]+)")
-        local provider = "aws:amz"
-
-        if region then provider = provider .. ":" .. region end
-        if service then provider = provider .. ":" .. service end
-
-        table.insert(res.cmd, "--aws-sigv4")
-        table.insert(res.cmd, provider)
-        table.insert(res.cmd, "-u")
-        table.insert(res.cmd, key .. ":" .. secret)
-
-        if token then
-          table.insert(res.cmd, "-H")
-          table.insert(res.cmd, "x-amz-security-token:" .. token)
-        end
-
-        res.headers[auth_header_name] = nil
-      end
-    end
+  for key, value in pairs(request.headers) do
+    table.insert(request.cmd, "-H")
+    table.insert(request.cmd, key .. ":" .. value)
   end
 
-  local protocol, host, port = res.url:match("^([^:]*)://([^:/]*):([^/]*)")
-  if not protocol then
-    protocol, host = res.url:match("^([^:]*)://([^:/]*)")
-  end
-  if protocol == "https" then
-    local certificate = CONFIG.get().certificates[host .. ":" .. (port or "443")]
-    if not certificate then certificate = CONFIG.get().certificates[host] end
+  if request.http_version ~= nil then table.insert(request.cmd, "--http" .. request.http_version) end
 
-    if not certificate then
-      while host ~= "" do
-        certificate = CONFIG.get().certificates["*." .. host .. ":" .. (port or "443")]
-        if not certificate then certificate = CONFIG.get().certificates["*." .. host] end
-        if certificate then break end
-        host = host:gsub("^[^%.]+%.?", "")
-      end
-    end
-
-    if certificate then
-      if certificate.cert then
-        table.insert(res.cmd, "--cert")
-        table.insert(res.cmd, certificate.cert)
-      end
-
-      if certificate.key then
-        table.insert(res.cmd, "--key")
-        table.insert(res.cmd, certificate.key)
-      end
-    end
-  end
-
-  for key, value in pairs(res.headers) do
-    table.insert(res.cmd, "-H")
-    table.insert(res.cmd, key .. ":" .. value)
-  end
-
-  if res.http_version ~= nil then table.insert(res.cmd, "--http" .. res.http_version) end
-
-  table.insert(res.cmd, "-A")
-  table.insert(res.cmd, "kulala.nvim/" .. GLOBALS.VERSION)
+  table.insert(request.cmd, "-A")
+  table.insert(request.cmd, "kulala.nvim/" .. GLOBALS.VERSION)
 
   -- if the user has not specified the no-cookie meta tag,
   -- then use the cookies jar file
-  if PARSER_UTILS.contains_meta_tag(res, "no-cookie-jar") == false then
-    table.insert(res.cmd, "--cookie-jar")
-    table.insert(res.cmd, GLOBALS.COOKIES_JAR_FILE)
+  if PARSER_UTILS.contains_meta_tag(request, "no-cookie-jar") == false then
+    table.insert(request.cmd, "--cookie-jar")
+    table.insert(request.cmd, GLOBALS.COOKIES_JAR_FILE)
   end
 
   for _, additional_curl_option in pairs(CONFIG.get().additional_curl_options) do
-    table.insert(res.cmd, additional_curl_option)
+    table.insert(request.cmd, additional_curl_option)
   end
 
-  table.insert(res.cmd, res.url)
+  table.insert(request.cmd, request.url)
   cleanup_request_files()
 
-  DB.update().current_request = res
+  DB.update().current_request = request
 
   -- Save this to global,
   -- so .replay() can be triggered from any buffer or window
-  local replay_request = vim.deepcopy(res)
+  local replay_request = vim.deepcopy(request)
   DB.global_update().replay = replay_request
   DB.global_update().replay.show_icon_line_number = nil
 
-  return res
+  return request
 end
 
 return M
