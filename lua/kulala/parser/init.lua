@@ -157,16 +157,16 @@ local function encode_url_params(url)
     anchor = "#" .. url_encode(url:sub(index + 1))
     url = url:sub(1, index - 1)
   end
+
   index = url:find("?")
-  if index == nil then
-    return url .. anchor
-  end
+  if not index then return url .. anchor end
+
   local query = url:sub(index + 1)
   url = url:sub(1, index - 1)
+
   local query_parts = {}
-  if query then
-    query_parts = vim.split(query, "&")
-  end
+  if query then query_parts = vim.split(query, "&") end
+
   local query_params = ""
   for _, query_part in ipairs(query_parts) do
     index = query_part:find("=")
@@ -180,9 +180,8 @@ local function encode_url_params(url)
       query_params = query_params .. "&" .. url_encode(query_part)
     end
   end
-  if query_params ~= "" then
-    url = url .. "?" .. query_params:sub(2)
-  end
+
+  if query_params ~= "" then url = url .. "?" .. query_params:sub(2) end
   return url .. anchor
 end
 
@@ -199,9 +198,8 @@ end
 ---@param env table|nil -- The environment variables
 ---@param silent boolean|nil -- Whether to suppress not found variable warnings
 local function parse_body(body, variables, env, silent)
-  if body == nil then
-    return nil
-  end
+  if body == nil then return nil end
+
   variables = variables or {}
   env = env or {}
 
@@ -214,11 +212,11 @@ end
 ---@param env table|nil -- The environment variables
 ---@param silent boolean|nil -- Whether to suppress not found variable warnings
 local function parse_body_display(body_display, variables, env, silent)
-  if body_display == nil then
-    return nil
-  end
+  if body_display == nil then return nil end
+
   variables = variables or {}
   env = env or {}
+
   return StringVariablesParser.parse(body_display, variables, env, silent)
 end
 
@@ -233,19 +231,17 @@ local function split_by_block_delimiters(text)
     if not split_start then
       -- If no more delimiters, add the remaining text as the last section
       local last_section = text:sub(start):gsub("\n+$", "") -- Remove trailing newlines
-      if #last_section > 0 then
-        table.insert(result, last_section)
-      end
+
+      if #last_section > 0 then table.insert(result, last_section) end
       break
     end
     -- Add the text before the delimiter as a section
     local section = text:sub(start, split_start - 1):gsub("\n+$", "") -- Remove trailing newlines
-    if #section > 0 then
-      table.insert(result, section)
-    end
+    if #section > 0 then table.insert(result, section) end
     -- Move start position
     start = split_end
   end
+
   return result
 end
 
@@ -267,9 +263,7 @@ local function get_request_from_fenced_code_block()
   end
 
   -- If we didn't find a block start, return nil
-  if not block_start then
-    return nil, nil
-  end
+  if not block_start then return nil, nil end
 
   -- Search for the end of the fenced code block
   local block_end = nil
@@ -282,9 +276,7 @@ local function get_request_from_fenced_code_block()
   end
 
   -- If we didn't find a block end, return nil
-  if not block_end then
-    return nil, nil
-  end
+  if not block_end then return nil, nil end
 
   return vim.api.nvim_buf_get_lines(buf, block_start, block_end - 1, false), block_start
 end
@@ -315,10 +307,7 @@ end
 local function get_selection()
   local line_s, line_e
 
-  if vim.api.nvim_get_mode().mode == "V" then
-    vim.api.nvim_input("<Esc>")
-  end
-
+  if vim.api.nvim_get_mode().mode == "V" then vim.api.nvim_input("<Esc>") end
   line_s, line_e = vim.fn.getpos(".")[2], vim.fn.getpos("v")[2]
 
   if line_s > line_e then
@@ -329,6 +318,22 @@ local function get_selection()
   contents = strip_invalid_chars(contents)
 
   return contents, line_s - 1
+end
+
+local function include_file(line)
+  if content_type_header_value ~= nil and content_type_header_value:find("^multipart/form%-data") then
+    request.body = request.body .. line .. "\r\n"
+    request.body_display = request.body_display .. line .. "\r\n"
+  else
+    local file_path = vim.trim(line:sub(2))
+    local contents = FS.read_file(file_path)
+    if contents ~= nil then
+      request.body = request.body .. contents .. "\r\n"
+      request.body_display = request.body_display .. "[[external file skipped]]\r\n"
+    else
+      Logger.warn("The file '" .. file_path .. "' was not found. Skipping ...")
+    end
+  end
 end
 
 ---Parses the DB.current_buffer document and returns a list of DocumentRequests or nil if no valid requests found
@@ -349,9 +354,7 @@ M.get_document = function()
 
   content_lines = content_lines or vim.api.nvim_buf_get_lines(buf, 0, -1, false)
 
-  if not content_lines then
-    return nil, nil
-  end
+  if not content_lines then return nil, nil end
 
   local content = table.concat(content_lines, "\n")
   local variables = {}
@@ -388,9 +391,7 @@ M.get_document = function()
         -- See: https://httpyac.github.io/guide/metaData.html
         if line:sub(1, 3) == "# @" then
           local meta_name, meta_value = line:match("^# @([%w+%-]+)%s*(.*)$")
-          if meta_name and meta_value then
-            table.insert(request.metadata, { name = meta_name, value = meta_value })
-          end
+          if meta_name and meta_value then table.insert(request.metadata, { name = meta_name, value = meta_value }) end
         end
       -- we're still in(/before) the request line and we have a pre-request inline handler script
       elseif is_request_line == true and line:match("^< %{%%$") then
@@ -400,9 +401,7 @@ M.get_document = function()
         local scriptfile = line:match("^< (.*)$")
         table.insert(request.scripts.pre_request.files, scriptfile)
       elseif line == "" and is_body_section == false then
-        if is_request_line == false then
-          is_body_section = true
-        end
+        if is_request_line == false then is_body_section = true end
         -- redirect response body to file, without overwriting
       elseif line:match("^>> (.*)$") then
         local write_to_file = line:match("^>> (.*)$")
@@ -443,20 +442,9 @@ M.get_document = function()
           request.body = ""
           request.body_display = ""
         end
+
         if line:find("^<") then
-          if content_type_header_value ~= nil and content_type_header_value:find("^multipart/form%-data") then
-            request.body = request.body .. line .. "\r\n"
-            request.body_display = request.body_display .. line .. "\r\n"
-          else
-            local file_path = vim.trim(line:sub(2))
-            local contents = FS.read_file(file_path)
-            if contents ~= nil then
-              request.body = request.body .. contents .. "\r\n"
-              request.body_display = request.body_display .. "[[external file skipped]]\r\n"
-            else
-              Logger.warn("The file '" .. file_path .. "' was not found. Skipping ...")
-            end
-          end
+          include_file(line)
         else
           if content_type_header_value ~= nil and content_type_header_value:find("^multipart/form%-data") then
             request.body = request.body .. line .. "\r\n"
@@ -475,15 +463,9 @@ M.get_document = function()
       elseif is_request_line == false and line:match("^%s*[?&]") and #request.headers == 0 and request.url then
         -- Query parameters for URL as separate lines
         local querypart, http_version = line:match("^%s*(.+)%s+HTTP/(%d[.%d]*)%s*$")
-        if querypart == nil then
-          querypart = line:match("^%s*(.+)%s*$")
-        end
-        if querypart then
-          request.url = request.url .. querypart
-        end
-        if http_version then
-          request.http_version = http_version
-        end
+        if querypart == nil then querypart = line:match("^%s*(.+)%s*$") end
+        if querypart then request.url = request.url .. querypart end
+        if http_version then request.http_version = http_version end
       elseif is_request_line == false and line:match("^([^:]+):%s*(.*)$") then
         -- Header
         -- Headers are defined as `key: value`
@@ -537,14 +519,10 @@ end
 ---@param linenr? number|nil
 ---@return DocumentRequest|nil
 M.get_request_at = function(requests, linenr)
-  if not linenr then
-    return requests[1]
-  end
+  if not linenr then return requests[1] end
 
   for _, request in ipairs(requests) do
-    if linenr >= request.start_line and linenr <= request.end_line then
-      return request
-    end
+    if linenr >= request.start_line and linenr <= request.end_line then return request end
   end
 end
 
@@ -553,9 +531,7 @@ M.get_previous_request = function(requests)
 
   for i, request in ipairs(requests) do
     if cursor_line >= request.start_line and cursor_line <= request.end_line then
-      if i > 1 then
-        return requests[i - 1]
-      end
+      if i > 1 then return requests[i - 1] end
     end
   end
   return nil
@@ -566,9 +542,7 @@ M.get_next_request = function(requests)
 
   for i, request in ipairs(requests) do
     if cursor_line >= request.start_line and cursor_line <= request.end_line then
-      if i < #requests then
-        return requests[i + 1]
-      end
+      if i < #requests then return requests[i + 1] end
     end
   end
   return nil
@@ -590,9 +564,7 @@ local function extend_document_variables(document_variables, request)
         local is_binary = #kv > 2 and kv[3] == "binary" or false
         file_path = FS.get_file_path(file_path)
         local file_contents = FS.read_file(file_path, is_binary)
-        if file_contents then
-          document_variables[variable_name] = file_contents
-        end
+        if file_contents then document_variables[variable_name] = file_contents end
       end
     end
   end
@@ -613,9 +585,7 @@ function M.get_basic_request_data(requests, line_nr)
   local request = vim.deepcopy(default_request)
   local document_request = M.get_request_at(requests, line_nr)
 
-  if not document_request then
-    return
-  end
+  if not document_request then return end
 
   request.scripts.pre_request = document_request.scripts.pre_request
   request.scripts.post_request = document_request.scripts.post_request
@@ -662,15 +632,10 @@ M.parse = function(requests, document_variables, line_nr)
     line_nr = get_current_line_number()
   end
 
-  if not requests then
-    return
-  end
+  if not requests then return end
 
   local res = M.get_basic_request_data(requests, line_nr)
-
-  if not res or not res.url_raw then
-    return
-  end
+  if not res or not res.url_raw then return end
 
   local has_pre_request_scripts = #res.scripts.pre_request.inline > 0 or #res.scripts.pre_request.files > 0
   DB.update().previous_request = DB.find_unique("current_request")
@@ -694,9 +659,7 @@ M.parse = function(requests, document_variables, line_nr)
     local default_headers = DB.find_unique("http_client_env_shared")["$default_headers"]
     if default_headers then
       for key, value in pairs(default_headers) do
-        if res.headers[key] == nil then
-          res.headers[key] = value
-        end
+        if res.headers[key] == nil then res.headers[key] = value end
       end
     end
   end
@@ -706,9 +669,7 @@ M.parse = function(requests, document_variables, line_nr)
   if res.body ~= nil then
     if is_graphql then
       local gql_json = GRAPHQL_PARSER.get_json(res.body)
-      if gql_json then
-        res.body_computed = gql_json
-      end
+      if gql_json then res.body_computed = gql_json end
     else
       res.body_computed = res.body
     end
@@ -761,66 +722,24 @@ M.parse = function(requests, document_variables, line_nr)
 
   local content_type_header_name, content_type_header_value = PARSER_UTILS.get_header(res.headers, "content-type")
 
-  if content_type_header_name and content_type_header_value and res.body ~= nil then
-    -- check if we are a graphql query
-    -- we need this here, because the user could have defined the content-type
-    -- as application/json, but the body is a graphql query
-    -- This can happen when the user is using http-client.env.json with $shared -> $default_headers.
-    if is_graphql then
-      local gql_json = GRAPHQL_PARSER.get_json(res.body)
-      if gql_json then
-        if PARSER_UTILS.contains_meta_tag(res, "write-body-to-temporary-file") then
-          local tmp_file = FS.get_temp_file(gql_json)
-          if tmp_file ~= nil then
-            table.insert(res.cmd, "--data")
-            table.insert(res.cmd, "@" .. tmp_file)
-            res.headers[content_type_header_name] = "application/json"
-          else
-            Logger.error("Failed to create a temporary file for the request body")
-          end
-        else
-          table.insert(res.cmd, "--data")
-          table.insert(res.cmd, gql_json)
-          res.headers[content_type_header_name] = "application/json"
-        end
-      end
-    elseif content_type_header_value:find("^multipart/form%-data") then
-      local tmp_file = FS.get_binary_temp_file(res.body)
-      if tmp_file ~= nil then
-        table.insert(res.cmd, "--data-binary")
-        table.insert(res.cmd, "@" .. tmp_file)
-      else
-        Logger.error("Failed to create a temporary file for the binary request body")
-      end
-    else
-      if PARSER_UTILS.contains_meta_tag(res, "write-body-to-temporary-file") then
-        local tmp_file = FS.get_temp_file(res.body)
-        if tmp_file ~= nil then
-          table.insert(res.cmd, "--data")
-          table.insert(res.cmd, "@" .. tmp_file)
-        else
-          Logger.error("Failed to create a temporary file for the request body")
-        end
-      else
-        table.insert(res.cmd, "--data")
-        table.insert(res.cmd, res.body)
-      end
+  if is_graphql then
+    local gql_json = GRAPHQL_PARSER.get_json(res.body)
+
+    if gql_json then
+      res.headers[content_type_header_name or "content-type"] = "application/json"
+      res.body = gql_json
+      res.body_computed = gql_json
     end
-  else -- no content type supplied
-    -- check if we are a graphql query
-    if is_graphql then
-      local gql_json = GRAPHQL_PARSER.get_json(res.body)
-      if gql_json then
-        local tmp_file = FS.get_temp_file(gql_json)
-        if tmp_file ~= nil then
-          table.insert(res.cmd, "--data")
-          table.insert(res.cmd, "@" .. tmp_file)
-          res.headers["content-type"] = "application/json"
-          res.body_computed = gql_json
-        else
-          Logger.error("Failed to create a temporary file for the request body")
-        end
-      end
+  end
+
+  if content_type_header_name and content_type_header_value and res.body ~= nil then
+    local tmp_file = FS.get_temp_file(res.body, true)
+    if tmp_file then
+      -- table.insert(res.cmd, "--data")
+      table.insert(res.cmd, "--data-binary")
+      table.insert(res.cmd, "@" .. tmp_file)
+    else
+      Logger.error("Failed to create a temporary file for the request body")
     end
   end
 
@@ -828,15 +747,14 @@ M.parse = function(requests, document_variables, line_nr)
 
   if auth_header_name and auth_header_value then
     local authtype = auth_header_value:match("^(%w+)%s+.*")
-    if authtype == nil then
-      authtype = auth_header_value:match("^(%w+)%s*$")
-    end
+    if authtype == nil then authtype = auth_header_value:match("^(%w+)%s*$") end
 
     if authtype ~= nil then
       authtype = authtype:lower()
 
       if authtype == "ntlm" or authtype == "negotiate" or authtype == "digest" or authtype == "basic" then
         local match, authuser, authpw = auth_header_value:match("^(%w+)%s+([^%s:]+)%s*[:%s]%s*([^%s]+)%s*$")
+
         if match ~= nil or (authtype == "ntlm" or authtype == "negotiate") then
           table.insert(res.cmd, "--" .. authtype)
           table.insert(res.cmd, "-u")
@@ -849,20 +767,20 @@ M.parse = function(requests, document_variables, line_nr)
         local region = optional:match("region:([^%s]+)")
         local service = optional:match("service:([^%s]+)")
         local provider = "aws:amz"
-        if region then
-          provider = provider .. ":" .. region
-        end
-        if service then
-          provider = provider .. ":" .. service
-        end
+
+        if region then provider = provider .. ":" .. region end
+        if service then provider = provider .. ":" .. service end
+
         table.insert(res.cmd, "--aws-sigv4")
         table.insert(res.cmd, provider)
         table.insert(res.cmd, "-u")
         table.insert(res.cmd, key .. ":" .. secret)
+
         if token then
           table.insert(res.cmd, "-H")
           table.insert(res.cmd, "x-amz-security-token:" .. token)
         end
+
         res.headers[auth_header_name] = nil
       end
     end
@@ -874,26 +792,23 @@ M.parse = function(requests, document_variables, line_nr)
   end
   if protocol == "https" then
     local certificate = CONFIG.get().certificates[host .. ":" .. (port or "443")]
-    if not certificate then
-      certificate = CONFIG.get().certificates[host]
-    end
+    if not certificate then certificate = CONFIG.get().certificates[host] end
+
     if not certificate then
       while host ~= "" do
         certificate = CONFIG.get().certificates["*." .. host .. ":" .. (port or "443")]
-        if not certificate then
-          certificate = CONFIG.get().certificates["*." .. host]
-        end
-        if certificate then
-          break
-        end
+        if not certificate then certificate = CONFIG.get().certificates["*." .. host] end
+        if certificate then break end
         host = host:gsub("^[^%.]+%.?", "")
       end
     end
+
     if certificate then
       if certificate.cert then
         table.insert(res.cmd, "--cert")
         table.insert(res.cmd, certificate.cert)
       end
+
       if certificate.key then
         table.insert(res.cmd, "--key")
         table.insert(res.cmd, certificate.key)
@@ -905,22 +820,26 @@ M.parse = function(requests, document_variables, line_nr)
     table.insert(res.cmd, "-H")
     table.insert(res.cmd, key .. ":" .. value)
   end
-  if res.http_version ~= nil then
-    table.insert(res.cmd, "--http" .. res.http_version)
-  end
+
+  if res.http_version ~= nil then table.insert(res.cmd, "--http" .. res.http_version) end
+
   table.insert(res.cmd, "-A")
   table.insert(res.cmd, "kulala.nvim/" .. GLOBALS.VERSION)
+
   -- if the user has not specified the no-cookie meta tag,
   -- then use the cookies jar file
   if PARSER_UTILS.contains_meta_tag(res, "no-cookie-jar") == false then
     table.insert(res.cmd, "--cookie-jar")
     table.insert(res.cmd, GLOBALS.COOKIES_JAR_FILE)
   end
+
   for _, additional_curl_option in pairs(CONFIG.get().additional_curl_options) do
     table.insert(res.cmd, additional_curl_option)
   end
+
   table.insert(res.cmd, res.url)
   cleanup_request_files()
+
   DB.update().current_request = res
 
   -- Save this to global,

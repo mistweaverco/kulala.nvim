@@ -374,10 +374,17 @@ describe("requests", function()
       wait_for_requests(1)
 
       local expected_body_computed =
-        '{"query": "query Person($id: ID) { person(personID: $id) { name } } ", "variables": {"id": 1}}'
+        '{"variables":{"id":1},"query":"query Person($id: ID) { person(personID: $id) { name } } "}'
       local request_body_computed = DB.data.current_request.body_computed
 
       assert.is_same(expected_body_computed, request_body_computed)
     end)
+  end)
+
+  describe("parse body", function()
+    -- \r\n
+    -- multipart
+    -- < include
+    -- {file-to-var}
   end)
 end)

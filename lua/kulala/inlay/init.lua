@@ -31,14 +31,22 @@ end
 
 M.show_done = function(_, linenr, elapsed_time)
   local icon = ""
-  if string.len(CONFIG.get().icons.inlay.done) > 0 then
-    icon = CONFIG.get().icons.inlay.done .. " "
-  end
+  if string.len(CONFIG.get().icons.inlay.done) > 0 then icon = CONFIG.get().icons.inlay.done .. " " end
   _ = linenr and M.show(icon .. elapsed_time, linenr)
 end
 
+local line_ofset = {
+  ["on_request"] = -1,
+  ["above_request"] = -2,
+  ["below_request"] = 0,
+}
+
 M.show = function(t, linenr)
+  local show_icons = CONFIG.get().show_icons
+  if not show_icons then return end
+
   local bufnr = DB.get_current_buffer()
+  linenr = linenr + (line_ofset[show_icons] or 0)
 
   M.clear_if_marked(bufnr, linenr)
   vim.api.nvim_buf_set_extmark(bufnr, NS, linenr - 1, 0, {

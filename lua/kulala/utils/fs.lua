@@ -320,7 +320,7 @@ M.get_plugin_path = function(paths)
   return M.get_plugin_root_dir() .. M.ps .. table.concat(paths, M.ps)
 end
 
----Read a file
+---Read a file with path absolute or relative to buffer dir
 ---@param filename string path absolutre or relative to buffer dir
 ---@param is_binary boolean|nil
 ---@return string|nil

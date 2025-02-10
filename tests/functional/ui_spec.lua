@@ -273,6 +273,7 @@ describe("UI", function()
       assert.is_same(expected, result)
     end)
 
+    --FIX: last replay - save to file again before run
     it("replays last request", function()
       kulala_config.default_view = "body"
 
