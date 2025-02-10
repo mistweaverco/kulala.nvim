@@ -209,23 +209,10 @@ M.run_parser = function(requests, line_nr, callback)
   reqs_to_process = reqs_to_process or requests
 
   for _, req in ipairs(reqs_to_process) do
-    --- create namespace
-    local ns = vim.api.nvim_create_namespace("kulala_requests_flash")
     INLAY:show_loading(req.show_icon_line_number)
-    if req.start_line and req.end_line then
-      UiHighlight.highlight_range(
-        0,
-        { row = req.start_line, col = 0 },
-        { row = req.end_line, col = 0 },
-        ns,
-        100,
-        function()
-          process_request(requests, req, variables, callback)
-        end
-      )
-    else
+    UiHighlight.highlight_request(req, function()
       process_request(requests, req, variables, callback)
-    end
+    end)
   end
 end
 
