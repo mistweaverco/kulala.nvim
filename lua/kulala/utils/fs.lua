@@ -9,15 +9,10 @@ end
 ---Get the OS
 ---@return "windows" | "mac" | "unix" | "unknown"
 M.get_os = function()
-  if vim.fn.has("unix") == 1 then
-    return "unix"
-  end
-  if vim.fn.has("mac") == 1 then
-    return "mac"
-  end
-  if vim.fn.has("win32") == 1 or vim.fn.has("win64") then
-    return "windows"
-  end
+  if vim.fn.has("unix") == 1 then return "unix" end
+  if vim.fn.has("mac") == 1 then return "mac" end
+  if vim.fn.has("win32") == 1 or vim.fn.has("win64") then return "windows" end
+
   return "unknown"
 end
 
@@ -28,9 +23,7 @@ M.os = M.get_os()
 ---Get the path separator for the current OS
 ---@return "\\" | "/"
 M.get_path_separator = function()
-  if M.os == "windows" then
-    return "\\"
-  end
+  if M.os == "windows" then return "\\" end
   return "/"
 end
 
@@ -55,29 +48,24 @@ M.join_paths = function(...)
         return table.concat(parts, M.ps)
       end
     end
+
     return table.concat({ ... }, M.ps)
   end
+
   return table.concat({ ... }, M.ps)
 end
 
 ---Returns true if the path is absolute, false otherwise
 M.is_absolute_path = function(path)
-  if path:match("^/") or path:match("^%a:\\") then
-    return true
-  end
+  if path:match("^/") or path:match("^%a:\\") then return true end
   return false
 end
 
 ---Either returns the absolute path if the path is already absolute or
 ---joins the path with the current buffer directory
 M.get_file_path = function(path)
-  if M.is_absolute_path(path) then
-    return path
-  end
-
-  if path:sub(1, 2) == "./" or path:sub(1, 2) == ".\\" then
-    path = path:sub(3)
-  end
+  if M.is_absolute_path(path) then return path end
+  if path:sub(1, 2) == "./" or path:sub(1, 2) == ".\\" then path = path:sub(3) end
 
   return M.join_paths(M.get_current_buffer_dir(), path)
 end
@@ -137,6 +125,7 @@ M.get_uuid = function()
     local v = (c == "x") and math.random(0, 0xf) or math.random(8, 0xb)
     return string.format("%x", v)
   end)
+
   return res
 end
 
@@ -169,12 +158,11 @@ M.write_file = function(filename, content, append)
     f = io.open(filename, "w")
   end
 
-  if f == nil then
-    return false
-  end
+  if not f then return false end
 
   f:write(content)
   f:close()
+
   return true
 end
 
@@ -183,9 +171,7 @@ end
 --- @return boolean
 --- @usage local p = fs.delete_file('Makefile')
 M.delete_file = function(filename)
-  if vim.fn.delete(filename) == 0 then
-    return false
-  end
+  if vim.fn.delete(filename) == 0 then return false end
   return true
 end
 
@@ -206,9 +192,7 @@ M.copy_dir = function(source, destination)
 end
 
 M.ensure_dir_exists = function(dir)
-  if vim.fn.isdirectory(dir) == 0 then
-    vim.fn.mkdir(dir, "p")
-  end
+  if vim.fn.isdirectory(dir) == 0 then vim.fn.mkdir(dir, "p") end
 end
 
 -- Get plugin tmp directory
@@ -230,18 +214,21 @@ end
 M.get_tmp_scripts_build_dir = function()
   local dir = M.join_paths(M.get_plugin_tmp_dir(), "scripts", "build")
   M.ensure_dir_exists(dir)
+
   return dir
 end
 
 M.get_tmp_scripts_dir = function()
   local dir = M.join_paths(M.get_plugin_tmp_dir(), "scripts")
   M.ensure_dir_exists(dir)
+
   return dir
 end
 
 M.get_request_scripts_dir = function()
   local dir = M.join_paths(M.get_plugin_tmp_dir(), "scripts", "requests")
   M.ensure_dir_exists(dir)
+
   return dir
 end
 
@@ -257,13 +244,14 @@ M.delete_files_in_directory = function(dir)
     -- Iterate over each file in the directory
     while true do
       local name, type = vim.loop.fs_scandir_next(scandir)
-      if not name then
-        break
-      end
+
+      if not name then break end
+
       -- Only delete files, not directories except .gitingore
       if type == "file" and name:match(".gitignore$") == nil then
         local filepath = M.join_paths(dir, name)
         local success, err = vim.loop.fs_unlink(filepath)
+
         if not success then
           print("Error deleting file:", filepath, err)
         else
@@ -274,6 +262,7 @@ M.delete_files_in_directory = function(dir)
   else
     print("Error opening directory:", dir)
   end
+
   return deleted_files
 end
 
@@ -284,9 +273,11 @@ end
 
 M.get_request_scripts_variables = function()
   local dir = M.get_request_scripts_dir()
+
   if M.file_exists(dir .. "/request_variables.json") then
     return vim.fn.json_decode(M.read_file(M.join_paths(dir, "request_variables.json")))
   end
+
   return nil
 end
 
@@ -296,9 +287,8 @@ end
 
 M.get_global_scripts_variables = function()
   local fp = M.get_global_scripts_variables_file_path()
-  if M.file_exists(fp) then
-    return vim.fn.json_decode(M.read_file(fp))
-  end
+  if M.file_exists(fp) then return vim.fn.json_decode(M.read_file(fp)) end
+
   return nil
 end
 
@@ -317,9 +307,9 @@ end
 M.get_plugin_root_dir = function()
   local source = debug.getinfo(1).source
   local dir_path = source:match("@(.*/)") or source:match("@(.*\\)")
-  if dir_path == nil then
-    return nil
-  end
+
+  if dir_path == nil then return nil end
+
   return dir_path .. ".."
 end
 
@@ -331,40 +321,48 @@ M.get_plugin_path = function(paths)
 end
 
 ---Read a file
----@param filename string
+---@param filename string path absolutre or relative to buffer dir
 ---@param is_binary boolean|nil
 ---@return string|nil
 ---@usage local p = fs.read_file('Makefile')
 M.read_file = function(filename, is_binary)
   local read_mode = is_binary and "rb" or "r"
+
+  filename = M.get_file_path(filename)
   local f = io.open(filename, read_mode)
-  if f == nil then
-    return nil
-  end
+
+  if not f then return end
+
   local content = f:read("*a")
   f:close()
+
   return content
 end
 
-M.get_temp_file = function(content)
+---@param content string
+---@param binary boolean
+M.get_temp_file = function(content, binary)
   local tmp_file = vim.fn.tempname()
-  local f = io.open(tmp_file, "w")
-  if f == nil then
-    return nil
-  end
+  local mode = binary and "wb" or "w"
+  local f = io.open(tmp_file, mode)
+
+  if not f then return end
+
   f:write(content)
   f:close()
+
   return tmp_file
 end
 
 M.get_binary_temp_file = function(content)
   local tmp_file = vim.fn.tempname()
   local f = io.open(tmp_file, "wb")
-  if f == nil then
-    return nil
-  end
+
+  if not f then return end
+
   f:write(content)
   f:close()
+
   return tmp_file
 end
 
@@ -373,14 +371,16 @@ end
 ---@return string[]
 M.read_file_lines = function(filename)
   local f = io.open(filename, "r")
-  if f == nil then
-    return {}
-  end
   local lines = {}
+
+  if not f then return {} end
+
   for line in f:lines() do
     table.insert(lines, line)
   end
+
   f:close()
+
   return lines
 end
 
@@ -388,6 +388,7 @@ end
 M.clear_cached_files = function(silent)
   local tmp_dir = M.get_plugin_tmp_dir()
   local deleted_files = M.delete_files_in_directory(tmp_dir)
+
   local string_list = vim.fn.join(
     vim.tbl_map(function(file)
       return "- " .. file
@@ -395,9 +396,7 @@ M.clear_cached_files = function(silent)
     "\n"
   )
 
-  if not silent then
-    Logger.info("Deleted files:\n" .. string_list)
-  end
+  if not silent then Logger.info("Deleted files:\n" .. string_list) end
 end
 
 return M
