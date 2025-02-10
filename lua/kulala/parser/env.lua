@@ -60,9 +60,7 @@ M.get_env = function()
       -- if the line is not empty and not a comment, then
       if not line:match("^%s*$") and not line:match("^%s*#") then
         local key, value = line:match("^%s*([^=]+)%s*=%s*(.*)%s*$")
-        if key and value then
-          env[key] = value
-        end
+        if key and value then env[key] = value end
       end
     end
   end
@@ -89,17 +87,13 @@ M.get_env = function()
 
   local http_client_env_shared = DB.find_unique("http_client_env_shared") or {}
   for key, value in pairs(http_client_env_shared) do
-    if key ~= "$default_headers" then
-      env[key] = value
-    end
+    if key ~= "$default_headers" then env[key] = value end
   end
 
   local cur_env = vim.g.kulala_selected_env or Config.get().default_env
   local selected_env = DB.find_unique("http_client_env") and DB.find_unique("http_client_env")[cur_env]
 
-  if selected_env then
-    env = vim.tbl_extend("force", env, selected_env)
-  end
+  if selected_env then env = vim.tbl_extend("force", env, selected_env) end
 
   local db_env = DB.find_unique("env") or {}
   for key, value in pairs(db_env) do
@@ -107,14 +101,10 @@ M.get_env = function()
   end
 
   local global_scripts_variables = FS.get_global_scripts_variables()
-  if global_scripts_variables then
-    env = vim.tbl_extend("force", env, global_scripts_variables)
-  end
+  if global_scripts_variables then env = vim.tbl_extend("force", env, global_scripts_variables) end
 
   local request_scripts_variables = FS.get_request_scripts_variables()
-  if request_scripts_variables then
-    env = vim.tbl_extend("force", env, request_scripts_variables)
-  end
+  if request_scripts_variables then env = vim.tbl_extend("force", env, request_scripts_variables) end
 
   return env
 end

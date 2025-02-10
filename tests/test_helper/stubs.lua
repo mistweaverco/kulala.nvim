@@ -5,7 +5,7 @@ local h = require("test_helper.ui")
 
 local Jobstart = { id = "Jobstart", jobs = {} }
 local System = { id = "System", code = 0, signal = 0, jobs = {} }
-local Curl = { url_mappings = {}, paths = {}, requests = {}, requests_no = 0 }
+local Curl = { url_mappings = {}, paths = {}, requests = {}, requests_no = 0, last_request_body_path = "" }
 local Input = { variables = {} }
 local Notify = { messages = {} }
 local Fs = { paths_mappings = {} }
@@ -136,6 +136,7 @@ local function parse_curl_cmd(cmd)
     ["-o"] = "body_path",
     ["-w"] = "curl_format_path",
     ["--cookie-jar"] = "cookies_path",
+    ["--data-binary"] = "request_body",
   }
 
   local flags = {}
@@ -143,9 +144,7 @@ local function parse_curl_cmd(cmd)
 
   for _, flag in ipairs(cmd) do
     local flag_name = curl_flags[previous]
-    if flag_name then
-      flags[flag_name] = flag
-    end
+    if flag_name then flags[flag_name] = flag end
     previous = flag
   end
 
@@ -157,9 +156,7 @@ function Curl.request(job)
   local url = vim.split(cmd[#cmd], "?")[1]
   local mappings = vim.tbl_deep_extend("force", Curl.url_mappings["*"], Curl.url_mappings[url] or {})
 
-  if not mappings then
-    return
-  end
+  if not mappings then return end
 
   if job.id == "Jobstart" then
     job.opts.on_stdout = mappings.stats
@@ -176,6 +173,7 @@ function Curl.request(job)
 
   vim.list_extend(Curl.paths, { curl_flags.headers_path, curl_flags.body_path })
 
+  Curl.last_request_body_path = (curl_flags["request_body"] or ""):sub(2)
   Curl.requests_no = Curl.requests_no + 1
   vim.list_extend(Curl.requests, { url })
 end
@@ -213,9 +211,7 @@ end
 function Jobstart.run(cmd, opts)
   Jobstart.args = { cmd = cmd, opts = opts }
 
-  if not job_cmd_match(cmd, Jobstart.cmd) then
-    return Jobstart._jobstart(cmd, opts)
-  end
+  if not job_cmd_match(cmd, Jobstart.cmd) then return Jobstart._jobstart(cmd, opts) end
 
   local job_id = "job_id_" .. tostring(math.random(10000))
   Jobstart.jobs[job_id] = true
@@ -257,9 +253,7 @@ end
 function System.run(cmd, opts, on_exit)
   System.args = { cmd = cmd, opts = opts, on_exit = on_exit }
 
-  if not job_cmd_match(cmd, System.cmd) then
-    return System._system(cmd, opts, on_exit)
-  end
+  if not job_cmd_match(cmd, System.cmd) then return System._system(cmd, opts, on_exit) end
 
   local job_id = "job_id_" .. tostring(math.random(10000))
   System.jobs[job_id] = true

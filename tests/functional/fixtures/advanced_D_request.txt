@@ -1,6 +1,6 @@
 {
   current_request = {
-    body_computed = '{\r\n  \"foobar\": \"lul\"\r\n  \"password\": \"TEST_PASSWORD\"\r\n}',
+    body_computed = '{\n  \"foobar\": \"lul\"\n  \"password\": \"TEST_PASSWORD\"\n}',
     ft = "text",
     headers = {
       Accept = "application/json",

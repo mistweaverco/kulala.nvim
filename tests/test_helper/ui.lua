@@ -19,10 +19,14 @@ string.clean = function(str) --luacheck: ignore
   return tostring(str)
 end
 
+---@param self string
 string.to_string = function(self, clean)
   return h.to_string(self, clean)
 end
 
+---@param self string
+---@param clean boolean -- remove tabs and trim spaces
+---@return string[]
 string.to_table = function(self, clean)
   return h.to_table(tostring(self), clean)
 end
@@ -83,15 +87,17 @@ h.delete_all_maps = function()
   end)
 end
 
-UITestHelper.expand_path = function(path)
+h.has_string = function(str, pattern)
+  return str:find(pattern, 1, true) and true
+end
+
+h.expand_path = function(path)
   if vim.fn.filereadable(path) == 0 then
     local spec_path
 
     for i = 1, 5 do
       spec_path = debug.getinfo(i).short_src
-      if spec_path and spec_path:find("_spec%.lua") then
-        break
-      end
+      if spec_path and spec_path:find("_spec%.lua") then break end
     end
 
     spec_path = vim.fn.fnamemodify(spec_path, ":h")
@@ -103,8 +109,8 @@ end
 
 ---@param fixture_path string
 ---@return table|string
-UITestHelper.load_fixture = function(fixture_path)
-  local contents = vim.fn.readfile(h.expand_path(fixture_path))
+UITestHelper.load_fixture = function(fixture_path, binary)
+  local contents = vim.fn.readfile(h.expand_path(fixture_path), binary and "B")
   return h.to_string(contents, false)
 end
 
@@ -115,9 +121,7 @@ UITestHelper.delete_all_bufs = function()
   -- Iterate over each buffer and delete it
   for _, buf in ipairs(buffers) do
     -- Check if the buffer is valid and loaded
-    if vim.api.nvim_buf_is_loaded(buf) then
-      vim.api.nvim_buf_delete(buf, {})
-    end
+    if vim.api.nvim_buf_is_loaded(buf) then vim.api.nvim_buf_delete(buf, {}) end
   end
 end
 
@@ -134,9 +138,7 @@ UITestHelper.create_buf = function(lines, bufname, scratch)
   api.nvim_set_current_buf(bufnr)
   api.nvim_win_set_cursor(0, { 1, 1 })
 
-  if bufname then
-    vim.api.nvim_buf_set_name(bufnr, bufname)
-  end
+  if bufname then vim.api.nvim_buf_set_name(bufnr, bufname) end
 
   return bufnr
 end
@@ -160,9 +162,7 @@ UITestHelper.list_loaded_bufs = function()
 
   local loaded_bufs = {}
   for _, bufnr in ipairs(bufnr_list) do
-    if vim.api.nvim_buf_is_loaded(bufnr) then
-      loaded_bufs[#loaded_bufs + 1] = bufnr
-    end
+    if vim.api.nvim_buf_is_loaded(bufnr) then loaded_bufs[#loaded_bufs + 1] = bufnr end
   end
 
   return loaded_bufs
@@ -174,9 +174,7 @@ UITestHelper.list_loaded_buf_names = function()
     local name = vim.fn.bufname(id)
     local current_buf = vim.api.nvim_get_current_buf()
 
-    if id == current_buf then
-      name = "*" .. name
-    end
+    if id == current_buf then name = "*" .. name end
 
     acc[tostring(id)] = name
     return acc

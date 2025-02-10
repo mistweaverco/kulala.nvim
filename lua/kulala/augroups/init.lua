@@ -1,5 +1,5 @@
 local Config = require("kulala.config")
-local Parser = require("kulala.parser")
+local Parser = require("kulala.parser.document")
 local Float = require("kulala.ui.float")
 local Env = require("kulala.parser.env")
 local StringVariablesParser = require("kulala.parser.string_variables_parser")

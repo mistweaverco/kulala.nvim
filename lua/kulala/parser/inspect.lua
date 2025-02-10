@@ -1,4 +1,4 @@
-local Parser = require("kulala.parser")
+local Parser = require("kulala.parser.request")
 local Logger = require("kulala.logger")
 
 local M = {}

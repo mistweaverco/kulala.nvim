@@ -2,13 +2,14 @@
 local GLOBALS = require("kulala.globals")
 local CONFIG = require("kulala.config")
 local Fs = require("kulala.utils.fs")
-local PARSER = require("kulala.parser")
+local DOCUMENT_PARSER = require("kulala.parser.document")
+local REQUEST_PARSER = require("kulala.parser.request")
 local EXT_PROCESSING = require("kulala.external_processing")
 local INT_PROCESSING = require("kulala.internal_processing")
 local Api = require("kulala.api")
 local INLAY = require("kulala.inlay")
-local Logger = require("kulala.logger")
 local UiHighlight = require("kulala.ui.highlight")
+local Logger = require("kulala.logger")
 
 local M = {}
 
@@ -28,8 +29,7 @@ local function run_next_task()
   RUNNING_TASK = true
   local task = table.remove(TASK_QUEUE, 1)
 
-  ---@diagnostic disable-next-line: undefined-field
-  vim.uv.new_timer():start(0, 0, function()
+  vim.schedule(function()
     local status, errors = xpcall(task.fn, debug.traceback)
 
     local cb_status, cb_errors = true, ""
@@ -91,7 +91,7 @@ local function process_internal(result)
 end
 
 local function process_external(result)
-  PARSER.scripts.javascript.run("post_request", result.scripts.post_request)
+  REQUEST_PARSER.scripts.javascript.run("post_request", result.scripts.post_request)
   Fs.delete_request_scripts_files()
 end
 
@@ -163,7 +163,7 @@ local function process_request(requests, request, variables, callback)
     return
   end
 
-  local parsed_request = PARSER.parse(requests, variables, request.start_line)
+  local parsed_request = REQUEST_PARSER.parse(requests, variables, request.start_line)
   if not parsed_request then
     Logger.warn(("Request at line: %s could not be parsed"):format(request.start_line))
     return
@@ -202,16 +202,13 @@ end
 ---@param callback function
 ---@return nil
 M.run_parser = function(requests, line_nr, callback)
-  --  to allow running fastAPI within vim.system callbacks
-  process_request = vim.schedule_wrap(process_request)
-
   local variables, reqs_to_process
 
   Fs.clear_cached_files(true)
   reset_task_queue()
 
   if not requests then
-    variables, requests = PARSER.get_document()
+    variables, requests = DOCUMENT_PARSER.get_document()
   end
 
   if not requests then
@@ -219,7 +216,7 @@ M.run_parser = function(requests, line_nr, callback)
   end
 
   if line_nr and line_nr > 0 then
-    local request = PARSER.get_request_at(requests, line_nr)
+    local request = DOCUMENT_PARSER.get_request_at(requests, line_nr)
     if not request then
       return Logger.error("No request found at current line")
     end
@@ -230,27 +227,13 @@ M.run_parser = function(requests, line_nr, callback)
   reqs_to_process = reqs_to_process or requests
 
   for _, req in ipairs(reqs_to_process) do
-    --- create namespace
-    local ns = vim.api.nvim_create_namespace("kulala_requests_flash")
-    INLAY:show_loading(req.show_icon_line_number)
-    if req.start_line and req.end_line then
-      UiHighlight.highlight_range(
-        0,
-        { row = req.start_line, col = 0 },
-        { row = req.end_line, col = 0 },
-        ns,
-        100,
-        function()
-          offload_task(function()
-            process_request(requests, req, variables, callback)
-          end)
-        end
-      )
-    else
-      offload_task(function()
+    INLAY.show_loading(req.show_icon_line_number)
+
+    offload_task(function()
+        UiHighlight.highlight_request(req, function()
         process_request(requests, req, variables, callback)
       end)
-    end
+    end)
   end
 end
 

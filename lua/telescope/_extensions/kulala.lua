@@ -5,7 +5,7 @@ if not has_telescope then
 end
 
 local DB = require("kulala.db")
-local Parser = require("kulala.parser")
+local Parser = require("kulala.parser.document")
 local ParserUtils = require("kulala.parser.utils")
 
 local action_state = require("telescope.actions.state")

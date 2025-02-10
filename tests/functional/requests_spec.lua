@@ -7,10 +7,8 @@ local kulala = require("kulala")
 local kulala_name = GLOBALS.UI_ID
 local kulala_config = CONFIG.options
 
-local h = require("test_helper.ui")
-local s = require("test_helper.stubs")
+local h = require("test_helper")
 
-local assert = require("luassert")
 assert.is_true(vim.fn.executable("npm") == 1)
 
 describe("requests", function()
@@ -22,11 +20,11 @@ describe("requests", function()
     before_each(function()
       h.delete_all_bufs()
 
-      input = s.Input.stub()
-      notify = s.Notify.stub()
-      dynamic_vars = s.Dynamic_vars.stub()
+      input = h.Input.stub()
+      notify = h.Notify.stub()
+      dynamic_vars = h.Dynamic_vars.stub()
 
-      curl = s.Curl.stub({
+      curl = h.Curl.stub({
         ["*"] = {
           stats = h.load_fixture("fixtures/stats.json"),
           headers = h.load_fixture("fixtures/request_2_headers.txt"),
@@ -41,7 +39,7 @@ describe("requests", function()
         },
       })
 
-      system = s.System.stub({ "curl" }, {
+      system = h.System.stub({ "curl" }, {
         on_call = function(system)
           curl.request(system)
         end,
@@ -84,6 +82,7 @@ describe("requests", function()
       expected = h.load_fixture("fixtures/simple_body.txt")
       result = h.get_buf_lines(ui_buf):to_string()
 
+      assert.is_same(expected_request.url, computed_request.url)
       assert.is_same(expected_request.headers, computed_request.headers)
       assert.is_same(expected_request.body_computed, computed_request.body_computed)
       assert.is_same(expected, result)
@@ -162,8 +161,8 @@ describe("requests", function()
       assert.is_same(expected_request.headers, computed_request.headers)
       assert.is_same(expected_request.body_computed, computed_request.body_computed)
       assert.is_same(result, expected)
-      assert.is_true(notify.has_message("Foobar"))
-      assert.is_true(notify.has_message("Thu, 30 Jan 2025 16:21:56 GMT"))
+      assert.has_string(notify.messages, "Foobar")
+      assert.has_string(notify.messages, "Thu, 30 Jan 2025 16:21:56 GMT")
     end)
 
     it("load a file with @file-to-variable", function()
@@ -179,13 +178,17 @@ describe("requests", function()
       kulala.run_all()
       wait_for_requests(1)
 
-      local expected_request = h.load_fixture("fixtures/advanced_C_request.txt"):to_object().current_request
       local computed_request = DB.data.current_request
+      local path = "< " .. h.expand_path("requests/demo.png")
+      assert.has_string(computed_request.body_computed, path)
+
+      local expected_body_request = h.load_fixture("fixtures/advanced_C_body_request.txt", true)
+      local computed_body_request = h.load_fixture(curl.last_request_body_path, true)
+      assert.is_same(expected_body_request, computed_body_request)
 
       expected = h.load_fixture("fixtures/advanced_C_body.txt")
       result = h.get_buf_lines(ui_buf):to_string()
 
-      assert.is_same(expected_request.body_computed, computed_request.body_computed)
       assert.is_same(result, expected)
     end)
 
@@ -210,8 +213,8 @@ describe("requests", function()
 
       assert.is_same(computed_request.headers, expected_request.headers)
       assert.is_same(computed_request.body_computed, expected_request.body_computed)
-      assert.is_true(notify.has_message("Content-Type:application/json"))
-      assert.is_true(notify.has_message("{ someHeaderValue: { name: 'Server', value: 'gunicorn/19.9.0' } }"))
+      assert.has_string(notify.messages, "Content-Type:application/json")
+      assert.has_string(notify.messages, "{ someHeaderValue: { name: 'Server', value: 'gunicorn/19.9.0' } }")
       assert.is_same(expected, result)
     end)
 
@@ -347,7 +350,7 @@ describe("requests", function()
 
     it("parses GraphQL request", function()
       curl.stub({
-        ["POST https://countries.trevorblades.com"] = {
+        ["https://countries.trevorblades.com"] = {
           body = h.load_fixture("fixtures/graphql_schema_body.txt"),
         },
       })
@@ -373,11 +376,10 @@ describe("requests", function()
       kulala.run()
       wait_for_requests(1)
 
-      local expected_body_computed =
-        '{"query": "query Person($id: ID) { person(personID: $id) { name } } ", "variables": {"id": 1}}'
       local request_body_computed = DB.data.current_request.body_computed
 
-      assert.is_same(expected_body_computed, request_body_computed)
+      assert.has_string(request_body_computed, '"query":"query Person($id: ID) { person(personID: $id) { name } }')
+      assert.has_string(request_body_computed, '"variables":{"id":1}')
     end)
   end)
 end)

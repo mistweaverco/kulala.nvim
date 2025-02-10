@@ -1,5 +1,5 @@
 local DB = require("kulala.db")
-local Parser = require("kulala.parser")
+local Parser = require("kulala.parser.document")
 local ParserUtils = require("kulala.parser.utils")
 
 local M = {}

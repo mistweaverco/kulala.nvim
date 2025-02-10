@@ -1,10 +1,13 @@
+local Logger = require("kulala.logger")
+
 local M = {}
 
 local function parse(body)
   local query_string
   local variables_string
+
   -- Split the body into lines
-  local lines = vim.split(body, "\r\n")
+  local lines = vim.split(body, "\n")
   local in_query = false
   local in_variables = false
   local query = {}
@@ -12,7 +15,6 @@ local function parse(body)
   local query_matcher = "query"
   local mutation_matcher = "mutation"
   local variables_matcher = "{"
-  local variables_matcher_len = #variables_matcher
 
   for _, line in ipairs(lines) do
     if line:find("^" .. query_matcher) then
@@ -25,7 +27,9 @@ local function parse(body)
       in_query = false
       in_variables = true
     end
+
     line = vim.trim(line)
+
     if in_query then
       table.insert(query, line)
     elseif in_variables then
@@ -50,23 +54,23 @@ end
 
 M.get_json = function(body)
   local query, variables = parse(body)
-  local json = {}
-  json.query = ""
-  json.variables = ""
+  local json = { query = "", variables = "" }
 
-  if query then
-    json.query = query
-  end
+  if not (query and #query > 0) then return end
+
+  json.query = query
 
   if variables then
-    json.variables = vim.fn.json_decode(variables)
+    local status, result = pcall(vim.json.decode, variables)
+
+    if status then
+      json.variables = result
+    else
+      Logger.error("Failed to parse query: " .. result)
+    end
   end
 
-  if #json.query == 0 then
-    return nil
-  end
-
-  return vim.fn.json_encode(json)
+  return vim.json.encode(json)
 end
 
 return M
