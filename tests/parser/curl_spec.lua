@@ -101,6 +101,7 @@ describe("curl parse", function()
   it("-d data -H 'content-type: text/plain'", function()
     local args = [[curl -H 'content-type: text/plain' -d data 'https://example.com/post']]
     local parsed = CURL.parse(args)
+
     assert.equal("POST", parsed.method)
     assert.equal("https://example.com/post", parsed.url)
     assert.equal("data", parsed.body)
@@ -110,6 +111,7 @@ describe("curl parse", function()
   it("--json", function()
     local args = [[curl --json '{"j": "son"}' 'https://example.com/post']]
     local parsed = CURL.parse(args)
+
     assert.equal("POST", parsed.method)
     assert.equal("https://example.com/post", parsed.url)
     assert.equal('{"j": "son"}', parsed.body)
@@ -152,9 +154,10 @@ describe("curl parse", function()
   it("header key case", function()
     local args = [[curl -H 'Header-Key:value' 'https://example.com/get']]
     local parsed = CURL.parse(args)
+
     assert.equal("GET", parsed.method)
     assert.equal("https://example.com/get", parsed.url)
-    assert.equal(parsed.headers["header-key"], nil)
-    assert.equal("value", parsed.headers["Header-Key"])
+    assert.equal("value", parsed.headers["header-key"])
+    assert.equal(nil, parsed.headers["Header-Key"])
   end)
 end)
