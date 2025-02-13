@@ -50,6 +50,10 @@ function M.parse(curl)
   }
   local state = State.START
 
+  local function set_header(headers, header, value)
+    headers[header:lower()] = value
+  end
+
   for _, arg in ipairs(parts) do
     local skip = false
     if state == State.START then
@@ -63,19 +67,17 @@ function M.parse(curl)
         state = State.Header
       elseif arg == "-d" or arg == "--data" or arg == "--data-raw" then
         state = State.Body
-        if res.method == "" then
-          res.method = "POST"
+
+        if not res.headers["content-type"] then
+          set_header(res.headers, "content-type", "application/x-www-form-urlencoded")
         end
-        if res.headers["content-type"] == nil then
-          res.headers["content-type"] = "application/x-www-form-urlencoded"
-        end
+
+        res.method = res.method == "" and "POST" or res.method
       elseif arg == "--json" then
-        if res.method == "" then
-          res.method = "POST"
-        end
         state = State.Body
-        res.headers["content-type"] = "application/json"
-        res.headers["accept"] = "application/json"
+        set_header(res.headers, "content-type", "application/json")
+        set_header(res.headers, "accept", "application/json")
+        res.method = res.method == "" and "POST" or res.method
       elseif arg == "--http1.1" then
         res.http_version = "HTTP/1.1"
       elseif arg == "--http2" then
@@ -93,7 +95,7 @@ function M.parse(curl)
         res.headers["user-agent"] = arg
       elseif state == State.Header then
         local header, value = Stringutils.cut(arg, ":")
-        res.headers[Stringutils.remove_extra_space(header)] = Stringutils.remove_extra_space(value)
+        set_header(res.headers, Stringutils.remove_extra_space(header), Stringutils.remove_extra_space(value))
       elseif state == State.Body then
         res.body = arg
       end
