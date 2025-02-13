@@ -31,7 +31,9 @@ end
 
 M.show_done = function(_, linenr, elapsed_time)
   local icon = ""
-  if string.len(CONFIG.get().icons.inlay.done) > 0 then icon = CONFIG.get().icons.inlay.done .. " " end
+  if string.len(CONFIG.get().icons.inlay.done) > 0 then
+    icon = CONFIG.get().icons.inlay.done .. " "
+  end
   _ = linenr and M.show(icon .. elapsed_time, linenr)
 end
 
@@ -43,7 +45,9 @@ local line_ofset = {
 
 M.show = function(t, linenr)
   local show_icons = CONFIG.get().show_icons
-  if not show_icons then return end
+  if not show_icons then
+    return
+  end
 
   local bufnr = DB.get_current_buffer()
   linenr = linenr + (line_ofset[show_icons] or 0)

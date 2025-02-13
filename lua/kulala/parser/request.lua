@@ -112,13 +112,17 @@ local function encode_url_params(url)
   end
 
   index = url:find("?")
-  if not index then return url .. anchor end
+  if not index then
+    return url .. anchor
+  end
 
   local query = url:sub(index + 1)
   url = url:sub(1, index - 1)
 
   local query_parts = {}
-  if query then query_parts = vim.split(query, "&") end
+  if query then
+    query_parts = vim.split(query, "&")
+  end
 
   local query_params = ""
   for _, query_part in ipairs(query_parts) do
@@ -134,7 +138,9 @@ local function encode_url_params(url)
     end
   end
 
-  if query_params ~= "" then url = url .. "?" .. query_params:sub(2) end
+  if query_params ~= "" then
+    url = url .. "?" .. query_params:sub(2)
+  end
   return url .. anchor
 end
 
@@ -177,7 +183,9 @@ local function save_body_with_files(request_body)
   local result_path = FS.get_binary_temp_file("")
 
   local result = io.open(result_path, "a+b")
-  if not result then return end
+  if not result then
+    return
+  end
 
   local lines = vim.split(request_body, "\n")
 
@@ -243,7 +251,9 @@ local function process_graphql(request)
 end
 
 local function process_pre_request_scripts(request, document_variables)
-  if not (#request.scripts.pre_request.inline > 0 or #request.scripts.pre_request.files > 0) then return end
+  if not (#request.scripts.pre_request.inline > 0 or #request.scripts.pre_request.files > 0) then
+    return
+  end
 
   -- PERF: We only want to run the scripts if they exist
   -- Also we don't want to re-run the environment replace_variables_in_url_headers_body
@@ -278,10 +288,14 @@ end
 
 local function process_auth_headers(request)
   local auth_header_name, auth_header_value = PARSER_UTILS.get_header(request.headers, "authorization")
-  if not (auth_header_name and auth_header_value) then return end
+  if not (auth_header_name and auth_header_value) then
+    return
+  end
 
   local authtype = auth_header_value:match("^(%w+)%s+.*")
-  if not authtype then authtype = auth_header_value:match("^(%w+)%s*$") end
+  if not authtype then
+    authtype = auth_header_value:match("^(%w+)%s*$")
+  end
 
   if authtype then
     authtype = authtype:lower()
@@ -302,8 +316,12 @@ local function process_auth_headers(request)
       local service = optional:match("service:([^%s]+)")
       local provider = "aws:amz"
 
-      if region then provider = provider .. ":" .. region end
-      if service then provider = provider .. ":" .. service end
+      if region then
+        provider = provider .. ":" .. region
+      end
+      if service then
+        provider = provider .. ":" .. service
+      end
 
       table.insert(request.cmd, "--aws-sigv4")
       table.insert(request.cmd, provider)
@@ -327,17 +345,25 @@ local function process_protocol(request)
     protocol, host = request.url:match("^([^:]*)://([^:/]*)")
   end
 
-  if protocol ~= "https" then return end
+  if protocol ~= "https" then
+    return
+  end
 
   local certificate = CONFIG.get().certificates[host .. ":" .. (port or "443")]
-  if not certificate then certificate = CONFIG.get().certificates[host] end
+  if not certificate then
+    certificate = CONFIG.get().certificates[host]
+  end
 
   if not certificate then
     while host ~= "" do
       certificate = CONFIG.get().certificates["*." .. host .. ":" .. (port or "443")]
 
-      if not certificate then certificate = CONFIG.get().certificates["*." .. host] end
-      if certificate then break end
+      if not certificate then
+        certificate = CONFIG.get().certificates["*." .. host]
+      end
+      if certificate then
+        break
+      end
 
       host = host:gsub("^[^%.]+%.?", "")
     end
@@ -398,7 +424,9 @@ function M.get_basic_request_data(requests, line_nr)
   local request = vim.deepcopy(default_request)
   local document_request = DOCUMENT_PARSER.get_request_at(requests, line_nr)
 
-  if not document_request then return end
+  if not document_request then
+    return
+  end
 
   request.scripts.pre_request = document_request.scripts.pre_request
   request.scripts.post_request = document_request.scripts.post_request
@@ -432,10 +460,14 @@ M.parse = function(requests, document_variables, line_nr)
     line_nr = PARSER_UTILS.get_current_line_number()
   end
 
-  if not requests then return end
+  if not requests then
+    return
+  end
 
   local request = M.get_basic_request_data(requests, line_nr)
-  if not request or not request.url_raw then return end
+  if not request or not request.url_raw then
+    return
+  end
 
   DB.update().previous_request = DB.find_unique("current_request")
 

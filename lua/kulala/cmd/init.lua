@@ -180,7 +180,7 @@ local function process_request(requests, request, variables, callback)
       if data then
         errors = (errors or "") .. data
 
-        if received_unbffured(parsed_request, data) then
+        if received_unbffured(parsed_request, errors) then
           callback(nil, start_time, parsed_request.show_icon_line_number)
         end
       end
@@ -230,7 +230,7 @@ M.run_parser = function(requests, line_nr, callback)
     INLAY.show_loading(req.show_icon_line_number)
 
     offload_task(function()
-        UiHighlight.highlight_request(req, function()
+      UiHighlight.highlight_request(req, function()
         process_request(requests, req, variables, callback)
       end)
     end)
