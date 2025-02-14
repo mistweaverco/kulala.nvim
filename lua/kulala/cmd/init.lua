@@ -131,7 +131,7 @@ local function handle_response(request_status, parsed_request, callback)
   local success = request_status.code == 0
 
   local status, processing_errors = xpcall(function()
-    _ = success and process_response(request_status, parsed_request)
+    _ = success and process_response(request_status, parsed_request) -- TODO: add handling for errors during process_response
     callback(success, request_status.start_time, parsed_request.show_icon_line_number)
   end, debug.traceback)
 
@@ -227,7 +227,7 @@ M.run_parser = function(requests, line_nr, callback)
   reqs_to_process = reqs_to_process or requests
 
   for _, req in ipairs(reqs_to_process) do
-    INLAY.show_loading(req.show_icon_line_number)
+    INLAY.show("loading", req.show_icon_line_number)
 
     offload_task(function()
       UiHighlight.highlight_request(req, function()

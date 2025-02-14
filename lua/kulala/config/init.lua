@@ -40,7 +40,8 @@ M.defaults = {
       pathresolver = nil,
     },
   },
-  show_icons = "on_request",
+  -- icons postion: singcolumn|on_request|above_request|below_request or nil to disable
+  show_icons = "signcolumn",
   -- default icons
   icons = {
     inlay = {
@@ -49,6 +50,8 @@ M.defaults = {
       error = "❌",
     },
     lualine = "🐼",
+    textHighlight = "WarningMsg", -- highlight group for request elapsed time
+    lineHighlight = "Normal", -- highlight group for icons line highlight
   },
   -- additional cURL options
   -- see: https://curl.se/docs/manpage.html
@@ -136,8 +139,21 @@ M.default_contenttype = {
 
 M.options = M.defaults
 
+local function set_signcolumn_icons()
+  local linehl = M.options.icons.lineHighlight
+
+  vim.fn.sign_define({
+    { name = "kulala.done", text = M.options.icons.inlay.done, linehl = linehl },
+    { name = "kulala.error", text = M.options.icons.inlay.error, linehl = linehl },
+    { name = "kulala.loading", text = M.options.icons.inlay.loading, linehl = linehl },
+    { name = "kulala.space", text = " " },
+  })
+end
+
 M.setup = function(config)
   M.options = vim.tbl_deep_extend("force", M.defaults, config or {})
+
+  set_signcolumn_icons()
   keymaps.setup_global_keymaps()
 
   return M.options
