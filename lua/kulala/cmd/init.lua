@@ -1,4 +1,5 @@
 local GLOBALS = require("kulala.globals")
+local CONFIG = require("kulala.config")
 local Fs = require("kulala.utils.fs")
 local PARSER = require("kulala.parser")
 local EXT_PROCESSING = require("kulala.external_processing")
@@ -7,6 +8,8 @@ local Api = require("kulala.api")
 local INLAY = require("kulala.inlay")
 local Logger = require("kulala.logger")
 local UiHighlight = require("kulala.ui.highlight")
+
+local request_timeout
 
 local M = {}
 
@@ -111,9 +114,13 @@ local function process_response(request_status, parsed_request, callback)
     process_external(parsed_request)
     process_api()
   else
+    request_status.errors = request_status.code == 124
+        and ("%s\nRequest timed out (%s ms)"):format(request_status.errors, request_timeout or "")
+      or request_status.errors
+
     local message = ("Errors in request %s at line: %s\n%s"):format(
       parsed_request.url,
-      parsed_request.start_line,
+      parsed_request.show_icon_line_number or "-",
       request_status.errors or ""
     )
     Logger.error(message)
@@ -145,8 +152,11 @@ local function process_request(requests, request, variables, callback)
     local unbuffered = vim.tbl_contains(parsed_request.cmd, "-N")
     local errors
 
+    request_timeout = CONFIG.get().request_timeout
+
     local request_job = vim.system(parsed_request.cmd, {
       text = true,
+      timeout = request_timeout,
       stderr = function(_, data)
         if data then
           errors = (errors or "") .. data
@@ -169,7 +179,7 @@ local function process_request(requests, request, variables, callback)
       end)
     end)
 
-    if not unbuffered then
+    if not unbuffered and #TASK_QUEUE > 0 then
       request_job:wait()
     end
 

@@ -20,6 +20,8 @@ M.defaults = {
   default_env = "dev",
   -- enable/disable debug mode
   debug = false,
+  -- default timeout for the request, set to nil to disable
+  request_timeout = nil,
   -- default formatters/pathresolver for different content types
   contenttypes = {
     ["application/json"] = {
