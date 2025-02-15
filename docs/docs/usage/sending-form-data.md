@@ -22,18 +22,7 @@ age={{age}}
 You can send multipart form data in Kulala by
 using the `multipart/form-data` content type.
 
-:::warning
-
-When sending a file,
-(other than text files)
-you need to use the `binary` directive to read the file as binary data.
-
-You can omit the `binary` directive when sending text files.
-
-:::
-
 ```http title="multipart.http"
-# @file-to-variable LOGO_FILE_VAR ./../../logo.png binary
 POST https://httpbin.org/post HTTP/1.1
 Content-Type: multipart/form-data; boundary=----WebKitFormBoundary{{$timestamp}}
 
@@ -41,7 +30,7 @@ Content-Type: multipart/form-data; boundary=----WebKitFormBoundary{{$timestamp}}
 Content-Disposition: form-data; name="logo"; filename="logo.png"
 Content-Type: image/jpeg
 
-{{LOGO_FILE_VAR}}
+< /home/giraffe/Pictures/logo.png
 
 ------WebKitFormBoundary{{$timestamp}}
 Content-Disposition: form-data; name="x"

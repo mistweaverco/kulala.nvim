@@ -120,6 +120,41 @@ the Kulala plugin with the available `opts`:
     -- possible values: false, "float"
     show_variable_info_text = false,
   },
+  -- set to true to enable default keymaps (check docs or {plugins_path}/kulala.nvim/lua/kulala/config/keymaps.lua for details)
+  -- or override default keymaps as shown in the example below.
+  ---@type boolean|table
+  global_keymaps = false,
+  --[[
+    {
+      ["Send request"] = { -- sets global mapping
+        "<leader>Rs",
+        function() require("kulala").run() end,
+        mode = { "n", "v" }, -- optional mode, default is v
+        desc = "Send request" -- optional description, otherwise inferred from the key
+      },
+      ["Send all requests"] = {
+        "<leader>Ra",
+        function() require("kulala").run_all() end,
+        mode = { "n", "v" },
+        ft = "http", -- sets mapping for *.http files only
+      },
+      ["Replay the last request"] = {
+        "<leader>Rr",
+        function() require("kulala").replay() end,
+        ft = { "http", "rest" }, -- sets mapping for specified file types
+      },
+    ["Find request"] = false -- set to false to disable
+    },
+  ]]
+
+  -- Kulala UI keymaps, override with custom keymaps as required (check docs or {plugins_path}/kulala.nvim/lua/kulala/config/keymaps.lua for details)
+  ---@type boolean|table
+  kulala_keymaps = true,
+  --[[
+    {
+      ["Show headers"] = { "H", function() require("kulala.ui").show_headers() end, },
+    }
+  ]]
 }
 ```
 
@@ -728,6 +763,40 @@ Example:
   opts = {
     show_variable_info_text = false,
   },
+}
+```
+
+### global_keymaps
+
+Set to `true` to enable default keymaps.
+
+Check the [keymaps documentation](keymaps.md) for details.
+
+Default: `false`
+
+Example:
+
+```lua
+{
+  "mistweaverco/kulala.nvim",
+  global_keymaps = true,
+}
+```
+
+### kulala_keymaps
+
+Set to `true` to enable default keymaps for the Kulala UI.
+
+Check the [keymaps documentation](keymaps.md) for details.
+
+Default: `true`
+
+Example:
+
+```lua
+{
+  "mistweaverco/kulala.nvim",
+  kulala_keymaps = false,
 }
 ```
 
