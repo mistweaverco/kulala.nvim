@@ -103,7 +103,7 @@ M.defaults = {
       ["Send request"] = { -- sets global mapping
         "<leader>Rs",
         function() require("kulala").run() end,
-        mode = { "n", "v" }, -- optional mode, default is v
+        mode = { "n", "v" }, -- optional mode, default is n
         desc = "Send request" -- optional description, otherwise inferred from the key
       },
       ["Send all requests"] = {
