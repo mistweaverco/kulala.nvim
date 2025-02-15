@@ -158,6 +158,18 @@ M.default_kulala_keymaps = {
       require("kulala.ui").show_stats()
     end,
   },
+  ["Next response"] = {
+    "]",
+    function()
+      require("kulala.ui").show_next()
+    end,
+  },
+  ["Previous response"] = {
+    "[",
+    function()
+      require("kulala.ui").show_previous()
+    end,
+  },
   ["Close"] = {
     "q",
     function()

@@ -13,6 +13,7 @@ local FORMATTER = require("kulala.formatter")
 local Logger = require("kulala.logger")
 local AsciiUtils = require("kulala.utils.ascii")
 local Inspect = require("kulala.parser.inspect")
+local UiHighlight = require("kulala.ui.highlight")
 
 local M = {}
 
@@ -28,6 +29,25 @@ end
 
 local function get_current_line()
   return vim.fn.line(".")
+end
+
+local function get_current_response_pos()
+  local responses = DB.global_update().responses
+  return DB.global_update().current_response_pos or #responses
+end
+
+local function get_current_response()
+  local responses = DB.global_update().responses
+  return responses[get_current_response_pos()]
+    or setmetatable({}, {
+      __index = function()
+        return ""
+      end,
+    })
+end
+
+local function set_current_response(response_pos)
+  DB.global_update().current_response_pos = response_pos
 end
 
 M.close_kulala_buffer = function()
@@ -119,9 +139,28 @@ local function open_kulala_window(buf)
   return win
 end
 
+local function set_current_response_data(buf)
+  local responses = DB.global_update().responses
+  local response = get_current_response()
+
+  local data = vim
+    .iter({
+      { "Request " .. get_current_response_pos() .. "/" .. #responses .. "  Status: " .. response.status },
+      { "URL: " .. response.method .. " " .. response.url },
+      { "Buffer: " .. response.buf_name .. "::" .. response.line },
+      { "" },
+    })
+    :flatten()
+    :totable()
+
+  vim.api.nvim_buf_set_lines(buf, 0, 0, false, data)
+  UiHighlight.highlight_range(get_kulala_buffer(), 0, { row = 0, col = 0 }, { row = 2, col = -1 }, "Special")
+end
+
 local function show(contents, filetype, mode)
   local buf = open_kulala_buffer(filetype)
   set_buffer_contents(buf, contents, filetype)
+  set_current_response_data(buf)
 
   local win = open_kulala_window(buf)
 
@@ -130,8 +169,9 @@ local function show(contents, filetype, mode)
 end
 
 local function format_body()
-  local contenttype = INT_PROCESSING.get_config_contenttype()
-  local body = FS.read_file(GLOBALS.BODY_FILE)
+  local headers = get_current_response().headers
+  local body = get_current_response().body
+  local contenttype = INT_PROCESSING.get_config_contenttype(headers)
   local filetype
 
   if body and contenttype.formatter then
@@ -143,82 +183,67 @@ local function format_body()
 end
 
 M.show_headers = function()
-  local headers = FS.read_file(GLOBALS.HEADERS_FILE)
-
-  if not headers then
-    return Logger.warn("No headers found")
-  end
-
-  headers = headers:gsub("\r\n", "\n")
+  local headers = get_current_response().headers
   show(headers, "text", "headers")
 end
 
 M.show_body = function()
   local body, filetype = format_body()
-
-  if not body then
-    return Logger.warn("No body found")
-  end
-
   show(body, filetype, "body")
 end
 
 M.show_headers_body = function()
-  local headers = FS.read_file(GLOBALS.HEADERS_FILE)
+  local headers = get_current_response().headers
   local body, filetype = format_body()
-
-  if not headers or not body then
-    return Logger.warn("No headers or body found")
-  end
-
-  headers = headers:gsub("\r\n", "\n") .. "\n"
   show(headers .. body, filetype, "headers_body")
 end
 
 M.show_verbose = function()
   local body = format_body()
-  local errors = FS.read_file(GLOBALS.ERRORS_FILE)
-
-  if not body then
-    return Logger.warn("No body found")
-  end
-
-  errors = errors and errors:gsub("\r", "") .. "\n" or ""
-  show(errors .. body, "kulala_verbose_result", "verbose")
+  local errors = get_current_response().errors
+  show(errors .. "\n" .. body, "kulala_verbose_result", "verbose")
 end
 
 M.show_stats = function()
-  local stats = FS.read_file(GLOBALS.STATS_FILE)
+  local stats = get_current_response().stats
+  local diagram
 
-  if not stats then
-    return Logger.warn("No stats found")
+  if stats then
+    stats = vim.json.decode(stats)
+
+    local diagram_lines = AsciiUtils.get_waterfall_timings(stats)
+    diagram = table.concat(diagram_lines, "\n")
   end
 
-  stats = vim.json.decode(stats)
-
-  local diagram_lines = AsciiUtils.get_waterfall_timings(stats)
-  local diagram = table.concat(diagram_lines, "\n")
-
-  show(diagram, "text", "stats")
+  show(diagram or "", "text", "stats")
 end
 
 M.show_script_output = function()
-  local pre_file_contents = FS.read_file(GLOBALS.SCRIPT_PRE_OUTPUT_FILE)
-  local post_file_contents = FS.read_file(GLOBALS.SCRIPT_POST_OUTPUT_FILE)
+  local pre_file_contents = get_current_response().script_pre_output
+  local post_file_contents = get_current_response().script_post_output
   local contents = ""
 
-  if not pre_file_contents and not post_file_contents then
-    Logger.error("No script output found")
-    return
-  end
-
-  contents = pre_file_contents
-    and contents .. M.generate_ascii_header("Pre Script") .. "\n" .. pre_file_contents:gsub("\r\n", "\n")
-  contents = post_file_contents
-      and contents .. M.generate_ascii_header("Post Script") .. "\n" .. post_file_contents:gsub("\r\n", "\n")
-    or contents
+  contents = M.generate_ascii_header("Pre Script") .. "\n" .. pre_file_contents
+  contents = contents .. M.generate_ascii_header("Post Script") .. "\n" .. post_file_contents
 
   show(contents, "text", "script_output")
+end
+
+M.show_next = function()
+  local responses = DB.global_update().responses
+  local current_pos = get_current_response_pos()
+  local next = current_pos == #responses and current_pos or current_pos + 1
+
+  set_current_response(next)
+  M.open_default_view()
+end
+
+M.show_previous = function()
+  local current_pos = get_current_response_pos()
+  local previous = current_pos == 1 and current_pos or current_pos - 1
+
+  set_current_response(previous)
+  M.open_default_view()
 end
 
 M.toggle_headers = function()
@@ -253,7 +278,7 @@ local function pretty_ms(ms)
 end
 
 M.open = function()
-  M:open_all(get_current_line())
+  M:open_all(vim.api.nvim_get_mode().mode == "V" and 0 or get_current_line())
 end
 
 M.open_all = function(_, line_nr)
@@ -276,7 +301,9 @@ M.open_all = function(_, line_nr)
       return
     end
 
+    set_current_response(#DB.global_update().responses)
     M.open_default_view()
+
     return true
   end)
 end

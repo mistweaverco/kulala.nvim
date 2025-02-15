@@ -3,7 +3,29 @@ local CONFIG = require("kulala.config")
 local M = {}
 
 M.data = nil
-M.global_data = {}
+
+---@class Response
+---@field id number
+---@field url string
+---@field method string
+---@field status number
+---@field body string
+---@field headers string
+---@field errors string
+---@field stats string
+---@field script_pre_output string
+---@field script_post_output string
+---@field buf number
+---@field buf_name string
+---@field line number
+
+---@class GlobalData
+---@field responses Response[]
+---@field current_response_pos number|nil
+M.global_data = {
+  current_response_pos = nil, -- index of current response shown in UI in responses
+  responses = {}, -- history of responses
+}
 M.current_buffer = nil
 
 ---Gets DB.current_buffer or if it does not exist, then sets it to current buffer

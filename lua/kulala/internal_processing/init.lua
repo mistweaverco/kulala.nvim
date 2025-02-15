@@ -23,19 +23,20 @@ local function get_nested_value(t, key)
 end
 
 ---Function to get the last headers as a table
----@description Reads the headers file and returns the headers as a table.
+---@description Reads provided headers string or the headers file and returns the headers as a table.
 ---In some cases the headers file might contain multiple header sections,
 ---e.g. if you have follow-redirections enabled.
 ---This function will return the headers of the last response.
+---@param headers string|nil
 ---@return table|nil
-local get_last_headers_as_table = function()
-  local headers_file = FS.read_file(GLOBALS.HEADERS_FILE)
-  if not headers_file then
+local get_last_headers_as_table = function(headers)
+  headers = headers or FS.read_file(GLOBALS.HEADERS_FILE)
+  if not headers then
     return
   end
 
-  headers_file = headers_file:gsub("\r\n", "\n")
-  local lines = vim.split(headers_file, "\n")
+  headers = headers:gsub("\r\n", "\n")
+  local lines = vim.split(headers, "\n")
   local headers_table = {}
   -- INFO:
   -- We only want the headers of the last response
@@ -107,8 +108,8 @@ local get_cookies_as_table = function()
   return cookies
 end
 
-local get_lower_headers_as_table = function()
-  local headers = get_last_headers_as_table() or {}
+local get_lower_headers_as_table = function(headers)
+  headers = get_last_headers_as_table(headers) or {}
   local headers_table = {}
   for key, value in pairs(headers) do
     headers_table[key:lower()] = value
@@ -116,16 +117,19 @@ local get_lower_headers_as_table = function()
   return headers_table
 end
 
-M.get_config_contenttype = function()
-  local headers = get_lower_headers_as_table()
+M.get_config_contenttype = function(headers)
+  headers = get_lower_headers_as_table(headers)
+
   if headers["content-type"] then
     local content_type = vim.split(headers["content-type"], ";")[1]
     content_type = STRING_UTILS.trim(content_type)
+
     local config = CONFIG.get().contenttypes[content_type]
     if config then
       return config
     end
   end
+
   return CONFIG.default_contenttype
 end
 

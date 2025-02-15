@@ -25,12 +25,13 @@ string.to_string = function(self, clean)
 end
 
 ---@param self string
----@param clean boolean -- remove tabs and trim spaces
+---@param clean boolean|nil -- remove tabs and trim spaces
 ---@return string[]
 string.to_table = function(self, clean)
   return h.to_table(tostring(self), clean)
 end
 
+---@param self string
 string.to_object = function(self)
   return loadstring("return " .. self:gsub("[\n\r]*", ""))()
 end

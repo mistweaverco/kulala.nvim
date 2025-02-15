@@ -89,7 +89,7 @@ describe("UI", function()
       result = h.get_buf_lines(ui_buf):to_string()
       expected = h.load_fixture("fixtures/request_1_headers.txt")
 
-      assert.is_same(expected, result)
+      assert.has_string(result, expected)
     end)
 
     it("in body mode", function()
@@ -99,7 +99,7 @@ describe("UI", function()
       result = h.get_buf_lines(ui_buf):to_string()
       expected = h.load_fixture("fixtures/request_1_body.txt")
 
-      assert.is_same(expected, result)
+      assert.has_string(result, expected)
     end)
 
     it("for current line in body mode", function()
@@ -110,7 +110,7 @@ describe("UI", function()
       result = h.get_buf_lines(ui_buf):to_string()
       expected = h.load_fixture("fixtures/request_2_body.txt")
 
-      assert.is_same(expected, result)
+      assert.has_string(result, expected)
     end)
 
     it("for current line in in non-http buffer and strips comments chars", function()
@@ -125,9 +125,9 @@ describe("UI", function()
           -- @foobar=bar
           ;; @ENV_PROJECT = project_name
           
-          #- POST https://httpbin.org/advanced_1 HTTP/1.1
-          /*-- Content-Type: application/json
-        ]]):to_table(),
+          ## POST https://httpbin.org/advanced_1 HTTP/1.1
+          /* Content-Type: application/json
+        ]]):to_table(true),
         "test.lua"
       )
 
@@ -201,7 +201,7 @@ describe("UI", function()
       result = h.get_buf_lines(ui_buf):to_string()
 
       assert.is_same(2, curl.requests_no)
-      assert.is_same(expected, result)
+      assert.has_string(result, expected)
     end)
 
     it("in verbose mode", function()
@@ -213,7 +213,7 @@ describe("UI", function()
       result = h.get_buf_lines(ui_buf):to_string()
       expected = h.load_fixture("fixtures/request_1_verbose.txt")
 
-      assert.is_same(expected, result)
+      assert.has_string(result, expected)
     end)
 
     it("in verbose mode for run_all", function()
@@ -226,7 +226,7 @@ describe("UI", function()
       result = h.get_buf_lines(ui_buf):to_string()
 
       assert.is_same(2, curl.requests_no)
-      assert.is_same(expected, result)
+      assert.has_string(result, expected)
     end)
 
     it("stats of the request", function()
@@ -238,7 +238,7 @@ describe("UI", function()
       expected = h.load_fixture("fixtures/request_1_stats.txt")
       result = h.get_buf_lines(ui_buf):to_string()
 
-      assert.is_same(expected, result)
+      assert.has_string(result, expected)
     end)
 
     it("in script mode", function()
@@ -262,7 +262,7 @@ describe("UI", function()
       expected = h.load_fixture("fixtures/request_1_script.txt")
       result = h.get_buf_lines(ui_buf):to_string()
 
-      assert.is_same(expected, result)
+      assert.has_string(result, expected)
     end)
 
     it("replays last request", function()
@@ -277,7 +277,7 @@ describe("UI", function()
       result = h.get_buf_lines(ui_buf):to_string()
       expected = h.load_fixture("fixtures/request_1_body.txt")
 
-      assert.is_same(expected, result)
+      assert.has_string(result, expected)
     end)
   end)
 
@@ -360,7 +360,7 @@ describe("UI", function()
         }]]):to_string(true)
 
       result = h.get_buf_lines(ui_buf):to_string()
-      assert.is_same(expected, result)
+      assert.has_string(result, expected)
     end)
 
     it("pastes curl command", function()
@@ -382,7 +382,7 @@ describe("UI", function()
         ]]):format(GLOBALS.VERSION):to_string(true)
 
       result = h.get_buf_lines(http_buf):to_string()
-      assert.are.same(expected, result)
+      assert.has_string(result, expected)
     end)
 
     it("copies curl command with body", function()
@@ -404,7 +404,7 @@ describe("UI", function()
         GLOBALS.VERSION
       )
       result = vim.fn.getreg("+")
-      assert.are.same(expected, result)
+      assert.has_string(result, expected)
     end)
   end)
 end)

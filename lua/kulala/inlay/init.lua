@@ -41,7 +41,7 @@ local function set_signcolumn()
   local scl = (vim.api.nvim_get_option_value("signcolumn", { win = win }) or "")
   scl = tonumber(scl:sub(#scl)) or 0
 
-  vim.api.nvim_set_option_value("signcolumn", "auto:" .. math.max(2, scl), { win = win })
+  vim.api.nvim_set_option_value("signcolumn", "yes:" .. math.max(2, scl), { win = win })
 end
 
 M.show = function(event, linenr, text)

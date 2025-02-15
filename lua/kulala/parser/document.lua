@@ -136,11 +136,13 @@ local function get_request_from_fenced_code_block()
 end
 
 local function get_visual_selection()
-  local line_s, line_e
-
-  if vim.api.nvim_get_mode().mode == "V" then
-    vim.api.nvim_input("<Esc>")
+  if vim.api.nvim_get_mode().mode ~= "V" then
+    return
   end
+
+  vim.api.nvim_input("<Esc>")
+
+  local line_s, line_e
   line_s, line_e = vim.fn.getpos(".")[2], vim.fn.getpos("v")[2]
 
   if line_s > line_e then
@@ -148,7 +150,6 @@ local function get_visual_selection()
   end
 
   local contents = vim.api.nvim_buf_get_lines(DB.get_current_buffer(), line_s - 1, line_e, false)
-  contents = PARSER_UTILS.strip_invalid_chars(contents)
 
   return contents, line_s - 1
 end
@@ -265,18 +266,19 @@ end
 M.get_document = function()
   local buf = DB.get_current_buffer()
 
-  local line_offset = 0
-  local content_lines
+  local content_lines, line_offset = get_visual_selection() -- first: try to get the visual selection
 
-  if FS.is_non_http_file() then
+  if not content_lines and FS.is_non_http_file() then -- second: try to get the content from the fenced block if the file is not an HTTP file
     content_lines, line_offset = get_request_from_fenced_code_block()
 
-    if not content_lines then
-      content_lines, line_offset = get_visual_selection()
-    end
+    content_lines = content_lines or { vim.fn.getline(".") } -- third: try to get the current line
+    line_offset = line_offset or vim.fn.line(".") - 1
   end
 
-  content_lines = content_lines or vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+  content_lines = content_lines and PARSER_UTILS.strip_invalid_chars(content_lines or {})
+
+  content_lines = content_lines or vim.api.nvim_buf_get_lines(buf, 0, -1, false) -- finally: get the whole buffer if first two methods failed
+  line_offset = line_offset or 0
 
   if not content_lines then
     return

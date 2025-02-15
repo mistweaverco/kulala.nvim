@@ -28,10 +28,9 @@ M.winbar_sethl = function()
   vim.api.nvim_set_hl(0, "KulalaTabSel", { link = "TabLineSel" })
 end
 
----@param buf integer Buffer id
 ---@param win_id integer|nil Window id
 ---@param view string Body or headers
-M.toggle_winbar_tab = function(buf, win_id, view)
+M.toggle_winbar_tab = function(_, win_id, view)
   if not (win_id and CONFIG.get().winbar) then
     return
   end
@@ -54,6 +53,9 @@ M.toggle_winbar_tab = function(buf, win_id, view)
       table.insert(winbar_title, desc)
     end
   end
+
+  table.insert(winbar_title, "<- [")
+  table.insert(winbar_title, "] ->")
 
   local value = table.concat(winbar_title, " ")
   vim.api.nvim_set_option_value("winbar", value, { win = win_id })
