@@ -268,11 +268,11 @@ M.open_all = function(_, line_nr)
       local elapsed = vim.loop.hrtime() - start_time
       local elapsed_ms = pretty_ms(elapsed / 1e6)
 
-      INLAY:show_done(icon_linenr, elapsed_ms)
+      INLAY.show("done", icon_linenr, elapsed_ms)
     elseif success == nil then
-      INLAY:show_loading(icon_linenr)
+      INLAY.show("loading", icon_linenr)
     elseif success == false then
-      INLAY:show_error(icon_linenr)
+      INLAY.show("error", icon_linenr)
       return
     end
 
