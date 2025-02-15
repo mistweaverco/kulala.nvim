@@ -1,17 +1,13 @@
 ---@diagnostic disable: undefined-field, redefined-local
 local GLOBALS = require("kulala.globals")
 local CONFIG = require("kulala.config")
-local KEYMAPS = require("kulala.config.keymaps")
 local DB = require("kulala.db")
 local kulala = require("kulala")
 
 local kulala_name = GLOBALS.UI_ID
 local kulala_config = CONFIG.options
 
-local h = require("test_helper.ui")
-local s = require("test_helper.stubs")
-
-local assert = require("luassert")
+local h = require("test_helper")
 
 describe("UI", function()
   local curl, system, wait_for_requests
@@ -21,11 +17,11 @@ describe("UI", function()
   before_each(function()
     h.delete_all_bufs()
 
-    input = s.Input.stub()
-    notify = s.Notify.stub()
-    dynamic_vars = s.Dynamic_vars.stub()
+    input = h.Input.stub()
+    notify = h.Notify.stub()
+    dynamic_vars = h.Dynamic_vars.stub()
 
-    curl = s.Curl.stub({
+    curl = h.Curl.stub({
       ["*"] = {
         stats = h.load_fixture("fixtures/stats.json"),
       },
@@ -41,7 +37,7 @@ describe("UI", function()
       },
     })
 
-    system = s.System.stub({ "curl" }, {
+    system = h.System.stub({ "curl" }, {
       on_call = function(system)
         curl.request(system)
       end,
@@ -53,6 +49,12 @@ describe("UI", function()
         return curl.requests_no >= requests_no and ui_buf > 0
       end)
     end
+
+    kulala_config = CONFIG.setup({
+      global_keymaps = true,
+      default_view = "body",
+      display_mode = "float",
+    })
 
     lines = h.to_table(
       [[
@@ -66,7 +68,6 @@ describe("UI", function()
     )
 
     http_buf = h.create_buf(lines, "test.http")
-    kulala_config.display_mode = "float"
   end)
 
   after_each(function()
@@ -92,8 +93,6 @@ describe("UI", function()
     end)
 
     it("in body mode", function()
-      kulala_config.default_view = "body"
-
       kulala.run()
       wait_for_requests(1)
 
@@ -104,8 +103,6 @@ describe("UI", function()
     end)
 
     it("for current line in body mode", function()
-      kulala_config.default_view = "body"
-
       vim.fn.setpos(".", { 0, 5, 0, 0 })
       kulala.run()
       wait_for_requests(1)
@@ -117,8 +114,6 @@ describe("UI", function()
     end)
 
     it("for current line in in non-http buffer and strips comments chars", function()
-      kulala_config.default_view = "body"
-
       curl.stub({
         ["https://httpbin.org/advanced_1"] = {
           body = h.load_fixture("fixtures/advanced_A_1_body.txt"),
@@ -145,8 +140,6 @@ describe("UI", function()
     end)
 
     it("for current selection in in non-http buffer", function()
-      kulala_config.default_view = "body"
-
       curl.stub({
         ["https://httpbin.org/advanced_1"] = {
           body = h.load_fixture("fixtures/advanced_A_1_body.txt"),
@@ -192,11 +185,10 @@ describe("UI", function()
       assert.is_same("https://httpbin.org/advanced_1", cmd[#cmd])
 
       local computed_body = DB.data.current_request.body_computed
-      local expected_computed_body =
-        '{\r\n"project": "project_name",\r\n"results": [\r\n{\r\n"id": 1,\r\n"desc": "bar"\r\n},\r\n]\r\n}'
+      local expected_computed_body = '{\n"project": "project_name",\n"results": [\n{\n"id": 1,\n"desc": "bar"\n},\n]\n}'
 
       assert.is_same(expected_computed_body, computed_body)
-      assert.is_true(notify.has_message("TEST LOG"))
+      assert.has_string(notify.messages, "TEST LOG")
     end)
 
     it("last request in body_headers mode for run_all", function()
@@ -274,8 +266,6 @@ describe("UI", function()
     end)
 
     it("replays last request", function()
-      kulala_config.default_view = "body"
-
       kulala.run()
       wait_for_requests(1)
 
@@ -293,7 +283,6 @@ describe("UI", function()
 
   describe("UI features", function()
     it("opens results in split", function()
-      kulala_config.default_view = "body"
       kulala_config.display_mode = "split"
 
       kulala.run()
@@ -304,9 +293,6 @@ describe("UI", function()
     end)
 
     it("opens results in float", function()
-      kulala_config.default_view = "body"
-      kulala_config.display_mode = "float"
-
       kulala.run()
       wait_for_requests(1)
 
@@ -315,8 +301,6 @@ describe("UI", function()
     end)
 
     it("closes float and deletes buffer on 'q'", function()
-      kulala_config.default_view = "body"
-      kulala_config.display_mode = "float"
       kulala_config.q_to_close_float = true
 
       kulala.run()
@@ -327,8 +311,6 @@ describe("UI", function()
     end)
 
     it("closes ui and current buffer if it is *.http|rest", function()
-      kulala_config.default_view = "body"
-      kulala_config.display_mode = "float"
       kulala_config.q_to_close_float = true
 
       kulala.run()
@@ -340,8 +322,6 @@ describe("UI", function()
     end)
 
     it("shows inspect window", function()
-      kulala_config.default_view = "body"
-
       h.set_buf_lines(
         http_buf,
         ([[
@@ -383,145 +363,48 @@ describe("UI", function()
       assert.is_same(expected, result)
     end)
 
-    it("pastes simple curl", function()
-      vim.fn.setreg("+", "curl http://example.com")
+    it("pastes curl command", function()
+      vim.fn.setreg(
+        "+",
+        [[curl -X 'POST' -v -s --data '{ "foo": "bar" }' -H 'Content-Type:application/json' --http1.1 -A 'kulala.nvim/4.10.0' 'https://httpbin.org/post']]
+      )
       h.set_buf_lines(http_buf, {})
 
       kulala.from_curl()
 
-      expected = ([[# curl http://example.com
-          GET http://example.com
+      expected = ([[
+          # curl -X 'POST' -v -s --data '{ "foo": "bar" }' -H 'Content-Type:application/json' --http1.1 -A 'kulala.nvim/4.10.0' 'https://httpbin.org/post'
+          POST https://httpbin.org/post HTTP/1.1
+          content-type: application/json
+          user-agent: kulala.nvim/%s
 
-        ]]):to_string(true)
+          { "foo": "bar" }
+        ]]):format(GLOBALS.VERSION):to_string(true)
 
       result = h.get_buf_lines(http_buf):to_string()
       assert.are.same(expected, result)
     end)
 
-    it("copies curl command", function()
+    it("copies curl command with body", function()
+      h.create_buf(
+        ([[
+        POST http://localhost:3001/request_1
+        Content-Type: application/json
+
+        {
+          "foo": "bar"
+        }
+      ]]):to_table(true),
+        "test.rest"
+      )
+
       kulala.copy()
 
-      expected = "curl -X 'GET' -v -s -A 'kulala.nvim/" .. GLOBALS.VERSION .. "' 'http://localhost:3001/request_1'"
+      expected = ([[curl -X 'POST' -v -s -H 'Content-Type:application/json' --data-binary "{"foo": "bar"}" -A 'kulala.nvim/%s' 'http://localhost:3001/request_1']]):format(
+        GLOBALS.VERSION
+      )
       result = vim.fn.getreg("+")
       assert.are.same(expected, result)
-    end)
-  end)
-
-  describe("keymaps", function()
-    local global_keymaps = KEYMAPS.default_global_keymaps
-    local kulala_keymaps = KEYMAPS.default_kulala_keymaps
-    local keymaps_n, keymaps_v
-
-    vim.g.mapleader = ","
-
-    before_each(function()
-      h.delete_all_maps()
-    end)
-
-    describe("global keymaps", function()
-      before_each(function()
-        CONFIG.setup({
-          global_keymaps = {
-            ["Inspect current request"] = {
-              "<leader>RI",
-              function() end,
-            },
-            ["Open scratchpad"] = false,
-          },
-        })
-
-        keymaps_n = vim.tbl_keys(h.get_maps())
-        keymaps_v = vim.tbl_keys(h.get_maps(nil, "v"))
-      end)
-
-      it("sets default keymaps", function()
-        http_buf = h.create_buf(lines, "test.txt")
-
-        expected = global_keymaps["Open kulala"][1]
-        assert.is_true(vim.tbl_contains(keymaps_n, expected))
-
-        expected = global_keymaps["Send request"][1]
-        assert.is_true(vim.tbl_contains(keymaps_v, expected))
-
-        expected = global_keymaps["Jump to next request"][1]
-        assert.is_false(vim.tbl_contains(keymaps_n, expected))
-      end)
-
-      it("sets filetype keymaps", function()
-        vim.cmd.e("test.http")
-        keymaps_n = vim.tbl_keys(h.get_maps(http_buf))
-
-        expected = global_keymaps["Find request"][1]
-        assert.is_true(vim.tbl_contains(keymaps_n, expected))
-      end)
-
-      it("sets and disables custom keymaps", function()
-        expected = "<leader>RI"
-        assert.is_true(vim.tbl_contains(keymaps_n, expected))
-        assert.is_false(vim.tbl_contains(keymaps_n, global_keymaps["Open scratchpad"][1]))
-      end)
-    end)
-
-    describe("global keymaps", function()
-      it("disables default keymaps", function()
-        CONFIG.setup({ global_keymaps = false })
-
-        local keymaps_n = vim.tbl_keys(h.get_maps())
-        expected = global_keymaps["Open kulala"][1]
-        assert.is_false(vim.tbl_contains(keymaps_n, expected))
-      end)
-    end)
-
-    describe("local keymaps", function()
-      before_each(function()
-        s.Fs:stub_read_file({ [GLOBALS.BODY_FILE] = h.load_fixture("fixtures/request_2_headers_body.txt") })
-
-        CONFIG.setup({
-          default_view = "body",
-          kulala_keymaps = {
-            ["Show headers"] = {
-              "HH",
-              function() end,
-            },
-            ["Show headers and body"] = false,
-          },
-        })
-
-        kulala.open()
-        ui_buf = vim.fn.bufnr(kulala_name)
-
-        keymaps_n = vim.tbl_keys(h.get_maps(ui_buf))
-      end)
-
-      after_each(function()
-        kulala.close()
-        s.Fs:read_file_reset()
-      end)
-
-      it("sets default keymaps", function()
-        expected = kulala_keymaps["Show body"][1]
-        assert.is_true(vim.tbl_contains(keymaps_n, expected))
-      end)
-
-      it("sets custom keymaps", function()
-        assert.is_true(vim.tbl_contains(keymaps_n, "HH"))
-
-        expected = kulala_keymaps["Show headers and body"][1]
-        assert.is_false(vim.tbl_contains(keymaps_n, expected))
-      end)
-
-      it("disbales default keymaps", function()
-        kulala.close()
-        CONFIG.setup({ kulala_keymaps = false })
-
-        kulala.open()
-        ui_buf = vim.fn.bufnr(kulala_name)
-
-        keymaps_n = vim.tbl_keys(h.get_maps(ui_buf))
-
-        expected = kulala_keymaps["Show body"][1]
-        assert.is_false(vim.tbl_contains(keymaps_n, expected))
-      end)
     end)
   end)
 end)

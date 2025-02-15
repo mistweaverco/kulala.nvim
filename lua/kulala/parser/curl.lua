@@ -92,7 +92,7 @@ function M.parse(curl)
       if state == State.Method then
         res.method = arg
       elseif state == State.UserAgent then
-        res.headers["user-agent"] = arg
+        set_header(res.headers, "user-agent", arg)
       elseif state == State.Header then
         local header, value = Stringutils.cut(arg, ":")
         set_header(res.headers, Stringutils.remove_extra_space(header), Stringutils.remove_extra_space(value))

@@ -1,9 +1,39 @@
+local DB = require("kulala.db")
+
 local M = {}
 
 -- PERF: we do a lot of if else blocks with repeating loops
 -- we could "optimize" this by using a single loop and if else blocks
 -- that would make the code more readable and easier to maintain
 -- but it would also make it slower
+--
+M.get_current_line_number = function()
+  local win_id = vim.fn.bufwinid(DB.get_current_buffer())
+  return vim.api.nvim_win_get_cursor(win_id)[1]
+end
+
+---Strips invalid characters at the beginning of the line, e.g. comment characters
+M.strip_invalid_chars = function(tbl)
+  local valid_1 = { "# @", "###", "------" }
+  local valid_2 = [["%[%]<>{%%}@?%w%d]]
+
+  return vim
+    .iter(tbl)
+    :map(function(line)
+      local has_valid, s
+
+      vim.iter(valid_1):each(function(pattern)
+        s = line:find(pattern, 1, true)
+        line = s and line:sub(s) or line
+        has_valid = s or has_valid
+      end)
+
+      line = has_valid and line or line:gsub("^%s*([^" .. valid_2 .. "]*)(.*)$", "%2")
+
+      return line
+    end)
+    :totable()
+end
 
 ---Get the value of a meta tag from the request
 ---@param request table The request to check

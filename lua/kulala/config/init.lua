@@ -139,6 +139,8 @@ M.options = M.defaults
 M.setup = function(config)
   M.options = vim.tbl_deep_extend("force", M.defaults, config or {})
   keymaps.setup_global_keymaps()
+
+  return M.options
 end
 
 M.set = function(config)

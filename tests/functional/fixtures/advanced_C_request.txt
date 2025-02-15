@@ -1,6 +1,14 @@
 {
   current_request = {
-    body_computed = '------WebKitFormBoundary$TIMESTAMP\r\nContent-Disposition: form-data; name="someFile"; filename="logo.png"\r\nContent-Type: image/jpeg\r\n\r\nPNG\r\n\26\n\0\0\0\rIHDR\0\0\0\0\0\0\b\3\0\0\0Bâðæ\0\0\0PLTEÿÿÿS¡ø\29N\127G{ø\0Dyúûüø\0<uºÊÖãéîíñôø\23òõ÷®ÁÏÚâé¦»ÃÑÛÒÜäy³gª¢¸Èo®ø\0^¦ÿû÷ÊÖßþôë.nþíß³ÄûÎ¦ú·výäÎü×¶ûÇù0ûÀù¤Iù­^ù¡?ýßÄú­eú¼}ù©P÷\0ù²iBu¾{\0\0\n\r\n\r\n------WebKitFormBoundary$TIMESTAMP\r\nContent-Disposition: form-data; name="x"\r\n\r\n0\r\n------WebKitFormBoundary$TIMESTAMP\r\nContent-Disposition: form-data; name="y"\r\n\r\n1.4333333333333333\r\n------WebKitFormBoundary$TIMESTAMP\r\nContent-Disposition: form-data; name="w"\r\n\r\n514.5666666666667\r\n------WebKitFormBoundary$TIMESTAMP\r\nContent-Disposition: form-data; name="h"\r\n\r\n514.5666666666667\r\n------WebKitFormBoundary$TIMESTAMP--',
+    body_computed = '------WebKitFormBoundary$TIMESTAMP\r\nContent-Disposition: form-data; 
+name="someFile"; filename="logo.png"\r\nContent-Type: image/jpeg\r\n\r\n< /h
+ome/yaro/projects/kulala.nvim/tests/functional/requests/demo.png\r\n\r\n----
+--WebKitFormBoundary$TIMESTAMP\r\nContent-Disposition: form-data; name="x"\r
+\n\r\n0\r\n------WebKitFormBoundary$TIMESTAMP\r\nContent-Disposition: form-d
+ata; name="y"\r\n\r\n1.4333333333333333\r\n------WebKitFormBoundary$TIMESTAM
+P\r\nContent-Disposition: form-data; name="w"\r\n\r\n514.5666666666667\r\n--
+----WebKitFormBoundary$TIMESTAMP\r\nContent-Disposition: form-data; name="h"
+\r\n\r\n514.5666666666667\r\n------WebKitFormBoundary$TIMESTAMP--',
     headers = {
       Accept = "application/json",
       ["Content-Type"] = "multipart/form-data; boundary=----WebKitFormBoundary$TIMESTAMP"

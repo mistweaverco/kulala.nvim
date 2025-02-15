@@ -5,7 +5,7 @@ local h = require("test_helper.ui")
 
 local Jobstart = { id = "Jobstart", jobs = {} }
 local System = { id = "System", code = 0, signal = 0, jobs = {} }
-local Curl = { url_mappings = {}, paths = {}, requests = {}, requests_no = 0 }
+local Curl = { url_mappings = {}, paths = {}, requests = {}, requests_no = 0, last_request_body_path = "" }
 local Input = { variables = {} }
 local Notify = { messages = {} }
 local Fs = { paths_mappings = {} }
@@ -136,6 +136,7 @@ local function parse_curl_cmd(cmd)
     ["-o"] = "body_path",
     ["-w"] = "curl_format_path",
     ["--cookie-jar"] = "cookies_path",
+    ["--data-binary"] = "request_body",
   }
 
   local flags = {}
@@ -176,6 +177,7 @@ function Curl.request(job)
 
   vim.list_extend(Curl.paths, { curl_flags.headers_path, curl_flags.body_path })
 
+  Curl.last_request_body_path = (curl_flags["request_body"] or ""):sub(2)
   Curl.requests_no = Curl.requests_no + 1
   vim.list_extend(Curl.requests, { url })
 end

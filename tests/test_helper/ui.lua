@@ -19,10 +19,14 @@ string.clean = function(str) --luacheck: ignore
   return tostring(str)
 end
 
+---@param self string
 string.to_string = function(self, clean)
   return h.to_string(self, clean)
 end
 
+---@param self string
+---@param clean boolean -- remove tabs and trim spaces
+---@return string[]
 string.to_table = function(self, clean)
   return h.to_table(tostring(self), clean)
 end
@@ -83,7 +87,11 @@ h.delete_all_maps = function()
   end)
 end
 
-UITestHelper.expand_path = function(path)
+h.has_string = function(str, pattern)
+  return str:find(pattern, 1, true) and true
+end
+
+h.expand_path = function(path)
   if vim.fn.filereadable(path) == 0 then
     local spec_path
 
@@ -103,8 +111,8 @@ end
 
 ---@param fixture_path string
 ---@return table|string
-UITestHelper.load_fixture = function(fixture_path)
-  local contents = vim.fn.readfile(h.expand_path(fixture_path))
+UITestHelper.load_fixture = function(fixture_path, binary)
+  local contents = vim.fn.readfile(h.expand_path(fixture_path), binary and "B")
   return h.to_string(contents, false)
 end
 

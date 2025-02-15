@@ -1,6 +1,6 @@
 {
   current_request = {
-    body_computed = '{\r\n  "named_request_response_var": "TEST_JS_SET_REQUEST_VAR",\r\n  "js_computed_val": "TEST_JS_RESPONSE_VAL: TEST_DOCUMENT_VAR",\r\n  "env_json_key": "PROMPT_VAR",\r\n  "dev_env.json": "ditto"\r\n}',
+    body_computed = '{\n  "named_request_response_var": "TEST_JS_SET_REQUEST_VAR",\n  "js_computed_val": "TEST_JS_RESPONSE_VAL: TEST_DOCUMENT_VAR",\n  "env_json_key": "PROMPT_VAR",\n  "dev_env.json": "ditto"\n}',
     http_version = "1.1",
     metadata = {},
     method = "POST",

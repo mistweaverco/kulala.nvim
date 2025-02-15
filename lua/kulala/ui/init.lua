@@ -3,7 +3,7 @@ local GLOBALS = require("kulala.globals")
 local CONFIG = require("kulala.config")
 local KEYMAPS = require("kulala.config.keymaps")
 local INLAY = require("kulala.inlay")
-local PARSER = require("kulala.parser")
+local PARSER = require("kulala.parser.request")
 local CURL_PARSER = require("kulala.parser.curl")
 local CMD = require("kulala.cmd")
 local FS = require("kulala.utils.fs")
@@ -310,36 +310,29 @@ end
 
 M.copy = function()
   local request = PARSER.parse()
-
   if not request then
-    Logger.error("No request found")
-    return
+    return Logger.error("No request found")
   end
 
-  local cmd_table = {}
-  local skip_arg = false
+  local skip_flags = { "-o", "-D", "--cookie-jar", "-w", "--data-binary" }
+  local previous_flag
 
-  for idx, flag in ipairs(request.cmd) do
-    if string.sub(flag, 1, 1) == "-" or idx == 1 then
-      -- remove headers and body output to file
-      -- remove --cookie-jar
-      if vim.tbl_contains({ "-o", "-D", "--cookie-jar", "-w" }, flag) then
-        skip_arg = true
-      else
-        table.insert(cmd_table, flag)
-      end
-    else
-      if skip_arg == false then
-        table.insert(cmd_table, vim.fn.shellescape(flag))
-      else
-        skip_arg = false
-      end
+  local cmd = vim.iter(request.cmd):fold("", function(cmd, flag)
+    if not vim.tbl_contains(skip_flags, flag) and not vim.tbl_contains(skip_flags, previous_flag) then
+      flag = (flag:find("^%-") or not previous_flag) and flag or vim.fn.shellescape(flag)
+      cmd = cmd .. flag .. " "
     end
-  end
 
-  local cmd = table.concat(cmd_table, " ")
-  vim.fn.setreg("+", cmd)
+    if previous_flag == "--data-binary" then
+      local body = FS.read_file(flag:sub(2), true) or "[could not read file]"
+      cmd = ('%s--data-binary "%s" '):format(cmd, body)
+    end
 
+    previous_flag = flag
+    return cmd
+  end)
+
+  vim.fn.setreg("+", vim.trim(cmd))
   Logger.info("Copied to clipboard")
 end
 
@@ -355,9 +348,12 @@ local function print_http_spec(spec, curl)
     table.insert(lines, spec.method .. " " .. spec.url)
   end
 
-  for header, value in pairs(spec.headers) do
-    table.insert(lines, header .. ": " .. value)
-  end
+  local headers = vim.tbl_keys(spec.headers)
+  table.sort(headers)
+
+  vim.iter(headers):each(function(header)
+    table.insert(lines, header .. ": " .. spec.headers[header])
+  end)
 
   if spec.body ~= "" then
     table.insert(lines, "")

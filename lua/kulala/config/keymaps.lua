@@ -201,9 +201,9 @@ local function set_keymap(map, buf)
 end
 
 local function create_ft_autocommand(ft, maps)
-  vim.api.nvim_create_autocmd({ "BufEnter", "BufRead", "BufNewFile", "BufFilePost" }, {
+  vim.api.nvim_create_autocmd({ "BufEnter", "BufRead", "BufNewFile", "BufFilePost", "FileType" }, {
     group = vim.api.nvim_create_augroup("Kulala filetype setup for *." .. ft, { clear = true }),
-    pattern = { "*." .. ft },
+    pattern = { "*." .. ft, ft },
     desc = "Kulala: setup keymaps for http filtypes",
     callback = function(ev)
       vim.iter(maps):each(function(map)

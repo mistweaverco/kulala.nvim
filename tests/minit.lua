@@ -3,7 +3,7 @@
 vim.env.LAZY_STDPATH = ".tests"
 load(vim.fn.system("curl -s https://raw.githubusercontent.com/folke/lazy.nvim/main/bootstrap.lua"))()
 
-package.path = "./tests/?.lua;" .. package.path
+package.path = "./tests/?.lua;./tests/?/?.lua;" .. package.path
 vim.opt.rtp:append(vim.uv.cwd())
 
 _, _G.LOG = pcall(require, "log")

@@ -4,8 +4,8 @@ local REQUEST_VARIABLES = require("kulala.parser.request_variables")
 
 -- Check if a string is valid UTF-8 using pcall to catch errors
 local function is_valid_utf8(str)
-  local success, _ = pcall(vim.fn.strdisplaywidth, str)
-  return success
+  local success, result = pcall(vim.fn.strdisplaywidth, str)
+  return success and result ~= 0
 end
 
 -- Function to check for binary data

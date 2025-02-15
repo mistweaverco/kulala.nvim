@@ -1,9 +1,9 @@
 {
   current_request = {
-    body = '{\r\n  "id": "1",\r\n  "project": "project_name"\r\n}',
-    body_computed = '{\r\n  "id": "1",\r\n  "project": "project_name"\r\n}',
-    body_display = '{\r\n  "id": "1"\r\n}',
-    body_raw = '{\r\n  "id": "{{AID}}"\r\n}',
+    body = '{\n  "id": "1",\n  "project": "project_name"\n}',
+    body_computed = '{\n  "id": "1",\n  "project": "project_name"\n}',
+    body_display = '{\n  "id": "1"\n}',
+    body_raw = '{\n  "id": "{{AID}}"\n}',
     ft = "text",
     headers = {
       Accept = "application/json",
