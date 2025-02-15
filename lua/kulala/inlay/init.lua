@@ -27,7 +27,7 @@ M.clear_if_marked = function(bufnr, linenr)
   vim.fn.sign_unplace("kulala", { buffer = DB.get_current_buffer(), id = linenr })
 end
 
-local line_ofset = {
+local line_offset = {
   ["signcolumn"] = -1,
   ["on_request"] = -1,
   ["above_request"] = -2,
@@ -54,7 +54,7 @@ M.show = function(event, linenr, text)
   end
 
   local icon = config.icons.inlay[event] or ""
-  linenr = linenr + math.min((line_ofset[show_icons] or 0), 0)
+  linenr = linenr + math.min((line_offset[show_icons] or 0), 0)
   text = text or ""
 
   M.clear_if_marked(bufnr, linenr)
