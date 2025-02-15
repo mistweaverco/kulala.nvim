@@ -41,7 +41,7 @@ M.defaults = {
     },
   },
   -- icons postion: singcolumn|on_request|above_request|below_request or nil to disable
-  show_icons = "signcolumn",
+  show_icons = "on_request",
   -- default icons
   icons = {
     inlay = {
