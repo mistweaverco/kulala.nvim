@@ -76,7 +76,7 @@ local default_request = {
 ---@param document_variables table|nil
 ---@param request Request
 ---@return table
-local function append_file_to_variables(document_variables, request)
+local function append_file_to_variables(request, document_variables)
   document_variables = document_variables or {}
 
   for _, metadata in ipairs(request.metadata) do
@@ -87,12 +87,6 @@ local function append_file_to_variables(document_variables, request)
   end
 
   return document_variables
-end
-
-local function cleanup_request_files()
-  FS.delete_file(GLOBALS.HEADERS_FILE)
-  FS.delete_file(GLOBALS.BODY_FILE)
-  FS.delete_file(GLOBALS.COOKIES_JAR_FILE)
 end
 
 local function url_encode(str)
@@ -159,17 +153,19 @@ end
 
 ---Replace the variables in the URL, headers and body
 ---@param request Request -- The request object
----@param document_variables table -- The variables defined in the document
----@param env table -- The environment variables
----@param silent boolean -- Whether to suppress not found variable warnings
-local process_variables = function(request, document_variables, env, silent)
-  local params = { document_variables or {}, env or {}, silent }
+---@param document_variables DocumentVariables -- The variables defined in the document
+---@param silent boolean|nil -- Whether to suppress not found variable warnings
+local process_variables = function(request, document_variables, silent)
+  local env = ENV_PARSER.get_env() or {}
+  local params = { document_variables or {}, env, silent }
 
   request.url = parse_url(request.url_raw, unpack(params))
   request.headers = parse_headers(request.headers, unpack(params))
   request.body = StringVariablesParser.parse(request.body_raw, unpack(params))
   request.body_display = StringVariablesParser.parse(request.body_display, unpack(params))
   request.body_computed = request.body
+
+  request.environment = vim.tbl_extend("force", env, document_variables)
 end
 
 ---Save body to a temporary file, including files specified with "< /path" syntax into request body
@@ -210,16 +206,12 @@ local function save_body_with_files(request_body)
 end
 
 local function set_variables(request, document_variables)
-  local env = ENV_PARSER.get_env()
+  document_variables = append_file_to_variables(request, document_variables)
 
-  document_variables = append_file_to_variables(document_variables, request)
-  request.environment = vim.tbl_extend("force", env, document_variables)
-
-  -- INFO: if has_pre_request_script:
-  -- silently replace the variables in the URL, headers and body, otherwise warn the user
-  -- for non existing variables
-  local has_pre_request_scripts = #request.scripts.pre_request.inline > 0 or #request.scripts.pre_request.files > 0
-  process_variables(request, document_variables, env, has_pre_request_scripts)
+  -- INFO: if has_pre_request_script: silently replace the variables,
+  -- otherwise warn the user for non existing variables
+  local has_pre_request_scripts = (#request.scripts.pre_request.inline + #request.scripts.pre_request.files) > 0
+  process_variables(request, document_variables, has_pre_request_scripts)
 end
 
 local function set_headers(request)
@@ -228,6 +220,7 @@ local function set_headers(request)
   -- Merge headers from the $shared environment if it does not exist in the request
   -- this ensures that you can always override the headers in the request
   local default_headers = (DB.find_unique("http_client_env_shared") or {})["$default_headers"]
+
   vim.iter(default_headers or {}):each(function(name, value)
     name = PARSER_UTILS.get_header(request.headers, name) or name
     request.headers[name] = request.headers[name] or value
@@ -251,7 +244,7 @@ local function process_graphql(request)
 end
 
 local function process_pre_request_scripts(request, document_variables)
-  if not (#request.scripts.pre_request.inline > 0 or #request.scripts.pre_request.files > 0) then
+  if #request.scripts.pre_request.inline + #request.scripts.pre_request.files == 0 then
     return
   end
 
@@ -267,7 +260,8 @@ local function process_pre_request_scripts(request, document_variables)
   -- INFO: now replace the variables in the URL, headers and body again,
   -- because user scripts could have changed them,
   -- but this time also warn the user if a variable is not found
-  set_variables(request, document_variables)
+
+  process_variables(request, document_variables)
 end
 
 local function process_body(request)
@@ -512,8 +506,6 @@ M.parse = function(requests, document_variables, line_nr)
   -- so .replay() can be triggered from any buffer or window
   DB.global_update().replay = vim.deepcopy(request)
   DB.global_update().replay.show_icon_line_number = nil
-
-  cleanup_request_files()
 
   return request
 end

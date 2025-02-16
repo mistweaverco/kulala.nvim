@@ -31,11 +31,12 @@ end
 ---@param win_id integer|nil Window id
 ---@param view string Body or headers
 M.toggle_winbar_tab = function(_, win_id, view)
-  if not (win_id and CONFIG.get().winbar) then
+  local config = CONFIG.get()
+  if not (win_id and config.winbar) then
     return
   end
 
-  local winbar = CONFIG.get().default_winbar_panes
+  local winbar = config.default_winbar_panes
   local winbar_title = {}
 
   for _, key in ipairs(winbar) do
@@ -54,8 +55,8 @@ M.toggle_winbar_tab = function(_, win_id, view)
     end
   end
 
-  table.insert(winbar_title, "<- [")
-  table.insert(winbar_title, "] ->")
+  table.insert(winbar_title, "<- " .. config.kulala_keymaps["Previous response"][1])
+  table.insert(winbar_title, config.kulala_keymaps["Next response"][1] .. " ->")
 
   local value = table.concat(winbar_title, " ")
   vim.api.nvim_set_option_value("winbar", value, { win = win_id })

@@ -255,10 +255,9 @@ end
 ---@return string[] deleted_files
 M.delete_files_in_directory = function(dir)
   local deleted_files = {}
-  -- Open the directory for scanning
-  local scandir = vim.loop.fs_scandir(dir)
+  local scandir = vim.uv.fs_scandir(dir)
+
   if scandir then
-    -- Iterate over each file in the directory
     while true do
       local name, type = vim.loop.fs_scandir_next(scandir)
 
@@ -269,7 +268,7 @@ M.delete_files_in_directory = function(dir)
       -- Only delete files, not directories except .gitingore
       if type == "file" and not name:match(".gitignore$") then
         local filepath = M.join_paths(dir, name)
-        local success, err = vim.loop.fs_unlink(filepath)
+        local success, err = vim.uv.fs_unlink(filepath)
 
         if not success then
           print("Error deleting file:", filepath, err)
@@ -285,19 +284,12 @@ M.delete_files_in_directory = function(dir)
   return deleted_files
 end
 
-M.delete_request_scripts_files = function()
-  local dir = M.get_request_scripts_dir()
-  M.delete_files_in_directory(dir)
-end
-
 M.get_request_scripts_variables = function()
   local dir = M.get_request_scripts_dir()
 
   if M.file_exists(dir .. "/request_variables.json") then
     return vim.fn.json_decode(M.read_file(M.join_paths(dir, "request_variables.json")))
   end
-
-  return nil
 end
 
 M.get_global_scripts_variables_file_path = function()
@@ -309,8 +301,6 @@ M.get_global_scripts_variables = function()
   if M.file_exists(fp) then
     return vim.fn.json_decode(M.read_file(fp))
   end
-
-  return nil
 end
 
 -- Check if a command is available
@@ -359,6 +349,7 @@ M.read_file = function(filename, is_binary)
   end
 
   local content = f:read("*a")
+  content = is_binary and content or content:gsub("\r\n", "\n")
   f:close()
 
   return content
@@ -429,10 +420,18 @@ M.include_file = function(file, path)
   return status and file_to_include:close()
 end
 
----Clears all cached files
-M.clear_cached_files = function(silent)
+--- Delete *.js request script files and request_variables.json
+M.delete_request_scripts_files = function() -- cache/nvim/kulala/scripts/requests
+  local dir = M.get_request_scripts_dir()
+  M.delete_files_in_directory(dir)
+end
+
+---Deletes all cached files, except global_variables.json, request scripts and variables
+M.delete_cached_files = function(silent) -- cache/nvim/kulala
   local tmp_dir = M.get_plugin_tmp_dir()
   local deleted_files = M.delete_files_in_directory(tmp_dir)
+
+  --TODO: delete global_variables.json ?
 
   local list = vim.iter(deleted_files):fold("", function(list, file)
     return list .. "- " .. file .. "\n"

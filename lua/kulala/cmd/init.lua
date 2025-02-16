@@ -7,8 +7,8 @@ local DOCUMENT_PARSER = require("kulala.parser.document")
 local REQUEST_PARSER = require("kulala.parser.request")
 local EXT_PROCESSING = require("kulala.external_processing")
 local INT_PROCESSING = require("kulala.internal_processing")
-local Api = require("kulala.api")
 local INLAY = require("kulala.inlay")
+local Api = require("kulala.api")
 local UiHighlight = require("kulala.ui.highlight")
 local Logger = require("kulala.logger")
 
@@ -93,7 +93,6 @@ end
 
 local function process_external(result)
   REQUEST_PARSER.scripts.javascript.run("post_request", result.scripts.post_request)
-  FS.delete_request_scripts_files()
 end
 
 local function process_api()
@@ -116,12 +115,13 @@ local function save_response(request_status, parsed_request)
     url = parsed_request.url or "",
     method = parsed_request.method or "",
     status = request_status.code or 0,
-    body = (FS.read_file(GLOBALS.BODY_FILE) or ""):gsub("\r\n", "\n"),
-    headers = (FS.read_file(GLOBALS.HEADERS_FILE) or ""):gsub("\r\n", "\n"),
-    errors = (request_status.errors or ""):gsub("\r\n", "\n"),
+    duration = request_status.duration or 0,
+    body = FS.read_file(GLOBALS.BODY_FILE) or "",
+    headers = FS.read_file(GLOBALS.HEADERS_FILE) or "",
+    errors = request_status.errors or "",
     stats = request_status.stdout or "",
-    script_pre_output = (FS.read_file(GLOBALS.SCRIPT_PRE_OUTPUT_FILE) or ""):gsub("\r\n", "\n"),
-    script_post_output = (FS.read_file(GLOBALS.SCRIPT_POST_OUTPUT_FILE) or ""):gsub("\r\n", "\n"),
+    script_pre_output = FS.read_file(GLOBALS.SCRIPT_PRE_OUTPUT_FILE) or "",
+    script_post_output = FS.read_file(GLOBALS.SCRIPT_POST_OUTPUT_FILE) or "",
     buf = buf,
     buf_name = vim.fn.bufname(buf),
     line = line,
@@ -160,7 +160,7 @@ local function handle_response(request_status, parsed_request, callback)
   local status, processing_errors = xpcall(function()
     _ = success and process_response(request_status, parsed_request)
     -- TODO: add handling of potential errors during process_response and call callback with success=false
-    callback(success, request_status.start_time, parsed_request.show_icon_line_number)
+    callback(success, request_status.duration, parsed_request.show_icon_line_number)
   end, debug.traceback)
 
   if success and status then
@@ -185,6 +185,9 @@ local function process_request(requests, request, variables, callback)
   --  to allow running fastAPI within vim.system callbacks
   handle_response = vim.schedule_wrap(handle_response)
 
+  FS.delete_request_scripts_files()
+  FS.delete_cached_files(true)
+
   if not process_prompt_vars(request) then
     Logger.warn("Prompt failed. Skipping this and all following requests.")
     return
@@ -198,7 +201,6 @@ local function process_request(requests, request, variables, callback)
 
   --TODO: call callback with success=false if promt fails or request could not be parsed
 
-  ---@diagnostic disable-next-line: undefined-field
   local start_time = vim.uv.hrtime()
   local errors
 
@@ -207,19 +209,19 @@ local function process_request(requests, request, variables, callback)
     timeout = CONFIG.get().request_timeout,
     stderr = function(_, data)
       if data then
-        errors = (errors or "") .. data
+        errors = (errors or "") .. data:gsub("\r\n", "\n")
 
         if received_unbffured(parsed_request, errors) then
           vim.schedule(function()
             save_response({ code = -1 }, parsed_request)
-            callback(nil, start_time, parsed_request.show_icon_line_number)
+            callback(nil, 0, parsed_request.show_icon_line_number)
           end)
         end
       end
     end,
   }, function(job_status)
-    job_status.start_time = start_time
     job_status.errors = errors
+    job_status.duration = vim.uv.hrtime() - start_time
 
     handle_response(job_status, parsed_request, callback)
   end)
@@ -236,7 +238,6 @@ end
 M.run_parser = function(requests, line_nr, callback)
   local variables, reqs_to_process
 
-  FS.clear_cached_files(true)
   reset_task_queue()
 
   if not requests then

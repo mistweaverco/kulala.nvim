@@ -9,6 +9,7 @@ M.data = nil
 ---@field url string
 ---@field method string
 ---@field status number
+---@field duration number
 ---@field body string
 ---@field headers string
 ---@field errors string

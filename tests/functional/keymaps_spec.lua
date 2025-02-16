@@ -88,6 +88,7 @@ describe("keymaps", function()
         ---@diagnostic disable-next-line: missing-fields
         {
           status = 0,
+          duration = 100,
           url = "http://example.com",
           method = "GET",
           line = 1,

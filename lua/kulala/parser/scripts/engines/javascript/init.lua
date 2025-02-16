@@ -122,6 +122,9 @@ end
 ---@param type "pre_request_client_only" | "pre_request" | "post_request_client_only" | "post_request" -- type of script
 ---@param data ScriptData
 M.run = function(type, data)
+  local pre_output = GLOBALS.SCRIPT_PRE_OUTPUT_FILE
+  local post_output = GLOBALS.SCRIPT_POST_OUTPUT_FILE
+
   if scripts_is_empty(data) then
     return
   end
@@ -156,18 +159,15 @@ M.run = function(type, data)
       })
       :wait()
 
-    FS.delete_file(GLOBALS.SCRIPT_PRE_OUTPUT_FILE)
-    FS.delete_file(GLOBALS.SCRIPT_POST_OUTPUT_FILE)
-
     if output.stderr ~= nil and not string.match(output.stderr, "^%s*$") then
       if not CONFIG.get().disable_script_print_output then
         Logger.error(("Errors while running JS script: %s"):format(output.stderr))
       end
 
       if type == "pre_request" then
-        FS.write_file(GLOBALS.SCRIPT_PRE_OUTPUT_FILE, output.stderr)
+        FS.write_file(pre_output, output.stderr)
       elseif type == "post_request" then
-        FS.write_file(GLOBALS.SCRIPT_POST_OUTPUT_FILE, output.stderr)
+        FS.write_file(post_output, output.stderr)
       end
     end
 
@@ -176,13 +176,13 @@ M.run = function(type, data)
         Logger.info("JS: " .. output.stdout)
       end
 
-      if not FS.write_file(GLOBALS.SCRIPT_PRE_OUTPUT_FILE, output.stdout) then
-        Logger.error("write " .. GLOBALS.SCRIPT_PRE_OUTPUT_FILE .. " fail")
-      end
-    elseif type == "post_request" then
       if type == "pre_request" then
-        if not FS.write_file(GLOBALS.SCRIPT_POST_OUTPUT_FILE, output.stdout) then
-          Logger.error("write " .. GLOBALS.SCRIPT_POST_OUTPUT_FILE .. " fail")
+        if not FS.write_file(pre_output, output.stdout) then
+          Logger.error("write " .. pre_output .. " fail")
+        end
+      elseif type == "post_request" then
+        if not FS.write_file(post_output, output.stdout) then
+          Logger.error("write " .. post_output .. " fail")
         end
       end
     end

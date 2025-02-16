@@ -154,7 +154,7 @@ M.setup = function(config)
   M.options = vim.tbl_deep_extend("force", M.defaults, config or {})
 
   set_signcolumn_icons()
-  keymaps.setup_global_keymaps()
+  M.options.global_keymaps, M.options.ft_keymaps = keymaps.setup_global_keymaps()
 
   return M.options
 end

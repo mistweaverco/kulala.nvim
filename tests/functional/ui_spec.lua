@@ -281,6 +281,107 @@ describe("UI", function()
     end)
   end)
 
+  describe("history of responses", function()
+    before_each(function()
+      input.stub({ ["PROMPT_VAR prompt"] = "TEST_PROMPT_VAR" })
+      curl.stub({
+        ["https://httpbin.org/advanced_e1"] = {
+          headers = h.load_fixture("fixtures/advanced_E_headers.txt"),
+          body = h.load_fixture("fixtures/advanced_E1_body.txt"),
+          errors = h.load_fixture("fixtures/request_1_errors.txt"),
+        },
+        ["https://httpbin.org/advanced_e2"] = {
+          headers = h.load_fixture("fixtures/advanced_E_headers.txt"),
+          body = h.load_fixture("fixtures/advanced_E2_body.txt"),
+          stats = h.load_fixture("fixtures/stats.json"),
+        },
+        ["https://httpbin.org/advanced_e3"] = {
+          headers = h.load_fixture("fixtures/request_2_headers.txt"),
+          body = h.load_fixture("fixtures/advanced_E3_body.txt"),
+          errors = h.load_fixture("fixtures/request_2_errors.txt"),
+        },
+      })
+    end)
+
+    it("stores responses of consequtive requests", function()
+      DB.global_update().responses = {}
+      vim.cmd.edit(h.expand_path("requests/advanced_E.http"))
+
+      kulala.run_all()
+      wait_for_requests(3)
+
+      expected = h.load_fixture("fixtures/advanced_E3_body.txt")
+      result = h.get_buf_lines(ui_buf):to_string()
+
+      assert.has_string(result, "Request 3/3")
+      assert.has_string(result, "URL: POST https://httpbin.org/advanced_e3")
+      assert.has_string(result, expected)
+
+      h.send_keys("H")
+
+      expected = h.load_fixture("fixtures/request_2_headers.txt")
+      result = h.get_buf_lines(h.get_kulala_buf()):to_string()
+
+      assert.has_string(result, "Request 3/3")
+      assert.has_string(result, expected)
+
+      h.send_keys("V")
+
+      expected = h.load_fixture("fixtures/request_2_errors.txt")
+      result = h.get_buf_lines(h.get_kulala_buf()):to_string()
+
+      assert.has_string(result, "Request 3/3")
+      assert.has_string(result, expected)
+
+      h.send_keys("[")
+      h.send_keys("B")
+
+      expected = h.load_fixture("fixtures/advanced_E2_body.txt")
+      result = h.get_buf_lines(h.get_kulala_buf()):to_string()
+
+      assert.has_string(result, "Request 2/3")
+      assert.has_string(result, "URL: POST https://httpbin.org/advanced_e2")
+      assert.has_string(result, expected)
+      --
+      h.send_keys("S")
+
+      expected = h.load_fixture("fixtures/request_1_stats.txt")
+      result = h.get_buf_lines(h.get_kulala_buf()):to_string()
+
+      assert.has_string(result, "Request 2/3")
+      assert.has_string(result, expected)
+
+      h.send_keys("[")
+      h.send_keys("B")
+
+      expected = h.load_fixture("fixtures/advanced_E1_body.txt")
+      result = h.get_buf_lines(h.get_kulala_buf()):to_string()
+
+      assert.has_string(result, "Request 1/3")
+      assert.has_string(result, "URL: POST https://httpbin.org/advanced_e1")
+      assert.has_string(result, expected)
+
+      h.send_keys("O")
+
+      result = h.get_buf_lines(h.get_kulala_buf()):to_string()
+
+      assert.has_string(result, "Request 1/3")
+      assert.has_string(
+        result,
+        ([[
+        ===== Pre Script Output =====================================
+
+        JS: PRE TEST
+
+
+        ===== Post Script Output ====================================
+
+        JS: POST TEST
+      ]]):to_string(true)
+      )
+    end)
+  end)
+
   describe("UI features", function()
     it("opens results in split", function()
       kulala_config.display_mode = "split"

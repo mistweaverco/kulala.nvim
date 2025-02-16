@@ -27,13 +27,6 @@ M.clear_if_marked = function(bufnr, linenr)
   vim.fn.sign_unplace("kulala", { buffer = DB.get_current_buffer(), id = linenr })
 end
 
-local line_offset = {
-  ["signcolumn"] = -1,
-  ["on_request"] = -1,
-  ["above_request"] = -2,
-  ["below_request"] = 0,
-}
-
 local function set_signcolumn()
   local buf = DB.get_current_buffer()
   local win = vim.fn.bufwinid(buf)
@@ -43,6 +36,13 @@ local function set_signcolumn()
 
   vim.api.nvim_set_option_value("signcolumn", "yes:" .. math.max(2, scl), { win = win })
 end
+
+local line_offset = {
+  ["signcolumn"] = -1,
+  ["on_request"] = -1,
+  ["above_request"] = -2,
+  ["below_request"] = 0,
+}
 
 M.show = function(event, linenr, text)
   local config = CONFIG.get()
@@ -54,7 +54,7 @@ M.show = function(event, linenr, text)
   end
 
   local icon = config.icons.inlay[event] or ""
-  linenr = linenr + math.min((line_offset[show_icons] or 0), 0)
+  linenr = math.max(linenr + (line_offset[show_icons] or 0), 1)
   text = text or ""
 
   M.clear_if_marked(bufnr, linenr)

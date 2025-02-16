@@ -243,6 +243,8 @@ M.setup_kulala_keymaps = function(buf)
       set_keymap(map, buf)
     end
   end)
+
+  return config_kulala_keymaps
 end
 
 M.setup_global_keymaps = function()

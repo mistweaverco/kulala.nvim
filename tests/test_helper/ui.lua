@@ -1,3 +1,5 @@
+GLOBALS = require("kulala.globals")
+
 ---@diagnostic disable: duplicate-set-field
 local api = vim.api
 
@@ -148,6 +150,10 @@ UITestHelper.create_buf = function(lines, bufname, scratch)
   end
 
   return bufnr
+end
+
+UITestHelper.get_kulala_buf = function()
+  return vim.fn.bufnr(GLOBALS.UI_ID)
 end
 
 ---@param bufnr integer

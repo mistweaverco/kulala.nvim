@@ -1,7 +1,6 @@
 ---@diagnostic disable: undefined-field, redefined-local
-local CONFIG = require("kulala.config")
 local parser = require("kulala.parser.request")
-
+local fs = require("kulala.utils.fs")
 local h = require("test_helper")
 
 describe("requests", function()
@@ -16,6 +15,7 @@ describe("requests", function()
     after_each(function()
       h.delete_all_bufs()
       dynamic_vars.reset()
+      fs.delete_request_scripts_files()
     end)
 
     describe("parser", function()
@@ -151,10 +151,10 @@ describe("requests", function()
         h.create_buf(
           ([[
             < {%
-            request.variables.set('TOKEN_RAW', 'THIS_IS_A_TOKEN--');
+            request.variables.set('TOKEN_RAW', '--ATOKEN--');
             %}
             < ../scripts/advanced_D_pre.js
-            POST https://httpbin.org/post?key1=URLvalue HTTP/1.1
+            POST https://httpbin.org/post?key1=URLvalueXXX HTTP/1.1
             Content-Type: application/json
             Token: {{COMPUTED_TOKEN}}
           ]]):to_table(true),
@@ -164,7 +164,7 @@ describe("requests", function()
         result = parser.parse() or {}
         assert.has_properties(result, {
           headers = {
-            ["Token"] = "POSTTHIS_IS_A_TOKEN--URLvalue125000",
+            ["Token"] = "POST--ATOKEN--URLvalueXXX125000",
           },
         })
       end)

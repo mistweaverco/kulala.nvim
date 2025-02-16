@@ -277,7 +277,7 @@ M.get_document = function()
 
   content_lines = content_lines and PARSER_UTILS.strip_invalid_chars(content_lines or {})
 
-  content_lines = content_lines or vim.api.nvim_buf_get_lines(buf, 0, -1, false) -- finally: get the whole buffer if first two methods failed
+  content_lines = content_lines or vim.api.nvim_buf_get_lines(buf, 0, -1, false) -- finally: get the whole buffer if the three methods above failed
   line_offset = line_offset or 0
 
   if not content_lines then
@@ -362,7 +362,11 @@ M.get_document = function()
     request.end_line = line_offset + block_line_count
     line_offset = request.end_line + 1 -- +1 for the '###' separator line
 
-    table.insert(requests, request)
+    if #request.url > 0 then
+      table.insert(requests, request)
+    else
+      Logger.warn(("Request without URL found at line: %s. Skipping ..."):format(request.start_line))
+    end
   end
 
   return variables, requests

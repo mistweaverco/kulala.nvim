@@ -61,7 +61,7 @@ end
 -- This is necessary to prevent the buffer from being left behind
 -- when the window is closed
 local function set_maps_autocommands(buf)
-  KEYMAPS.setup_kulala_keymaps(buf)
+  CONFIG.get().kulala_keymaps = KEYMAPS.setup_kulala_keymaps(buf)
 
   vim.api.nvim_create_autocmd("WinClosed", {
     group = vim.api.nvim_create_augroup("kulala_window_closed", { clear = true }),
@@ -139,13 +139,19 @@ local function open_kulala_window(buf)
   return win
 end
 
+local function pretty_ms(ms)
+  return string.format("%.2fms", ms)
+end
+
 local function set_current_response_data(buf)
   local responses = DB.global_update().responses
   local response = get_current_response()
+  local idx = get_current_response_pos()
+  local duration = response.duration == "" and 0 or pretty_ms(response.duration / 1e6)
 
   local data = vim
     .iter({
-      { "Request " .. get_current_response_pos() .. "/" .. #responses .. "  Status: " .. response.status },
+      { "Request " .. idx .. "/" .. #responses .. "  Status: " .. response.status .. "  Duration: " .. duration },
       { "URL: " .. response.method .. " " .. response.url },
       { "Buffer: " .. response.buf_name .. "::" .. response.line },
       { "" },
@@ -221,10 +227,9 @@ end
 M.show_script_output = function()
   local pre_file_contents = get_current_response().script_pre_output
   local post_file_contents = get_current_response().script_post_output
-  local contents = ""
 
-  contents = M.generate_ascii_header("Pre Script") .. "\n" .. pre_file_contents
-  contents = contents .. M.generate_ascii_header("Post Script") .. "\n" .. post_file_contents
+  local contents = "===== Pre Script Output =====================================\n\n" .. pre_file_contents
+  contents = contents .. "\n\n===== Post Script Output ====================================\n\n" .. post_file_contents
 
   show(contents, "text", "script_output")
 end
@@ -240,7 +245,7 @@ end
 
 M.show_previous = function()
   local current_pos = get_current_response_pos()
-  local previous = current_pos == 1 and current_pos or current_pos - 1
+  local previous = current_pos <= 1 and current_pos or current_pos - 1
 
   set_current_response(previous)
   M.open_default_view()
@@ -273,10 +278,6 @@ M.open_default_view = function()
   _ = open_view and open_view()
 end
 
-local function pretty_ms(ms)
-  return string.format("%.2fms", ms)
-end
-
 M.open = function()
   M:open_all(vim.api.nvim_get_mode().mode == "V" and 0 or get_current_line())
 end
@@ -287,11 +288,9 @@ M.open_all = function(_, line_nr)
   DB.set_current_buffer()
   INLAY.clear()
 
-  CMD.run_parser(nil, line_nr, function(success, start_time, icon_linenr)
+  CMD.run_parser(nil, line_nr, function(success, duration, icon_linenr)
     if success then
-      ---@diagnostic disable-next-line: undefined-field
-      local elapsed = vim.loop.hrtime() - start_time
-      local elapsed_ms = pretty_ms(elapsed / 1e6)
+      local elapsed_ms = pretty_ms(duration / 1e6)
 
       INLAY.show("done", icon_linenr, elapsed_ms)
     elseif success == nil then
@@ -400,40 +399,6 @@ M.from_curl = function()
   end
   -- put the curl command in the buffer as comment
   print_http_spec(spec, curl)
-end
-
-M.generate_ascii_header = function(text, opts)
-  local default_opts = {
-    max_line_length = 80,
-  }
-  opts = vim.tbl_extend("force", default_opts, opts or {})
-  -- Function to center text within a given width, with additional spaces
-  local function center_text(t, width)
-    local padding = math.floor((width - #t) / 2)
-    return string.rep(" ", padding) .. t .. string.rep(" ", width - #t - padding)
-  end
-
-  -- Split the text into lines if it exceeds the max_line_length
-  local lines = {}
-  while #text > opts.max_line_length - 4 do
-    local line = text:sub(1, opts.max_line_length - 4)
-    table.insert(lines, line)
-    text = text:sub(opts.max_line_length - 3)
-  end
-  table.insert(lines, text)
-
-  -- Create the header
-  local header = {}
-  local line_length = opts.max_line_length
-  table.insert(header, " " .. string.rep("_", line_length - 2) .. " ")
-  for _, line in ipairs(lines) do
-    table.insert(header, string.format("/%s\\", string.rep(" ", line_length - 2)))
-    table.insert(header, string.format("|%s|", center_text(line, line_length - 2)))
-  end
-  table.insert(header, string.format("\\%s/", string.rep("_", line_length - 2)))
-
-  -- Return the header as a string
-  return table.concat(header, "\n") .. "\n"
 end
 
 M.inspect = function()

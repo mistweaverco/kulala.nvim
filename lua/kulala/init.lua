@@ -111,7 +111,7 @@ end
 ---Clears all cached files
 ---Useful when you want to clear all cached files
 M.clear_cached_files = function()
-  Fs.clear_cached_files()
+  Fs.delete_cached_files()
 end
 
 return M
