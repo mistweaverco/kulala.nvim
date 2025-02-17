@@ -32,9 +32,7 @@ end
 ---@param view string Body or headers
 M.toggle_winbar_tab = function(_, win_id, view)
   local config = CONFIG.get()
-  if not (win_id and config.winbar) then
-    return
-  end
+  if not (win_id and config.winbar) then return end
 
   local winbar = config.default_winbar_panes
   local winbar_title = {}

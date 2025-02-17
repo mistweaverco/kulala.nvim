@@ -22,9 +22,7 @@ end
 
 function M.update_status()
   local current_filetype = vim.bo.filetype
-  if current_filetype == "http" then
-    return vim.g.kulala_selected_env or CONFIG.get().default_env
-  end
+  if current_filetype == "http" then return vim.g.kulala_selected_env or CONFIG.get().default_env end
   return ""
 end
 

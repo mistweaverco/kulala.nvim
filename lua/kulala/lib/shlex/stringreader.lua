@@ -15,9 +15,7 @@ end
 
 function M.read(sr, num)
   if num == "*a" then
-    if sr.pos == #sr.buffer then
-      return nil
-    end
+    if sr.pos == #sr.buffer then return nil end
 
     local out = sr.buffer:sub(sr.pos + 1)
 
@@ -28,9 +26,7 @@ function M.read(sr, num)
   end
 
   local out = sr.buffer:sub(sr.pos + 1, sr.pos + num)
-  if #out == 0 then
-    return nil
-  end
+  if #out == 0 then return nil end
 
   sr.pos = math.min(sr.pos + num, #sr.buffer)
   return out
@@ -60,12 +56,8 @@ function M.readuntil(sr, phrase, exclude)
     return rest
   end
   local idx = rest:find(phrase, 1, true)
-  if not idx then
-    return nil
-  end
-  if exclude then
-    idx = idx - 1
-  end
+  if not idx then return nil end
+  if exclude then idx = idx - 1 end
   local ret = sr.buffer:sub(sr.pos + 1, sr.pos + idx)
   sr.pos = sr.pos + idx
   return ret

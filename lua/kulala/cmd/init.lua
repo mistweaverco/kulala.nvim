@@ -1,16 +1,16 @@
 ---@diagnostic disable: inject-field
-local GLOBALS = require("kulala.globals")
+local Api = require("kulala.api")
 local CONFIG = require("kulala.config")
 local DB = require("kulala.db")
-local FS = require("kulala.utils.fs")
 local DOCUMENT_PARSER = require("kulala.parser.document")
-local REQUEST_PARSER = require("kulala.parser.request")
 local EXT_PROCESSING = require("kulala.external_processing")
-local INT_PROCESSING = require("kulala.internal_processing")
+local FS = require("kulala.utils.fs")
+local GLOBALS = require("kulala.globals")
 local INLAY = require("kulala.inlay")
-local Api = require("kulala.api")
-local UiHighlight = require("kulala.ui.highlight")
+local INT_PROCESSING = require("kulala.internal_processing")
 local Logger = require("kulala.logger")
+local REQUEST_PARSER = require("kulala.parser.request")
+local UiHighlight = require("kulala.ui.highlight")
 
 local M = {}
 
@@ -23,9 +23,7 @@ local reset_task_queue = function()
 end
 
 local function run_next_task()
-  if #TASK_QUEUE == 0 then
-    return reset_task_queue()
-  end
+  if #TASK_QUEUE == 0 then return reset_task_queue() end
 
   RUNNING_TASK = true
   local task = table.remove(TASK_QUEUE, 1)
@@ -48,16 +46,12 @@ end
 local function offload_task(fn, callback)
   table.insert(TASK_QUEUE, { fn = fn, callback = callback })
   -- If no task is currently running, start processing
-  if not RUNNING_TASK then
-    run_next_task()
-  end
+  if not RUNNING_TASK then run_next_task() end
 end
 
 local function process_prompt_vars(res)
   for _, metadata in ipairs(res.metadata) do
-    if metadata.name == "prompt" and not INT_PROCESSING.prompt_var(metadata.value) then
-      return false
-    end
+    if metadata.name == "prompt" and not INT_PROCESSING.prompt_var(metadata.value) then return false end
   end
 
   return true
@@ -244,15 +238,11 @@ M.run_parser = function(requests, line_nr, callback)
     variables, requests = DOCUMENT_PARSER.get_document()
   end
 
-  if not requests then
-    return Logger.error("No requests found in the document")
-  end
+  if not requests then return Logger.error("No requests found in the document") end
 
   if line_nr and line_nr > 0 then
     local request = DOCUMENT_PARSER.get_request_at(requests, line_nr)
-    if not request then
-      return Logger.error("No request found at current line")
-    end
+    if not request then return Logger.error("No request found at current line") end
 
     reqs_to_process = { request }
   end

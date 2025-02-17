@@ -1,6 +1,6 @@
-local ShellUtils = require("kulala.cmd.shell_utils")
 local DB = require("kulala.db")
 local Logger = require("kulala.logger")
+local ShellUtils = require("kulala.cmd.shell_utils")
 
 local M = {}
 

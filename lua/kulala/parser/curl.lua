@@ -9,9 +9,7 @@ local M = {}
 ---@return Request|nil -- Table with a parsed data or nil if parsing fails
 ---@return string|nil -- Original curl command (sanitized one-liner) or nil if parsing fails
 function M.parse(curl)
-  if curl == nil or string.len(curl) == 0 then
-    return nil, nil
-  end
+  if curl == nil or string.len(curl) == 0 then return nil, nil end
 
   -- Combine multi-line curl commands into a single line.
   -- Good for everyone, but especially for
@@ -30,9 +28,7 @@ function M.parse(curl)
   local parts = Shlex.split(curl)
   -- if string doesn't start with curl or different from curl_path, return nil
   -- it could also be curl-7.68.0 or something like that
-  if string.find(parts[1], "^curl.*") == nil and parts[1] ~= Config.get().curl_path then
-    return nil, nil
-  end
+  if string.find(parts[1], "^curl.*") == nil and parts[1] ~= Config.get().curl_path then return nil, nil end
   local res = {
     method = "",
     headers = {},
@@ -101,14 +97,10 @@ function M.parse(curl)
       end
     end
 
-    if not skip then
-      state = State.START
-    end
+    if not skip then state = State.START end
   end
 
-  if res.method == "" then
-    res.method = "GET"
-  end
+  if res.method == "" then res.method = "GET" end
   return res, curl
 end
 

@@ -46,9 +46,7 @@ function M.shlex:create(str, posix, punctuation_chars)
 
   o.sr = sr(str or "")
 
-  if not posix then
-    o.eof = ""
-  end
+  if not posix then o.eof = "" end
 
   o.posix = posix == true
   if o.posix then
@@ -93,9 +91,7 @@ function M.shlex:read_token()
       nextchar = self.sr:read(1)
     end
 
-    if nextchar == "\n" then
-      self.lineno = self.lineno + 1
-    end
+    if nextchar == "\n" then self.lineno = self.lineno + 1 end
 
     if self.debug >= 3 then
       print("shlex: in state '" .. (self.state or "nil") .. "' I see character: '" .. (nextchar or "nil") .. "'")
@@ -112,9 +108,7 @@ function M.shlex:read_token()
         self.state = nil
         break
       elseif self.whitespace:find(nextchar, 1, true) then
-        if self.debug >= 2 then
-          print("shlex: I see whitespace in whitespace state")
-        end
+        if self.debug >= 2 then print("shlex: I see whitespace in whitespace state") end
         if some(self.token) or (self.posix and quoted) then
           break
         else
@@ -133,9 +127,7 @@ function M.shlex:read_token()
         self.token = nextchar
         self.state = "c"
       elseif not continue and self.quotes:find(nextchar, 1, true) then
-        if not self.posix then
-          self.token = nextchar
-        end
+        if not self.posix then self.token = nextchar end
         self.state = nextchar
       elseif not continue and self.whitespace_split then
         self.token = nextchar
@@ -151,9 +143,7 @@ function M.shlex:read_token()
     elseif not continue and self.quotes:find(self.state, 1, true) then
       quoted = true
       if none(nextchar) then
-        if self.debug >= 2 then
-          print("shlex: I see EOF in quotes state")
-        end
+        if self.debug >= 2 then print("shlex: I see EOF in quotes state") end
         error("no closing quotation")
       end
       if nextchar == self.state then
@@ -172,9 +162,7 @@ function M.shlex:read_token()
       end
     elseif not continue and self.escape:find(self.state, 1, true) then
       if none(nextchar) then
-        if self.debug >= 2 then
-          print("shlex: I see EOF in escape state")
-        end
+        if self.debug >= 2 then print("shlex: I see EOF in escape state") end
         error("no escaped character")
       end
       if self.quotes:find(escapedstate, 1, true) and nextchar ~= self.state and nextchar ~= escapedstate then
@@ -187,9 +175,7 @@ function M.shlex:read_token()
         self.state = nil
         break
       elseif self.whitespace:find(nextchar, 1, true) then
-        if self.debug >= 2 then
-          print("shlex: I see whitespace in word state")
-        end
+        if self.debug >= 2 then print("shlex: I see whitespace in word state") end
         self.state = " "
         if some(self.token) or (self.posix and quoted) then
           break
@@ -211,9 +197,7 @@ function M.shlex:read_token()
         if self.punctuation_chars:find(nextchar, 1, true) then
           self.token = self.token .. nextchar
         else
-          if not self.whitespace:find(nextchar, 1, true) then
-            table.insert(self._pushback_chars, nextchar)
-          end
+          if not self.whitespace:find(nextchar, 1, true) then table.insert(self._pushback_chars, nextchar) end
           self.state = " "
           break
         end
@@ -249,12 +233,8 @@ function M.shlex:read_token()
 
   local result = self.token
   self.token = ""
-  if self.posix and not quoted and result == "" then
-    result = nil
-  end
-  if result and result:find("^%s*$") then
-    result = self:read_token()
-  end
+  if self.posix and not quoted and result == "" then result = nil end
+  if result and result:find("^%s*$") then result = self:read_token() end
   if self.debug > 1 then
     if result then
       print("shlex: raw token=" .. result)
@@ -266,9 +246,7 @@ function M.shlex:read_token()
 end
 
 function M.shlex:next()
-  if some(self.pushback) then
-    return table.remove(self.pushback)
-  end
+  if some(self.pushback) then return table.remove(self.pushback) end
   local raw = self:read_token()
   return raw
 end
@@ -277,9 +255,7 @@ function M.shlex:list()
   local parts = {}
   while true do
     local next = self:next()
-    if next == self.eof or next == nil then
-      break
-    end
+    if next == self.eof or next == nil then break end
     table.insert(parts, next)
   end
   return parts
@@ -290,18 +266,12 @@ setmetatable(M.shlex, {
 })
 
 function M.split(str, comments, posix)
-  if not str then
-    str = ""
-  end
-  if type(posix) == "nil" then
-    posix = true
-  end
+  if not str then str = "" end
+  if type(posix) == "nil" then posix = true end
   local lex = M.shlex(str)
   lex.posix = posix
   lex.whitespace_split = true
-  if comments == false then
-    lex.commenters = ""
-  end
+  if comments == false then lex.commenters = "" end
   return lex:list()
 end
 
@@ -309,9 +279,7 @@ function M.join(parts)
   local ret = ""
   for idx, part in ipairs(parts) do
     ret = ret .. M.quote(part)
-    if idx ~= #parts then
-      ret = ret .. " "
-    end
+    if idx ~= #parts then ret = ret .. " " end
   end
   return ret
 end
@@ -319,9 +287,7 @@ end
 M._unsafe = "^@%+=:,./-"
 
 function M.quote(s)
-  if none(s) then
-    return [['']]
-  end
+  if none(s) then return [['']] end
   local found = false
   if s:find("%w") then
     found = true
@@ -334,9 +300,7 @@ function M.quote(s)
       end
     end
   end
-  if not found then
-    return s
-  end
+  if not found then return s end
   return "'" .. s:gsub("'", "'\"'\"'") .. "'"
 end
 

@@ -30,9 +30,7 @@ M.get_waterfall_timings = function(timings, opts)
 
   -- Determine if scaling is needed
   local scale_factor = 1
-  if total_bar_width > available_bar_width then
-    scale_factor = available_bar_width / total_bar_width
-  end
+  if total_bar_width > available_bar_width then scale_factor = available_bar_width / total_bar_width end
 
   -- Render each action as a line in the waterfall diagram
   local lines = {}

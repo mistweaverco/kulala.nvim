@@ -183,9 +183,7 @@ local function collect_global_keymaps()
   local config_global_keymaps = config.options.global_keymaps
   local global_keymaps, ft_keymaps = {}, {}
 
-  if not config_global_keymaps then
-    return
-  end
+  if not config_global_keymaps then return end
 
   config_global_keymaps = type(config_global_keymaps) == "table"
       and vim.tbl_extend("force", M.default_global_keymaps, config_global_keymaps)
@@ -229,9 +227,7 @@ M.setup_kulala_keymaps = function(buf)
   local config = require("kulala.config")
   local config_kulala_keymaps = config.options.kulala_keymaps
 
-  if not config_kulala_keymaps then
-    return
-  end
+  if not config_kulala_keymaps then return end
 
   config_kulala_keymaps = type(config_kulala_keymaps) == "table"
       and vim.tbl_extend("force", M.default_kulala_keymaps, config_kulala_keymaps)

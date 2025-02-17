@@ -1,7 +1,7 @@
 ---@diagnostic disable: undefined-field, redefined-local
-local GLOBALS = require("kulala.globals")
 local CONFIG = require("kulala.config")
 local DB = require("kulala.db")
+local GLOBALS = require("kulala.globals")
 local KEYMAPS = require("kulala.config.keymaps")
 local kulala = require("kulala")
 

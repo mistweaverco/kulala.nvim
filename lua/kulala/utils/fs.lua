@@ -9,15 +9,9 @@ end
 ---Get the OS
 ---@return "windows" | "mac" | "unix" | "unknown"
 M.get_os = function()
-  if vim.fn.has("unix") == 1 then
-    return "unix"
-  end
-  if vim.fn.has("mac") == 1 then
-    return "mac"
-  end
-  if vim.fn.has("win32") == 1 or vim.fn.has("win64") then
-    return "windows"
-  end
+  if vim.fn.has("unix") == 1 then return "unix" end
+  if vim.fn.has("mac") == 1 then return "mac" end
+  if vim.fn.has("win32") == 1 or vim.fn.has("win64") then return "windows" end
 
   return "unknown"
 end
@@ -29,9 +23,7 @@ M.os = M.get_os()
 ---Get the path separator for the current OS
 ---@return "\\" | "/"
 M.get_path_separator = function()
-  if M.os == "windows" then
-    return "\\"
-  end
+  if M.os == "windows" then return "\\" end
   return "/"
 end
 
@@ -65,21 +57,15 @@ end
 
 ---Returns true if the path is absolute, false otherwise
 M.is_absolute_path = function(path)
-  if path:match("^/") or path:match("^%a:\\") then
-    return true
-  end
+  if path:match("^/") or path:match("^%a:\\") then return true end
   return false
 end
 
 ---Either returns the absolute path if the path is already absolute or
 ---joins the path with the current buffer directory
 M.get_file_path = function(path)
-  if M.is_absolute_path(path) then
-    return path
-  end
-  if path:sub(1, 2) == "./" or path:sub(1, 2) == ".\\" then
-    path = path:sub(3)
-  end
+  if M.is_absolute_path(path) then return path end
+  if path:sub(1, 2) == "./" or path:sub(1, 2) == ".\\" then path = path:sub(3) end
 
   return M.join_paths(M.get_current_buffer_dir(), path)
 end
@@ -172,9 +158,7 @@ M.write_file = function(filename, content, append)
     f = io.open(filename, "w")
   end
 
-  if not f then
-    return false
-  end
+  if not f then return false end
 
   f:write(content)
   f:close()
@@ -207,9 +191,7 @@ M.copy_dir = function(source, destination)
 end
 
 M.ensure_dir_exists = function(dir)
-  if vim.fn.isdirectory(dir) == 0 then
-    vim.fn.mkdir(dir, "p")
-  end
+  if vim.fn.isdirectory(dir) == 0 then vim.fn.mkdir(dir, "p") end
 end
 
 -- Get plugin tmp directory
@@ -261,9 +243,7 @@ M.delete_files_in_directory = function(dir)
     while true do
       local name, type = vim.loop.fs_scandir_next(scandir)
 
-      if not name then
-        break
-      end
+      if not name then break end
 
       -- Only delete files, not directories except .gitingore
       if type == "file" and not name:match(".gitignore$") then
@@ -298,9 +278,7 @@ end
 
 M.get_global_scripts_variables = function()
   local fp = M.get_global_scripts_variables_file_path()
-  if M.file_exists(fp) then
-    return vim.fn.json_decode(M.read_file(fp))
-  end
+  if M.file_exists(fp) then return vim.fn.json_decode(M.read_file(fp)) end
 end
 
 -- Check if a command is available
@@ -319,9 +297,7 @@ M.get_plugin_root_dir = function()
   local source = debug.getinfo(1).source
   local dir_path = source:match("@(.*/)") or source:match("@(.*\\)")
 
-  if not dir_path then
-    return
-  end
+  if not dir_path then return end
 
   return dir_path .. ".."
 end
@@ -344,9 +320,7 @@ M.read_file = function(filename, is_binary)
   filename = M.get_file_path(filename)
   local f = io.open(filename, read_mode)
 
-  if not f then
-    return
-  end
+  if not f then return end
 
   local content = f:read("*a")
   content = is_binary and content or content:gsub("\r\n", "\n")
@@ -362,9 +336,7 @@ M.get_temp_file = function(content, binary)
   local mode = binary and "wb" or "w"
   local f = io.open(tmp_file, mode)
 
-  if not f then
-    return
-  end
+  if not f then return end
 
   f:write(content)
   f:close()
@@ -383,9 +355,7 @@ M.read_file_lines = function(filename)
   local f = io.open(filename, "r")
   local lines = {}
 
-  if not f then
-    return {}
-  end
+  if not f then return {} end
 
   for line in f:lines() do
     table.insert(lines, line)
@@ -404,15 +374,11 @@ M.include_file = function(file, path)
   local BUFSIZE = 2 ^ 13 -- 8K
 
   local file_to_include = io.open(path, "rb")
-  if not file_to_include then
-    return
-  end
+  if not file_to_include then return end
 
   while true do
     local chunk = file_to_include:read(BUFSIZE)
-    if not chunk then
-      break
-    end
+    if not chunk then break end
     ---@diagnostic disable-next-line: cast-local-type
     status = status and file:write(chunk)
   end
@@ -437,9 +403,7 @@ M.delete_cached_files = function(silent) -- cache/nvim/kulala
     return list .. "- " .. file .. "\n"
   end)
 
-  if not silent then
-    Logger.info("Deleted files:\n" .. list)
-  end
+  if not silent then Logger.info("Deleted files:\n" .. list) end
 end
 
 return M

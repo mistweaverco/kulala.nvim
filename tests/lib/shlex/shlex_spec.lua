@@ -71,14 +71,10 @@ foo '' '' '' bar|foo||||bar|
 ]]
 
 local function splitlines(str, sep)
-  if sep == nil then
-    sep = "\r?\n"
-  end
+  if sep == nil then sep = "\r?\n" end
   local pos = 0
   return function()
-    if pos >= #str then
-      return nil
-    end
+    if pos >= #str then return nil end
     local s, e = str:find(sep, pos)
     local line = str:sub(pos, s and s - 1)
     pos = (e or #str) + 1
@@ -100,9 +96,7 @@ local function test_cases(str)
   local it = splitlines(str)
   return function()
     local line = it()
-    if line == nil then
-      return nil
-    end
+    if line == nil then return nil end
     local expected = split(line, "|")
     local input = expected[1]
     input = input:gsub("\\n", "\n")

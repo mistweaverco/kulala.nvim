@@ -1,6 +1,4 @@
-if not pcall(require, "nvim-treesitter") then
-  return nil
-end
+if not pcall(require, "nvim-treesitter") then return nil end
 
 local CONFIG = require("kulala.config")
 local FS = require("kulala.utils.fs")
@@ -10,9 +8,7 @@ local M = {}
 local QUERIES = {}
 
 local function init_queries()
-  if QUERIES.section ~= nil then
-    return
-  end
+  if QUERIES.section ~= nil then return end
 
   QUERIES.section = vim.treesitter.query.parse("http", "(section (request) @request) @section")
   QUERIES.variable = vim.treesitter.query.parse("http", "(variable_declaration) @variable")
@@ -46,9 +42,7 @@ local function init_queries()
 end
 
 local function text(node, metadata)
-  if not node then
-    return nil
-  end
+  if not node then return nil end
 
   local node_text = vim.treesitter.get_node_text(node, 0, { metadata = metadata })
   return STRING_UTILS.trim(node_text)
@@ -142,9 +136,7 @@ local REQUEST_VISITORS = {
 
   redirect = function(req, args)
     local overwrite = false
-    if args.text:match("^>>!") then
-      overwrite = true
-    end
+    if args.text:match("^>>!") then overwrite = true end
 
     table.insert(req.redirect_response_body_to_files, {
       file = args.fields.path,
@@ -160,9 +152,7 @@ end
 local function get_fields(node)
   local tbl = {}
   for child, field in node:iter_children() do
-    if field then
-      tbl[field] = text(child)
-    end
+    if field then tbl[field] = text(child) end
   end
   return tbl
 end
@@ -220,9 +210,7 @@ M.get_request_at = function(line)
   local root = get_root_node()
 
   for i, node in QUERIES.section:iter_captures(root, 0, line, line) do
-    if QUERIES.section.captures[i] == "section" then
-      return parse_request(node)
-    end
+    if QUERIES.section.captures[i] == "section" then return parse_request(node) end
   end
 end
 

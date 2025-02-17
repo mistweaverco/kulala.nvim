@@ -1,19 +1,19 @@
-local WINBAR = require("kulala.ui.winbar")
-local GLOBALS = require("kulala.globals")
-local CONFIG = require("kulala.config")
-local KEYMAPS = require("kulala.config.keymaps")
-local INLAY = require("kulala.inlay")
-local PARSER = require("kulala.parser.request")
-local CURL_PARSER = require("kulala.parser.curl")
-local CMD = require("kulala.cmd")
-local FS = require("kulala.utils.fs")
-local DB = require("kulala.db")
-local INT_PROCESSING = require("kulala.internal_processing")
-local FORMATTER = require("kulala.formatter")
-local Logger = require("kulala.logger")
 local AsciiUtils = require("kulala.utils.ascii")
+local CMD = require("kulala.cmd")
+local CONFIG = require("kulala.config")
+local CURL_PARSER = require("kulala.parser.curl")
+local DB = require("kulala.db")
+local FORMATTER = require("kulala.formatter")
+local FS = require("kulala.utils.fs")
+local GLOBALS = require("kulala.globals")
+local INLAY = require("kulala.inlay")
+local INT_PROCESSING = require("kulala.internal_processing")
 local Inspect = require("kulala.parser.inspect")
+local KEYMAPS = require("kulala.config.keymaps")
+local Logger = require("kulala.logger")
+local PARSER = require("kulala.parser.request")
 local UiHighlight = require("kulala.ui.highlight")
+local WINBAR = require("kulala.ui.winbar")
 
 local M = {}
 
@@ -52,9 +52,7 @@ end
 
 M.close_kulala_buffer = function()
   local buf = get_kulala_buffer()
-  if buf then
-    vim.api.nvim_buf_delete(buf, { force = true })
-  end
+  if buf then vim.api.nvim_buf_delete(buf, { force = true }) end
 end
 
 -- Create an autocmd to delete the buffer when the window is closed
@@ -67,9 +65,7 @@ local function set_maps_autocommands(buf)
     group = vim.api.nvim_create_augroup("kulala_window_closed", { clear = true }),
     buffer = buf,
     callback = function()
-      if vim.fn.bufexists(buf) > 0 then
-        vim.api.nvim_buf_delete(buf, { force = true })
-      end
+      if vim.fn.bufexists(buf) > 0 then vim.api.nvim_buf_delete(buf, { force = true }) end
     end,
   })
 end
@@ -82,9 +78,7 @@ local open_kulala_buffer = function(filetype)
   vim.api.nvim_set_option_value("buftype", "nofile", { buf = buf })
 
   local win = get_kulala_window()
-  if win then
-    vim.api.nvim_win_set_buf(win, buf)
-  end
+  if win then vim.api.nvim_win_set_buf(win, buf) end
 
   ---This makes sure to replace current kulala buffer with a new one
   ---This is necessary to prevent bugs like this:
@@ -106,9 +100,7 @@ local function open_kulala_window(buf)
   local previous_win, win_config
 
   local win = get_kulala_window()
-  if win then
-    return win
-  end
+  if win then return win end
 
   if config.display_mode == "float" then
     local width = math.max(vim.api.nvim_win_get_width(0) - 10, 1)
@@ -132,9 +124,7 @@ local function open_kulala_window(buf)
 
   win = vim.api.nvim_open_win(buf, true, win_config)
 
-  if config.display_mode == "split" then
-    vim.api.nvim_set_current_win(previous_win)
-  end
+  if config.display_mode == "split" then vim.api.nvim_set_current_win(previous_win) end
 
   return win
 end
@@ -310,9 +300,7 @@ end
 M.replay = function()
   local last_request = DB.global_find_unique("replay")
 
-  if not last_request then
-    return Logger.warn("No request to replay")
-  end
+  if not last_request then return Logger.warn("No request to replay") end
 
   CMD.run_parser({ last_request }, nil, function(success)
     if success == false then
@@ -329,16 +317,12 @@ M.close = function()
   M.close_kulala_buffer()
 
   local ext = vim.fn.expand("%:e")
-  if ext == "http" or ext == "rest" then
-    vim.api.nvim_buf_delete(vim.fn.bufnr(), {})
-  end
+  if ext == "http" or ext == "rest" then vim.api.nvim_buf_delete(vim.fn.bufnr(), {}) end
 end
 
 M.copy = function()
   local request = PARSER.parse()
-  if not request then
-    return Logger.error("No request found")
-  end
+  if not request then return Logger.error("No request found") end
 
   local skip_flags = { "-o", "-D", "--cookie-jar", "-w", "--data-binary" }
   local previous_flag
@@ -405,9 +389,7 @@ M.inspect = function()
   local inspect_name = "kulala://inspect"
 
   local content = Inspect.get_contents()
-  if #content == 0 then
-    return
-  end
+  if #content == 0 then return end
 
   -- Create a new buffer
   local buf = vim.fn.bufnr(inspect_name)
@@ -429,9 +411,7 @@ M.inspect = function()
   -- Calculate the content dimensions
   local content_width = 0
   for _, line in ipairs(content) do
-    if #line > content_width then
-      content_width = #line
-    end
+    if #line > content_width then content_width = #line end
   end
   local content_height = #content
 

@@ -49,9 +49,7 @@ M.show = function(event, linenr, text)
   local bufnr = DB.get_current_buffer()
   local show_icons = config.show_icons
 
-  if not (config.show_icons and linenr) then
-    return
-  end
+  if not (config.show_icons and linenr) then return end
 
   local icon = config.icons.inlay[event] or ""
   linenr = math.max(linenr + (line_offset[show_icons] or 0), 1)

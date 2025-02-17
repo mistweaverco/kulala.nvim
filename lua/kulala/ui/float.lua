@@ -24,9 +24,7 @@ M.create = function(opts)
   -- Set the content of the buffer
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, opts.contents)
 
-  if opts.ft then
-    vim.bo[buf].filetype = opts.ft
-  end
+  if opts.ft then vim.bo[buf].filetype = opts.ft end
 
   -- Get the total dimensions of the editor
   local total_width = vim.o.columns
@@ -35,9 +33,7 @@ M.create = function(opts)
   -- Calculate the content dimensions
   local content_width = 0
   for _, line in ipairs(opts.contents) do
-    if #line > content_width then
-      content_width = #line
-    end
+    if #line > content_width then content_width = #line end
   end
   local content_height = #opts.contents
 

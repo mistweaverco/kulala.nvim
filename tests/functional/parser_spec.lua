@@ -1,7 +1,7 @@
 ---@diagnostic disable: undefined-field, redefined-local
-local parser = require("kulala.parser.request")
 local fs = require("kulala.utils.fs")
 local h = require("test_helper")
+local parser = require("kulala.parser.request")
 
 describe("requests", function()
   describe("show output of requests", function()
