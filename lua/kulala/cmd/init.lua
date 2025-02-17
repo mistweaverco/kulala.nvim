@@ -45,7 +45,6 @@ end
 
 local function offload_task(fn, callback)
   table.insert(TASK_QUEUE, { fn = fn, callback = callback })
-  -- If no task is currently running, start processing
   if not RUNNING_TASK then run_next_task() end
 end
 
@@ -94,6 +93,16 @@ local function process_api()
   Api.trigger("after_request")
 end
 
+local function modify_grpc_response(response)
+  if response.method ~= "GRPC" then return response end
+
+  response.body = response.stats
+  response.stats = ""
+  response.headers = "Content-Type: application/json\n\n"
+
+  return response
+end
+
 local function save_response(request_status, parsed_request)
   local buf = DB.get_current_buffer()
   local line = parsed_request.show_icon_line_number or 0
@@ -104,7 +113,7 @@ local function save_response(request_status, parsed_request)
     table.remove(responses) -- remove the last response if it's the same request and status was unfinished
   end
 
-  table.insert(responses, {
+  local response = {
     id = id,
     url = parsed_request.url or "",
     method = parsed_request.method or "",
@@ -119,7 +128,10 @@ local function save_response(request_status, parsed_request)
     buf = buf,
     buf_name = vim.fn.bufname(buf),
     line = line,
-  })
+  }
+
+  response = modify_grpc_response(response)
+  table.insert(responses, response)
 end
 
 local function process_response(request_status, parsed_request)
@@ -145,7 +157,7 @@ local function process_errors(request, request_status, processing_errors)
     request_status.errors or "",
     processing_errors or ""
   )
-  Logger.error(message)
+  Logger.error(message, 2)
 end
 
 local function handle_response(request_status, parsed_request, callback)
@@ -170,6 +182,35 @@ local function received_unbffured(request, response)
   return unbuffered and response:find("Connected") and FS.file_exists(GLOBALS.BODY_FILE)
 end
 
+local function initialize()
+  FS.delete_request_scripts_files()
+  FS.delete_cached_files(true)
+end
+
+local function parse_request(requests, request, variables)
+  initialize()
+
+  if not process_prompt_vars(request) then
+    return Logger.warn("Prompt failed. Skipping this and all following requests.")
+  end
+
+  local parsed_request = REQUEST_PARSER.parse(requests, variables, request.start_line)
+  if not parsed_request then
+    return Logger.warn(("Request at line: %s could not be parsed"):format(request.start_line))
+  end
+
+  return parsed_request
+end
+
+local function check_executable(cmd)
+  local executable = cmd[1]
+  if vim.fn.executable(executable) == 0 then
+    return Logger.error(("Executable %s is not found or not executable"):format(executable))
+  end
+
+  return true
+end
+
 ---Executes DocumentRequest
 ---@param requests DocumentRequest[]
 ---@param request DocumentRequest
@@ -179,24 +220,13 @@ local function process_request(requests, request, variables, callback)
   --  to allow running fastAPI within vim.system callbacks
   handle_response = vim.schedule_wrap(handle_response)
 
-  FS.delete_request_scripts_files()
-  FS.delete_cached_files(true)
-
-  if not process_prompt_vars(request) then
-    Logger.warn("Prompt failed. Skipping this and all following requests.")
-    return
-  end
-
-  local parsed_request = REQUEST_PARSER.parse(requests, variables, request.start_line)
-  if not parsed_request then
-    Logger.warn(("Request at line: %s could not be parsed"):format(request.start_line))
-    return
-  end
-
-  --TODO: call callback with success=false if promt fails or request could not be parsed
+  local parsed_request = parse_request(requests, request, variables)
+  if not parsed_request then return callback(false, 0, request.start_line) end
 
   local start_time = vim.uv.hrtime()
   local errors
+
+  if not check_executable(parsed_request.cmd) then return callback(false, 0, parsed_request.show_icon_line_number) end
 
   vim.system(parsed_request.cmd, {
     text = true,
@@ -235,7 +265,7 @@ M.run_parser = function(requests, line_nr, callback)
   reset_task_queue()
 
   if not requests then
-    variables, requests = DOCUMENT_PARSER.get_document()
+    variables, requests = DOCUMENT_PARSER.get_document() -- TODO: add xpcall
   end
 
   if not requests then return Logger.error("No requests found in the document") end

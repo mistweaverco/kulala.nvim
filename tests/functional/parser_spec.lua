@@ -78,6 +78,21 @@ describe("requests", function()
         })
       end)
 
+      it("skips reequests comented out with # ", function()
+        h.create_buf(
+          ([[
+            # @name SIMPLE REQUEST
+            #POST https://httpbingo.org/simple
+            Content-Type: application/json
+            Accept: application/json
+      ]]):to_table(true),
+          "test.http"
+        )
+
+        result = parser.parse() or {}
+        assert.is.same({}, result)
+      end)
+
       it("processes headers", function()
         h.create_buf(
           ([[

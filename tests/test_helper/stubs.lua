@@ -162,7 +162,7 @@ function Curl.request(job)
     job.opts.on_stdout = mappings.stats
     job.opts.on_stderr = mappings.errors
   else
-    job.stdout = mappings.stats
+    job.stdout = mappings.stdout or mappings.stats
     job.stderr = mappings.errors
   end
 

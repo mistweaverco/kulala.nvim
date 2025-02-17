@@ -94,6 +94,7 @@ describe("keymaps", function()
           line = 1,
           buf_name = "test.txt",
           body = h.load_fixture("fixtures/request_2_headers_body.txt"),
+          headers = "",
         },
       }
 

@@ -23,10 +23,13 @@ M.data = nil
 ---@class GlobalData
 ---@field responses Response[]
 ---@field current_response_pos number|nil
+---@field replay Request|nil -- previous request stored for replay
 M.global_data = {
-  current_response_pos = nil, -- index of current response shown in UI in responses
+  current_response_pos = nil, -- index of current response shown in UI
   responses = {}, -- history of responses
+  replay = nil,
 }
+
 M.current_buffer = nil
 
 ---Gets DB.current_buffer or if it does not exist, then sets it to current buffer
@@ -89,6 +92,7 @@ M.global_find_unique = function(key)
   return M.global_data[key]
 end
 
+--@return GlobalData
 M.global_update = function()
   return M.global_data
 end
