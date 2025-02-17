@@ -10,3 +10,4 @@ http-client.env.json
 .tests
 .nvim
 package-lock.json
+todo.md
