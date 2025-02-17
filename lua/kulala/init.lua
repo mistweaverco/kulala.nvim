@@ -1,14 +1,14 @@
-local UI = require("kulala.ui")
-local SELECTOR = require("kulala.ui.selector")
-local ENV = require("kulala.parser.env")
-local GLOBALS = require("kulala.globals")
-local CONFIG = require("kulala.config")
-local JUMPS = require("kulala.jumps")
-local Graphql = require("kulala.graphql")
-local Logger = require("kulala.logger")
-local ScriptsUtils = require("kulala.parser.scripts.utils")
-local Fs = require("kulala.utils.fs")
 local Augroups = require("kulala.augroups")
+local CONFIG = require("kulala.config")
+local ENV = require("kulala.parser.env")
+local Fs = require("kulala.utils.fs")
+local GLOBALS = require("kulala.globals")
+local Graphql = require("kulala.graphql")
+local JUMPS = require("kulala.jumps")
+local Logger = require("kulala.logger")
+local SELECTOR = require("kulala.ui.selector")
+local ScriptsUtils = require("kulala.parser.scripts.utils")
+local UI = require("kulala.ui")
 local M = {}
 
 M.setup = function(config)
@@ -111,7 +111,7 @@ end
 ---Clears all cached files
 ---Useful when you want to clear all cached files
 M.clear_cached_files = function()
-  Fs.clear_cached_files()
+  Fs.delete_cached_files()
 end
 
 return M

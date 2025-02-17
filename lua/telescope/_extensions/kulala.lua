@@ -1,8 +1,6 @@
 local has_telescope, telescope = pcall(require, "telescope")
 
-if not has_telescope then
-  return nil
-end
+if not has_telescope then return nil end
 
 local DB = require("kulala.db")
 local Parser = require("kulala.parser.document")
@@ -18,9 +16,7 @@ local config = require("telescope.config").values
 local function kulala_search(_)
   local _, requests = Parser.get_document()
 
-  if requests == nil then
-    return
-  end
+  if requests == nil then return end
 
   local data = {}
   local names = {}
@@ -43,9 +39,7 @@ local function kulala_search(_)
         actions.select_default:replace(function()
           local selection = action_state.get_selected_entry()
           actions.close(prompt_bufnr)
-          if selection == nil then
-            return
-          end
+          if selection == nil then return end
           local request = data[selection.value]
           vim.cmd("normal! " .. request.start_line + 1 .. "G")
         end)
@@ -55,9 +49,7 @@ local function kulala_search(_)
         title = "Preview",
         define_preview = function(self, entry)
           local request = data[entry.value]
-          if request == nil then
-            return
-          end
+          if request == nil then return end
           local lines = {}
           local http_version = request.http_version and "HTTP/" .. request.http_version or "HTTP/1.1"
           table.insert(lines, request.method .. " " .. request.url .. " " .. http_version)
@@ -82,15 +74,11 @@ end
 
 local function kulala_env_select(_)
   local http_client_env = DB.find_unique("http_client_env")
-  if not http_client_env then
-    return
-  end
+  if not http_client_env then return end
 
   local envs = {}
   for key, _ in pairs(http_client_env) do
-    if key ~= "$schema" and key ~= "$shared" then
-      table.insert(envs, key)
-    end
+    if key ~= "$schema" and key ~= "$shared" then table.insert(envs, key) end
   end
 
   pickers
@@ -103,9 +91,7 @@ local function kulala_env_select(_)
         actions.select_default:replace(function()
           local selection = action_state.get_selected_entry()
           actions.close(prompt_bufnr)
-          if selection == nil then
-            return
-          end
+          if selection == nil then return end
           vim.g.kulala_selected_env = selection.value
         end)
         return true
@@ -114,9 +100,7 @@ local function kulala_env_select(_)
         title = "Environment",
         define_preview = function(self, entry)
           local env = http_client_env[entry.value]
-          if env == nil then
-            return
-          end
+          if env == nil then return end
           local lines = {}
           for key, value in pairs(env) do
             table.insert(lines, string.format("%s: %s", key, value))

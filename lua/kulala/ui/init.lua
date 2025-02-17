@@ -1,18 +1,19 @@
-local WINBAR = require("kulala.ui.winbar")
-local GLOBALS = require("kulala.globals")
-local CONFIG = require("kulala.config")
-local KEYMAPS = require("kulala.config.keymaps")
-local INLAY = require("kulala.inlay")
-local PARSER = require("kulala.parser.request")
-local CURL_PARSER = require("kulala.parser.curl")
-local CMD = require("kulala.cmd")
-local FS = require("kulala.utils.fs")
-local DB = require("kulala.db")
-local INT_PROCESSING = require("kulala.internal_processing")
-local FORMATTER = require("kulala.formatter")
-local Logger = require("kulala.logger")
 local AsciiUtils = require("kulala.utils.ascii")
+local CMD = require("kulala.cmd")
+local CONFIG = require("kulala.config")
+local CURL_PARSER = require("kulala.parser.curl")
+local DB = require("kulala.db")
+local FORMATTER = require("kulala.formatter")
+local FS = require("kulala.utils.fs")
+local GLOBALS = require("kulala.globals")
+local INLAY = require("kulala.inlay")
+local INT_PROCESSING = require("kulala.internal_processing")
 local Inspect = require("kulala.parser.inspect")
+local KEYMAPS = require("kulala.config.keymaps")
+local Logger = require("kulala.logger")
+local PARSER = require("kulala.parser.request")
+local UiHighlight = require("kulala.ui.highlight")
+local WINBAR = require("kulala.ui.winbar")
 
 local M = {}
 
@@ -30,26 +31,41 @@ local function get_current_line()
   return vim.fn.line(".")
 end
 
+local function get_current_response_pos()
+  local responses = DB.global_update().responses
+  return DB.global_update().current_response_pos or #responses
+end
+
+local function get_current_response()
+  local responses = DB.global_update().responses
+  return responses[get_current_response_pos()]
+    or setmetatable({}, {
+      __index = function()
+        return ""
+      end,
+    })
+end
+
+local function set_current_response(response_pos)
+  DB.global_update().current_response_pos = response_pos
+end
+
 M.close_kulala_buffer = function()
   local buf = get_kulala_buffer()
-  if buf then
-    vim.api.nvim_buf_delete(buf, { force = true })
-  end
+  if buf then vim.api.nvim_buf_delete(buf, { force = true }) end
 end
 
 -- Create an autocmd to delete the buffer when the window is closed
 -- This is necessary to prevent the buffer from being left behind
 -- when the window is closed
 local function set_maps_autocommands(buf)
-  KEYMAPS.setup_kulala_keymaps(buf)
+  CONFIG.get().kulala_keymaps = KEYMAPS.setup_kulala_keymaps(buf)
 
   vim.api.nvim_create_autocmd("WinClosed", {
     group = vim.api.nvim_create_augroup("kulala_window_closed", { clear = true }),
     buffer = buf,
     callback = function()
-      if vim.fn.bufexists(buf) > 0 then
-        vim.api.nvim_buf_delete(buf, { force = true })
-      end
+      if vim.fn.bufexists(buf) > 0 then vim.api.nvim_buf_delete(buf, { force = true }) end
     end,
   })
 end
@@ -62,9 +78,7 @@ local open_kulala_buffer = function(filetype)
   vim.api.nvim_set_option_value("buftype", "nofile", { buf = buf })
 
   local win = get_kulala_window()
-  if win then
-    vim.api.nvim_win_set_buf(win, buf)
-  end
+  if win then vim.api.nvim_win_set_buf(win, buf) end
 
   ---This makes sure to replace current kulala buffer with a new one
   ---This is necessary to prevent bugs like this:
@@ -86,9 +100,7 @@ local function open_kulala_window(buf)
   local previous_win, win_config
 
   local win = get_kulala_window()
-  if win then
-    return win
-  end
+  if win then return win end
 
   if config.display_mode == "float" then
     local width = math.max(vim.api.nvim_win_get_width(0) - 10, 1)
@@ -112,16 +124,39 @@ local function open_kulala_window(buf)
 
   win = vim.api.nvim_open_win(buf, true, win_config)
 
-  if config.display_mode == "split" then
-    vim.api.nvim_set_current_win(previous_win)
-  end
+  if config.display_mode == "split" then vim.api.nvim_set_current_win(previous_win) end
 
   return win
+end
+
+local function pretty_ms(ms)
+  return string.format("%.2fms", ms)
+end
+
+local function set_current_response_data(buf)
+  local responses = DB.global_update().responses
+  local response = get_current_response()
+  local idx = get_current_response_pos()
+  local duration = response.duration == "" and 0 or pretty_ms(response.duration / 1e6)
+
+  local data = vim
+    .iter({
+      { "Request " .. idx .. "/" .. #responses .. "  Status: " .. response.status .. "  Duration: " .. duration },
+      { "URL: " .. response.method .. " " .. response.url },
+      { "Buffer: " .. response.buf_name .. "::" .. response.line },
+      { "" },
+    })
+    :flatten()
+    :totable()
+
+  vim.api.nvim_buf_set_lines(buf, 0, 0, false, data)
+  UiHighlight.highlight_range(get_kulala_buffer(), 0, { row = 0, col = 0 }, { row = 2, col = -1 }, "Special")
 end
 
 local function show(contents, filetype, mode)
   local buf = open_kulala_buffer(filetype)
   set_buffer_contents(buf, contents, filetype)
+  set_current_response_data(buf)
 
   local win = open_kulala_window(buf)
 
@@ -130,8 +165,9 @@ local function show(contents, filetype, mode)
 end
 
 local function format_body()
-  local contenttype = INT_PROCESSING.get_config_contenttype()
-  local body = FS.read_file(GLOBALS.BODY_FILE)
+  local headers = get_current_response().headers
+  local body = get_current_response().body
+  local contenttype = INT_PROCESSING.get_config_contenttype(headers)
   local filetype
 
   if body and contenttype.formatter then
@@ -143,82 +179,66 @@ local function format_body()
 end
 
 M.show_headers = function()
-  local headers = FS.read_file(GLOBALS.HEADERS_FILE)
-
-  if not headers then
-    return Logger.warn("No headers found")
-  end
-
-  headers = headers:gsub("\r\n", "\n")
+  local headers = get_current_response().headers
   show(headers, "text", "headers")
 end
 
 M.show_body = function()
   local body, filetype = format_body()
-
-  if not body then
-    return Logger.warn("No body found")
-  end
-
   show(body, filetype, "body")
 end
 
 M.show_headers_body = function()
-  local headers = FS.read_file(GLOBALS.HEADERS_FILE)
+  local headers = get_current_response().headers
   local body, filetype = format_body()
-
-  if not headers or not body then
-    return Logger.warn("No headers or body found")
-  end
-
-  headers = headers:gsub("\r\n", "\n") .. "\n"
   show(headers .. body, filetype, "headers_body")
 end
 
 M.show_verbose = function()
   local body = format_body()
-  local errors = FS.read_file(GLOBALS.ERRORS_FILE)
-
-  if not body then
-    return Logger.warn("No body found")
-  end
-
-  errors = errors and errors:gsub("\r", "") .. "\n" or ""
-  show(errors .. body, "kulala_verbose_result", "verbose")
+  local errors = get_current_response().errors
+  show(errors .. "\n" .. body, "kulala_verbose_result", "verbose")
 end
 
 M.show_stats = function()
-  local stats = FS.read_file(GLOBALS.STATS_FILE)
+  local stats = get_current_response().stats
+  local diagram
 
-  if not stats then
-    return Logger.warn("No stats found")
+  if stats then
+    stats = vim.json.decode(stats)
+
+    local diagram_lines = AsciiUtils.get_waterfall_timings(stats)
+    diagram = table.concat(diagram_lines, "\n")
   end
 
-  stats = vim.json.decode(stats)
-
-  local diagram_lines = AsciiUtils.get_waterfall_timings(stats)
-  local diagram = table.concat(diagram_lines, "\n")
-
-  show(diagram, "text", "stats")
+  show(diagram or "", "text", "stats")
 end
 
 M.show_script_output = function()
-  local pre_file_contents = FS.read_file(GLOBALS.SCRIPT_PRE_OUTPUT_FILE)
-  local post_file_contents = FS.read_file(GLOBALS.SCRIPT_POST_OUTPUT_FILE)
-  local contents = ""
+  local pre_file_contents = get_current_response().script_pre_output
+  local post_file_contents = get_current_response().script_post_output
 
-  if not pre_file_contents and not post_file_contents then
-    Logger.error("No script output found")
-    return
-  end
-
-  contents = pre_file_contents
-    and contents .. M.generate_ascii_header("Pre Script") .. "\n" .. pre_file_contents:gsub("\r\n", "\n")
-  contents = post_file_contents
-      and contents .. M.generate_ascii_header("Post Script") .. "\n" .. post_file_contents:gsub("\r\n", "\n")
-    or contents
+  local contents = "===== Pre Script Output =====================================\n\n" .. pre_file_contents
+  contents = contents .. "\n\n===== Post Script Output ====================================\n\n" .. post_file_contents
 
   show(contents, "text", "script_output")
+end
+
+M.show_next = function()
+  local responses = DB.global_update().responses
+  local current_pos = get_current_response_pos()
+  local next = current_pos == #responses and current_pos or current_pos + 1
+
+  set_current_response(next)
+  M.open_default_view()
+end
+
+M.show_previous = function()
+  local current_pos = get_current_response_pos()
+  local previous = current_pos <= 1 and current_pos or current_pos - 1
+
+  set_current_response(previous)
+  M.open_default_view()
 end
 
 M.toggle_headers = function()
@@ -248,12 +268,8 @@ M.open_default_view = function()
   _ = open_view and open_view()
 end
 
-local function pretty_ms(ms)
-  return string.format("%.2fms", ms)
-end
-
 M.open = function()
-  M:open_all(get_current_line())
+  M:open_all(vim.api.nvim_get_mode().mode == "V" and 0 or get_current_line())
 end
 
 M.open_all = function(_, line_nr)
@@ -262,11 +278,9 @@ M.open_all = function(_, line_nr)
   DB.set_current_buffer()
   INLAY.clear()
 
-  CMD.run_parser(nil, line_nr, function(success, start_time, icon_linenr)
+  CMD.run_parser(nil, line_nr, function(success, duration, icon_linenr)
     if success then
-      ---@diagnostic disable-next-line: undefined-field
-      local elapsed = vim.loop.hrtime() - start_time
-      local elapsed_ms = pretty_ms(elapsed / 1e6)
+      local elapsed_ms = pretty_ms(duration / 1e6)
 
       INLAY.show("done", icon_linenr, elapsed_ms)
     elseif success == nil then
@@ -276,7 +290,9 @@ M.open_all = function(_, line_nr)
       return
     end
 
+    set_current_response(#DB.global_update().responses)
     M.open_default_view()
+
     return true
   end)
 end
@@ -284,9 +300,7 @@ end
 M.replay = function()
   local last_request = DB.global_find_unique("replay")
 
-  if not last_request then
-    return Logger.warn("No request to replay")
-  end
+  if not last_request then return Logger.warn("No request to replay") end
 
   CMD.run_parser({ last_request }, nil, function(success)
     if success == false then
@@ -303,16 +317,12 @@ M.close = function()
   M.close_kulala_buffer()
 
   local ext = vim.fn.expand("%:e")
-  if ext == "http" or ext == "rest" then
-    vim.api.nvim_buf_delete(vim.fn.bufnr(), {})
-  end
+  if ext == "http" or ext == "rest" then vim.api.nvim_buf_delete(vim.fn.bufnr(), {}) end
 end
 
 M.copy = function()
   local request = PARSER.parse()
-  if not request then
-    return Logger.error("No request found")
-  end
+  if not request then return Logger.error("No request found") end
 
   local skip_flags = { "-o", "-D", "--cookie-jar", "-w", "--data-binary" }
   local previous_flag
@@ -375,47 +385,11 @@ M.from_curl = function()
   print_http_spec(spec, curl)
 end
 
-M.generate_ascii_header = function(text, opts)
-  local default_opts = {
-    max_line_length = 80,
-  }
-  opts = vim.tbl_extend("force", default_opts, opts or {})
-  -- Function to center text within a given width, with additional spaces
-  local function center_text(t, width)
-    local padding = math.floor((width - #t) / 2)
-    return string.rep(" ", padding) .. t .. string.rep(" ", width - #t - padding)
-  end
-
-  -- Split the text into lines if it exceeds the max_line_length
-  local lines = {}
-  while #text > opts.max_line_length - 4 do
-    local line = text:sub(1, opts.max_line_length - 4)
-    table.insert(lines, line)
-    text = text:sub(opts.max_line_length - 3)
-  end
-  table.insert(lines, text)
-
-  -- Create the header
-  local header = {}
-  local line_length = opts.max_line_length
-  table.insert(header, " " .. string.rep("_", line_length - 2) .. " ")
-  for _, line in ipairs(lines) do
-    table.insert(header, string.format("/%s\\", string.rep(" ", line_length - 2)))
-    table.insert(header, string.format("|%s|", center_text(line, line_length - 2)))
-  end
-  table.insert(header, string.format("\\%s/", string.rep("_", line_length - 2)))
-
-  -- Return the header as a string
-  return table.concat(header, "\n") .. "\n"
-end
-
 M.inspect = function()
   local inspect_name = "kulala://inspect"
 
   local content = Inspect.get_contents()
-  if #content == 0 then
-    return
-  end
+  if #content == 0 then return end
 
   -- Create a new buffer
   local buf = vim.fn.bufnr(inspect_name)
@@ -437,9 +411,7 @@ M.inspect = function()
   -- Calculate the content dimensions
   local content_width = 0
   for _, line in ipairs(content) do
-    if #line > content_width then
-      content_width = #line
-    end
+    if #line > content_width then content_width = #line end
   end
   local content_height = #content
 

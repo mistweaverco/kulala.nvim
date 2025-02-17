@@ -1,8 +1,8 @@
-local Logger = require("kulala.logger")
+local CONFIG = require("kulala.config")
+local DB = require("kulala.db")
 local FS = require("kulala.utils.fs")
 local GLOBALS = require("kulala.globals")
-local DB = require("kulala.db")
-local CONFIG = require("kulala.config")
+local Logger = require("kulala.logger")
 local STRING_UTILS = require("kulala.utils.string")
 
 local M = {}
@@ -14,28 +14,25 @@ local function get_nested_value(t, key)
 
   for _, k in ipairs(keys) do
     value = value[k]
-    if not value then
-      return
-    end
+    if not value then return end
   end
 
   return value
 end
 
 ---Function to get the last headers as a table
----@description Reads the headers file and returns the headers as a table.
+---@description Reads provided headers string or the headers file and returns the headers as a table.
 ---In some cases the headers file might contain multiple header sections,
 ---e.g. if you have follow-redirections enabled.
 ---This function will return the headers of the last response.
+---@param headers string|nil
 ---@return table|nil
-local get_last_headers_as_table = function()
-  local headers_file = FS.read_file(GLOBALS.HEADERS_FILE)
-  if not headers_file then
-    return
-  end
+local get_last_headers_as_table = function(headers)
+  headers = headers or FS.read_file(GLOBALS.HEADERS_FILE)
+  if not headers then return end
 
-  headers_file = headers_file:gsub("\r\n", "\n")
-  local lines = vim.split(headers_file, "\n")
+  headers = headers:gsub("\r\n", "\n")
+  local lines = vim.split(headers, "\n")
   local headers_table = {}
   -- INFO:
   -- We only want the headers of the last response
@@ -47,9 +44,7 @@ local get_last_headers_as_table = function()
     if empty_line then
       previously_empty = true
     else
-      if previously_empty then
-        headers_table = {}
-      end
+      if previously_empty then headers_table = {} end
       previously_empty = false
       if header:find(":") ~= nil then
         local kv = vim.split(header, ":")
@@ -67,9 +62,7 @@ end
 
 local get_cookies_as_table = function()
   local cookies_file = FS.read_file(GLOBALS.COOKIES_JAR_FILE)
-  if cookies_file == nil then
-    return {}
-  end
+  if cookies_file == nil then return {} end
   cookies_file = cookies_file:gsub("\r\n", "\n")
   local lines = vim.split(cookies_file, "\n")
   local cookies = {}
@@ -80,9 +73,7 @@ local get_cookies_as_table = function()
     -- Skip empty lines or comment lines (except #HttpOnly_)
     if line ~= "" and (line:sub(1, 1) ~= "#" or line:find("^#HttpOnly_")) then
       -- If it's a #HttpOnly_ line, remove the #HttpOnly_ part
-      if line:find("^#HttpOnly_") then
-        line = line:gsub("^#HttpOnly_", "")
-      end
+      if line:find("^#HttpOnly_") then line = line:gsub("^#HttpOnly_", "") end
 
       -- Split the line into fields based on tabs
       local fields = {}
@@ -107,8 +98,8 @@ local get_cookies_as_table = function()
   return cookies
 end
 
-local get_lower_headers_as_table = function()
-  local headers = get_last_headers_as_table() or {}
+local get_lower_headers_as_table = function(headers)
+  headers = get_last_headers_as_table(headers) or {}
   local headers_table = {}
   for key, value in pairs(headers) do
     headers_table[key:lower()] = value
@@ -116,16 +107,17 @@ local get_lower_headers_as_table = function()
   return headers_table
 end
 
-M.get_config_contenttype = function()
-  local headers = get_lower_headers_as_table()
+M.get_config_contenttype = function(headers)
+  headers = get_lower_headers_as_table(headers)
+
   if headers["content-type"] then
     local content_type = vim.split(headers["content-type"], ";")[1]
     content_type = STRING_UTILS.trim(content_type)
+
     local config = CONFIG.get().contenttypes[content_type]
-    if config then
-      return config
-    end
+    if config then return config end
   end
+
   return CONFIG.default_contenttype
 end
 
@@ -158,9 +150,7 @@ M.env_header_key = function(cmd)
 end
 
 M.redirect_response_body_to_file = function(data)
-  if not FS.file_exists(GLOBALS.BODY_FILE) then
-    return
-  end
+  if not FS.file_exists(GLOBALS.BODY_FILE) then return end
   for _, redirect in ipairs(data) do
     local fp = FS.join_paths(FS.get_current_buffer_dir(), redirect.file)
     if FS.file_exists(fp) then
@@ -195,9 +185,7 @@ M.prompt_var = function(metadata_value)
 
   local value = vim.fn.input(prompt)
 
-  if value == nil or value == "" then
-    return false
-  end
+  if value == nil or value == "" then return false end
 
   DB.update().env[var_name] = value
   return true

@@ -1,15 +1,15 @@
-local GLOBALS = require("kulala.globals")
 local CONFIG = require("kulala.config")
 local DB = require("kulala.db")
-local FS = require("kulala.utils.fs")
-local ENV_PARSER = require("kulala.parser.env")
 local DOCUMENT_PARSER = require("kulala.parser.document")
+local ENV_PARSER = require("kulala.parser.env")
+local FS = require("kulala.utils.fs")
+local GLOBALS = require("kulala.globals")
 local GRAPHQL_PARSER = require("kulala.parser.graphql")
 local PARSER_UTILS = require("kulala.parser.utils")
 local STRING_UTILS = require("kulala.utils.string")
 local CURL_FORMAT_FILE = FS.get_plugin_path({ "parser", "curl-format.json" })
-local StringVariablesParser = require("kulala.parser.string_variables_parser")
 local Logger = require("kulala.logger")
+local StringVariablesParser = require("kulala.parser.string_variables_parser")
 
 local M = {}
 
@@ -76,7 +76,7 @@ local default_request = {
 ---@param document_variables table|nil
 ---@param request Request
 ---@return table
-local function append_file_to_variables(document_variables, request)
+local function append_file_to_variables(request, document_variables)
   document_variables = document_variables or {}
 
   for _, metadata in ipairs(request.metadata) do
@@ -87,12 +87,6 @@ local function append_file_to_variables(document_variables, request)
   end
 
   return document_variables
-end
-
-local function cleanup_request_files()
-  FS.delete_file(GLOBALS.HEADERS_FILE)
-  FS.delete_file(GLOBALS.BODY_FILE)
-  FS.delete_file(GLOBALS.COOKIES_JAR_FILE)
 end
 
 local function url_encode(str)
@@ -112,17 +106,13 @@ local function encode_url_params(url)
   end
 
   index = url:find("?")
-  if not index then
-    return url .. anchor
-  end
+  if not index then return url .. anchor end
 
   local query = url:sub(index + 1)
   url = url:sub(1, index - 1)
 
   local query_parts = {}
-  if query then
-    query_parts = vim.split(query, "&")
-  end
+  if query then query_parts = vim.split(query, "&") end
 
   local query_params = ""
   for _, query_part in ipairs(query_parts) do
@@ -138,9 +128,7 @@ local function encode_url_params(url)
     end
   end
 
-  if query_params ~= "" then
-    url = url .. "?" .. query_params:sub(2)
-  end
+  if query_params ~= "" then url = url .. "?" .. query_params:sub(2) end
   return url .. anchor
 end
 
@@ -159,17 +147,19 @@ end
 
 ---Replace the variables in the URL, headers and body
 ---@param request Request -- The request object
----@param document_variables table -- The variables defined in the document
----@param env table -- The environment variables
----@param silent boolean -- Whether to suppress not found variable warnings
-local process_variables = function(request, document_variables, env, silent)
-  local params = { document_variables or {}, env or {}, silent }
+---@param document_variables DocumentVariables -- The variables defined in the document
+---@param silent boolean|nil -- Whether to suppress not found variable warnings
+local process_variables = function(request, document_variables, silent)
+  local env = ENV_PARSER.get_env() or {}
+  local params = { document_variables or {}, env, silent }
 
   request.url = parse_url(request.url_raw, unpack(params))
   request.headers = parse_headers(request.headers, unpack(params))
   request.body = StringVariablesParser.parse(request.body_raw, unpack(params))
   request.body_display = StringVariablesParser.parse(request.body_display, unpack(params))
   request.body_computed = request.body
+
+  request.environment = vim.tbl_extend("force", env, document_variables)
 end
 
 ---Save body to a temporary file, including files specified with "< /path" syntax into request body
@@ -183,9 +173,7 @@ local function save_body_with_files(request_body)
   local result_path = FS.get_binary_temp_file("")
 
   local result = io.open(result_path, "a+b")
-  if not result then
-    return
-  end
+  if not result then return end
 
   local lines = vim.split(request_body, "\n")
 
@@ -210,16 +198,12 @@ local function save_body_with_files(request_body)
 end
 
 local function set_variables(request, document_variables)
-  local env = ENV_PARSER.get_env()
+  document_variables = append_file_to_variables(request, document_variables)
 
-  document_variables = append_file_to_variables(document_variables, request)
-  request.environment = vim.tbl_extend("force", env, document_variables)
-
-  -- INFO: if has_pre_request_script:
-  -- silently replace the variables in the URL, headers and body, otherwise warn the user
-  -- for non existing variables
-  local has_pre_request_scripts = #request.scripts.pre_request.inline > 0 or #request.scripts.pre_request.files > 0
-  process_variables(request, document_variables, env, has_pre_request_scripts)
+  -- INFO: if has_pre_request_script: silently replace the variables,
+  -- otherwise warn the user for non existing variables
+  local has_pre_request_scripts = (#request.scripts.pre_request.inline + #request.scripts.pre_request.files) > 0
+  process_variables(request, document_variables, has_pre_request_scripts)
 end
 
 local function set_headers(request)
@@ -228,6 +212,7 @@ local function set_headers(request)
   -- Merge headers from the $shared environment if it does not exist in the request
   -- this ensures that you can always override the headers in the request
   local default_headers = (DB.find_unique("http_client_env_shared") or {})["$default_headers"]
+
   vim.iter(default_headers or {}):each(function(name, value)
     name = PARSER_UTILS.get_header(request.headers, name) or name
     request.headers[name] = request.headers[name] or value
@@ -251,9 +236,7 @@ local function process_graphql(request)
 end
 
 local function process_pre_request_scripts(request, document_variables)
-  if not (#request.scripts.pre_request.inline > 0 or #request.scripts.pre_request.files > 0) then
-    return
-  end
+  if #request.scripts.pre_request.inline + #request.scripts.pre_request.files == 0 then return end
 
   -- PERF: We only want to run the scripts if they exist
   -- Also we don't want to re-run the environment replace_variables_in_url_headers_body
@@ -267,7 +250,8 @@ local function process_pre_request_scripts(request, document_variables)
   -- INFO: now replace the variables in the URL, headers and body again,
   -- because user scripts could have changed them,
   -- but this time also warn the user if a variable is not found
-  set_variables(request, document_variables)
+
+  process_variables(request, document_variables)
 end
 
 local function process_body(request)
@@ -288,14 +272,10 @@ end
 
 local function process_auth_headers(request)
   local auth_header_name, auth_header_value = PARSER_UTILS.get_header(request.headers, "authorization")
-  if not (auth_header_name and auth_header_value) then
-    return
-  end
+  if not (auth_header_name and auth_header_value) then return end
 
   local authtype = auth_header_value:match("^(%w+)%s+.*")
-  if not authtype then
-    authtype = auth_header_value:match("^(%w+)%s*$")
-  end
+  if not authtype then authtype = auth_header_value:match("^(%w+)%s*$") end
 
   if authtype then
     authtype = authtype:lower()
@@ -316,12 +296,8 @@ local function process_auth_headers(request)
       local service = optional:match("service:([^%s]+)")
       local provider = "aws:amz"
 
-      if region then
-        provider = provider .. ":" .. region
-      end
-      if service then
-        provider = provider .. ":" .. service
-      end
+      if region then provider = provider .. ":" .. region end
+      if service then provider = provider .. ":" .. service end
 
       table.insert(request.cmd, "--aws-sigv4")
       table.insert(request.cmd, provider)
@@ -345,25 +321,17 @@ local function process_protocol(request)
     protocol, host = request.url:match("^([^:]*)://([^:/]*)")
   end
 
-  if protocol ~= "https" then
-    return
-  end
+  if protocol ~= "https" then return end
 
   local certificate = CONFIG.get().certificates[host .. ":" .. (port or "443")]
-  if not certificate then
-    certificate = CONFIG.get().certificates[host]
-  end
+  if not certificate then certificate = CONFIG.get().certificates[host] end
 
   if not certificate then
     while host ~= "" do
       certificate = CONFIG.get().certificates["*." .. host .. ":" .. (port or "443")]
 
-      if not certificate then
-        certificate = CONFIG.get().certificates["*." .. host]
-      end
-      if certificate then
-        break
-      end
+      if not certificate then certificate = CONFIG.get().certificates["*." .. host] end
+      if certificate then break end
 
       host = host:gsub("^[^%.]+%.?", "")
     end
@@ -424,9 +392,7 @@ function M.get_basic_request_data(requests, line_nr)
   local request = vim.deepcopy(default_request)
   local document_request = DOCUMENT_PARSER.get_request_at(requests, line_nr)
 
-  if not document_request then
-    return
-  end
+  if not document_request then return end
 
   request.scripts.pre_request = document_request.scripts.pre_request
   request.scripts.post_request = document_request.scripts.post_request
@@ -460,14 +426,10 @@ M.parse = function(requests, document_variables, line_nr)
     line_nr = PARSER_UTILS.get_current_line_number()
   end
 
-  if not requests then
-    return
-  end
+  if not requests then return end
 
   local request = M.get_basic_request_data(requests, line_nr)
-  if not request or not request.url_raw then
-    return
-  end
+  if not request or not request.url_raw then return end
 
   DB.update().previous_request = DB.find_unique("current_request")
 
@@ -512,8 +474,6 @@ M.parse = function(requests, document_variables, line_nr)
   -- so .replay() can be triggered from any buffer or window
   DB.global_update().replay = vim.deepcopy(request)
   DB.global_update().replay.show_icon_line_number = nil
-
-  cleanup_request_files()
 
   return request
 end

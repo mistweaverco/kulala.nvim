@@ -1,7 +1,7 @@
 local Config = require("kulala.config")
-local Parser = require("kulala.parser.document")
-local Float = require("kulala.ui.float")
 local Env = require("kulala.parser.env")
+local Float = require("kulala.ui.float")
+local Parser = require("kulala.parser.document")
 local StringVariablesParser = require("kulala.parser.string_variables_parser")
 
 local M = {}
@@ -22,9 +22,7 @@ local show_variable_info_text = function()
   while end_col < #line and line:sub(end_col, end_col) ~= "}" do
     end_col = end_col + 1
   end
-  if start_col == 0 or end_col == #line then
-    return nil
-  end
+  if start_col == 0 or end_col == #line then return nil end
   local variable = line:sub(start_col + 1, end_col - 1)
   local computed_variable = "{{" .. variable .. "}}"
   local variable_value = StringVariablesParser.parse(computed_variable, variables, env, true)
@@ -61,9 +59,7 @@ M.setup = function()
         -- if not in http or rest filetype, exit early
         -- This should not happen, when the user loads kulala only for .http or .rest buffers,
         -- but you never know, so better safe than sorry
-        if vim.bo.filetype ~= "http" and vim.bo.filetype ~= "rest" then
-          return
-        end
+        if vim.bo.filetype ~= "http" and vim.bo.filetype ~= "rest" then return end
         if float_win_id then
           vim.api.nvim_win_close(float_win_id, true)
           float_win_id = nil

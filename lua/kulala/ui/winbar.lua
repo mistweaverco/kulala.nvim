@@ -28,15 +28,13 @@ M.winbar_sethl = function()
   vim.api.nvim_set_hl(0, "KulalaTabSel", { link = "TabLineSel" })
 end
 
----@param buf integer Buffer id
 ---@param win_id integer|nil Window id
 ---@param view string Body or headers
-M.toggle_winbar_tab = function(buf, win_id, view)
-  if not (win_id and CONFIG.get().winbar) then
-    return
-  end
+M.toggle_winbar_tab = function(_, win_id, view)
+  local config = CONFIG.get()
+  if not (win_id and config.winbar) then return end
 
-  local winbar = CONFIG.get().default_winbar_panes
+  local winbar = config.default_winbar_panes
   local winbar_title = {}
 
   for _, key in ipairs(winbar) do
@@ -54,6 +52,9 @@ M.toggle_winbar_tab = function(buf, win_id, view)
       table.insert(winbar_title, desc)
     end
   end
+
+  table.insert(winbar_title, "<- " .. config.kulala_keymaps["Previous response"][1])
+  table.insert(winbar_title, config.kulala_keymaps["Next response"][1] .. " ->")
 
   local value = table.concat(winbar_title, " ")
   vim.api.nvim_set_option_value("winbar", value, { win = win_id })

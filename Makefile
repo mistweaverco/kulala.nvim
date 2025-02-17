@@ -1,4 +1,4 @@
-test = nvim -l tests/minit.lua tests
+test = nvim -l tests/minit.lua tests --shuffle-tests
 
 tag ?= wip
 watch = '*.lua' -o -name "*.js" -o -name "*.http" -name "*.txt"

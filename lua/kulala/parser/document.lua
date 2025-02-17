@@ -1,7 +1,7 @@
 local DB = require("kulala.db")
 local FS = require("kulala.utils.fs")
-local PARSER_UTILS = require("kulala.parser.utils")
 local Logger = require("kulala.logger")
+local PARSER_UTILS = require("kulala.parser.utils")
 
 local M = {}
 
@@ -78,16 +78,12 @@ local function split_by_block_delimiters(text)
       -- If no more delimiters, add the remaining text as the last section
       local last_section = text:sub(start):gsub("\n+$", "") -- Remove trailing newlines
 
-      if #last_section > 0 then
-        table.insert(result, last_section)
-      end
+      if #last_section > 0 then table.insert(result, last_section) end
       break
     end
     -- Add the text before the delimiter as a section
     local section = text:sub(start, split_start - 1):gsub("\n+$", "") -- Remove trailing newlines
-    if #section > 0 then
-      table.insert(result, section)
-    end
+    if #section > 0 then table.insert(result, section) end
     -- Move start position
     start = split_end
   end
@@ -113,9 +109,7 @@ local function get_request_from_fenced_code_block()
   end
 
   -- If we didn't find a block start, return nil
-  if not block_start then
-    return
-  end
+  if not block_start then return end
 
   -- Search for the end of the fenced code block
   local block_end = nil
@@ -128,19 +122,17 @@ local function get_request_from_fenced_code_block()
   end
 
   -- If we didn't find a block end, return nil
-  if not block_end then
-    return
-  end
+  if not block_end then return end
 
   return vim.api.nvim_buf_get_lines(buf, block_start, block_end - 1, false), block_start
 end
 
 local function get_visual_selection()
-  local line_s, line_e
+  if vim.api.nvim_get_mode().mode ~= "V" then return end
 
-  if vim.api.nvim_get_mode().mode == "V" then
-    vim.api.nvim_input("<Esc>")
-  end
+  vim.api.nvim_input("<Esc>")
+
+  local line_s, line_e
   line_s, line_e = vim.fn.getpos(".")[2], vim.fn.getpos("v")[2]
 
   if line_s > line_e then
@@ -148,7 +140,6 @@ local function get_visual_selection()
   end
 
   local contents = vim.api.nvim_buf_get_lines(DB.get_current_buffer(), line_s - 1, line_e, false)
-  contents = PARSER_UTILS.strip_invalid_chars(contents)
 
   return contents, line_s - 1
 end
@@ -179,9 +170,7 @@ end
 local function parse_metadata(request, line)
   if line:sub(1, 3) == "# @" then
     local meta_name, meta_value = line:match("^# @([%w+%-]+)%s*(.*)$")
-    if meta_name and meta_value then
-      table.insert(request.metadata, { name = meta_name, value = meta_value })
-    end
+    if meta_name and meta_value then table.insert(request.metadata, { name = meta_name, value = meta_value }) end
   end
 end
 
@@ -265,22 +254,21 @@ end
 M.get_document = function()
   local buf = DB.get_current_buffer()
 
-  local line_offset = 0
-  local content_lines
+  local content_lines, line_offset = get_visual_selection() -- first: try to get the visual selection
 
-  if FS.is_non_http_file() then
+  if not content_lines and FS.is_non_http_file() then -- second: try to get the content from the fenced block if the file is not an HTTP file
     content_lines, line_offset = get_request_from_fenced_code_block()
 
-    if not content_lines then
-      content_lines, line_offset = get_visual_selection()
-    end
+    content_lines = content_lines or { vim.fn.getline(".") } -- third: try to get the current line
+    line_offset = line_offset or vim.fn.line(".") - 1
   end
 
-  content_lines = content_lines or vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+  content_lines = content_lines and PARSER_UTILS.strip_invalid_chars(content_lines or {})
 
-  if not content_lines then
-    return
-  end
+  content_lines = content_lines or vim.api.nvim_buf_get_lines(buf, 0, -1, false) -- finally: get the whole buffer if the three methods above failed
+  line_offset = line_offset or 0
+
+  if not content_lines then return end
 
   local content = table.concat(content_lines, "\n")
   local variables = {}
@@ -325,9 +313,7 @@ M.get_document = function()
         local scriptfile = line:match("^< (.*)$")
         table.insert(request.scripts.pre_request.files, scriptfile)
       elseif line == "" and not is_body_section then
-        if not is_request_line then
-          is_body_section = true
-        end
+        if not is_request_line then is_body_section = true end
         -- redirect response body to file
       elseif line:match("^>> (.*)$") then
         parse_redirect_response(request, line)
@@ -360,7 +346,11 @@ M.get_document = function()
     request.end_line = line_offset + block_line_count
     line_offset = request.end_line + 1 -- +1 for the '###' separator line
 
-    table.insert(requests, request)
+    if #request.url > 0 then
+      table.insert(requests, request)
+    else
+      Logger.warn(("Request without URL found at line: %s. Skipping ..."):format(request.start_line))
+    end
   end
 
   return variables, requests
@@ -372,14 +362,10 @@ end
 ---@param linenr? number|nil
 ---@return DocumentRequest|nil
 M.get_request_at = function(requests, linenr)
-  if not linenr then
-    return requests[1]
-  end
+  if not linenr then return requests[1] end
 
   for _, request in ipairs(requests) do
-    if linenr >= request.start_line and linenr <= request.end_line then
-      return request
-    end
+    if linenr >= request.start_line and linenr <= request.end_line then return request end
   end
 end
 
@@ -387,9 +373,7 @@ M.get_previous_request = function(requests)
   local cursor_line = PARSER_UTILS.get_current_line_number()
 
   for i, request in ipairs(requests) do
-    if i > 1 and cursor_line >= request.start_line and cursor_line <= request.end_line then
-      return requests[i - 1]
-    end
+    if i > 1 and cursor_line >= request.start_line and cursor_line <= request.end_line then return requests[i - 1] end
   end
 end
 

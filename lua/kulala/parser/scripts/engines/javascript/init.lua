@@ -1,6 +1,6 @@
+local CONFIG = require("kulala.config")
 local FS = require("kulala.utils.fs")
 local GLOBALS = require("kulala.globals")
-local CONFIG = require("kulala.config")
 local Logger = require("kulala.logger")
 local M = {}
 
@@ -24,9 +24,7 @@ local FILE_MAPPING = {
 }
 
 M.install_dependencies = function()
-  if FS.file_exists(BASE_FILE_PRE) and FS.file_exists(BASE_FILE_POST) then
-    return
-  end
+  if FS.file_exists(BASE_FILE_PRE) and FS.file_exists(BASE_FILE_POST) then return end
 
   Logger.warn("Javascript base files not found.")
   Logger.info("Installing Javascript dependencies...")
@@ -53,14 +51,10 @@ local generate_one = function(script_type, is_external_file, script_data)
   local userscript
   local base_file_path = FILE_MAPPING[script_type]
 
-  if base_file_path == nil then
-    return nil, nil
-  end
+  if base_file_path == nil then return nil, nil end
 
   local base_file = FS.read_file(base_file_path)
-  if base_file == nil then
-    return nil, nil
-  end
+  if base_file == nil then return nil, nil end
 
   local script_cwd
   local buf_dir = FS.get_current_buffer_dir()
@@ -103,14 +97,10 @@ end
 local generate_all = function(script_type, scripts_data)
   local scripts = {}
   local script_path, script_cwd = generate_one(script_type, false, scripts_data.inline)
-  if script_path ~= nil and script_cwd ~= nil then
-    table.insert(scripts, { path = script_path, cwd = script_cwd })
-  end
+  if script_path ~= nil and script_cwd ~= nil then table.insert(scripts, { path = script_path, cwd = script_cwd }) end
   for _, script_data in ipairs(scripts_data.files) do
     script_path, script_cwd = generate_one(script_type, true, script_data)
-    if script_path ~= nil and script_cwd ~= nil then
-      table.insert(scripts, { path = script_path, cwd = script_cwd })
-    end
+    if script_path ~= nil and script_cwd ~= nil then table.insert(scripts, { path = script_path, cwd = script_cwd }) end
   end
   return scripts
 end
@@ -122,9 +112,10 @@ end
 ---@param type "pre_request_client_only" | "pre_request" | "post_request_client_only" | "post_request" -- type of script
 ---@param data ScriptData
 M.run = function(type, data)
-  if scripts_is_empty(data) then
-    return
-  end
+  local pre_output = GLOBALS.SCRIPT_PRE_OUTPUT_FILE
+  local post_output = GLOBALS.SCRIPT_POST_OUTPUT_FILE
+
+  if scripts_is_empty(data) then return end
 
   if not NODE_EXISTS then
     Logger.error("node not found, please install nodejs")
@@ -139,9 +130,7 @@ M.run = function(type, data)
   M.install_dependencies()
 
   local scripts = generate_all(type, data)
-  if #scripts == 0 then
-    return
-  end
+  if #scripts == 0 then return end
 
   for _, script in ipairs(scripts) do
     local output = vim
@@ -156,34 +145,25 @@ M.run = function(type, data)
       })
       :wait()
 
-    FS.delete_file(GLOBALS.SCRIPT_PRE_OUTPUT_FILE)
-    FS.delete_file(GLOBALS.SCRIPT_POST_OUTPUT_FILE)
-
     if output.stderr ~= nil and not string.match(output.stderr, "^%s*$") then
       if not CONFIG.get().disable_script_print_output then
         Logger.error(("Errors while running JS script: %s"):format(output.stderr))
       end
 
       if type == "pre_request" then
-        FS.write_file(GLOBALS.SCRIPT_PRE_OUTPUT_FILE, output.stderr)
+        FS.write_file(pre_output, output.stderr)
       elseif type == "post_request" then
-        FS.write_file(GLOBALS.SCRIPT_POST_OUTPUT_FILE, output.stderr)
+        FS.write_file(post_output, output.stderr)
       end
     end
 
     if output.stdout ~= nil and not string.match(output.stdout, "^%s*$") then
-      if not CONFIG.get().disable_script_print_output then
-        Logger.info("JS: " .. output.stdout)
-      end
+      if not CONFIG.get().disable_script_print_output then Logger.info("JS: " .. output.stdout) end
 
-      if not FS.write_file(GLOBALS.SCRIPT_PRE_OUTPUT_FILE, output.stdout) then
-        Logger.error("write " .. GLOBALS.SCRIPT_PRE_OUTPUT_FILE .. " fail")
-      end
-    elseif type == "post_request" then
       if type == "pre_request" then
-        if not FS.write_file(GLOBALS.SCRIPT_POST_OUTPUT_FILE, output.stdout) then
-          Logger.error("write " .. GLOBALS.SCRIPT_POST_OUTPUT_FILE .. " fail")
-        end
+        if not FS.write_file(pre_output, output.stdout) then Logger.error("write " .. pre_output .. " fail") end
+      elseif type == "post_request" then
+        if not FS.write_file(post_output, output.stdout) then Logger.error("write " .. post_output .. " fail") end
       end
     end
   end

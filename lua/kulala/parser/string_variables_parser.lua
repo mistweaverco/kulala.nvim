@@ -10,15 +10,11 @@ end
 
 -- Function to check for binary data
 local function contains_binary_data(value)
-  if type(value) ~= "string" then
-    return false
-  end
+  if type(value) ~= "string" then return false end
 
   -- If it's valid UTF-8, it's not binary
   -- This should handle chinese, japanese, korean, etc.
-  if is_valid_utf8(value) then
-    return false
-  end
+  if is_valid_utf8(value) then return false end
 
   -- Check for non-printable ASCII characters
   return value:find("[%z\1-\8\11\12\14-\31\127]") ~= nil
@@ -31,9 +27,7 @@ end
 ---@param silent boolean|nil -- Whether to suppress not found variable warnings
 local function parse_string_variables(str, variables, env, silent)
   -- Early check: if the input string is a blob (represented as userdata in Neovim)
-  if contains_binary_data(str) then
-    return str
-  end
+  if contains_binary_data(str) then return str end
 
   local function replace_placeholder(variable_name)
     local value
@@ -59,9 +53,7 @@ local function parse_string_variables(str, variables, env, silent)
     end
 
     -- Early check if the variable value is a blob (userdata)
-    if contains_binary_data(value) then
-      return value
-    end
+    if contains_binary_data(value) then return value end
 
     -- Safe conversion to string
     return tostring(value or "")

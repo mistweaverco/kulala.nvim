@@ -42,9 +42,7 @@ end
 M.get_meta_tag = function(request, tag)
   tag = tag:lower()
   for _, meta in ipairs(request.metadata) do
-    if meta.name:lower() == tag then
-      return meta.value
-    end
+    if meta.name:lower() == tag then return meta.value end
   end
   return nil
 end
@@ -55,9 +53,7 @@ end
 M.contains_meta_tag = function(request, tag)
   tag = tag:lower()
   for _, meta in ipairs(request.metadata) do
-    if meta.name:lower() == tag then
-      return true
-    end
+    if meta.name:lower() == tag then return true end
   end
   return false
 end
@@ -72,15 +68,11 @@ M.contains_header = function(headers, header, value)
   value = value and value:lower() or nil
   if value == nil then
     for k, _ in pairs(headers) do
-      if k:lower() == header then
-        return true
-      end
+      if k:lower() == header then return true end
     end
   else
     for k, v in pairs(headers) do
-      if k:lower() == header and v:lower() == value then
-        return true
-      end
+      if k:lower() == header and v:lower() == value then return true end
     end
   end
   return false
@@ -94,9 +86,7 @@ end
 M.get_header_value = function(headers, header, dont_ignore_case)
   header = dont_ignore_case and header or header:lower()
   for k, v in pairs(headers) do
-    if k == header then
-      return v
-    end
+    if k == header then return v end
   end
   return nil
 end
@@ -109,9 +99,7 @@ end
 M.get_header_name = function(headers, header, dont_ignore_case)
   header = dont_ignore_case and header or header:lower()
   for k, _ in pairs(headers) do
-    if k:lower() == header then
-      return k
-    end
+    if k:lower() == header then return k end
   end
   return nil
 end
@@ -128,29 +116,21 @@ M.get_header = function(headers, header, value, dont_ignore_case)
   if dont_ignore_case then
     if value == nil then
       for k, _ in pairs(headers) do
-        if k == header then
-          return k, headers[k]
-        end
+        if k == header then return k, headers[k] end
       end
     else
       for k, v in pairs(headers) do
-        if k == header and v == value then
-          return k, v
-        end
+        if k == header and v == value then return k, v end
       end
     end
   else
     if value == nil then
       for k, _ in pairs(headers) do
-        if k:lower() == header then
-          return k, headers[k]
-        end
+        if k:lower() == header then return k, headers[k] end
       end
     else
       for k, v in pairs(headers) do
-        if k:lower() == header and v:lower() == value then
-          return k, v
-        end
+        if k:lower() == header and v:lower() == value then return k, v end
       end
     end
   end

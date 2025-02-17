@@ -7,14 +7,10 @@ local function compare_strings(str_1, str_2)
   local char_1, char_2, pos
   for i = 1, #str_1 do
     pos, char_1, char_2 = i, str_1:sub(i, i), str_2:sub(i, i)
-    if char_1 ~= char_2 then
-      break
-    end
+    if char_1 ~= char_2 then break end
   end
 
-  if not pos then
-    return ""
-  end
+  if not pos then return "" end
   pos = pos + 1
 
   local sub_1 = str_1:sub(pos - 5, pos - 1) .. "<< " .. str_1:sub(pos, pos) .. " >>" .. str_1:sub(pos + 1, pos + 5)
@@ -37,12 +33,8 @@ local has_string = function(state, args)
   local o, pattern = args[1], args[2]
   local result
 
-  if type(o) == "table" then
-    o = h.to_string(o)
-  end
-  if type(pattern) == "table" then
-    pattern = h.to_string(pattern)
-  end
+  if type(o) == "table" then o = h.to_string(o) end
+  if type(pattern) == "table" then pattern = h.to_string(pattern) end
 
   o = o:clean()
   pattern = pattern:clean()
@@ -67,16 +59,12 @@ get_key_paths = function(tbl, path, paths)
   path = path or {}
   paths = paths or {}
 
-  if type(tbl) ~= "table" then
-    return
-  end
+  if type(tbl) ~= "table" then return end
 
   for k, v in pairs(tbl) do
     local nested_path = vim.list_extend({ path }, { k })
 
-    if not get_key_paths(v, nested_path, paths) then
-      table.insert(paths, vim.fn.flatten(nested_path))
-    end
+    if not get_key_paths(v, nested_path, paths) then table.insert(paths, vim.fn.flatten(nested_path)) end
   end
   return paths
 end

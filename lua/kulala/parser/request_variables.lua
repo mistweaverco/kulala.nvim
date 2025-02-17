@@ -1,5 +1,5 @@
-local DB = require("kulala.db")
 local CONFIG = require("kulala.config")
+local DB = require("kulala.db")
 local Logger = require("kulala.logger")
 
 local M = {}
@@ -16,9 +16,7 @@ local function get_match(str)
   }
   for _, p in ipairs(patterns) do
     local path_name, path_method, path_type, subpath = string.match(str, p)
-    if path_name then
-      return path_name, path_method, path_type, subpath
-    end
+    if path_name then return path_name, path_method, path_type, subpath end
   end
   return nil, nil, nil, nil
 end
@@ -36,32 +34,20 @@ local function get_config_contenttype(headers)
   if headers["content-type"] then
     local content_type = vim.split(headers["content-type"], ";")[1]
     local config = CONFIG.get().contenttypes[content_type]
-    if config then
-      return config
-    end
+    if config then return config end
   end
   return CONFIG.default_contenttype
 end
 
 local function get_body_value_from_path(name, method, subpath)
   local base_table = DB.find_unique("env")[name]
-  if not base_table then
-    return nil
-  end
-  if not base_table[method] then
-    return nil
-  end
-  if not base_table[method].body then
-    return nil
-  end
+  if not base_table then return nil end
+  if not base_table[method] then return nil end
+  if not base_table[method].body then return nil end
 
-  if subpath == "*" then
-    return base_table[method].body
-  end
+  if subpath == "*" then return base_table[method].body end
 
-  if not base_table[method].headers then
-    return nil
-  end
+  if not base_table[method].headers then return nil end
   local contenttype = get_config_contenttype(base_table[method].headers)
 
   if type(contenttype.pathresolver) == "function" then
@@ -70,16 +56,12 @@ local function get_body_value_from_path(name, method, subpath)
     local cmd = {}
 
     for k, v in pairs(contenttype.pathresolver) do
-      if type(v) == "string" then
-        v = string.gsub(v, "{{path}}", subpath)
-      end
+      if type(v) == "string" then v = string.gsub(v, "{{path}}", subpath) end
       cmd[k] = v
     end
 
     local ret = vim.system(cmd, { stdin = base_table[method].body, text = true }):wait()
-    if ret.code ~= 0 then
-      return Logger.error(("Error sourcing body contents from: %s"):format(ret.stderr))
-    end
+    if ret.code ~= 0 then return Logger.error(("Error sourcing body contents from: %s"):format(ret.stderr)) end
 
     return ret.stdout
   end
@@ -89,15 +71,9 @@ end
 
 local function get_header_value_from_path(name, method, subpath)
   local base_table = DB.find_unique("env")[name]
-  if not base_table then
-    return nil
-  end
-  if not base_table[method] then
-    return nil
-  end
-  if not base_table[method].headers then
-    return nil
-  end
+  if not base_table then return nil end
+  if not base_table[method] then return nil end
+  if not base_table[method].headers then return nil end
   local result = base_table[method].headers
   local path_parts = {}
 
@@ -120,15 +96,9 @@ end
 local function get_cookies_value_from_path(name, subpath)
   local db_env = DB.find_unique("env")
   local base_table = db_env and db_env[name] or nil
-  if not base_table then
-    return nil
-  end
-  if not base_table.response then
-    return nil
-  end
-  if not base_table.response.cookies then
-    return nil
-  end
+  if not base_table then return nil end
+  if not base_table.response then return nil end
+  if not base_table.response.cookies then return nil end
   local result = base_table.response.cookies
   local path_parts = {}
 
@@ -151,9 +121,7 @@ end
 M.parse = function(path)
   local path_name, path_method, path_type, path_subpath = get_match(path)
 
-  if not path_name or not path_method or not path_type or not path_subpath then
-    return nil
-  end
+  if not path_name or not path_method or not path_type or not path_subpath then return nil end
 
   if path_type == "headers" then
     return get_header_value_from_path(path_name, path_method, path_subpath)

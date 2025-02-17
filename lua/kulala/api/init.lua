@@ -1,6 +1,6 @@
-local Logger = require("kulala.logger")
-local Globals = require("kulala.globals")
 local Fs = require("kulala.utils.fs")
+local Globals = require("kulala.globals")
+local Logger = require("kulala.logger")
 local M = {}
 
 M.events = {

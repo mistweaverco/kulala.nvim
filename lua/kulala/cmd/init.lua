@@ -1,15 +1,16 @@
 ---@diagnostic disable: inject-field
-local GLOBALS = require("kulala.globals")
-local CONFIG = require("kulala.config")
-local Fs = require("kulala.utils.fs")
-local DOCUMENT_PARSER = require("kulala.parser.document")
-local REQUEST_PARSER = require("kulala.parser.request")
-local EXT_PROCESSING = require("kulala.external_processing")
-local INT_PROCESSING = require("kulala.internal_processing")
 local Api = require("kulala.api")
+local CONFIG = require("kulala.config")
+local DB = require("kulala.db")
+local DOCUMENT_PARSER = require("kulala.parser.document")
+local EXT_PROCESSING = require("kulala.external_processing")
+local FS = require("kulala.utils.fs")
+local GLOBALS = require("kulala.globals")
 local INLAY = require("kulala.inlay")
-local UiHighlight = require("kulala.ui.highlight")
+local INT_PROCESSING = require("kulala.internal_processing")
 local Logger = require("kulala.logger")
+local REQUEST_PARSER = require("kulala.parser.request")
+local UiHighlight = require("kulala.ui.highlight")
 
 local M = {}
 
@@ -22,9 +23,7 @@ local reset_task_queue = function()
 end
 
 local function run_next_task()
-  if #TASK_QUEUE == 0 then
-    return reset_task_queue()
-  end
+  if #TASK_QUEUE == 0 then return reset_task_queue() end
 
   RUNNING_TASK = true
   local task = table.remove(TASK_QUEUE, 1)
@@ -47,23 +46,19 @@ end
 local function offload_task(fn, callback)
   table.insert(TASK_QUEUE, { fn = fn, callback = callback })
   -- If no task is currently running, start processing
-  if not RUNNING_TASK then
-    run_next_task()
-  end
+  if not RUNNING_TASK then run_next_task() end
 end
 
 local function process_prompt_vars(res)
   for _, metadata in ipairs(res.metadata) do
-    if metadata.name == "prompt" and not INT_PROCESSING.prompt_var(metadata.value) then
-      return false
-    end
+    if metadata.name == "prompt" and not INT_PROCESSING.prompt_var(metadata.value) then return false end
   end
 
   return true
 end
 
 local function process_metadata(result)
-  local body = Fs.read_file(GLOBALS.BODY_FILE)
+  local body = FS.read_file(GLOBALS.BODY_FILE)
 
   local int_meta_processors = {
     ["name"] = "set_env_for_named_request",
@@ -92,7 +87,6 @@ end
 
 local function process_external(result)
   REQUEST_PARSER.scripts.javascript.run("post_request", result.scripts.post_request)
-  Fs.delete_request_scripts_files()
 end
 
 local function process_api()
@@ -100,14 +94,41 @@ local function process_api()
   Api.trigger("after_request")
 end
 
-local function process_response(request_status, parsed_request)
-  Fs.write_file(GLOBALS.STATS_FILE, request_status.stdout, false)
-  Fs.write_file(GLOBALS.ERRORS_FILE, request_status.errors or "", false)
+local function save_response(request_status, parsed_request)
+  local buf = DB.get_current_buffer()
+  local line = parsed_request.show_icon_line_number or 0
+  local id = buf .. ":" .. line
 
+  local responses = DB.global_update().responses
+  if #responses > 0 and responses[#responses].id == id and responses[#responses].status == -1 then
+    table.remove(responses) -- remove the last response if it's the same request and status was unfinished
+  end
+
+  table.insert(responses, {
+    id = id,
+    url = parsed_request.url or "",
+    method = parsed_request.method or "",
+    status = request_status.code or 0,
+    duration = request_status.duration or 0,
+    body = FS.read_file(GLOBALS.BODY_FILE) or "",
+    headers = FS.read_file(GLOBALS.HEADERS_FILE) or "",
+    errors = request_status.errors or "",
+    stats = request_status.stdout or "",
+    script_pre_output = FS.read_file(GLOBALS.SCRIPT_PRE_OUTPUT_FILE) or "",
+    script_post_output = FS.read_file(GLOBALS.SCRIPT_POST_OUTPUT_FILE) or "",
+    buf = buf,
+    buf_name = vim.fn.bufname(buf),
+    line = line,
+  })
+end
+
+local function process_response(request_status, parsed_request)
   process_metadata(parsed_request)
   process_internal(parsed_request)
   process_external(parsed_request)
   process_api()
+
+  save_response(request_status, parsed_request)
 end
 
 local function process_errors(request, request_status, processing_errors)
@@ -131,8 +152,9 @@ local function handle_response(request_status, parsed_request, callback)
   local success = request_status.code == 0
 
   local status, processing_errors = xpcall(function()
-    _ = success and process_response(request_status, parsed_request) -- TODO: add handling for errors during process_response
-    callback(success, request_status.start_time, parsed_request.show_icon_line_number)
+    _ = success and process_response(request_status, parsed_request)
+    -- TODO: add handling of potential errors during process_response and call callback with success=false
+    callback(success, request_status.duration, parsed_request.show_icon_line_number)
   end, debug.traceback)
 
   if success and status then
@@ -145,7 +167,7 @@ end
 
 local function received_unbffured(request, response)
   local unbuffered = vim.tbl_contains(request.cmd, "-N")
-  return unbuffered and response:find("Connected") and Fs.file_exists(GLOBALS.BODY_FILE)
+  return unbuffered and response:find("Connected") and FS.file_exists(GLOBALS.BODY_FILE)
 end
 
 ---Executes DocumentRequest
@@ -156,7 +178,9 @@ end
 local function process_request(requests, request, variables, callback)
   --  to allow running fastAPI within vim.system callbacks
   handle_response = vim.schedule_wrap(handle_response)
-  callback = vim.schedule_wrap(callback)
+
+  FS.delete_request_scripts_files()
+  FS.delete_cached_files(true)
 
   if not process_prompt_vars(request) then
     Logger.warn("Prompt failed. Skipping this and all following requests.")
@@ -169,8 +193,9 @@ local function process_request(requests, request, variables, callback)
     return
   end
 
-  ---@diagnostic disable-next-line: undefined-field
-  local start_time = vim.loop.hrtime()
+  --TODO: call callback with success=false if promt fails or request could not be parsed
+
+  local start_time = vim.uv.hrtime()
   local errors
 
   vim.system(parsed_request.cmd, {
@@ -178,16 +203,19 @@ local function process_request(requests, request, variables, callback)
     timeout = CONFIG.get().request_timeout,
     stderr = function(_, data)
       if data then
-        errors = (errors or "") .. data
+        errors = (errors or "") .. data:gsub("\r\n", "\n")
 
         if received_unbffured(parsed_request, errors) then
-          callback(nil, start_time, parsed_request.show_icon_line_number)
+          vim.schedule(function()
+            save_response({ code = -1 }, parsed_request)
+            callback(nil, 0, parsed_request.show_icon_line_number)
+          end)
         end
       end
     end,
   }, function(job_status)
-    job_status.start_time = start_time
     job_status.errors = errors
+    job_status.duration = vim.uv.hrtime() - start_time
 
     handle_response(job_status, parsed_request, callback)
   end)
@@ -204,22 +232,17 @@ end
 M.run_parser = function(requests, line_nr, callback)
   local variables, reqs_to_process
 
-  Fs.clear_cached_files(true)
   reset_task_queue()
 
   if not requests then
     variables, requests = DOCUMENT_PARSER.get_document()
   end
 
-  if not requests then
-    return Logger.error("No requests found in the document")
-  end
+  if not requests then return Logger.error("No requests found in the document") end
 
   if line_nr and line_nr > 0 then
     local request = DOCUMENT_PARSER.get_request_at(requests, line_nr)
-    if not request then
-      return Logger.error("No request found at current line")
-    end
+    if not request then return Logger.error("No request found at current line") end
 
     reqs_to_process = { request }
   end
@@ -230,9 +253,8 @@ M.run_parser = function(requests, line_nr, callback)
     INLAY.show("loading", req.show_icon_line_number)
 
     offload_task(function()
-      UiHighlight.highlight_request(req, function()
-        process_request(requests, req, variables, callback)
-      end)
+      UiHighlight.highlight_request(req)
+      process_request(requests, req, variables, callback)
     end)
   end
 end

@@ -1,6 +1,7 @@
 ---@diagnostic disable: undefined-field, redefined-local
-local GLOBALS = require("kulala.globals")
 local CONFIG = require("kulala.config")
+local DB = require("kulala.db")
+local GLOBALS = require("kulala.globals")
 local KEYMAPS = require("kulala.config.keymaps")
 local kulala = require("kulala")
 
@@ -83,7 +84,18 @@ describe("keymaps", function()
 
   describe("local keymaps", function()
     before_each(function()
-      h.Fs:stub_read_file({ [GLOBALS.BODY_FILE] = h.load_fixture("fixtures/request_2_headers_body.txt") })
+      DB.global_update().responses = {
+        ---@diagnostic disable-next-line: missing-fields
+        {
+          status = 0,
+          duration = 100,
+          url = "http://example.com",
+          method = "GET",
+          line = 1,
+          buf_name = "test.txt",
+          body = h.load_fixture("fixtures/request_2_headers_body.txt"),
+        },
+      }
 
       CONFIG.setup({
         default_view = "body",
@@ -104,7 +116,6 @@ describe("keymaps", function()
 
     after_each(function()
       kulala.close()
-      h.Fs:read_file_reset()
     end)
 
     it("sets default keymaps", function()

@@ -1,6 +1,6 @@
 local CONFIG = require("kulala.config")
-local GLOBALS = require("kulala.globals")
 local FS = require("kulala.utils.fs")
+local GLOBALS = require("kulala.globals")
 
 local health = vim.health
 local start = health.start

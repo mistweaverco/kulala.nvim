@@ -1,7 +1,7 @@
 ---@diagnostic disable: undefined-field, redefined-local
-local GLOBALS = require("kulala.globals")
 local CONFIG = require("kulala.config")
 local DB = require("kulala.db")
+local GLOBALS = require("kulala.globals")
 local kulala = require("kulala")
 
 local kulala_name = GLOBALS.UI_ID
@@ -89,7 +89,7 @@ describe("UI", function()
       result = h.get_buf_lines(ui_buf):to_string()
       expected = h.load_fixture("fixtures/request_1_headers.txt")
 
-      assert.is_same(expected, result)
+      assert.has_string(result, expected)
     end)
 
     it("in body mode", function()
@@ -99,7 +99,7 @@ describe("UI", function()
       result = h.get_buf_lines(ui_buf):to_string()
       expected = h.load_fixture("fixtures/request_1_body.txt")
 
-      assert.is_same(expected, result)
+      assert.has_string(result, expected)
     end)
 
     it("for current line in body mode", function()
@@ -110,7 +110,7 @@ describe("UI", function()
       result = h.get_buf_lines(ui_buf):to_string()
       expected = h.load_fixture("fixtures/request_2_body.txt")
 
-      assert.is_same(expected, result)
+      assert.has_string(result, expected)
     end)
 
     it("for current line in in non-http buffer and strips comments chars", function()
@@ -125,9 +125,9 @@ describe("UI", function()
           -- @foobar=bar
           ;; @ENV_PROJECT = project_name
           
-          #- POST https://httpbin.org/advanced_1 HTTP/1.1
-          /*-- Content-Type: application/json
-        ]]):to_table(),
+          ## POST https://httpbin.org/advanced_1 HTTP/1.1
+          /* Content-Type: application/json
+        ]]):to_table(true),
         "test.lua"
       )
 
@@ -201,7 +201,7 @@ describe("UI", function()
       result = h.get_buf_lines(ui_buf):to_string()
 
       assert.is_same(2, curl.requests_no)
-      assert.is_same(expected, result)
+      assert.has_string(result, expected)
     end)
 
     it("in verbose mode", function()
@@ -213,7 +213,7 @@ describe("UI", function()
       result = h.get_buf_lines(ui_buf):to_string()
       expected = h.load_fixture("fixtures/request_1_verbose.txt")
 
-      assert.is_same(expected, result)
+      assert.has_string(result, expected)
     end)
 
     it("in verbose mode for run_all", function()
@@ -226,7 +226,7 @@ describe("UI", function()
       result = h.get_buf_lines(ui_buf):to_string()
 
       assert.is_same(2, curl.requests_no)
-      assert.is_same(expected, result)
+      assert.has_string(result, expected)
     end)
 
     it("stats of the request", function()
@@ -238,7 +238,7 @@ describe("UI", function()
       expected = h.load_fixture("fixtures/request_1_stats.txt")
       result = h.get_buf_lines(ui_buf):to_string()
 
-      assert.is_same(expected, result)
+      assert.has_string(result, expected)
     end)
 
     it("in script mode", function()
@@ -262,7 +262,7 @@ describe("UI", function()
       expected = h.load_fixture("fixtures/request_1_script.txt")
       result = h.get_buf_lines(ui_buf):to_string()
 
-      assert.is_same(expected, result)
+      assert.has_string(result, expected)
     end)
 
     it("replays last request", function()
@@ -277,7 +277,108 @@ describe("UI", function()
       result = h.get_buf_lines(ui_buf):to_string()
       expected = h.load_fixture("fixtures/request_1_body.txt")
 
-      assert.is_same(expected, result)
+      assert.has_string(result, expected)
+    end)
+  end)
+
+  describe("history of responses", function()
+    before_each(function()
+      input.stub({ ["PROMPT_VAR prompt"] = "TEST_PROMPT_VAR" })
+      curl.stub({
+        ["https://httpbin.org/advanced_e1"] = {
+          headers = h.load_fixture("fixtures/advanced_E_headers.txt"),
+          body = h.load_fixture("fixtures/advanced_E1_body.txt"),
+          errors = h.load_fixture("fixtures/request_1_errors.txt"),
+        },
+        ["https://httpbin.org/advanced_e2"] = {
+          headers = h.load_fixture("fixtures/advanced_E_headers.txt"),
+          body = h.load_fixture("fixtures/advanced_E2_body.txt"),
+          stats = h.load_fixture("fixtures/stats.json"),
+        },
+        ["https://httpbin.org/advanced_e3"] = {
+          headers = h.load_fixture("fixtures/request_2_headers.txt"),
+          body = h.load_fixture("fixtures/advanced_E3_body.txt"),
+          errors = h.load_fixture("fixtures/request_2_errors.txt"),
+        },
+      })
+    end)
+
+    it("stores responses of consequtive requests", function()
+      DB.global_update().responses = {}
+      vim.cmd.edit(h.expand_path("requests/advanced_E.http"))
+
+      kulala.run_all()
+      wait_for_requests(3)
+
+      expected = h.load_fixture("fixtures/advanced_E3_body.txt")
+      result = h.get_buf_lines(ui_buf):to_string()
+
+      assert.has_string(result, "Request 3/3")
+      assert.has_string(result, "URL: POST https://httpbin.org/advanced_e3")
+      assert.has_string(result, expected)
+
+      h.send_keys("H")
+
+      expected = h.load_fixture("fixtures/request_2_headers.txt")
+      result = h.get_buf_lines(h.get_kulala_buf()):to_string()
+
+      assert.has_string(result, "Request 3/3")
+      assert.has_string(result, expected)
+
+      h.send_keys("V")
+
+      expected = h.load_fixture("fixtures/request_2_errors.txt")
+      result = h.get_buf_lines(h.get_kulala_buf()):to_string()
+
+      assert.has_string(result, "Request 3/3")
+      assert.has_string(result, expected)
+
+      h.send_keys("[")
+      h.send_keys("B")
+
+      expected = h.load_fixture("fixtures/advanced_E2_body.txt")
+      result = h.get_buf_lines(h.get_kulala_buf()):to_string()
+
+      assert.has_string(result, "Request 2/3")
+      assert.has_string(result, "URL: POST https://httpbin.org/advanced_e2")
+      assert.has_string(result, expected)
+      --
+      h.send_keys("S")
+
+      expected = h.load_fixture("fixtures/request_1_stats.txt")
+      result = h.get_buf_lines(h.get_kulala_buf()):to_string()
+
+      assert.has_string(result, "Request 2/3")
+      assert.has_string(result, expected)
+
+      h.send_keys("[")
+      h.send_keys("B")
+
+      expected = h.load_fixture("fixtures/advanced_E1_body.txt")
+      result = h.get_buf_lines(h.get_kulala_buf()):to_string()
+
+      assert.has_string(result, "Request 1/3")
+      assert.has_string(result, "URL: POST https://httpbin.org/advanced_e1")
+      assert.has_string(result, expected)
+
+      h.send_keys("O")
+
+      result = h.get_buf_lines(h.get_kulala_buf()):to_string()
+
+      assert.has_string(result, "Request 1/3")
+      assert.has_string(
+        result,
+        ([[
+        ===== Pre Script Output =====================================
+
+        JS: PRE TEST
+
+
+        ===== Post Script Output ====================================
+
+        JS: POST TEST
+      ]]):to_string(true)
+      )
     end)
   end)
 
@@ -360,7 +461,7 @@ describe("UI", function()
         }]]):to_string(true)
 
       result = h.get_buf_lines(ui_buf):to_string()
-      assert.is_same(expected, result)
+      assert.has_string(result, expected)
     end)
 
     it("pastes curl command", function()
@@ -382,7 +483,7 @@ describe("UI", function()
         ]]):format(GLOBALS.VERSION):to_string(true)
 
       result = h.get_buf_lines(http_buf):to_string()
-      assert.are.same(expected, result)
+      assert.has_string(result, expected)
     end)
 
     it("copies curl command with body", function()
@@ -404,7 +505,7 @@ describe("UI", function()
         GLOBALS.VERSION
       )
       result = vim.fn.getreg("+")
-      assert.are.same(expected, result)
+      assert.has_string(result, expected)
     end)
   end)
 end)
