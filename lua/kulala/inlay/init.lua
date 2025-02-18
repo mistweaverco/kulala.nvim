@@ -29,7 +29,8 @@ end
 
 local function set_signcolumn()
   local buf = DB.get_current_buffer()
-  local win = vim.fn.bufwinid(buf)
+  local win = vim.fn.win_findbuf(buf)[1]
+  if win == -1 then return end
 
   local scl = (vim.api.nvim_get_option_value("signcolumn", { win = win }) or "")
   scl = tonumber(scl:sub(#scl)) or 0

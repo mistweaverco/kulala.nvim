@@ -260,7 +260,7 @@ describe("requests", function()
         true
       )
 
-      local last_buf = -1
+      local last_result = "none"
       local assert_chunk = function(system, errors, chunk, expected)
         curl.stub({ ["*"] = { body = chunk } })
         curl.request(system)
@@ -268,14 +268,14 @@ describe("requests", function()
         system.args.opts.stderr(_, errors)
 
         vim.wait(1000, function()
-          ui_buf = vim.fn.bufnr(kulala_name)
-          return ui_buf ~= last_buf
+          ui_buf = h.get_kulala_buf()
+          return result ~= last_result
         end)
 
         result = ui_buf ~= -1 and h.get_buf_lines(ui_buf):to_string() or ""
         assert.has_string(result, expected)
 
-        last_buf = ui_buf
+        last_result = result
       end
 
       system.stub({ "curl" }, {
@@ -292,7 +292,7 @@ describe("requests", function()
       kulala.run_all()
 
       system:wait(3000, function()
-        ui_buf = vim.fn.bufnr(kulala_name)
+        ui_buf = h.get_kulala_buf()
         return curl.requests_no == 3
       end)
 

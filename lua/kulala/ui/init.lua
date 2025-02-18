@@ -23,8 +23,8 @@ local function get_kulala_buffer()
 end
 
 local function get_kulala_window()
-  local win = vim.fn.bufwinid(get_kulala_buffer() or -1)
-  return win > 0 and win
+  local win = vim.fn.win_findbuf(get_kulala_buffer() or -1)[1]
+  return win and win
 end
 
 local function get_current_line()
@@ -71,20 +71,19 @@ local function set_maps_autocommands(buf)
 end
 
 local open_kulala_buffer = function(filetype)
-  local buf = vim.api.nvim_create_buf(true, true)
-  set_maps_autocommands(buf)
+  local buf = get_kulala_buffer()
 
-  vim.api.nvim_set_option_value("filetype", filetype, { buf = buf })
-  vim.api.nvim_set_option_value("buftype", "nofile", { buf = buf })
+  if not buf then
+    buf = vim.api.nvim_create_buf(true, true)
+    set_maps_autocommands(buf)
+
+    vim.api.nvim_set_option_value("filetype", filetype, { buf = buf })
+    vim.api.nvim_set_option_value("buftype", "nofile", { buf = buf })
+    vim.api.nvim_buf_set_name(buf, GLOBALS.UI_ID)
+  end
 
   local win = get_kulala_window()
   if win then vim.api.nvim_win_set_buf(win, buf) end
-
-  ---This makes sure to replace current kulala buffer with a new one
-  ---This is necessary to prevent bugs like this:
-  ---https://github.com/mistweaverco/kulala.nvim/issues/128
-  M.close_kulala_buffer()
-  vim.api.nvim_buf_set_name(buf, GLOBALS.UI_ID)
 
   return buf
 end
@@ -123,7 +122,6 @@ local function open_kulala_window(buf)
   end
 
   win = vim.api.nvim_open_win(buf, true, win_config)
-
   if config.display_mode == "split" then vim.api.nvim_set_current_win(previous_win) end
 
   return win
