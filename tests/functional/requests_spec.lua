@@ -381,5 +381,43 @@ describe("requests", function()
       assert.has_string(request_body_computed, '"query":"query Person($id: ID) { person(personID: $id) { name } }')
       assert.has_string(request_body_computed, '"variables":{"id":1}')
     end)
+
+    it("runs API callbacks", function()
+      curl.stub({
+        ["https://httpbin.org/simple"] = {
+          body = h.load_fixture("fixtures/simple_body.txt"),
+        },
+      })
+
+      h.create_buf(([[ GET https://httpbin.org/simple ]]):to_table(true), "test.http")
+      result = ""
+
+      require("kulala.api").on("after_request", function(response)
+        result = result .. "#After 1"
+        expected = response.response
+      end)
+
+      local expected_2
+      require("kulala.api").on("after_next_request", function(response)
+        result = result .. "#After next"
+        expected_2 = response.response
+      end)
+
+      kulala.run()
+      wait_for_requests(1)
+
+      assert.has_string(result, "#After 1")
+      assert.has_string(result, "#After next")
+
+      assert.has_string(expected.body, '"foo": "bar"')
+      assert.has_string(expected_2.url, "https://httpbin.org/simple")
+
+      result = ""
+      kulala.run()
+      wait_for_requests(2)
+
+      assert.has_string(result, "#After 1")
+      assert.is_not.has_string(result, "#After next")
+    end)
   end)
 end)

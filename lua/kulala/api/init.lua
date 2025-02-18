@@ -1,6 +1,6 @@
-local Fs = require("kulala.utils.fs")
-local Globals = require("kulala.globals")
+local DB = require("kulala.db")
 local Logger = require("kulala.logger")
+
 local M = {}
 
 M.events = {
@@ -9,40 +9,22 @@ M.events = {
 }
 
 M.on = function(name, callback)
-  if M.events[name] == nil then
-    Logger.error("Invalid event name: " .. name)
-    return
-  end
+  if not M.events[name] then return Logger.error("Invalid event name: " .. name) end
   table.insert(M.events[name], callback)
 end
 
 M.trigger = function(name)
-  if M.events[name] == nil then
-    Logger.error("Invalid event name: " .. name)
-    return
+  local responses = DB.global_find_unique("responses")
+  local response = responses and responses[#responses] or {}
+  local events = M.events[name]
+
+  if not events then return Logger.error("Invalid event name: " .. name) end
+
+  for _, callback in ipairs(events) do
+    callback({ headers = response.headers, body = response.body, response = response })
   end
-  if name == "after_next_request" then
-    local headers = Fs.read_file(Globals.HEADERS_FILE)
-    local body = Fs.read_file(Globals.BODY_FILE)
-    for _, callback in ipairs(M.events[name]) do
-      callback({
-        headers = headers,
-        body = body,
-      })
-    end
-    -- reset the queue
-    M.events[name] = {}
-  end
-  if name == "after_request" then
-    local headers = Fs.read_file(Globals.HEADERS_FILE)
-    local body = Fs.read_file(Globals.BODY_FILE)
-    for _, callback in ipairs(M.events[name]) do
-      callback({
-        headers = headers,
-        body = body,
-      })
-    end
-  end
+
+  if name == "after_next_request" then M.events[name] = {} end
 end
 
 return M

@@ -126,9 +126,8 @@ local function process_response(request_status, parsed_request)
   process_metadata(parsed_request)
   process_internal(parsed_request)
   process_external(parsed_request)
-  process_api()
-
   save_response(request_status, parsed_request)
+  process_api()
 end
 
 local function process_errors(request, request_status, processing_errors)
