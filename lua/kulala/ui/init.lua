@@ -261,9 +261,9 @@ end
 
 M.open_default_view = function()
   local default_view = CONFIG.get().default_view
-  local open_view = M["show_" .. default_view]
+  local open_view = type(default_view) == "function" and default_view or M["show_" .. default_view]
 
-  _ = open_view and open_view()
+  _ = open_view and open_view(get_current_response())
 end
 
 M.open = function()

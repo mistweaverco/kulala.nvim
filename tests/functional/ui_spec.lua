@@ -229,6 +229,17 @@ describe("UI", function()
       assert.has_string(result, expected)
     end)
 
+    it("in custom mode", function()
+      kulala_config.default_view = function(response)
+        result = response.body
+      end
+
+      kulala.run()
+      wait_for_requests(1)
+
+      assert.has_string(result, "Greeting")
+    end)
+
     it("stats of the request", function()
       kulala_config.default_view = "stats"
 
