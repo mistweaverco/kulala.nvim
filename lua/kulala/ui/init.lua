@@ -365,8 +365,13 @@ local function print_http_spec(spec, curl)
 
   if spec.body ~= "" then
     table.insert(lines, "")
-    -- FIXME: broken for multi-line body
-    table.insert(lines, spec.body)
+    vim.iter(spec.body):each(function(line)
+      if spec.body[#spec.body] == line then
+        table.insert(lines, line)
+      else
+        table.insert(lines, line .. "&")
+      end
+    end)
   end
   vim.api.nvim_put(lines, "l", false, false)
 end
