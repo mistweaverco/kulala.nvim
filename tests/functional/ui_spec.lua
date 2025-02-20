@@ -52,8 +52,11 @@ describe("UI", function()
 
     kulala_config = CONFIG.setup({
       global_keymaps = true,
-      default_view = "body",
-      display_mode = "float",
+      ui = {
+        default_view = "body",
+        display_mode = "float",
+        show_request_summary = true,
+      },
     })
 
     lines = h.to_table(
@@ -100,6 +103,32 @@ describe("UI", function()
       expected = h.load_fixture("fixtures/request_1_body.txt")
 
       assert.has_string(result, expected)
+    end)
+
+    it("shows summary of requst", function()
+      local responses = DB.global_update().responses
+      ---@diagnostic disable-next-line: missing-fields
+      responses[#responses] = {
+        status = 0,
+        duration = 3250000,
+        time = "Tue Sep 28 2021 12:00:00",
+        url = "http://example.com",
+        method = "GET",
+        line = 15,
+        buf_name = "test.txt",
+        body = h.load_fixture("fixtures/request_2_headers_body.txt"),
+        headers = "",
+      }
+
+      kulala.open()
+      result = h.get_buf_lines(h.get_kulala_buf()):to_string()
+
+      assert.has_string(result, "Request: " .. #responses .. "/" .. #responses)
+      assert.has_string(result, "Status: 0")
+      assert.has_string(result, "Duration: 3.25ms")
+      assert.has_string(result, "Time: Tue Sep 28 2021 12:00:00")
+      assert.has_string(result, "URL: GET http://example.com")
+      assert.has_string(result, "Buffer: test.txt::15")
     end)
 
     it("for current line in body mode", function()
@@ -324,7 +353,7 @@ describe("UI", function()
       expected = h.load_fixture("fixtures/advanced_E3_body.txt")
       result = h.get_buf_lines(ui_buf):to_string()
 
-      assert.has_string(result, "Request 3/3")
+      assert.has_string(result, "Request: 3/3")
       assert.has_string(result, "URL: POST https://httpbin.org/advanced_e3")
       assert.has_string(result, expected)
 
@@ -333,7 +362,7 @@ describe("UI", function()
       expected = h.load_fixture("fixtures/request_2_headers.txt")
       result = h.get_buf_lines(h.get_kulala_buf()):to_string()
 
-      assert.has_string(result, "Request 3/3")
+      assert.has_string(result, "Request: 3/3")
       assert.has_string(result, expected)
 
       h.send_keys("V")
@@ -341,7 +370,7 @@ describe("UI", function()
       expected = h.load_fixture("fixtures/request_2_errors.txt")
       result = h.get_buf_lines(h.get_kulala_buf()):to_string()
 
-      assert.has_string(result, "Request 3/3")
+      assert.has_string(result, "Request: 3/3")
       assert.has_string(result, expected)
 
       h.send_keys("[")
@@ -350,7 +379,7 @@ describe("UI", function()
       expected = h.load_fixture("fixtures/advanced_E2_body.txt")
       result = h.get_buf_lines(h.get_kulala_buf()):to_string()
 
-      assert.has_string(result, "Request 2/3")
+      assert.has_string(result, "Request: 2/3")
       assert.has_string(result, "URL: POST https://httpbin.org/advanced_e2")
       assert.has_string(result, expected)
       --
@@ -359,7 +388,7 @@ describe("UI", function()
       expected = h.load_fixture("fixtures/request_1_stats.txt")
       result = h.get_buf_lines(h.get_kulala_buf()):to_string()
 
-      assert.has_string(result, "Request 2/3")
+      assert.has_string(result, "Request: 2/3")
       assert.has_string(result, expected)
 
       h.send_keys("[")
@@ -368,7 +397,7 @@ describe("UI", function()
       expected = h.load_fixture("fixtures/advanced_E1_body.txt")
       result = h.get_buf_lines(h.get_kulala_buf()):to_string()
 
-      assert.has_string(result, "Request 1/3")
+      assert.has_string(result, "Request: 1/3")
       assert.has_string(result, "URL: POST https://httpbin.org/advanced_e1")
       assert.has_string(result, expected)
 
@@ -376,7 +405,7 @@ describe("UI", function()
 
       result = h.get_buf_lines(h.get_kulala_buf()):to_string()
 
-      assert.has_string(result, "Request 1/3")
+      assert.has_string(result, "Request: 1/3")
       assert.has_string(
         result,
         ([[
@@ -478,22 +507,22 @@ describe("UI", function()
     it("pastes curl command", function()
       vim.fn.setreg(
         "+",
-        ([[curl -X 'POST' -v -s --data '{ "foo": "bar" }' -H 'Content-Type:application/json' --http1.1 -A 'kulala.nvim/%s' 'https://httpbin.org/post']])
-          :format(GLOBALS.VERSION)
-          :to_string(true)
+        ([[curl -X 'POST' -v -s --data '{ "foo": "bar" }' -H 'Content-Type:application/json' --http1.1 -A 'kulala.nvim/4.10.0' 'https://httpbin.org/post']]):to_string(
+          true
+        )
       )
       h.set_buf_lines(http_buf, {})
 
       kulala.from_curl()
 
       expected = ([[
-          # curl -X 'POST' -v -s --data '{ "foo": "bar" }' -H 'Content-Type:application/json' --http1.1 -A 'kulala.nvim/%s' 'https://httpbin.org/post'
+          # curl -X 'POST' -v -s --data '{ "foo": "bar" }' -H 'Content-Type:application/json' --http1.1 -A 'kulala.nvim/4.10.0' 'https://httpbin.org/post'
           POST https://httpbin.org/post HTTP/1.1
           content-type: application/json
-          user-agent: kulala.nvim/%s
+          user-agent: kulala.nvim/4.10.0
 
           { "foo": "bar" }
-        ]]):format(GLOBALS.VERSION, GLOBALS.VERSION):to_string(true)
+        ]]):to_string(true)
 
       result = h.get_buf_lines(http_buf):to_string()
       assert.has_string(result, expected)

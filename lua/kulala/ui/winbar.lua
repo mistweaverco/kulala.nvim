@@ -32,6 +32,8 @@ end
 ---@param view string Body or headers
 M.toggle_winbar_tab = function(_, win_id, view)
   local config = CONFIG.get()
+  local keymaps = config.kulala_keymaps
+
   if not (win_id and config.winbar) then return end
 
   local winbar = config.default_winbar_panes
@@ -53,8 +55,10 @@ M.toggle_winbar_tab = function(_, win_id, view)
     end
   end
 
-  table.insert(winbar_title, "<- " .. config.kulala_keymaps["Previous response"][1])
-  table.insert(winbar_title, config.kulala_keymaps["Next response"][1] .. " ->")
+  if keymaps then
+    table.insert(winbar_title, "<- " .. keymaps["Previous response"][1])
+    table.insert(winbar_title, keymaps["Next response"][1] .. " ->")
+  end
 
   local value = table.concat(winbar_title, " ")
   vim.api.nvim_set_option_value("winbar", value, { win = win_id })

@@ -39,6 +39,18 @@ M.scripts.javascript = require("kulala.parser.scripts.javascript")
 ---@field redirect_response_body_to_files ResponseBodyToFile[]
 ---@field body_temp_file string -- The path to the temporary file containing the body
 
+---@class GrpcCommand
+---@field address string|nil -- host:port, can be omitted if proto|proto-set is provided
+---@field command string|nil -- describe|list
+---@field symbol string|nil -- service method in service.method or service/method format, can be omitted if command is provided
+---@field flags table <string,string>--- flags: import-path|proto|proto-set|plaintext
+local default_grpc_command = {
+  address = nil,
+  command = nil,
+  symbol = nil,
+  flags = {},
+}
+
 ---@type Request
 local default_request = {
   metadata = {},
@@ -72,31 +84,26 @@ local default_request = {
   body_temp_file = "",
 }
 
----@param document_variables table|nil
----@param request Request
----@return table
-local function parse_metadata(request, document_variables)
-  document_variables = document_variables or {}
-  local grpc_global = {}
+local function process_grpc_flags(request, flag, value)
+  local grpc_global_flags, grpc_request_flags = {}, {}
 
-  -- Deprecated: use "< path/to/file" in place instead of @file-to-variable
-  -- extend the document_variables with the variables defined in the request
-  -- via the # @file-to-variable variable_name file_path metadata syntax
-  for _, metadata in ipairs(request.metadata) do
-    if metadata.name == "file-to-variable" then
-      local variable_name, file_path = unpack(vim.split(metadata.value, " "))
-      document_variables[variable_name] = DOCUMENT_PARSER.expand_included_filepath("< " .. file_path)
-    end
+  value = flag:match("import%-path") and FS.get_file_path(value) or value
 
-    -- set global flags for GRPC
-    if metadata.name:find("^grpc%-global") then
-      local key = metadata.name:match("^grpc%-global%-(.+)$")
-      if key then grpc_global[key] = metadata.value end
-    end
+  if flag:match("^global%-") then
+    grpc_global_flags[flag:sub(8)] = value
+  else
+    grpc_request_flags[flag] = value
   end
 
-  DB.update().env.grpc = vim.tbl_extend("force", DB.find_unique("env").grpc or {}, grpc_global)
-  return document_variables
+  DB.update().env.grpc = vim.tbl_extend("force", DB.find_unique("env").grpc or {}, grpc_global_flags)
+  request.grpc = vim.tbl_deep_extend("force", request.grpc or {}, { flags = grpc_request_flags })
+end
+
+---@param request Request
+local function parse_metadata(request)
+  for _, metadata in ipairs(request.metadata) do
+    _ = metadata.name:find("^grpc%-") and process_grpc_flags(request, metadata.name:sub(6), metadata.value)
+  end
 end
 
 local function url_encode(str)
@@ -161,7 +168,7 @@ end
 ---@param silent boolean|nil -- Whether to suppress not found variable warnings
 local process_variables = function(request, document_variables, silent)
   local env = ENV_PARSER.get_env() or {}
-  local params = { document_variables or {}, env, silent }
+  local params = { document_variables, env, silent }
 
   request.url = parse_url(request.url_raw, unpack(params))
   request.headers = parse_headers(request.headers, unpack(params))
@@ -208,7 +215,8 @@ local function save_body_with_files(request_body)
 end
 
 local function set_variables(request, document_variables)
-  document_variables = parse_metadata(request, document_variables)
+  document_variables = document_variables or {}
+  parse_metadata(request)
 
   -- INFO: if has_pre_request_script: silently replace the variables,
   -- otherwise warn the user for non existing variables
@@ -394,9 +402,41 @@ local function toggle_chunked_mode(request)
   end
 end
 
+-- GPRC localhost:50051 helloworld.Greeter/SayHello
+-- GRPC localhost:50051 describe helloworld.Greeter.SayHello
+-- GRPC localhost:50051 describe|list
+-- GRPC -d '{"name": "world"}' -import-path ../protos -proto helloworld.proto -plaintext localhost:50051 helloworld.Greeter/SayHello
+local function parse_grpc_command(request)
+  local grpc_cmd = vim.deepcopy(default_grpc_command)
+
+  local address_parsed = false
+  local previous_flag = nil
+
+  return vim.iter(vim.split(request.url, " ")):fold(grpc_cmd, function(cmd, part)
+    if part:find("GRPC") then -- method
+      -- skip
+    elseif part:find(":") then -- address
+      cmd.address = part
+      address_parsed = true
+    elseif part:match("^describe$") or part:match("^list$") then -- command
+      cmd.command = part
+    elseif part:find("[^:].+") and address_parsed then -- symbol
+      cmd.symbol = part
+    elseif part:find("^%-") then -- flag
+      previous_flag = part:sub(2)
+      process_grpc_flags(request, previous_flag, "")
+    elseif previous_flag then -- previous flag value
+      process_grpc_flags(request, previous_flag, part)
+      previous_flag = nil
+    end
+
+    return cmd
+  end)
+end
+
 -- executable, flag, address, command, symbol
 local function build_grpc_command(request)
-  local grpc_command = request.grpc
+  local grpc_command = parse_grpc_command(request)
 
   table.insert(request.cmd, CONFIG.get().grpcurl_path)
 
@@ -405,7 +445,7 @@ local function build_grpc_command(request)
     table.insert(request.cmd, request.body_computed)
   end
 
-  local flags = vim.tbl_extend("force", DB.find_unique("env").grpc or {}, grpc_command.flags or {})
+  local flags = vim.tbl_extend("force", DB.find_unique("env").grpc or {}, request.grpc.flags or {})
   vim.iter(flags):each(function(flag, value)
     table.insert(request.cmd, "-" .. flag)
     _ = (value and #value > 1) and table.insert(request.cmd, value)
@@ -461,7 +501,6 @@ function M.get_basic_request_data(requests, line_nr)
   request.headers_raw = document_request.headers_raw
   request.url_raw = document_request.url
   request.method = document_request.method
-  request.grpc = document_request.grpc
   request.http_version = document_request.http_version
   request.body_raw = document_request.body
   request.body_display = document_request.body_display
@@ -501,7 +540,7 @@ M.parse = function(requests, document_variables, line_nr)
 
   process_pre_request_scripts(request, document_variables)
 
-  if request.grpc then
+  if request.method == "GRPC" then
     build_grpc_command(request)
   else
     build_curl_command(request)

@@ -30,7 +30,6 @@ local M = {}
 ---@field url string
 ---@field method string
 ---@field http_version string
----@field grpc GrpcCommand|nil
 
 ---@alias DocumentVariables table<string, string|number|boolean>
 
@@ -65,19 +64,6 @@ local default_document_request = {
   url = "",
   http_version = "",
   method = "",
-  grpc = nil,
-}
-
----@class GrpcCommand
----@field address string|nil -- host:port, can be omitted if proto|proto-set is provided
----@field command string|nil -- describe|list
----@field symbol string|nil -- service method in service.method or service/method format, can be omitted if command is provided
----@field flags table <string,string> --- flags: import-path|proto|proto-set|plaintext
-local default_grpc_command = {
-  address = nil,
-  command = nil,
-  symbol = nil,
-  flags = {},
 }
 
 local function split_by_block_delimiters(text)
@@ -204,40 +190,6 @@ local function parse_headers(request, line)
   end
 end
 
--- GPRC localhost:50051 helloworld.Greeter/SayHello
--- GRPC localhost:50051 describe helloworld.Greeter.SayHello
--- GRPC localhost:50051 describe|list
--- GRPC -d '{"name": "world"}' -import-path ../protos -proto helloworld.proto -plaintext localhost:50051 helloworld.Greeter/SayHello
-local function parse_grpc_command(request, line)
-  local grpc_cmd = vim.deepcopy(default_grpc_command)
-  request.url = line
-
-  grpc_cmd = vim.iter(vim.split(line, " ")):fold(grpc_cmd, function(cmd, part)
-    if part:find("GRPC") then -- method
-      -- skip
-    elseif part:find(":") then -- address
-      cmd.address = part
-    elseif part:match("^describe$") or part:match("^list$") then -- command
-      cmd.command = part
-    elseif part:find("[^:].+") then -- symbol
-      cmd.symbol = part
-    end
-
-    return cmd
-  end)
-
-  grpc_cmd.flags = vim.iter(request.metadata):fold({}, function(flags, metadata)
-    local name, value = metadata.name, metadata.value
-    local flag = name:match("^grpc%-(.+)$")
-
-    --skip global flags, they will be handled by request parser
-    if flag and not flag:find("^global%-") then flags[flag] = value end
-    return flags
-  end)
-
-  request.grpc = grpc_cmd
-end
-
 local function parse_query_params(request, line)
   -- Query parameters for URL as separate lines
   local querypart, http_version = line:match("^%s*(.+)%s+HTTP/(%d[.%d]*)%s*$")
@@ -270,16 +222,19 @@ local function parse_body(request, line)
 end
 
 -- Request line (e.g., GET http://example.com HTTP/1.1)
--- Split the line into method, URL and HTTP version
--- HTTP Version is optional
-local function parse_request_method(request, line, relative_linenr)
-  request.method, request.url, request.http_version = line:match("^([A-Z]+)%s+(.+)%s+HTTP/(%d[.%d]*)%s*$")
+-- Split the line into method, URL and HTTP version (optional)
+local function parse_url(line)
+  local method, url, http_version = line:match("^([A-Z]+)%s+(.+)%s+HTTP/(%d[.%d]*)%s*$")
 
-  if not request.method then
-    request.method, request.url = line:match("^([A-Z]+)%s+(.+)$")
+  if not method then
+    method, url = line:match("^([A-Z]+)%s+(.+)$")
   end
 
-  _ = request.method == "GRPC" and parse_grpc_command(request, line)
+  return method, url, http_version
+end
+
+local function parse_request_urL_method(request, line, relative_linenr)
+  request.method, request.url, request.http_version = parse_url(line)
   request.show_icon_line_number = request.start_line + relative_linenr
 end
 
@@ -329,6 +284,7 @@ M.get_document = function()
     local is_prerequest_handler_script_inline = false
     local is_postrequest_handler_script_inline = false
     local is_body_section = false
+    local skip_block = false
 
     local lines = vim.split(block, "\n")
     local block_line_count = #lines
@@ -340,8 +296,9 @@ M.get_document = function()
     request.lines_length = #lines
 
     for relative_linenr, line in ipairs(lines) do
-      -- skip comments
+      -- skip comments, silently skip URLs that are commented out
       if line:match("^#%S") then
+        if parse_url(line:sub(2)) then skip_block = true end
       -- end of inline scripting
       elseif is_request_line and line:match("^%%}$") then
         is_prerequest_handler_script_inline = false
@@ -384,7 +341,7 @@ M.get_document = function()
       elseif not is_request_line and line:match("^([^:]+):%s*(.*)$") then
         parse_headers(request, line)
       elseif is_request_line then
-        parse_request_method(request, line, relative_linenr)
+        parse_request_urL_method(request, line, relative_linenr)
         is_request_line = false
       end
     end
@@ -399,7 +356,7 @@ M.get_document = function()
 
     if request.url and #request.url > 0 then
       table.insert(requests, request)
-    else
+    elseif not skip_block then
       Logger.warn(("Request without URL found at line: %s. Skipping ..."):format(request.start_line))
     end
   end

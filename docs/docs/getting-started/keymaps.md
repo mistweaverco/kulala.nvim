@@ -2,7 +2,7 @@
 
 ## Global Keymaps
 
-Set to `true` to enable the default keymaps.
+Set to `true` to enable the [default keymaps](default-keymaps.md).
 
 ```lua
 {
@@ -56,6 +56,9 @@ Default is `true`.
 {
   kulala_keymaps = {
     ["Show headers"] = { "H", function() require("kulala.ui").show_headers() end, },
+  }
+  kulala_keymaps = {
+    ["Show verbose"] = false -- set false to disable
   }
 }
 ```
