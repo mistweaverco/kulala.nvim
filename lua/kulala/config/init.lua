@@ -7,6 +7,9 @@ M.defaults = {
   -- if you have curl installed in a non-standard path,
   -- you can specify it here
   curl_path = "curl",
+
+  -- gRPCurl path, get from https://github.com/fullstorydev/grpcurl
+  grpcurl_path = "grpcurl",
   -- Display mode
   -- possible values: "split", "float"
   display_mode = "split",

@@ -12,7 +12,7 @@ M.format = function(formatter, contents)
     if ret.code == 0 then
       return ret.stdout
     else
-      Logger.error(("Error running external formatter: %s"):format(ret.stderr))
+      Logger.warn(("Error running external formatter: %s"):format(ret.stderr))
     end
   end
 

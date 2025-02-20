@@ -392,7 +392,8 @@ M.delete_request_scripts_files = function() -- cache/nvim/kulala/scripts/request
   M.delete_files_in_directory(dir)
 end
 
----Deletes all cached files, except global_variables.json, request scripts and variables
+---Deletes all cached files, request scripts and variables
+---except global_variables.json in cache/nvim/kulala/scripts
 M.delete_cached_files = function(silent) -- cache/nvim/kulala
   local tmp_dir = M.get_plugin_tmp_dir()
   local deleted_files = M.delete_files_in_directory(tmp_dir)

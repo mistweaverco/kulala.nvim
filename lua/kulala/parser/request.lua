@@ -17,8 +17,9 @@ M.scripts = {}
 M.scripts.javascript = require("kulala.parser.scripts.javascript")
 
 ---@class Request
----@field metadata table<{name: string, value: string}> -- Metadata of the request
+---@field metadata { name: string, value: string }[] -- Metadata of the request
 ---@field method string -- The HTTP method of the request
+---@field grpc GrpcCommand|nil -- The gRPC command
 ---@field url_raw string -- The raw URL as it appears in the document
 ---@field url string -- The URL with variables and dynamic variables replaced
 ---@field headers table<string, string> -- The headers with variables and dynamic variables replaced
@@ -33,7 +34,7 @@ M.scripts.javascript = require("kulala.parser.scripts.javascript")
 ---@field cmd string[] -- The command to execute the request
 ---@field ft string -- The filetype of the document
 ---@field http_version string -- The HTTP version of the request
----@field show_icon_line_number number -- The line number to show the icon
+---@field show_icon_line_number number|nil -- The line number to show the icon
 ---@field scripts Scripts -- The scripts to run before and after the request
 ---@field redirect_response_body_to_files ResponseBodyToFile[]
 ---@field body_temp_file string -- The path to the temporary file containing the body
@@ -42,6 +43,7 @@ M.scripts.javascript = require("kulala.parser.scripts.javascript")
 local default_request = {
   metadata = {},
   method = "GET",
+  grpc = nil,
   http_version = "",
   url = "",
   url_raw = "",
@@ -70,22 +72,30 @@ local default_request = {
   body_temp_file = "",
 }
 
--- Deprecated: use "< path/to/file" in place instead of @file-to-variable
--- extend the document_variables with the variables defined in the request
--- via the # @file-to-variable variable_name file_path metadata syntax
 ---@param document_variables table|nil
 ---@param request Request
 ---@return table
-local function append_file_to_variables(request, document_variables)
+local function parse_metadata(request, document_variables)
   document_variables = document_variables or {}
+  local grpc_global = {}
 
+  -- Deprecated: use "< path/to/file" in place instead of @file-to-variable
+  -- extend the document_variables with the variables defined in the request
+  -- via the # @file-to-variable variable_name file_path metadata syntax
   for _, metadata in ipairs(request.metadata) do
     if metadata.name == "file-to-variable" then
       local variable_name, file_path = unpack(vim.split(metadata.value, " "))
       document_variables[variable_name] = DOCUMENT_PARSER.expand_included_filepath("< " .. file_path)
     end
+
+    -- set global flags for GRPC
+    if metadata.name:find("^grpc%-global") then
+      local key = metadata.name:match("^grpc%-global%-(.+)$")
+      if key then grpc_global[key] = metadata.value end
+    end
   end
 
+  DB.update().env.grpc = vim.tbl_extend("force", DB.find_unique("env").grpc or {}, grpc_global)
   return document_variables
 end
 
@@ -198,7 +208,7 @@ local function save_body_with_files(request_body)
 end
 
 local function set_variables(request, document_variables)
-  document_variables = append_file_to_variables(request, document_variables)
+  document_variables = parse_metadata(request, document_variables)
 
   -- INFO: if has_pre_request_script: silently replace the variables,
   -- otherwise warn the user for non existing variables
@@ -384,6 +394,56 @@ local function toggle_chunked_mode(request)
   end
 end
 
+-- executable, flag, address, command, symbol
+local function build_grpc_command(request)
+  local grpc_command = request.grpc
+
+  table.insert(request.cmd, CONFIG.get().grpcurl_path)
+
+  if request.body_computed and #request.body_computed > 1 then
+    table.insert(request.cmd, "-d") -- data
+    table.insert(request.cmd, request.body_computed)
+  end
+
+  local flags = vim.tbl_extend("force", DB.find_unique("env").grpc or {}, grpc_command.flags or {})
+  vim.iter(flags):each(function(flag, value)
+    table.insert(request.cmd, "-" .. flag)
+    _ = (value and #value > 1) and table.insert(request.cmd, value)
+  end)
+
+  _ = grpc_command.address and table.insert(request.cmd, grpc_command.address)
+  _ = grpc_command.command and table.insert(request.cmd, grpc_command.command)
+  _ = grpc_command.symbol and table.insert(request.cmd, grpc_command.symbol)
+end
+
+local function build_curl_command(request)
+  table.insert(request.cmd, CONFIG.get().curl_path)
+  table.insert(request.cmd, "-D")
+  table.insert(request.cmd, GLOBALS.HEADERS_FILE)
+  table.insert(request.cmd, "-o")
+  table.insert(request.cmd, GLOBALS.BODY_FILE)
+  table.insert(request.cmd, "-w")
+  table.insert(request.cmd, "@" .. CURL_FORMAT_FILE)
+  table.insert(request.cmd, "-X")
+  table.insert(request.cmd, request.method)
+  table.insert(request.cmd, "-v") -- verbose mode
+
+  _ = request.http_version and table.insert(request.cmd, "--http" .. request.http_version)
+
+  toggle_chunked_mode(request)
+
+  process_auth_headers(request)
+  process_protocol(request)
+  process_headers(request)
+  process_body(request)
+  process_cookies(request)
+  process_options(request)
+
+  table.insert(request.cmd, "-A")
+  table.insert(request.cmd, "kulala.nvim/" .. GLOBALS.VERSION)
+  table.insert(request.cmd, request.url)
+end
+
 ---Returns a DocumentRequest within specified line or the first request in the list if no line is given
 ---@param requests DocumentRequest[] List of document requests
 ---@param line_nr number|nil The line number where the request starts
@@ -401,6 +461,7 @@ function M.get_basic_request_data(requests, line_nr)
   request.headers_raw = document_request.headers_raw
   request.url_raw = document_request.url
   request.method = document_request.method
+  request.grpc = document_request.grpc
   request.http_version = document_request.http_version
   request.body_raw = document_request.body
   request.body_display = document_request.body_display
@@ -429,9 +490,7 @@ M.parse = function(requests, document_variables, line_nr)
   if not requests then return end
 
   local request = M.get_basic_request_data(requests, line_nr)
-  if not request or not request.url_raw then return end
-
-  DB.update().previous_request = DB.find_unique("current_request")
+  if not request then return end
 
   set_variables(request, document_variables)
   set_headers(request)
@@ -442,36 +501,16 @@ M.parse = function(requests, document_variables, line_nr)
 
   process_pre_request_scripts(request, document_variables)
 
-  -- build the command to execute the request
-  table.insert(request.cmd, CONFIG.get().curl_path)
-  table.insert(request.cmd, "-D")
-  table.insert(request.cmd, GLOBALS.HEADERS_FILE)
-  table.insert(request.cmd, "-o")
-  table.insert(request.cmd, GLOBALS.BODY_FILE)
-  table.insert(request.cmd, "-w")
-  table.insert(request.cmd, "@" .. CURL_FORMAT_FILE)
-  table.insert(request.cmd, "-X")
-  table.insert(request.cmd, request.method)
-  table.insert(request.cmd, "-v") -- verbose mode
+  if request.grpc then
+    build_grpc_command(request)
+  else
+    build_curl_command(request)
+  end
 
-  _ = request.http_version and table.insert(request.cmd, "--http" .. request.http_version)
-
-  toggle_chunked_mode(request)
-
-  process_auth_headers(request)
-  process_protocol(request)
-  process_headers(request)
-  process_body(request)
-  process_cookies(request)
-  process_options(request)
-
-  table.insert(request.cmd, "-A")
-  table.insert(request.cmd, "kulala.nvim/" .. GLOBALS.VERSION)
-  table.insert(request.cmd, request.url)
-
+  DB.update().previous_request = DB.find_unique("current_request")
   DB.update().current_request = request
-  -- Save this to global,
-  -- so .replay() can be triggered from any buffer or window
+
+  -- Save this to global, so .replay() can be triggered from any buffer or window
   DB.global_update().replay = vim.deepcopy(request)
   DB.global_update().replay.show_icon_line_number = nil
 

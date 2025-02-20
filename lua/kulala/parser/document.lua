@@ -30,6 +30,7 @@ local M = {}
 ---@field url string
 ---@field method string
 ---@field http_version string
+---@field grpc GrpcCommand|nil
 
 ---@alias DocumentVariables table<string, string|number|boolean>
 
@@ -64,6 +65,19 @@ local default_document_request = {
   url = "",
   http_version = "",
   method = "",
+  grpc = nil,
+}
+
+---@class GrpcCommand
+---@field address string|nil -- host:port, can be omitted if proto|proto-set is provided
+---@field command string|nil -- describe|list
+---@field symbol string|nil -- service method in service.method or service/method format, can be omitted if command is provided
+---@field flags table <string,string> --- flags: import-path|proto|proto-set|plaintext
+local default_grpc_command = {
+  address = nil,
+  command = nil,
+  symbol = nil,
+  flags = {},
 }
 
 local function split_by_block_delimiters(text)
@@ -190,6 +204,40 @@ local function parse_headers(request, line)
   end
 end
 
+-- GPRC localhost:50051 helloworld.Greeter/SayHello
+-- GRPC localhost:50051 describe helloworld.Greeter.SayHello
+-- GRPC localhost:50051 describe|list
+-- GRPC -d '{"name": "world"}' -import-path ../protos -proto helloworld.proto -plaintext localhost:50051 helloworld.Greeter/SayHello
+local function parse_grpc_command(request, line)
+  local grpc_cmd = vim.deepcopy(default_grpc_command)
+  request.url = line
+
+  grpc_cmd = vim.iter(vim.split(line, " ")):fold(grpc_cmd, function(cmd, part)
+    if part:find("GRPC") then -- method
+      -- skip
+    elseif part:find(":") then -- address
+      cmd.address = part
+    elseif part:match("^describe$") or part:match("^list$") then -- command
+      cmd.command = part
+    elseif part:find("[^:].+") then -- symbol
+      cmd.symbol = part
+    end
+
+    return cmd
+  end)
+
+  grpc_cmd.flags = vim.iter(request.metadata):fold({}, function(flags, metadata)
+    local name, value = metadata.name, metadata.value
+    local flag = name:match("^grpc%-(.+)$")
+
+    --skip global flags, they will be handled by request parser
+    if flag and not flag:find("^global%-") then flags[flag] = value end
+    return flags
+  end)
+
+  request.grpc = grpc_cmd
+end
+
 local function parse_query_params(request, line)
   -- Query parameters for URL as separate lines
   local querypart, http_version = line:match("^%s*(.+)%s+HTTP/(%d[.%d]*)%s*$")
@@ -231,6 +279,7 @@ local function parse_request_method(request, line, relative_linenr)
     request.method, request.url = line:match("^([A-Z]+)%s+(.+)$")
   end
 
+  _ = request.method == "GRPC" and parse_grpc_command(request, line)
   request.show_icon_line_number = request.start_line + relative_linenr
 end
 
@@ -291,8 +340,10 @@ M.get_document = function()
     request.lines_length = #lines
 
     for relative_linenr, line in ipairs(lines) do
+      -- skip comments
+      if line:match("^#%S") then
       -- end of inline scripting
-      if is_request_line and line:match("^%%}$") then
+      elseif is_request_line and line:match("^%%}$") then
         is_prerequest_handler_script_inline = false
       -- end of inline scripting
       elseif is_body_section and line:match("^%%}$") then
@@ -346,7 +397,7 @@ M.get_document = function()
     request.end_line = line_offset + block_line_count
     line_offset = request.end_line + 1 -- +1 for the '###' separator line
 
-    if #request.url > 0 then
+    if request.url and #request.url > 0 then
       table.insert(requests, request)
     else
       Logger.warn(("Request without URL found at line: %s. Skipping ..."):format(request.start_line))

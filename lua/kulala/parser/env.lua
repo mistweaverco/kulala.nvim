@@ -111,7 +111,6 @@ local function get_scripts_variables(env)
   local request_scripts_variables = FS.get_request_scripts_variables()
 
   if global_scripts_variables then env = vim.tbl_extend("force", env, global_scripts_variables) end
-
   if request_scripts_variables then env = vim.tbl_extend("force", env, request_scripts_variables) end
 
   return env
