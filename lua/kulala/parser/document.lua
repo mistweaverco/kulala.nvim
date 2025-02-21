@@ -366,7 +366,7 @@ M.get_document = function()
       elseif line == "" and not is_body_section then
         if not is_request_line then is_body_section = true end
         -- redirect response body to file
-      elseif line:match("^>> (.*)$") then
+      elseif line:match("^>>(!?) (.*)$") then
         parse_redirect_response(request, line)
         -- start of inline scripting
       elseif line:match("^> {%%$") then
