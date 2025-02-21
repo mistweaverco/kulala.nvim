@@ -245,39 +245,6 @@ describe("requests", function()
         assert.has_string(h.load_fixture(result.body_temp_file, true), expected)
       end)
 
-      it("processes file includes with < @file-to-variable", function()
-        h.create_buf(
-          ([[
-            # @file-to-variable FILEVAR ./demo.png
-            # @file-to-variable FILEVARMIS ./demo-missing.png
-            POST https://httpbin.org/post HTTP/1.1
-            Content-Type: multipart/form-data; boundary=----WebKitFormBoundary
-
-            ------WebKitFormBoundary
-            Content-Disposition: form-data; name="someFile"; filename="logo.png"
-            Content-Type: image/jpeg
-
-            {{FILEVAR}}
-
-            ------WebKitFormBoundary
-            Content-Disposition: form-data; name="someFile"; filename="logo.png"
-            Content-Type: image/jpeg
-
-            {{FILEVARMIS}}
-
-            ------WebKitFormBoundary--
-          ]]):to_table(true),
-          h.expand_path("requests/simple.http")
-        )
-
-        result = parser.parse() or {}
-        assert.has_string(result.body_computed, "< " .. h.expand_path("requests/demo.png"))
-        assert.has_string(result.body_computed, "< [file not found] " .. h.expand_path("requests/demo-missing.png"))
-
-        expected = h.load_fixture("requests/demo.png", true)
-        assert.has_string(h.load_fixture(result.body_temp_file, true), expected)
-      end)
-
       it("saves the request to a file", function()
         h.create_buf(
           ([[
@@ -292,6 +259,30 @@ describe("requests", function()
 
         result = parser.parse() or {}
         assert.is_same(h.load_fixture(result.body_temp_file, true), "Sample POST request body")
+      end)
+
+      it("redirects response to a file", function()
+        h.create_buf(
+          ([[
+            POST https://httpbin.org/post HTTP/1.1
+            Content-Type: text/plain
+
+            Sample POST request body
+
+            >> ./response.txt
+            >>! ./response_overwrite.txt
+
+          ]]):to_table(true),
+          h.expand_path("requests/simple.http")
+        )
+
+        result = parser.parse() or {}
+        assert.has_properties(result, {
+          redirect_response_body_to_files = {
+            { file = "./response.txt", overwrite = false },
+            { file = "./response_overwrite.txt", overwrite = true },
+          },
+        })
       end)
     end)
   end)

@@ -89,6 +89,7 @@ describe("keymaps", function()
         {
           status = 0,
           duration = 100,
+          time = "2021-01-01T00:00:00Z",
           url = "http://example.com",
           method = "GET",
           line = 1,
@@ -136,9 +137,7 @@ describe("keymaps", function()
       CONFIG.setup({ kulala_keymaps = false })
 
       kulala.open()
-      ui_buf = vim.fn.bufnr(kulala_name)
-
-      keymaps_n = vim.tbl_keys(h.get_maps(ui_buf))
+      keymaps_n = vim.tbl_keys(h.get_maps(h.get_kulala_buf()))
 
       expected = kulala_keymaps["Show body"][1]
       assert.is_false(vim.tbl_contains(keymaps_n, expected))

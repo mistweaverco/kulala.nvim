@@ -13,6 +13,7 @@ require('kulala.api').on("after_next_request", function(data)
   print("Request completed")
   print("Headers: " .. data.headers)
   print("Body: " .. data.body)
+  print("Complete response: " .. data.response)
 end)
 ```
 
@@ -25,5 +26,34 @@ require('kulala.api').on("after_request", function(data)
   print("Request completed")
   print("Headers: " .. data.headers)
   print("Body: " .. data.body)
+  print("Complete response: " .. data.response)
 end)
+```
+
+Response data has the following fields:
+
+```lua
+---@class RequestData
+---@field headers string
+---@field body string
+---@field response Response
+data = {}
+
+---@class Response
+---@field id number
+---@field url string
+---@field method string
+---@field status number
+---@field duration number
+---@field time string
+---@field body string
+---@field headers string
+---@field errors string
+---@field stats string
+---@field script_pre_output string
+---@field script_post_output string
+---@field buf number
+---@field buf_name string
+---@field line number
+response = {}
 ```

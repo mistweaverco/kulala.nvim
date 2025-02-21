@@ -118,6 +118,20 @@ M.default_global_keymaps = {
     end,
     ft = { "http", "rest" },
   },
+  ["Clear globals"] = {
+    "<leader>Rx",
+    function()
+      require("kulala").scripts_clear_global()
+    end,
+    ft = { "http", "rest" },
+  },
+  ["Clear cached files"] = {
+    "<leader>RX",
+    function()
+      require("kulala").clear_cached_files()
+    end,
+    ft = { "http", "rest" },
+  },
 }
 
 -- Keymaps for Kulala window only

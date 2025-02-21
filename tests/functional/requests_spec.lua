@@ -165,33 +165,6 @@ describe("requests", function()
       assert.has_string(notify.messages, "Thu, 30 Jan 2025 16:21:56 GMT")
     end)
 
-    it("load a file with @file-to-variable", function()
-      vim.cmd.edit(h.expand_path("requests/advanced_C.http"))
-
-      dynamic_vars.stub({ ["$timestamp"] = "$TIMESTAMP" })
-      curl.stub({
-        ["https://httpbin.org/advanced_c"] = {
-          body = h.load_fixture("fixtures/advanced_C_body.txt"),
-        },
-      })
-
-      kulala.run_all()
-      wait_for_requests(1)
-
-      local computed_request = DB.data.current_request
-      local path = "< " .. h.expand_path("requests/demo.png")
-      assert.has_string(computed_request.body_computed, path)
-
-      local expected_body_request = h.load_fixture("fixtures/advanced_C_body_request.txt", true)
-      local computed_body_request = h.load_fixture(curl.last_request_body_path, true)
-      assert.is_same(expected_body_request, computed_body_request)
-
-      expected = h.load_fixture("fixtures/advanced_C_body.txt")
-      result = h.get_buf_lines(ui_buf):to_string()
-
-      assert.has_string(result, expected)
-    end)
-
     it("prompts for vars, computes request vars, logs to client", function()
       vim.cmd.edit(h.expand_path("requests/advanced_D.http"))
 

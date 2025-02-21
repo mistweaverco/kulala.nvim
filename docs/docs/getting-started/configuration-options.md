@@ -9,59 +9,77 @@ the Kulala plugin with the available `opts`:
 
 ```lua title="kulala.lua"
 {
-  "mistweaverco/kulala.nvim",
-  opts = {
-    -- cURL path
-    -- if you have curl installed in a non-standard path,
-    -- you can specify it here
-    curl_path = "curl",
+  -- cURL path
+  -- if you have curl installed in a non-standard path,
+  -- you can specify it here
+  curl_path = "curl",
+  -- additional cURL options
+  -- see: https://curl.se/docs/manpage.html
+  additional_curl_options = {},
+  -- gRPCurl path, get from https://github.com/fullstorydev/grpcurl
+  grpcurl_path = "grpcurl",
 
-    -- Display mode, possible values: "split", "float"
-    display_mode = "split",
+  -- set scope for environment and request variables
+  -- possible values: b = buffer, g = global
+  environment_scope = "b",
+  -- dev, test, prod, can be anything
+  -- see: https://learn.microsoft.com/en-us/aspnet/core/test/http-files?view=aspnetcore-8.0#environment-files
+  default_env = "dev",
+  -- enable reading vscode rest client environment variables
+  vscode_rest_client_environmentvars = false,
 
-    -- q to close the float (only used when display_mode is set to "float")
-    -- possible values: true, false
-    q_to_close_float = false,
+  -- default timeout for the request, set to nil to disable
+  request_timeout = nil,
+  -- disable the vim.print output of the scripts
+  -- they will be still written to disk, but not printed immediately
+  disable_script_print_output = false,
 
-    -- split direction
-    -- possible values: "vertical", "horizontal"
-    split_direction = "vertical",
+  -- certificates
+  certificates = {},
+  -- Specify how to escape query parameters
+  -- possible values: always, skipencoded = keep %xx as is
+  urlencode = "always",
 
-    -- default_view, body or headers or headers_body or verbose
-    default_view = "body",
-
-    -- dev, test, prod, can be anything
-    -- see: https://learn.microsoft.com/en-us/aspnet/core/test/http-files?view=aspnetcore-8.0#environment-files
-    default_env = "dev",
-
-    -- enable/disable debug mode
-    debug = false,
-
-    -- default formatters/pathresolver for different content types
-    contenttypes = {
-      ["application/json"] = {
-        ft = "json",
-        formatter = { "jq", "." },
-        pathresolver = require("kulala.parser.jsonpath").parse,
-      },
-      ["application/xml"] = {
-        ft = "xml",
-        formatter = { "xmllint", "--format", "-" },
-        pathresolver = { "xmllint", "--xpath", "{{path}}", "-" },
-      },
-      ["text/html"] = {
-        ft = "html",
-        formatter = { "xmllint", "--format", "--html", "-" },
-        pathresolver = {},
-      },
+  -- default formatters/pathresolver for different content types
+  contenttypes = {
+    ["application/json"] = {
+      ft = "json",
+      formatter = FS.command_exists("jq") and { "jq", "." } or nil,
+      pathresolver = require("kulala.parser.jsonpath").parse,
     },
+    ["application/xml"] = {
+      ft = "xml",
+      formatter = FS.command_exists("xmllint") and { "xmllint", "--format", "-" } or nil,
+      pathresolver = FS.command_exists("xmllint") and { "xmllint", "--xpath", "{{path}}", "-" } or nil,
+    },
+    ["text/html"] = {
+      ft = "html",
+      formatter = FS.command_exists("xmllint") and { "xmllint", "--format", "--html", "-" } or nil,
+      pathresolver = nil,
+    },
+  },
 
-    -- can be used to show loading, done and error icons in inlay hints
-    -- possible values: "on_request", "above_request", "below_request", or nil to disable
-    -- If "above_request" or "below_request" is used, the icons will be shown above or below the request line
-    -- Make sure to have a line above or below the request line to show the icons
+  -- enable/disable debug mode
+  debug = false,
+
+  ui = {
+    -- display mode: possible values: "split", "float"
+    display_mode = "split",
+    -- split direction: possible values: "vertical", "horizontal"
+    split_direction = "vertical",
+    -- default view: "body" or "headers" or "headers_body" or "verbose" or fun(response: Response)
+    default_view = "body",
+    -- enable winbar
+    winbar = true,
+    -- Specify the panes to be displayed by default
+    -- Current available pane contains { "body", "headers", "headers_body", "script_output", "stats", "verbose" },
+    default_winbar_panes = { "body", "headers", "headers_body", "verbose" },
+    -- enable/disable variable info text
+    -- this will show the variable name and value as float
+    -- possible values: false, "float"
+    show_variable_info_text = false,
+    -- icons position: "signcolumn"|"on_request"|"above_request"|"below_request" or nil to disable
     show_icons = "on_request",
-
     -- default icons
     icons = {
       inlay = {
@@ -70,56 +88,28 @@ the Kulala plugin with the available `opts`:
         error = "❌",
       },
       lualine = "🐼",
+      textHighlight = "WarningMsg", -- highlight group for request elapsed time
+      lineHighlight = "Normal", -- highlight group for icons line highlight
     },
-
-    -- additional cURL options
-    -- see: https://curl.se/docs/manpage.html
-    additional_curl_options = {},
-
-    -- scratchpad default contents
-    scratchpad_default_contents = {
-      "@MY_TOKEN_NAME=my_token_value",
-      "",
-      "# @name scratchpad",
-      "POST https://httpbin.org/post HTTP/1.1",
-      "accept: application/json",
-      "content-type: application/json",
-      "",
-      "{",
-      '  "foo": "bar"',
-      "}",
-    },
-
-    -- enable winbar
-    winbar = false,
-
-    -- Specify the panes to be displayed by default
-    -- Current available pane contains { "body", "headers", "headers_body", "script_output", "stats" },
-    default_winbar_panes = { "body", "headers", "headers_body", "verbose" },
-
-    -- enable reading vscode rest client environment variables
-    vscode_rest_client_environmentvars = false,
-
-    -- disable the vim.print output of the scripts
-    -- they will be still written to disk, but not printed immediately
-    disable_script_print_output = false,
-
-    -- set scope for environment and request variables
-    -- possible values: b = buffer, g = global
-    environment_scope = "b",
-
-    -- certificates
-    certificates = {},
-
-    -- Specify how to escape query parameters
-    -- possible values: always, skipencoded = keep %xx as is
-    urlencode = "always",
-
-    -- enable/disable variable info text
-    -- this will show the variable name and value as float
-    -- possible values: false, "float"
-    show_variable_info_text = false,
+    -- enable/disable request summary in the output window
+    show_request_summary = true,
+    summaryTextHighlight = "Special",
   },
+
+  -- scratchpad default contents
+  scratchpad_default_contents = {
+    "@MY_TOKEN_NAME=my_token_value",
+    "",
+    "# @name scratchpad",
+    "POST https://httpbin.org/post HTTP/1.1",
+    "accept: application/json",
+    "content-type: application/json",
+    "",
+    "{",
+    '  "foo": "bar"',
+    "}",
+  },
+
   -- set to true to enable default keymaps (check docs or {plugins_path}/kulala.nvim/lua/kulala/config/keymaps.lua for details)
   -- or override default keymaps as shown in the example below.
   ---@type boolean|table
@@ -153,6 +143,7 @@ the Kulala plugin with the available `opts`:
   --[[
     {
       ["Show headers"] = { "H", function() require("kulala.ui").show_headers() end, },
+      ["Show verbose"] = false
     }
   ]]
 }
@@ -177,57 +168,15 @@ Example:
 }
 ```
 
-### display_mode
+### additional_curl_options
 
-The display mode.
-
-Can be either `split` or `float`.
-
-Default: `split`
-
-Example:
-
-```lua
-{
-  "mistweaverco/kulala.nvim",
-  opts = {
-    display_mode = "float",
-  },
-}
-```
-
-### q_to_close_float
-
-Close float with `q`.
-
-Can be either `true` or `false`.
-
-Default: `false`
-
-Example:
-
-```lua
-{
-  "mistweaverco/kulala.nvim",
-  opts = {
-    display_mode = "float",
-    q_to_close_float = true,
-  },
-}
-```
-
-### split_direction
-
-Split direction.
-
-Only used when `display_mode` is set to `split`.
+Additional cURL options.
 
 Possible values:
 
-- `vertical`
-- `horizontal`
+- `[table of strings]`
 
-Default: `vertical`
+Default: `{}`
 
 Example:
 
@@ -235,25 +184,19 @@ Example:
 {
   "mistweaverco/kulala.nvim",
   opts = {
-    split_direction = "vertical",
+    additional_curl_options = { "--insecure", "-A", "Mozilla/5.0" },
   },
 }
 ```
 
-### default_view
+### grpcurl_path
 
-Default view.
+gRPCurl path.
 
-Possible values:
+If you have `grpcurl` installed in a non-standard path, you can specify it here.
+You can get it at [gRPCurl](https://github.com/fullstorydev/grpcurl)
 
-- `body`
-- `headers`
-- `headers_body`
-- `verbose`
-- `script_output`
-- `stats`
-
-Default: `body`
+Default: `grpcurl`
 
 Example:
 
@@ -261,7 +204,31 @@ Example:
 {
   "mistweaverco/kulala.nvim",
   opts = {
-    default_view = "body",
+    grpcurl_path = "/home/bonobo/.local/bin/grpcurl",
+  },
+}
+```
+
+### environment_scope
+
+While using request variables the results will be stored for later use.
+As usual variables they're file relevant and should be stored in the buffer.
+If you want to share the variables between buffers you can use the global scope.
+
+Possible values:
+
+- `"b"` (buffer)
+- `"g"` (global)
+
+Default: `"b"`
+
+Example:
+
+```lua
+{
+"mistweaverco/kulala.nvim",
+  opts = {
+    environment_scope = "b",
   },
 }
 ```
@@ -289,9 +256,15 @@ Example:
 }
 ```
 
-### debug
+### vscode_rest_client_environmentvars
 
-Enable debug mode.
+If enabled, Kulala searches for
+`.vscode/settings.json` or `*.code-workspace`
+files in the current directory and
+its parents to read the `rest-client.environmentVariables` definitions.
+
+If `http-client.env.json` is also present,
+it'll be merged (and overwrites variables from VSCode).
 
 Possible values:
 
@@ -306,7 +279,115 @@ Example:
 {
   "mistweaverco/kulala.nvim",
   opts = {
-    debug = false,
+    vscode_rest_client_environmentvars = true,
+  },
+}
+```
+
+### request_timeout
+
+Set request timeout period.
+
+Possible values:
+
+- `nil`
+- `[number]` in ms
+
+Default: `nil`
+
+Example:
+
+```lua
+{
+  "mistweaverco/kulala.nvim",
+  opts = {
+    request_timeout = 5000,
+  },
+}
+```
+
+### disable_script_print_output
+
+Disable the vim.print output of the scripts as they are executed.
+The output will be still written to disk, but not printed immediately.
+
+Possible values:
+
+- `true|false`
+
+Default: `false`
+
+Example:
+
+```lua
+{
+  "mistweaverco/kulala.nvim",
+  opts = {
+    disable_script_print_output = true,
+  },
+}
+```
+
+### certificates
+
+A hash array of certificates to be used for requests.
+
+The key is the hostname and optional the port. 
+If no port is given, the certificate will be used for all ports where no dedicated one is defined.
+
+Each certificate definition needs 
+
+- `cert` the path to the certificate file
+- `key` the path to the key files
+
+Example:
+
+```lua
+{
+"mistweaverco/kulala.nvim",
+  opts = {
+    certificates = {
+      ["localhost"] = {
+        cert = vim.fn.stdpath("config") .. "/certs/localhost.crt",
+        key = vim.fn.stdpath("config") .. "/certs/localhost.key",
+      },
+      ["www.somewhere.com:8443"] = {
+        cert = "/home/userx/certs/somewhere.crt",
+        key = "/home/userx/certs/somewhere.key",
+      },
+    },
+  },
+}
+```
+
+Hostnames with prefix `*.` will be used as wildcard certificates for the host itself and all subdomains.
+
+`*.company.com` will match
+
+- `company.com`
+- `www.company.com`
+- `api.company.com`
+- `sub.api.company.com`
+- etc.
+
+### urlencode
+
+Specify how to escape query parameters.
+
+Possible values:
+
+- `always`
+- `skipencoded` = keep already encoded `%xx` as is
+
+Default: `always`
+
+Example:
+
+```lua
+{
+  "mistweaverco/kulala.nvim",
+  opts = {
+    urlencode = "skipencoded",
   },
 }
 ```
@@ -476,12 +557,212 @@ Example:
 }
 ```
 
-### show_icons
+### debug
 
-Can be used to show loading, done and error icons in inlay hints.
+Enable debug mode.
 
 Possible values:
 
+- `true`
+- `false`
+
+Default: `false`
+
+Example:
+
+```lua
+{
+  "mistweaverco/kulala.nvim",
+  opts = {
+    debug = false,
+  },
+}
+```
+
+## UI Options
+
+### ui.display_mode
+
+The display mode.
+
+Can be either `split` or `float`.
+
+Default: `split`
+
+Example:
+
+```lua
+{
+  "mistweaverco/kulala.nvim",
+  opts = {
+    ui = {
+      display_mode = "float",
+    }
+  },
+}
+```
+
+### ui.split_direction
+
+Split direction.
+
+Only used when `ui.display_mode` is set to `split`.
+
+Possible values:
+
+- `vertical`
+- `horizontal`
+
+Default: `vertical`
+
+Example:
+
+```lua
+{
+  "mistweaverco/kulala.nvim",
+  opts = {
+    ui = {
+      split_direction = "vertical",
+    },
+  },
+}
+```
+
+### ui.default_view
+
+Default view.
+
+Possible values:
+
+- `body`
+- `headers`
+- `headers_body`
+- `verbose`
+- `script_output`
+- `stats`
+- `function(response) ... end`
+
+Default: `body`
+
+Example:
+
+```lua
+{
+  "mistweaverco/kulala.nvim",
+  opts = {
+    ui = {
+      default_view = "body",
+    },
+  },
+}
+```
+
+Setting the default view to a function allows you to define a custom view handler, which will be called with the response object and will override default views.
+The response object has the following properties:
+
+```lua
+  ---@class Response
+  ---@field id number
+  ---@field url string
+  ---@field method string
+  ---@field status number
+  ---@field duration number
+  ---@field time string
+  ---@field body string
+  ---@field headers string
+  ---@field errors string
+  ---@field stats string
+  ---@field script_pre_output string
+  ---@field script_post_output string
+  ---@field buf number
+  ---@field buf_name string
+  ---@field line number
+  local response = {}
+```
+
+### ui.winbar
+
+Enable winbar for result buffer
+
+Possible values:
+
+- `true`
+- `false`
+
+Default: `true`
+
+Example:
+
+```lua
+{
+  "mistweaverco/kulala.nvim",
+  opts = {
+    ui = {
+      winbar = true,
+    },
+  },
+}
+```
+
+### ui.default_winbar_panes
+
+Default visible winbar panes
+
+Possible values:
+
+- `body`
+- `headers`
+- `headers_body`
+- `verbose`
+- `script_output`
+- `stats`
+
+Default: `body`
+
+Example:
+
+```lua
+{
+  "mistweaverco/kulala.nvim",
+  opts = {
+    ui = {
+      default_winbar_panes = { "body", "headers", "headers_body", "verbose" },
+    },
+  },
+}
+```
+
+### ui.show_variable_info_text
+
+Enable/disable variable info text.
+
+Possible values:
+
+- `false` = disable variable info text
+- `"float"` = show the variable name and value as float
+
+Default: `always`
+
+Example:
+
+```lua
+{
+  "mistweaverco/kulala.nvim",
+  opts = {
+    ui = {
+      show_variable_info_text = false,
+    },
+  },
+}
+```
+
+### ui.show_icons
+
+Can be used to show loading, done and error icons in inlay hints or signcolumn
+
+Possible values:
+
+- `"singcolumn"`
 - `"on_request"`
 - `"above_request"`
 - `"below_request"`
@@ -490,11 +771,9 @@ Possible values:
 If `"above_request"` or `"below_request"` is used,
 the icons will be shown above or below the request line.
 
-Make sure to have a line above or below the request line to show the icons.
-
 Default: `"on_request"`.
 
-### icons
+### ui.icons
 
 Default icons.
 
@@ -512,7 +791,10 @@ icons = {
     done = "✅"
     error = "❌",
   },
+
   lualine = "🐼",
+  textHighlight = "WarningMsg",
+  lineHighlight = "Normal",
 }
 ```
 
@@ -522,27 +804,32 @@ Example:
 {
   "mistweaverco/kulala.nvim",
   opts = {
-    icons = {
-      inlay = {
-        loading = "⏳",
-        done = "✅"
-        error = "❌",
+    ui = {
+      icons = {
+        inlay = {
+          loading = "⏳",
+          done = "✅"
+          error = "❌",
+        },
+        lualine = "🐼",
+        textHighlight = "WarningMsg",
+        lineHighlight = "Normal",
       },
-      lualine = "🐼",
     },
   },
 }
 ```
 
-### additional_curl_options
+### ui.show_request_summary
 
-Additional cURL options.
+Enable/disable request summary in the output window.
 
 Possible values:
 
-- `[table of strings]`
+- `true`
+- `false`
 
-Default: `{}`
+Default: `true`
 
 Example:
 
@@ -550,12 +837,20 @@ Example:
 {
   "mistweaverco/kulala.nvim",
   opts = {
-    additional_curl_options = { "--insecure", "-A", "Mozilla/5.0" },
+    ui = {
+      show_request_summary = false,
+    },
   },
 }
 ```
 
-### scratchpad_default_contents
+### ui.summaryTextHighlight
+
+Highlight group for the request summary in the output window.
+
+Default: `Special`
+
+### ui.scratchpad_default_contents
 
 Scratchpad default contents.
 
@@ -589,182 +884,25 @@ Example:
 {
   "mistweaverco/kulala.nvim",
   opts = {
-    scratchpad_default_contents = {
-      "@AUTH_USERNAME=my_username",
-      "",
-      "# @name scratchpad_special_name",
-      "POST https://httpbin.org/post HTTP/1.1",
-      "accept: application/json",
-      "content-type: application/json",
-      "",
-      "{",
-      '  "baz": "qux"',
-      "}",
-    },
-  },
-}
-```
-
-### winbar
-
-Enable winbar for result buffer
-
-Possible values:
-
-- `true`
-- `false`
-
-Default: `false`
-
-Example:
-
-```lua
-{
-  "mistweaverco/kulala.nvim",
-  opts = {
-    winbar = false,
-  },
-}
-```
-
-### vscode_rest_client_environmentvars
-
-If enabled, Kulala searches for
-`.vscode/settings.json` or `*.code-workspace`
-files in the current directory and
-its parents to read the `rest-client.environmentVariables` definitions.
-
-If `http-client.env.json` is also present,
-it'll be merged (and overwrites variables from VSCode).
-
-Possible values:
-
-- `true`
-- `false`
-
-Default: `false`
-
-Example:
-
-```lua
-{
-  "mistweaverco/kulala.nvim",
-  opts = {
-    vscode_rest_client_environmentvars = true,
-  },
-}
-```
-
-### environment_scope
-
-While using request variables the results will be stored for later use.
-As usual variables they're file relevant and should be stored in the buffer.
-If you want to share the variables between buffers you can use the global scope.
-
-Possible values:
-
-- `"b"` (buffer)
-- `"g"` (global)
-
-Default: `"b"`
-
-Example:
-
-```lua
-{
-"mistweaverco/kulala.nvim",
-  opts = {
-    environment_scope = "b",
-  },
-}
-```
-
-
-### certificates
-
-A hash array of certificates to be used for requests.
-
-The key is the hostname and optional the port. 
-If no port is given, the certificate will be used for all ports where no dedicated one is defined.
-
-Each certificate definition needs 
-
-- `cert` the path to the certificate file
-- `key` the path to the key files
-
-Example:
-
-```lua
-{
-"mistweaverco/kulala.nvim",
-  opts = {
-    certificates = {
-      ["localhost"] = {
-        cert = vim.fn.stdpath("config") .. "/certs/localhost.crt",
-        key = vim.fn.stdpath("config") .. "/certs/localhost.key",
-      },
-      ["www.somewhere.com:8443"] = {
-        cert = "/home/userx/certs/somewhere.crt",
-        key = "/home/userx/certs/somewhere.key",
+    ui = {
+      scratchpad_default_contents = {
+        "@AUTH_USERNAME=my_username",
+        "",
+        "# @name scratchpad_special_name",
+        "POST https://httpbin.org/post HTTP/1.1",
+        "accept: application/json",
+        "content-type: application/json",
+        "",
+        "{",
+        '  "baz": "qux"',
+        "}",
       },
     },
   },
 }
 ```
 
-Hostnames with prefix `*.` will be used as wildcard certificates for the host itself and all subdomains.
-
-`*.company.com` will match
-
-- `company.com`
-- `www.company.com`
-- `api.company.com`
-- `sub.api.company.com`
-- etc.
-
-### urlencode
-
-Specify how to escape query parameters.
-
-Possible values:
-
-- `always`
-- `skipencoded` = keep already encoded `%xx` as is
-
-Default: `always`
-
-Example:
-
-```lua
-{
-  "mistweaverco/kulala.nvim",
-  opts = {
-    urlencode = "skipencoded",
-  },
-}
-```
-
-### show_variable_info_text
-
-Enable/disable variable info text.
-
-Possible values:
-
-- `false` = disable variable info text
-- `"float"` = show the variable name and value as float
-
-Default: `always`
-
-Example:
-
-```lua
-{
-  "mistweaverco/kulala.nvim",
-  opts = {
-    show_variable_info_text = false,
-  },
-}
-```
+## Keymaps
 
 ### global_keymaps
 

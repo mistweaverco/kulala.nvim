@@ -1,106 +1,110 @@
-import {themes as prismThemes} from 'prism-react-renderer';
-import type {Config} from '@docusaurus/types';
-import type * as Preset from '@docusaurus/preset-classic';
+import { themes as prismThemes } from "prism-react-renderer";
+import type { Config } from "@docusaurus/types";
+import type * as Preset from "@docusaurus/preset-classic";
 
 const config: Config = {
-  title: 'Kulala.nvim',
-  tagline: 'A minimal 🤏 HTTP-client 🐼 interface 🖥️ for Neovim ❤️.',
-  favicon: 'img/favicon.png',
+  title: "Kulala.nvim",
+  tagline: "A minimal 🤏 HTTP-client 🐼 interface 🖥️ for Neovim ❤️.",
+  favicon: "img/favicon.png",
 
-  url: 'https://kulala.mwco.app',
-  baseUrl: '/',
+  url: "https://kulala.mwco.app",
+  baseUrl: "/",
 
-  organizationName: 'mistweaverco',
-  projectName: 'kulala.nvim',
+  organizationName: "mistweaverco",
+  projectName: "kulala.nvim",
 
-  onBrokenLinks: 'throw',
-  onBrokenMarkdownLinks: 'warn',
+  onBrokenLinks: "throw",
+  onBrokenMarkdownLinks: "warn",
 
   i18n: {
-    defaultLocale: 'en',
-    locales: ['en'],
+    defaultLocale: "en",
+    locales: ["en"],
   },
 
-  plugins: [require.resolve('docusaurus-lunr-search')],
+  plugins: [require.resolve("docusaurus-lunr-search")],
 
   presets: [
     [
-      '@docusaurus/preset-classic',
+      "@docusaurus/preset-classic",
       {
         docs: {
-          sidebarPath: './sidebars.ts',
-          editUrl:
-            'https://github.com/mistweaverco/kulala.nvim/blob/main/docs',
+          sidebarPath: "./sidebars.ts",
+          editUrl: "https://github.com/mistweaverco/kulala.nvim/blob/main/docs",
         },
         theme: {
-          customCss: './src/css/custom.css',
+          customCss: "./src/css/custom.css",
         },
       } satisfies Preset.Options,
     ],
   ],
 
   themeConfig: {
-    image: 'img/kulala-social-card.png',
+    image: "img/kulala-social-card.png",
     docs: {
       sidebar: {
         autoCollapseCategories: true,
       },
     },
     navbar: {
-      title: 'Kulala.nvim',
+      title: "Kulala.nvim",
       logo: {
-        alt: 'Kulala.nvim Logo',
-        src: 'img/logo.svg',
+        alt: "Kulala.nvim Logo",
+        src: "img/logo.svg",
       },
       items: [
         {
-          position: 'left',
-          label: 'Usage',
-          to: '/docs/usage',
+          position: "left",
+          label: "Configuration",
+          to: "/docs/getting-started/configuration-options",
         },
         {
-          position: 'left',
-          label: 'Scripts',
-          to: '/docs/scripts/overview',
+          position: "left",
+          label: "Usage",
+          to: "/docs/usage",
         },
         {
-          href: 'https://github.com/mistweaverco/kulala.nvim',
-          label: 'GitHub',
-          position: 'right',
+          position: "left",
+          label: "Scripts",
+          to: "/docs/scripts/overview",
+        },
+        {
+          href: "https://github.com/mistweaverco/kulala.nvim",
+          label: "GitHub",
+          position: "right",
         },
       ],
     },
     footer: {
-      style: 'dark',
+      style: "dark",
       links: [
         {
-          title: 'Docs',
+          title: "Docs",
           items: [
             {
-              label: 'Install',
-              to: '/docs/getting-started/install',
+              label: "Install",
+              to: "/docs/getting-started/install",
             },
             {
-              label: 'Usage',
-              to: '/docs/usage',
-            },
-          ],
-        },
-        {
-          title: 'Community',
-          items: [
-            {
-              label: 'Discord',
-              href: 'https://discord.gg/QyVQmfY4Rt',
+              label: "Usage",
+              to: "/docs/usage",
             },
           ],
         },
         {
-          title: 'More',
+          title: "Community",
           items: [
             {
-              label: 'GitHub',
-              href: 'https://github.com/mistweaverco/kulala.nvim',
+              label: "Discord",
+              href: "https://discord.gg/QyVQmfY4Rt",
+            },
+          ],
+        },
+        {
+          title: "More",
+          items: [
+            {
+              label: "GitHub",
+              href: "https://github.com/mistweaverco/kulala.nvim",
             },
           ],
         },
@@ -110,7 +114,7 @@ const config: Config = {
     prism: {
       theme: prismThemes.github,
       darkTheme: prismThemes.dracula,
-      additionalLanguages: ['lua', 'http', 'json'],
+      additionalLanguages: ["lua", "http", "json"],
     },
   } satisfies Preset.ThemeConfig,
 };

@@ -14,6 +14,10 @@ List of requirements for using kulala.
 
 - [cURL](https://curl.se/) (tested with 8.5.0)
 
+## gRPCurl
+
+- [gRPCurl](https://github.com/fullstorydev/grpcurl)
+
 ## jq
 
 - [jq](https://stedolan.github.io/jq/) (tested with 1.7)
