@@ -581,7 +581,7 @@ Example:
 
 ## UI Options
 
-### display_mode
+### ui.display_mode
 
 The display mode.
 
@@ -595,16 +595,18 @@ Example:
 {
   "mistweaverco/kulala.nvim",
   opts = {
-    display_mode = "float",
+    ui = {
+      display_mode = "float",
+    }
   },
 }
 ```
 
-### split_direction
+### ui.split_direction
 
 Split direction.
 
-Only used when `display_mode` is set to `split`.
+Only used when `ui.display_mode` is set to `split`.
 
 Possible values:
 
@@ -619,12 +621,14 @@ Example:
 {
   "mistweaverco/kulala.nvim",
   opts = {
-    split_direction = "vertical",
+    ui = {
+      split_direction = "vertical",
+    },
   },
 }
 ```
 
-### default_view
+### ui.default_view
 
 Default view.
 
@@ -646,7 +650,9 @@ Example:
 {
   "mistweaverco/kulala.nvim",
   opts = {
-    default_view = "body",
+    ui = {
+      default_view = "body",
+    },
   },
 }
 ```
@@ -674,7 +680,7 @@ The response object has the following properties:
   local response = {}
 ```
 
-### winbar
+### ui.winbar
 
 Enable winbar for result buffer
 
@@ -691,12 +697,14 @@ Example:
 {
   "mistweaverco/kulala.nvim",
   opts = {
-    winbar = true,
+    ui = {
+      winbar = true,
+    },
   },
 }
 ```
 
-### default_winbar_panes
+### ui.default_winbar_panes
 
 Default visible winbar panes
 
@@ -717,12 +725,14 @@ Example:
 {
   "mistweaverco/kulala.nvim",
   opts = {
-    default_winbar_panes = { "body", "headers", "headers_body", "verbose" },
+    ui = {
+      default_winbar_panes = { "body", "headers", "headers_body", "verbose" },
+    },
   },
 }
 ```
 
-### show_variable_info_text
+### ui.show_variable_info_text
 
 Enable/disable variable info text.
 
@@ -739,12 +749,14 @@ Example:
 {
   "mistweaverco/kulala.nvim",
   opts = {
-    show_variable_info_text = false,
+    ui = {
+      show_variable_info_text = false,
+    },
   },
 }
 ```
 
-### show_icons
+### ui.show_icons
 
 Can be used to show loading, done and error icons in inlay hints or signcolumn
 
@@ -761,7 +773,7 @@ the icons will be shown above or below the request line.
 
 Default: `"on_request"`.
 
-### icons
+### ui.icons
 
 Default icons.
 
@@ -792,21 +804,23 @@ Example:
 {
   "mistweaverco/kulala.nvim",
   opts = {
-    icons = {
-      inlay = {
-        loading = "⏳",
-        done = "✅"
-        error = "❌",
+    ui = {
+      icons = {
+        inlay = {
+          loading = "⏳",
+          done = "✅"
+          error = "❌",
+        },
+        lualine = "🐼",
+        textHighlight = "WarningMsg",
+        lineHighlight = "Normal",
       },
-      lualine = "🐼",
-      textHighlight = "WarningMsg",
-      lineHighlight = "Normal",
     },
   },
 }
 ```
 
-### show_request_summary
+### ui.show_request_summary
 
 Enable/disable request summary in the output window.
 
@@ -823,18 +837,20 @@ Example:
 {
   "mistweaverco/kulala.nvim",
   opts = {
-    show_request_summary = false,
+    ui = {
+      show_request_summary = false,
+    },
   },
 }
 ```
 
-### summaryTextHighlight = "Special"
+### ui.summaryTextHighlight
 
 Highlight group for the request summary in the output window.
 
 Default: `Special`
 
-### scratchpad_default_contents
+### ui.scratchpad_default_contents
 
 Scratchpad default contents.
 
@@ -868,17 +884,19 @@ Example:
 {
   "mistweaverco/kulala.nvim",
   opts = {
-    scratchpad_default_contents = {
-      "@AUTH_USERNAME=my_username",
-      "",
-      "# @name scratchpad_special_name",
-      "POST https://httpbin.org/post HTTP/1.1",
-      "accept: application/json",
-      "content-type: application/json",
-      "",
-      "{",
-      '  "baz": "qux"',
-      "}",
+    ui = {
+      scratchpad_default_contents = {
+        "@AUTH_USERNAME=my_username",
+        "",
+        "# @name scratchpad_special_name",
+        "POST https://httpbin.org/post HTTP/1.1",
+        "accept: application/json",
+        "content-type: application/json",
+        "",
+        "{",
+        '  "baz": "qux"',
+        "}",
+      },
     },
   },
 }
