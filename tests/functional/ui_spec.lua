@@ -478,20 +478,22 @@ describe("UI", function()
     it("pastes curl command", function()
       vim.fn.setreg(
         "+",
-        [[curl -X 'POST' -v -s --data '{ "foo": "bar" }' -H 'Content-Type:application/json' --http1.1 -A 'kulala.nvim/4.10.0' 'https://httpbin.org/post']]
+        ([[curl -X 'POST' -v -s --data '{ "foo": "bar" }' -H 'Content-Type:application/json' --http1.1 -A 'kulala.nvim/%s' 'https://httpbin.org/post']])
+          :format(GLOBALS.VERSION)
+          :to_string(true)
       )
       h.set_buf_lines(http_buf, {})
 
       kulala.from_curl()
 
       expected = ([[
-          # curl -X 'POST' -v -s --data '{ "foo": "bar" }' -H 'Content-Type:application/json' --http1.1 -A 'kulala.nvim/4.10.0' 'https://httpbin.org/post'
+          # curl -X 'POST' -v -s --data '{ "foo": "bar" }' -H 'Content-Type:application/json' --http1.1 -A 'kulala.nvim/%s' 'https://httpbin.org/post'
           POST https://httpbin.org/post HTTP/1.1
           content-type: application/json
           user-agent: kulala.nvim/%s
 
           { "foo": "bar" }
-        ]]):format(GLOBALS.VERSION):to_string(true)
+        ]]):format(GLOBALS.VERSION, GLOBALS.VERSION):to_string(true)
 
       result = h.get_buf_lines(http_buf):to_string()
       assert.has_string(result, expected)
