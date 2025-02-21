@@ -64,6 +64,8 @@ end
 ---Either returns the absolute path if the path is already absolute or
 ---joins the path with the current buffer directory
 M.get_file_path = function(path)
+  path = vim.fn.expand(path)
+
   if M.is_absolute_path(path) then return path end
   if path:sub(1, 2) == "./" or path:sub(1, 2) == ".\\" then path = path:sub(3) end
 

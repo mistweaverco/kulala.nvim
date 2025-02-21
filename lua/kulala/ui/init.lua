@@ -132,6 +132,9 @@ local function pretty_ms(ms)
 end
 
 local function set_current_response_data(buf)
+  local config = CONFIG.get()
+  if not config.ui.show_request_summary then return end
+
   local responses = DB.global_update().responses
   local response = get_current_response()
   local idx = get_current_response_pos()
@@ -139,7 +142,18 @@ local function set_current_response_data(buf)
 
   local data = vim
     .iter({
-      { "Request " .. idx .. "/" .. #responses .. "  Status: " .. response.status .. "  Duration: " .. duration },
+      {
+        "Request: "
+          .. idx
+          .. "/"
+          .. #responses
+          .. "  Status: "
+          .. response.status
+          .. "  Duration: "
+          .. duration
+          .. "  Time: "
+          .. response.time,
+      },
       { "URL: " .. response.method .. " " .. response.url },
       { "Buffer: " .. response.buf_name .. "::" .. response.line },
       { "" },
@@ -148,7 +162,13 @@ local function set_current_response_data(buf)
     :totable()
 
   vim.api.nvim_buf_set_lines(buf, 0, 0, false, data)
-  UiHighlight.highlight_range(get_kulala_buffer(), 0, { row = 0, col = 0 }, { row = 2, col = -1 }, "Special")
+  UiHighlight.highlight_range(
+    get_kulala_buffer(),
+    0,
+    { row = 0, col = 0 },
+    { row = 2, col = -1 },
+    config.ui.summaryTextHighlight
+  )
 end
 
 local function show(contents, filetype, mode)

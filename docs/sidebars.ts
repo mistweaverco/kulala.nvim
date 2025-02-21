@@ -16,7 +16,7 @@ const sidebars: SidebarsConfig = {
         'getting-started/requirements',
         'getting-started/configuration-options',
         'getting-started/keymaps',
-        'getting-started/example-configuration',
+        'getting-started/default-keymaps',
       ],
     },
     {
@@ -29,6 +29,7 @@ const sidebars: SidebarsConfig = {
         slug: 'usage',
       },
       items: [
+        "usage/basic-usage",
         "usage/public-methods",
         "usage/api",
         "usage/reading-file-data",
@@ -38,9 +39,10 @@ const sidebars: SidebarsConfig = {
         "usage/request-variables",
         "usage/dynamically-setting-environment-variables-based-on-response-json",
         "usage/dynamically-setting-environment-variables-based-on-headers",
-        "usage/file-to-variable",
         "usage/redirect-the-response",
         "usage/graphql",
+        "usage/grpc",
+        "usage/streaming-and-transfer-chunked",
         "usage/magic-variables",
         "usage/sending-form-data",
         "usage/using-environment-variables",

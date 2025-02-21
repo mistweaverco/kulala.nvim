@@ -1,4 +1,5 @@
 ---@diagnostic disable: undefined-field, redefined-local
+local fs = require("kulala.utils.fs")
 local h = require("test_helper")
 local kulala = require("kulala")
 local kulala_config = require("kulala.config").get()
@@ -60,10 +61,41 @@ describe("grpc", function()
       result = parser.parse() or {}
       result = h.to_string(result.cmd):gsub("\n", " ")
 
+      local import_path = fs.get_file_path("../protos")
+
       assert.has_string(result, "grpcurl")
       assert.has_string(result, '-d {"name": "world"}')
-      assert.has_string(result, "-import-path ../protos")
+      assert.has_string(result, "-import-path " .. import_path)
       assert.has_string(result, "-proto helloworld.proto")
+      assert.has_string(result, "localhost:50051 helloworld.Greeter/SayHello")
+    end)
+
+    it("#wip builds grpc substituting variables", function()
+      h.create_buf(
+        ([[
+          @server=localhost:50051
+          @service=helloworld.Greeter
+          @flags=-import-path ../protos-variable -proto helloworld.proto
+          # @grpc-protoset my-protos.bin
+          # @grpc-import-path ../protos-global-local
+          # @grpc-global-import-path ../protos-global 
+          GRPC {{flags}} {{server}} {{service}}/SayHello
+
+          {"name": "world"}
+      ]]):to_table(true),
+        "test.http"
+      )
+
+      result = parser.parse() or {}
+      result = h.to_string(result.cmd):gsub("\n", " ")
+
+      local import_path = fs.get_file_path("../protos")
+
+      assert.has_string(result, "grpcurl")
+      assert.has_string(result, '-d {"name": "world"}')
+      assert.has_string(result, "-import-path " .. import_path)
+      assert.has_string(result, "-proto helloworld.proto")
+      assert.has_string(result, "-protoset my-protos.bin")
       assert.has_string(result, "localhost:50051 helloworld.Greeter/SayHello")
     end)
 
@@ -90,7 +122,9 @@ describe("grpc", function()
       result = parser.parse() or {}
       result = h.to_string(result.cmd):gsub("\n", " ")
 
-      assert.has_string(result, "-import-path ../protos")
+      local import_path = fs.get_file_path("../protos")
+
+      assert.has_string(result, "-import-path " .. import_path)
       assert.has_string(result, "-proto helloworld.proto")
       assert.has_string(result, "-plaintext")
       assert.has_string(result, "localhost:50051 list")

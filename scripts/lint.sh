@@ -15,7 +15,7 @@ check_code() {
 
 check_docs() {
   if ! command -v vale &> /dev/null; then
-    echo "stylua is not installed"
+    echo "vale is not installed"
     exit 1
   fi
   cd docs || exit 1

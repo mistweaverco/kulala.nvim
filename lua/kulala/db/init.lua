@@ -5,11 +5,12 @@ local M = {}
 M.data = nil
 
 ---@class Response
----@field id number
+---@field id string
 ---@field url string
 ---@field method string
 ---@field status number
 ---@field duration number
+---@field time string
 ---@field body string
 ---@field headers string
 ---@field errors string

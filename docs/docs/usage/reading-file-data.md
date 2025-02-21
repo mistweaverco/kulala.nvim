@@ -7,7 +7,7 @@ Then, use redirection `<` to specify the file path.
 that you want to use in the request.
 
 
-```http title="file-to-variable.http"
+```http title="include-file.http"
 POST https://httpbin.org/post HTTP/1.1
 Content-Type: application/json
 Accept: application/json
