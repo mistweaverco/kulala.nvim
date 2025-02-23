@@ -35,6 +35,7 @@ function M.parse(curl)
     data = nil,
     url = "",
     http_version = "",
+    body = {},
   }
 
   local State = {
@@ -61,7 +62,7 @@ function M.parse(curl)
         state = State.UserAgent
       elseif arg == "-H" or arg == "--header" then
         state = State.Header
-      elseif arg == "-d" or arg == "--data" or arg == "--data-raw" then
+      elseif arg == "-d" or string.match(arg, "--data") then
         state = State.Body
 
         if not res.headers["content-type"] then
@@ -93,7 +94,7 @@ function M.parse(curl)
         local header, value = Stringutils.cut(arg, ":")
         set_header(res.headers, Stringutils.remove_extra_space(header), Stringutils.remove_extra_space(value))
       elseif state == State.Body then
-        res.body = arg
+        table.insert(res.body, arg)
       end
     end
 
