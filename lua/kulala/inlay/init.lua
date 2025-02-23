@@ -4,6 +4,7 @@ local NS = vim.api.nvim_create_namespace("kulala_inlay_hints")
 
 local M = {}
 
+---Get the current line number, 1-indexed
 M.get_current_line_number = function()
   local win_id = vim.fn.bufwinid(DB.get_current_buffer())
   return vim.api.nvim_win_get_cursor(win_id)[1]

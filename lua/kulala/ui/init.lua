@@ -27,6 +27,7 @@ local function get_kulala_window()
   return win and win
 end
 
+---Get the current line number, 1-indexed
 local function get_current_line()
   return vim.fn.line(".")
 end

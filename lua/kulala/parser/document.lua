@@ -22,8 +22,6 @@ local M = {}
 ---@field start_line number
 ---@field end_line number
 ---@field show_icon_line_number number
----@field block_line_count number
----@field lines_length number
 ---@field variables DocumentVariables
 ---@field redirect_response_body_to_files ResponseBodyToFile[]
 ---@field scripts Scripts
@@ -44,11 +42,9 @@ local default_document_request = {
   metadata = {},
   body = "",
   body_display = "",
-  start_line = 0,
-  end_line = 0,
+  start_line = 0, -- 1-based
+  end_line = 0, -- 1-based
   show_icon_line_number = 1,
-  block_line_count = 0,
-  lines_length = 0,
   variables = {},
   redirect_response_body_to_files = {},
   scripts = {
@@ -66,29 +62,31 @@ local default_document_request = {
   method = "",
 }
 
-local function split_by_block_delimiters(text)
-  local result = {}
-  local start = 1
-  -- Pattern to match lines starting with ### followed by optional text and ending with a newline
-  local pattern = "\n###.-\n"
-  while true do
-    -- Find the next delimiter
-    local split_start, split_end = text:find(pattern, start)
-    if not split_start then
-      -- If no more delimiters, add the remaining text as the last section
-      local last_section = text:sub(start):gsub("\n+$", "") -- Remove trailing newlines
+local function split_content_by_blocks(lines, line_offset)
+  local new_block = { lines = {}, start_lnum = math.max(1, line_offset), end_lnum = 1 }
+  local delimiter = "###"
+  local blocks = {}
 
-      if #last_section > 0 then table.insert(result, last_section) end
-      break
+  local block = vim.deepcopy(new_block)
+
+  for lnum, line in ipairs(lines) do
+    local is_delimiter = line:match("^" .. delimiter)
+
+    if is_delimiter or lnum == #lines then
+      _ = not is_delimiter and table.insert(block.lines, line)
+
+      block.end_lnum = math.max(1, line_offset + lnum - 1)
+
+      _ = #block.lines > 0 and table.insert(blocks, block)
+
+      block = vim.deepcopy(new_block)
+      block.start_lnum = line_offset + lnum + 1
+    else
+      table.insert(block.lines, line)
     end
-    -- Add the text before the delimiter as a section
-    local section = text:sub(start, split_start - 1):gsub("\n+$", "") -- Remove trailing newlines
-    if #section > 0 then table.insert(result, section) end
-    -- Move start position
-    start = split_end
   end
 
-  return result
+  return blocks
 end
 
 local function get_request_from_fenced_code_block()
@@ -264,7 +262,7 @@ M.get_document = function()
     content_lines, line_offset = get_request_from_fenced_code_block()
 
     content_lines = content_lines or { vim.fn.getline(".") } -- third: try to get the current line
-    line_offset = line_offset or vim.fn.line(".") - 1
+    line_offset = line_offset or vim.fn.line(".")
   end
 
   content_lines = content_lines and PARSER_UTILS.strip_invalid_chars(content_lines or {})
@@ -274,10 +272,9 @@ M.get_document = function()
 
   if not content_lines then return end
 
-  local content = table.concat(content_lines, "\n")
   local variables = {}
   local requests = {}
-  local blocks = split_by_block_delimiters(content)
+  local blocks = split_content_by_blocks(content_lines, line_offset)
 
   for _, block in ipairs(blocks) do
     local is_request_line = true
@@ -286,16 +283,9 @@ M.get_document = function()
     local is_body_section = false
     local skip_block = false
 
-    local lines = vim.split(block, "\n")
-    local block_line_count = #lines
-
     local request = vim.deepcopy(default_document_request)
 
-    request.start_line = line_offset + 1
-    request.block_line_count = block_line_count
-    request.lines_length = #lines
-
-    for relative_linenr, line in ipairs(lines) do
+    for relative_linenr, line in ipairs(block.lines) do
       -- skip comments, silently skip URLs that are commented out
       if line:match("^#%S") then
         if parse_url(line:sub(2)) then skip_block = true end
@@ -351,8 +341,8 @@ M.get_document = function()
       request.body_display = vim.trim(request.body_display)
     end
 
-    request.end_line = line_offset + block_line_count
-    line_offset = request.end_line + 1 -- +1 for the '###' separator line
+    request.start_line = block.start_lnum
+    request.end_line = block.end_lnum
 
     if request.url and #request.url > 0 then
       table.insert(requests, request)

@@ -70,7 +70,7 @@ describe("grpc", function()
       assert.has_string(result, "localhost:50051 helloworld.Greeter/SayHello")
     end)
 
-    it("#wip builds grpc substituting variables", function()
+    it("builds grpc substituting variables", function()
       h.create_buf(
         ([[
           @server=localhost:50051
