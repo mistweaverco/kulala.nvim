@@ -6,7 +6,7 @@ local health = vim.health
 
 local M = {}
 
-local function check_executalbe(name, path)
+local function check_executable(name, path)
   if FS.command_exists(path) then
     path = FS.command_path(path)
 
@@ -25,8 +25,8 @@ M.check = function()
 
   health.info("{kulala.nvim} version " .. GLOBALS.VERSION)
 
-  check_executalbe("cURL", config.curl_path)
-  check_executalbe("gRPCurl", config.grpcurl_path)
+  check_executable("cURL", config.curl_path)
+  check_executable("gRPCurl", config.grpcurl_path)
 
   health.start("Checking formatters")
 

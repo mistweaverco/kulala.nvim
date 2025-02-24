@@ -1,0 +1,7 @@
+{
+  "data": {
+    "name": "John Doe",
+    "occupation": "{{OCCUPATION}}",
+    "age": 30
+  }
+}
