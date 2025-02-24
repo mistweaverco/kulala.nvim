@@ -16,6 +16,7 @@ local M = {}
 ---@class DocumentRequest
 ---@field headers table<string, string>
 ---@field headers_raw table<string, string>
+---@field cookie string
 ---@field metadata table<{name: string, value: string}>
 ---@field body string
 ---@field body_display string
@@ -39,6 +40,7 @@ local M = {}
 local default_document_request = {
   headers = {},
   headers_raw = {},
+  cookie = "",
   metadata = {},
   body = "",
   body_display = "",
@@ -182,6 +184,12 @@ end
 -- dynamic variables are defined as `{{$variable_name}}`
 local function parse_headers(request, line)
   local key, value = line:match("^([^:]+):%s*(.*)$")
+
+  if key == "Cookie" then
+    request.cookie = value
+    return
+  end
+
   if key and value then
     request.headers[key] = value
     request.headers_raw[key] = value
@@ -285,6 +293,9 @@ M.get_document = function()
 
     local request = vim.deepcopy(default_document_request)
 
+    request.start_line = block.start_lnum
+    request.end_line = block.end_lnum
+
     for relative_linenr, line in ipairs(block.lines) do
       -- skip comments, silently skip URLs that are commented out
       if line:match("^#%S") then
@@ -340,9 +351,6 @@ M.get_document = function()
       request.body = vim.trim(request.body)
       request.body_display = vim.trim(request.body_display)
     end
-
-    request.start_line = block.start_lnum
-    request.end_line = block.end_lnum
 
     if request.url and #request.url > 0 then
       table.insert(requests, request)

@@ -507,7 +507,7 @@ describe("UI", function()
     it("pastes curl command", function()
       vim.fn.setreg(
         "+",
-        ([[curl -X 'POST' -v -s --data '{ "foo": "bar" }' -H 'Content-Type:application/json' --http1.1 -A 'kulala.nvim/4.10.0' 'https://httpbin.org/post']]):to_string(
+        ([[curl -X 'POST' -v -s --data '{ "foo": "bar" }' -H 'Content-Type:application/json' -b 'cookie_key=value' --http1.1 -A 'kulala.nvim/4.10.0' 'https://httpbin.org/post']]):to_string(
           true
         )
       )
@@ -516,10 +516,11 @@ describe("UI", function()
       kulala.from_curl()
 
       expected = ([[
-          # curl -X 'POST' -v -s --data '{ "foo": "bar" }' -H 'Content-Type:application/json' --http1.1 -A 'kulala.nvim/4.10.0' 'https://httpbin.org/post'
+          # curl -X 'POST' -v -s --data '{ "foo": "bar" }' -H 'Content-Type:application/json' -b 'cookie_key=value' --http1.1 -A 'kulala.nvim/4.10.0' 'https://httpbin.org/post'
           POST https://httpbin.org/post HTTP/1.1
           content-type: application/json
           user-agent: kulala.nvim/4.10.0
+          Cookie: cookie_key=value
 
           { "foo": "bar" }
         ]]):to_string(true)
@@ -533,6 +534,7 @@ describe("UI", function()
         ([[
         POST http://localhost:3001/request_1
         Content-Type: application/json
+        Cookie: cookie_key=value
 
         {
           "foo": "bar"
@@ -543,7 +545,7 @@ describe("UI", function()
 
       kulala.copy()
 
-      expected = ([[curl -X 'POST' -v -s -H 'Content-Type:application/json' --data-binary "{"foo": "bar"}" -A 'kulala.nvim/%s' 'http://localhost:3001/request_1']]):format(
+      expected = ([[curl -X 'POST' -v -s -H 'Content-Type:application/json' --data-binary "{"foo": "bar"}" --cookie 'cookie_key=value' -A 'kulala.nvim/%s' 'http://localhost:3001/request_1']]):format(
         GLOBALS.VERSION
       )
       result = vim.fn.getreg("+")

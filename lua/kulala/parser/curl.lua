@@ -9,7 +9,7 @@ local M = {}
 ---@return Request|nil -- Table with a parsed data or nil if parsing fails
 ---@return string|nil -- Original curl command (sanitized one-liner) or nil if parsing fails
 function M.parse(curl)
-  if curl == nil or string.len(curl) == 0 then return nil, nil end
+  if not curl or #curl == 0 then return end
 
   -- Combine multi-line curl commands into a single line.
   -- Good for everyone, but especially for
@@ -17,92 +17,86 @@ function M.parse(curl)
   --
   -- This is a simple heuristic that assumes that a backslash followed by a newline
   -- is a line continuation. This is not always true, but it's good enough for most cases.
-  -- It should alsow work with Windows-style line endings.
+  -- It should also work with Windows-style line endings.
   -- If you have a better idea, please submit a PR.
-  curl = string.gsub(curl, "\\\r?\n", "")
+  curl = curl:gsub("\\\r?\n", "")
 
   -- remove extra spaces,
   -- they confuse the Shlex parser and might be present in the output of the above heuristic
-  curl = string.gsub(curl, "%s+", " ")
+  curl = curl:gsub("%s+", " ")
 
   local parts = Shlex.split(curl)
-  -- if string doesn't start with curl or different from curl_path, return nil
-  -- it could also be curl-7.68.0 or something like that
-  if string.find(parts[1], "^curl.*") == nil and parts[1] ~= Config.get().curl_path then return nil, nil end
-  local res = {
+  if not parts[1]:find("^curl.*") and parts[1] ~= Config.get().curl_path then return end
+
+  local command = {
     method = "",
     headers = {},
+    cookie = "",
     data = nil,
     url = "",
     http_version = "",
     body = {},
+    previous_flag = nil,
   }
 
-  local State = {
-    START = 0,
-    Method = 1,
-    UserAgent = 2,
-    Header = 3,
-    Body = 4,
+  local curl_flags = {
+    { "-X", "--request", "method" },
+    { "-A", "--user-agent", "user-agent" },
+    { "-b", "--cookie", "cookie" },
+    { "-H", "--header", "headers" },
+    { "-d", "--data", "--data-raw", "--json", "body" },
   }
-  local state = State.START
 
   local function set_header(headers, header, value)
-    headers[header:lower()] = value
+    headers[Stringutils.remove_extra_space(header:lower())] = Stringutils.remove_extra_space(value)
   end
 
-  for _, arg in ipairs(parts) do
-    local skip = false
-    if state == State.START then
-      if arg:match("^[a-z0-9]+://") and res.url == "" then
-        res.url = arg
-      elseif arg == "-X" or arg == "--request" then
-        state = State.Method
-      elseif arg == "-A" or arg == "--user-agent" then
-        state = State.UserAgent
-      elseif arg == "-H" or arg == "--header" then
-        state = State.Header
-      elseif arg == "-d" or string.match(arg, "--data") then
-        state = State.Body
+  local function parse_flag(cmd, part)
+    local flags = vim.iter(curl_flags):find(function(flags)
+      return vim.tbl_contains(flags, part)
+    end)
 
-        if not res.headers["content-type"] then
-          set_header(res.headers, "content-type", "application/x-www-form-urlencoded")
-        end
+    cmd.previous_flag = flags and flags[#flags] or nil
 
-        res.method = res.method == "" and "POST" or res.method
-      elseif arg == "--json" then
-        state = State.Body
-        set_header(res.headers, "content-type", "application/json")
-        set_header(res.headers, "accept", "application/json")
-        res.method = res.method == "" and "POST" or res.method
-      elseif arg == "--http1.1" then
-        res.http_version = "HTTP/1.1"
-      elseif arg == "--http2" then
-        res.http_version = "HTTP/2"
-      elseif arg == "--http3" then
-        res.http_version = "HTTP/3"
-      end
-      skip = true
+    if part:match("--http") then
+      cmd.http_version = "HTTP/" .. part:match("[%d%.]+") -- 1.1
+    elseif part == "--json" then
+      set_header(cmd.headers, "content-type", "application/json")
+      set_header(cmd.headers, "accept", "application/json")
     end
 
-    if not skip then
-      if state == State.Method then
-        res.method = arg
-      elseif state == State.UserAgent then
-        set_header(res.headers, "user-agent", arg)
-      elseif state == State.Header then
-        local header, value = Stringutils.cut(arg, ":")
-        set_header(res.headers, Stringutils.remove_extra_space(header), Stringutils.remove_extra_space(value))
-      elseif state == State.Body then
-        table.insert(res.body, arg)
-      end
-    end
-
-    if not skip then state = State.START end
+    return true
   end
 
-  if res.method == "" then res.method = "GET" end
-  return res, curl
+  local function parse_flag_value(cmd, part)
+    local flag = cmd.previous_flag
+    if part:match("curl") then
+      -- skip
+    elseif part:match("^[a-z0-9]+://") and cmd.url == "" then
+      cmd.url = part
+    elseif flag == "headers" then
+      set_header(cmd.headers, Stringutils.cut(part, ":"))
+    elseif flag == "user-agent" then
+      set_header(cmd.headers, "user-agent", part)
+    elseif flag == "body" then
+      table.insert(cmd.body, part)
+    else
+      cmd[flag or ""] = part
+    end
+  end
+
+  local cmd = vim.iter(parts):fold(command, function(cmd, part)
+    _ = part:match("^%-") and parse_flag(cmd, part) or parse_flag_value(cmd, part)
+    return cmd
+  end)
+
+  _ = #cmd.body > 0
+    and not cmd.headers["content-type"]
+    and set_header(cmd.headers, "content-type", "application/x-www-form-urlencoded")
+
+  cmd.method = #cmd.method > 0 and cmd.method or (#cmd.body > 0 and "POST" or "GET")
+
+  return cmd, curl
 end
 
 return M
