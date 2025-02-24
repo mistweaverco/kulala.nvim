@@ -75,10 +75,12 @@ local function split_content_by_blocks(lines, line_offset)
     local is_delimiter = line:match("^" .. delimiter)
 
     if is_delimiter or lnum == #lines then
-      _ = not is_delimiter and table.insert(block.lines, line)
+      if lnum == #lines then
+        table.insert(block.lines, line)
+        lnum = lnum + 1
+      end
 
       block.end_lnum = math.max(1, line_offset + lnum - 1)
-
       _ = #block.lines > 0 and table.insert(blocks, block)
 
       block = vim.deepcopy(new_block)
@@ -132,8 +134,7 @@ local function get_visual_selection()
 
   vim.api.nvim_input("<Esc>")
 
-  local line_s, line_e
-  line_s, line_e = vim.fn.getpos(".")[2], vim.fn.getpos("v")[2]
+  local line_s, line_e = vim.fn.getpos(".")[2], vim.fn.getpos("v")[2]
 
   if line_s > line_e then
     line_s, line_e = line_e, line_s
