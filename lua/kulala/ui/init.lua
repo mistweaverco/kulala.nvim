@@ -27,6 +27,7 @@ local function get_kulala_window()
   return win and win
 end
 
+---Get the current line number, 1-indexed
 local function get_current_line()
   return vim.fn.line(".")
 end
@@ -370,11 +371,10 @@ local function print_http_spec(spec, curl)
 
   table.insert(lines, "# " .. curl)
 
-  if spec.http_version ~= "" then
-    table.insert(lines, spec.method .. " " .. spec.url .. " " .. spec.http_version)
-  else
-    table.insert(lines, spec.method .. " " .. spec.url)
-  end
+  local url = spec.method .. " " .. spec.url
+  url = spec.http_version ~= "" and url .. " " .. spec.http_version or url
+
+  table.insert(lines, url)
 
   local headers = vim.tbl_keys(spec.headers)
   table.sort(headers)
@@ -383,16 +383,17 @@ local function print_http_spec(spec, curl)
     table.insert(lines, header .. ": " .. spec.headers[header])
   end)
 
-  if spec.body ~= "" then
+  _ = #spec.cookie > 0 and table.insert(lines, "Cookie: " .. spec.cookie)
+
+  if #spec.body > 0 then
     table.insert(lines, "")
+
     vim.iter(spec.body):each(function(line)
-      if spec.body[#spec.body] == line then
-        table.insert(lines, line)
-      else
-        table.insert(lines, line .. "&")
-      end
+      line = spec.body[#spec.body] and line or line .. "&"
+      table.insert(lines, line)
     end)
   end
+
   vim.api.nvim_put(lines, "l", false, false)
 end
 

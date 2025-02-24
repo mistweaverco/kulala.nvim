@@ -27,11 +27,13 @@ describe("requests", function()
             @DEFAULT_TIMEOUT = 5000
             @REQ_USERNAME = Test_user
             @REQ_PASSWORD = Test_password
+            @MY_COOKIE = awesome=me
 
             POST https://httpbingo.org/basic-auth/{{REQ_USERNAME}}/{{REQ_PASSWORD}} HTTP/1.1
             Content-Type: application/json
             Accept: application/json
             Authorization: Basic {{REQ_USERNAME}}:{{REQ_PASSWORD}}
+            Cookie: {{MY_COOKIE}}
 
             {
               "Timeout": {{DEFAULT_TIMEOUT}},
@@ -50,6 +52,7 @@ describe("requests", function()
             ["Authorization"] = "Basic Test_user:Test_password",
             ["Content-Type"] = "application/json",
           },
+          cookie = "awesome=me",
           body = ([[
             {
               "Timeout": 5000,

@@ -2,11 +2,7 @@ local DB = require("kulala.db")
 
 local M = {}
 
--- PERF: we do a lot of if else blocks with repeating loops
--- we could "optimize" this by using a single loop and if else blocks
--- that would make the code more readable and easier to maintain
--- but it would also make it slower
---
+---Get the current line number of the cursor, 1-indexed
 M.get_current_line_number = function()
   local win_id = vim.fn.bufwinid(DB.get_current_buffer())
   return vim.api.nvim_win_get_cursor(win_id)[1]

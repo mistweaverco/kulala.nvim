@@ -25,6 +25,7 @@ M.scripts.javascript = require("kulala.parser.scripts.javascript")
 ---@field headers table<string, string> -- The headers with variables and dynamic variables replaced
 ---@field headers_display table<string, string> -- The headers with variables and dynamic variables replaced and sanitized
 ---@field headers_raw table<string, string> -- The headers as they appear in the document
+---@field cookie string -- The cookie as it appears in the document
 ---@field body_raw string|nil -- The raw body as it appears in the document
 ---@field body_computed string|nil -- The computed body as sent by curl; with variables and dynamic variables replaced
 ---@field body_display string|nil -- The body with variables and dynamic variables replaced and sanitized
@@ -62,6 +63,7 @@ local default_request = {
   headers = {},
   headers_display = {},
   headers_raw = {},
+  cookie = "",
   body = nil,
   body_raw = nil,
   body_computed = nil,
@@ -172,6 +174,7 @@ local process_variables = function(request, document_variables, silent)
 
   request.url = parse_url(request.url_raw, unpack(params))
   request.headers = parse_headers(request.headers, unpack(params))
+  request.cookie = StringVariablesParser.parse(request.cookie, unpack(params))
   request.body = StringVariablesParser.parse(request.body_raw, unpack(params))
   request.body_display = StringVariablesParser.parse(request.body_display, unpack(params))
   request.body_computed = request.body
@@ -382,6 +385,11 @@ local function process_cookies(request)
     table.insert(request.cmd, "--cookie-jar")
     table.insert(request.cmd, GLOBALS.COOKIES_JAR_FILE)
   end
+
+  if #request.cookie > 0 then
+    table.insert(request.cmd, "--cookie")
+    table.insert(request.cmd, request.cookie)
+  end
 end
 
 local function process_options(request)
@@ -498,6 +506,7 @@ function M.get_basic_request_data(requests, line_nr)
   request.scripts.post_request = document_request.scripts.post_request
   request.show_icon_line_number = document_request.show_icon_line_number
   request.headers = document_request.headers
+  request.cookie = document_request.cookie
   request.headers_raw = document_request.headers_raw
   request.url_raw = document_request.url
   request.method = document_request.method

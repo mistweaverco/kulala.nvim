@@ -55,9 +55,10 @@ M.url_decode = function(str)
 end
 
 M.cut = function(str, delimiter)
-  local pos = string.find(str, delimiter)
-  if pos == nil then return str, "" end
-  return string.sub(str, 1, pos - 1), string.sub(str, pos + 1)
+  local pos = str:find(delimiter)
+  if not pos then return str, "" end
+
+  return str:sub(1, pos - 1), str:sub(pos + 1)
 end
 
 return M

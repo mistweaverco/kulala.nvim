@@ -74,6 +74,7 @@ Add the request body after a blank line, as shown in the following example:
 POST https://localhost:7220/weatherforecast
 Content-Type: application/json
 Accept-Language: en-US,en;q=0.5
+Cookie: _ga=GA1.2.1903065019.1615319519
 
 {
     "date": "2023-05-10",

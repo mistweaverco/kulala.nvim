@@ -53,6 +53,7 @@ describe("requests", function()
       end
 
       kulala_config.default_view = "body"
+      kulala_config.display_mode = "split"
     end)
 
     after_each(function()
