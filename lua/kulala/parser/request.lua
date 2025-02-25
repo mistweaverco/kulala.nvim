@@ -177,7 +177,7 @@ local process_variables = function(request, document_variables, silent)
   request.cookie = StringVariablesParser.parse(request.cookie, unpack(params))
   request.body = StringVariablesParser.parse(request.body_raw, unpack(params))
   request.body_display = StringVariablesParser.parse(request.body_display, unpack(params))
-  request.body_computed = request.body
+  request.body_computed = StringVariablesParser.parse(request.body_computed, unpack(params))
 
   request.environment = vim.tbl_extend("force", env, document_variables)
 end
@@ -263,6 +263,7 @@ local function process_graphql(request)
       request.body_computed = gql_json
     end
   end
+  return request
 end
 
 local function process_pre_request_scripts(request, document_variables)
