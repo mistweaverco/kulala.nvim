@@ -274,7 +274,7 @@ M.get_document = function()
     line_offset = line_offset or vim.fn.line(".")
   end
 
-  content_lines = content_lines and PARSER_UTILS.strip_invalid_chars(content_lines or {})
+  content_lines = FS.is_non_http_file() and PARSER_UTILS.strip_invalid_chars(content_lines or {}) or content_lines
 
   content_lines = content_lines or vim.api.nvim_buf_get_lines(buf, 0, -1, false) -- finally: get the whole buffer if the three methods above failed
   line_offset = line_offset or 0
