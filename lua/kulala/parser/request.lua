@@ -182,26 +182,36 @@ local process_variables = function(request, document_variables, silent)
   request.environment = vim.tbl_extend("force", env, document_variables)
 end
 
+local function get_file_with_replaced_variables(path, request)
+  local contents = FS.read_file(path)
+  contents = StringVariablesParser.parse(contents, request.environment, request.environment)
+  contents = contents:gsub("[\n\r]", "")
+
+  return FS.get_temp_file(contents)
+end
+
 ---Save body to a temporary file, including files specified with "< /path" syntax into request body
 ---NOTE: We are not saving the line endings, except "\r\n" which appear in multipart-form
 
----@param request_body string
+---@param request Request
 ---@return boolean|nil status
 ---@return string|nil result_path path
-local function save_body_with_files(request_body)
+local function save_body_with_files(request)
   local status = true
   local result_path = FS.get_binary_temp_file("")
 
   local result = io.open(result_path, "a+b")
   if not result then return end
 
-  local lines = vim.split(request_body, "\n")
+  local lines = vim.split(request.body_computed, "\n")
 
   for _, line in ipairs(lines) do
     -- skip lines that begin with '< [file not found]'
     local path = line:match("^< ([^%[\r\n]+)[\r\n]*$")
 
     if path then
+      if vim.fn.fnamemodify(path, ":e") == "json" then path = get_file_with_replaced_variables(path, request) end
+
       if not FS.include_file(result, path) then
         Logger.warn("The file '" .. path .. "' could not be included. Skipping ...")
       end
@@ -213,7 +223,6 @@ local function save_body_with_files(request_body)
   end
 
   status = status and result:close()
-
   return status, result_path
 end
 
@@ -279,7 +288,7 @@ local function process_body(request)
   local content_type_header_name, content_type_header_value = PARSER_UTILS.get_header(request.headers, "content-type")
 
   if content_type_header_name and content_type_header_value and request.body and #request.body_computed > 0 then
-    local status, path = save_body_with_files(request.body_computed)
+    local status, path = save_body_with_files(request)
 
     if status then
       request.body_temp_file = path

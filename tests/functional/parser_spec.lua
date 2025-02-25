@@ -248,6 +248,24 @@ describe("requests", function()
         assert.has_string(h.load_fixture(result.body_temp_file, true), expected)
       end)
 
+      it("replaces variables in .json files", function()
+        h.create_buf(
+          ([[
+          @OCCUPATION = Developer
+          POST https://httpbin.org/post
+          Content-Type: application/json
+
+          < ./tests/functional/fixtures/simple.json
+
+        ]]):to_table(true),
+          "test.http"
+        )
+
+        result = parser.parse() or {}
+        expected = h.load_fixture(result.body_temp_file, true)
+        assert.has_string(expected, '"occupation": "Developer"')
+      end)
+
       it("saves the request to a file", function()
         h.create_buf(
           ([[

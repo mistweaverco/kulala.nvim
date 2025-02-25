@@ -3,31 +3,41 @@ local FS = require("kulala.utils.fs")
 local GLOBALS = require("kulala.globals")
 
 local health = vim.health
-local start = health.start
-local ok = health.ok
-local info = health.info
-local warn = health.warn
-local error = health.error
 
 local M = {}
 
-M.check = function()
-  info("{kulala.nvim} version " .. GLOBALS.VERSION)
-  local curl = CONFIG.get().curl_path
-  if FS.command_exists(curl) then
-    local curl_path = FS.command_path(curl)
-    local curl_version = vim.fn.system({ curl_path, "--version" })
-    ok(string.format("{curl} found: %s (version: %s)", curl_path, curl_version:gsub("^curl ([^ ]+).*", "%1")))
-  else
-    error(string.format("{%s} not found", curl))
-  end
+local function check_executable(name, path)
+  if FS.command_exists(path) then
+    path = FS.command_path(path)
 
-  start("Checking formatters")
-  for type, config in pairs(CONFIG.get().contenttypes) do
-    if not config.formatter then
-      warn(string.format("{%s} formatter not found", type))
+    local version = vim.system({ path, "--version" }, { text = true }):wait()
+    version = #version.stdout > 0 and version.stdout or version.stderr
+    version = version and version:match("%sv?([%d%.]+)%s*") or "unknown"
+
+    health.ok(("{%s} found: %s (version: %s)"):format(name, path, version))
+  else
+    health.error(string.format("{%s} not found", name))
+  end
+end
+
+M.check = function()
+  local config = CONFIG.get()
+
+  health.info("{kulala.nvim} version " .. GLOBALS.VERSION)
+
+  check_executable("cURL", config.curl_path)
+  check_executable("gRPCurl", config.grpcurl_path)
+
+  health.start("Checking formatters")
+
+  for format_type, cfg in pairs(config.contenttypes) do
+    local formatter = cfg.formatter
+
+    if not formatter then
+      health.warn(("{%s} formatter not found"):format(format_type))
     else
-      ok(string.format("{%s} formatter: %s", type, table.concat(config.formatter, " ")))
+      formatter = type(formatter) == "function" and { debug.getinfo(formatter, "S").source } or formatter
+      health.ok(("{%s} formatter: %s"):format(format_type, table.concat(formatter, " ")))
     end
   end
 end
