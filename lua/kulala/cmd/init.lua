@@ -151,13 +151,13 @@ local function process_errors(request, request_status, processing_errors)
     )
   end
 
-  local message = ("Errors in request %s at line: %s\n%s\n%s"):format(
+  local message = ("Errors in request %s at line: %s\n%s"):format(
     request.url,
     request.show_icon_line_number or "-",
-    request_status.errors or "",
-    processing_errors or ""
+    request_status.errors or ""
   )
   Logger.error(message, 2)
+  Logger.error(processing_errors or "", 2)
 end
 
 local function handle_response(request_status, parsed_request, callback)

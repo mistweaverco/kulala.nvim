@@ -13,11 +13,15 @@ Via [lazy.nvim](https://github.com/folke/lazy.nvim):
 ### Basic configuration
 
 ```lua title="init.lua"
-require('lazy').setup({
+require("lazy").setup({
   {
-    'mistweaverco/kulala.nvim',
-    keys = {"<leader>Rs", "<leader>Ra", "<leader>Ro"},
-    ft = {"http", "rest"},
+    "mistweaverco/kulala.nvim",
+    keys = {
+      { "<leader>Rs", desc = "Send request" },
+      { "<leader>Ra", desc = "Send all requests" },
+      { "<leader>Rb", desc = "Open scratchpad" },
+    },
+    ft = { "http", "rest" },
     opts = {
       -- your configuration comes here
       global_keymaps = false,

@@ -38,12 +38,30 @@ Via [lazy.nvim](https://github.com/folke/lazy.nvim):
 ### Configuration
 
 ```lua
-{ 'mistweaverco/kulala.nvim', opts = {} },
+require("lazy").setup({
+  {
+    "mistweaverco/kulala.nvim",
+    keys = {
+      { "<leader>Rs", desc = "Send request" },
+      { "<leader>Ra", desc = "Send all requests" },
+      { "<leader>Rb", desc = "Open scratchpad" },
+    },
+    ft = {"http", "rest"},
+    opts = {
+      -- your configuration comes here
+      global_keymaps = false,
+    },
+  },
+})
 ```
-> [!NOTE]
-> `opts` needs to be at least an empty table `{}` and can't be completely omitted.
 
-See [configuration options](https://neovim.getkulala.net/docs/getting-started/configuration-options) for more information.
+> [!WARNING]
+>`opts` needs to be at least an empty table `{}` and can't be completely omitted.
+
+> [!NOTE]
+> By default global keymaps are disabled, change to `global_keymaps = true` to get a complete set of key mappings for Kulala. Check the [keymaps documentation](https://neovim.getkulala.net/docs/getting-started/keymaps) for details.
+
+See complete [configuration options](https://neovim.getkulala.net/docs/getting-started/configuration-options) for more information.
 
 ## Honorable mentions
 
