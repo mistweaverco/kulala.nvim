@@ -107,6 +107,8 @@ describe("UI", function()
 
     it("shows summary of requst", function()
       local responses = DB.global_update().responses
+      DB.global_update().current_response_pos = #responses
+
       ---@diagnostic disable-next-line: missing-fields
       responses[#responses] = {
         status = 0,

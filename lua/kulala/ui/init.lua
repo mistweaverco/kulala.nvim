@@ -102,6 +102,8 @@ local function open_kulala_window(buf)
   local win = get_kulala_window()
   if win then return win end
 
+  local request_win = vim.fn.win_findbuf(DB.get_current_buffer())[1] or vim.api.nvim_get_current_win()
+
   if config.display_mode == "float" then
     local width = math.max(vim.api.nvim_win_get_width(0) - 10, 1)
     local height = math.max(vim.api.nvim_win_get_height(0) - 10, 1)
@@ -118,12 +120,11 @@ local function open_kulala_window(buf)
       style = "minimal",
     }
   else
-    win_config = { split = config.split_direction == "vertical" and "right" or "below" }
-    previous_win = vim.api.nvim_get_current_win()
+    win_config = { split = config.split_direction == "vertical" and "right" or "below", win = request_win }
   end
 
   win = vim.api.nvim_open_win(buf, true, win_config)
-  if config.display_mode == "split" then vim.api.nvim_set_current_win(previous_win) end
+  if config.display_mode == "split" then vim.api.nvim_set_current_win(request_win) end
 
   return win
 end
