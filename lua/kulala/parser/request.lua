@@ -177,7 +177,7 @@ local process_variables = function(request, document_variables, silent)
   request.cookie = StringVariablesParser.parse(request.cookie, unpack(params))
   request.body = StringVariablesParser.parse(request.body_raw, unpack(params))
   request.body_display = StringVariablesParser.parse(request.body_display, unpack(params))
-  request.body_computed = request.body
+  request.body_computed = StringVariablesParser.parse(request.body_computed or request.body, unpack(params))
 
   request.environment = vim.tbl_extend("force", env, document_variables)
 end

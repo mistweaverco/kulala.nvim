@@ -55,7 +55,7 @@ M.toggle_winbar_tab = function(_, win_id, view)
     end
   end
 
-  if keymaps then
+  if keymaps and keymaps["Previous response"] then
     table.insert(winbar_title, "<- " .. keymaps["Previous response"][1])
     table.insert(winbar_title, keymaps["Next response"][1] .. " ->")
   end
