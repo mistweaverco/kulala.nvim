@@ -10,10 +10,10 @@ The queue of callbacks resets after this event is triggered.
 
 ```lua
 require('kulala.api').on("after_next_request", function(data)
-  print("Request completed")
-  print("Headers: " .. data.headers)
-  print("Body: " .. data.body)
-  print("Complete response: " .. data.response)
+  vim.print("Request completed")
+  vim.print("Headers: " .. data.headers)
+  vim.print("Body: " .. data.body)
+  vim.print("Complete response: ", data.response)
 end)
 ```
 
@@ -23,10 +23,10 @@ Triggered after a request has been successfully completed.
 
 ```lua
 require('kulala.api').on("after_request", function(data)
-  print("Request completed")
-  print("Headers: " .. data.headers)
-  print("Body: " .. data.body)
-  print("Complete response: " .. data.response)
+  vim.print("Request completed")
+  vim.print("Headers: " .. data.headers)
+  vim.print("Body: " .. data.body)
+  vim.print("Complete response: ", data.response)
 end)
 ```
 

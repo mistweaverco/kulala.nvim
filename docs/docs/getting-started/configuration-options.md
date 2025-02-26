@@ -44,17 +44,19 @@ the Kulala plugin with the available `opts`:
   contenttypes = {
     ["application/json"] = {
       ft = "json",
-      formatter = FS.command_exists("jq") and { "jq", "." } or nil,
-      pathresolver = require("kulala.parser.jsonpath").parse,
+      formatter = vim.fn.executable("jq") == 1 and { "jq", "." },
+      pathresolver = function(...)
+        return require("kulala.parser.jsonpath").parse(...)
+      end,
     },
     ["application/xml"] = {
       ft = "xml",
-      formatter = FS.command_exists("xmllint") and { "xmllint", "--format", "-" } or nil,
-      pathresolver = FS.command_exists("xmllint") and { "xmllint", "--xpath", "{{path}}", "-" } or nil,
+      formatter = vim.fn.executable("xmllint") == 1 and { "xmllint", "--format", "-" },
+      pathresolver = vim.fn.executable("xmllint") == 1 and { "xmllint", "--xpath", "{{path}}", "-" },
     },
     ["text/html"] = {
       ft = "html",
-      formatter = FS.command_exists("xmllint") and { "xmllint", "--format", "--html", "-" } or nil,
+      formatter = vim.fn.executable("xmllint") == 1 and { "xmllint", "--format", "--html", "-" },
       pathresolver = nil,
     },
   },
@@ -94,20 +96,20 @@ the Kulala plugin with the available `opts`:
     -- enable/disable request summary in the output window
     show_request_summary = true,
     summaryTextHighlight = "Special",
-  },
 
-  -- scratchpad default contents
-  scratchpad_default_contents = {
-    "@MY_TOKEN_NAME=my_token_value",
-    "",
-    "# @name scratchpad",
-    "POST https://httpbin.org/post HTTP/1.1",
-    "accept: application/json",
-    "content-type: application/json",
-    "",
-    "{",
-    '  "foo": "bar"',
-    "}",
+    -- scratchpad default contents
+    scratchpad_default_contents = {
+      "@MY_TOKEN_NAME=my_token_value",
+      "",
+      "# @name scratchpad",
+      "POST https://httpbin.org/post HTTP/1.1",
+      "accept: application/json",
+      "content-type: application/json",
+      "",
+      "{",
+      '  "foo": "bar"',
+      "}",
+    },
   },
 
   -- set to true to enable default keymaps (check docs or {plugins_path}/kulala.nvim/lua/kulala/config/keymaps.lua for details)
