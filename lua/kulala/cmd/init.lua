@@ -126,6 +126,7 @@ local function save_response(request_status, parsed_request)
     stats = request_status.stdout or "",
     script_pre_output = FS.read_file(GLOBALS.SCRIPT_PRE_OUTPUT_FILE) or "",
     script_post_output = FS.read_file(GLOBALS.SCRIPT_POST_OUTPUT_FILE) or "",
+    assert_output = FS.read_json(GLOBALS.ASSERT_OUTPUT_FILE) or "",
     buf = buf,
     buf_name = vim.fn.bufname(buf),
     line = line,

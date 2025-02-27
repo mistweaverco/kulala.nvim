@@ -200,69 +200,134 @@ end
 local function get_script_output(response)
   local pre, post = response.script_pre_output, response.script_post_output
   local sep = (" "):rep(4)
+  local out = {}
 
-  pre = #pre > 0 and sep .. "-->  " .. pre:gsub("\n", "\n" .. sep) or ""
-  post = #post > 0 and sep .. "<--  " .. post:gsub("\n", "\n" .. sep) or ""
+  _ = #pre > 0 and vim.list_extend(out, { "--> Pre-script:" }) and vim.list_extend(out, vim.split(pre, "\n"))
+  _ = #post > 0 and vim.list_extend(out, { "<-- Post-script:" }) and vim.list_extend(out, vim.split(post, "\n"))
+  _ = #out > 0 and table.insert(out, 1, " ")
 
-  return pre .. post
+  return vim
+    .iter(out)
+    :map(function(line)
+      return #line > 0 and { sep .. line } or nil
+    end)
+    :totable()
+end
+
+local function get_assert_output(response)
+  local out = vim.deepcopy(response.assert_output.testResults) or {}
+  local status = true
+  local sep = (" "):rep(4)
+
+  out = vim
+    .iter(out)
+    :map(function(assert)
+      status = status and assert[2] == 0
+      return { sep .. assert[1], assert[2] }
+    end)
+    :totable()
+
+  _ = #out > 0 and table.insert(out, 1, { "" })
+
+  return out, status and 0 or 1
+end
+
+local function get_report_summary(stats)
+  local summary = {}
+  local tbl = UI_utils.Ptable:new({
+    header = { "Summary", "Total", "Successful", "Failed" },
+    widths = { 10, 20, 20, 20 },
+  })
+
+  table.insert(summary, { tbl:get_headers() })
+  table.insert(summary, { tbl:get_row({ "Requests", stats.total, stats.success, stats.failed }, 1) })
+  table.insert(
+    summary,
+    { tbl:get_row({ "Asserts", stats.assert_total, stats.assert_success, stats.assert_failed }, 1) }
+  )
+
+  return summary
+end
+
+local function update_report_stats(stats, request_status, asserts)
+  local status
+  stats = stats
+    or {
+      total = 0,
+      success = 0,
+      failed = 0,
+      assert_total = 0,
+      assert_success = 0,
+      assert_failed = 0,
+    }
+
+  stats.total = stats.total + 1
+  stats.success = stats.success + (request_status == 0 and 1 or 0)
+  stats.failed = stats.failed + (request_status > 0 and 1 or 0)
+
+  vim.iter(asserts):each(function(assert)
+    status = assert[2]
+    if status then
+      stats.assert_total = stats.assert_total + 1
+      stats.assert_success = stats.assert_success + (status == 0 and 1 or 0)
+      stats.assert_failed = stats.assert_failed + (status > 0 and 1 or 0)
+    end
+  end)
+
+  return stats
 end
 
 local function generate_requests_report()
   local db = DB.global_update()
-  local report, row, script_out
-  local status = {}
+  local row, report, request_status = "", {}, 0
+  local stats
 
   local tbl = UI_utils.Ptable:new({
     header = { "Line", "URL", "Status", "Duration", "Time" },
     widths = { 5, 50, 8, 10, 10 },
   })
 
-  report = vim
-    .iter(db.responses)
-    :skip(db.previous_response_pos)
-    :map(function(response)
-      row = tbl:get_row({
-        response.line,
-        response.url,
-        response.status,
-        vim.fn.strftime("%H:%M:%S", response.time),
-        pretty_ms(response.duration / 1e6),
-      }, 1)
+  table.insert(report, { tbl:get_headers() })
+  table.insert(report, { "" })
 
-      script_out = get_script_output(response)
-      row = #script_out > 0 and row .. "\n" .. get_script_output(response) or row
+  vim.iter(db.responses):skip(db.previous_response_pos):each(function(response)
+    row = tbl:get_row({
+      response.line,
+      response.url,
+      response.status,
+      vim.fn.strftime("%H:%M:%S", response.time),
+      pretty_ms(response.duration / 1e6),
+    }, 1)
 
-      status[response.line] = response.status
+    local asserts, assert_status = get_assert_output(response)
+    request_status = response.status + assert_status
+    stats = update_report_stats(stats, request_status, asserts)
 
-      return row
-    end)
-    :join("\n")
+    table.insert(report, { row, request_status })
 
-  report = tbl:get_headers() .. "\n\n" .. report
+    vim.list_extend(report, get_script_output(response))
+    vim.list_extend(report, asserts)
 
-  return report, status
+    table.insert(report, { "" })
+  end)
+
+  vim.list_extend(report, get_report_summary(stats))
+  return report
 end
 
-local function set_report_highlights(report, status)
+local function set_report_highlights(report)
   local config = CONFIG.get().ui.report
   local buf = get_kulala_buffer()
-  local request_line, response_status
-  local hl, icon
+  local hl, status
 
-  UI_utils.highlight_range(get_kulala_buffer(), 0, 0, 1, config.headersHighlight)
-
-  vim.iter(vim.split(report, "\n")):enumerate():each(function(lnum, line)
-    request_line = line:match("^%s(%d+)")
-
-    if request_line then
-      response_status = status[tonumber(request_line)] or 0
-      hl = response_status == 0 and config.successHighlight or config.errorHighlight
-      icon = response_status == 0 and "done" or "error"
-
-      UI_utils.highlight_range(buf, 0, lnum - 1, lnum, hl)
-      -- vim.fn.sign_place(lnum, "kulala", "kulala." .. icon, buf, { lnum = lnum })
-    end
+  vim.iter(report):enumerate():each(function(lnum, row)
+    status = row[2]
+    hl = status and (status == 0 and config.successHighlight or config.errorHighlight) or "Normal"
+    UI_utils.highlight_range(buf, 0, lnum - 1, lnum, hl)
   end)
+
+  UI_utils.highlight_range(buf, 0, 0, 1, config.headersHighlight, 100)
+  UI_utils.highlight_range(buf, 0, #report - 4, #report - 3, config.headersHighlight, 100)
 end
 
 M.show_headers = function()
@@ -312,9 +377,16 @@ M.show_script_output = function()
 end
 
 M.show_report = function()
-  local report, status = generate_requests_report()
-  show(report, "text", "report")
-  set_report_highlights(report, status)
+  local report = generate_requests_report()
+  local contents = vim
+    .iter(report)
+    :map(function(row)
+      return row[1]
+    end)
+    :join("\n")
+
+  show(contents, "text", "report")
+  set_report_highlights(report)
 end
 
 M.show_next = function()
