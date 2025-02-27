@@ -20,6 +20,9 @@ local winbar_info = {
   stats = {
     desc = "Stats (S)",
   },
+  report = {
+    desc = "Report (R)",
+  },
 }
 
 ---set winbar highlight

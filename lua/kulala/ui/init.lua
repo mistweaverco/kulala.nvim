@@ -97,7 +97,7 @@ end
 
 local function open_kulala_window(buf)
   local config = CONFIG.get()
-  local previous_win, win_config
+  local win_config
 
   local win = get_kulala_window()
   if win then return win end
@@ -124,7 +124,12 @@ local function open_kulala_window(buf)
   end
 
   win = vim.api.nvim_open_win(buf, true, win_config)
-  if config.display_mode == "split" then vim.api.nvim_set_current_win(request_win) end
+
+  vim.api.nvim_set_option_value("signcolumn", "yes:1", { win = win })
+  vim.api.nvim_set_option_value("number", false, { win = win })
+  vim.api.nvim_set_option_value("relativenumber", false, { win = win })
+
+  _ = config.display_mode == "split" and vim.api.nvim_set_current_win(request_win)
 
   return win
 end
@@ -154,7 +159,7 @@ local function set_current_response_data(buf)
           .. "  Duration: "
           .. duration
           .. "  Time: "
-          .. response.time,
+          .. vim.fn.strftime("%b %d %X", response.time),
       },
       { "URL: " .. response.method .. " " .. response.url },
       { "Buffer: " .. response.buf_name .. "::" .. response.line },
@@ -164,19 +169,13 @@ local function set_current_response_data(buf)
     :totable()
 
   vim.api.nvim_buf_set_lines(buf, 0, 0, false, data)
-  UI_utils.highlight_range(
-    get_kulala_buffer(),
-    0,
-    { row = 0, col = 0 },
-    { row = 2, col = -1 },
-    config.ui.summaryTextHighlight
-  )
+  UI_utils.highlight_range(get_kulala_buffer(), 0, 0, 3, config.ui.summaryTextHighlight)
 end
 
 local function show(contents, filetype, mode)
   local buf = open_kulala_buffer(filetype)
   set_buffer_contents(buf, contents, filetype)
-  set_current_response_data(buf)
+  _ = mode ~= "report" and set_current_response_data(buf)
 
   local win = open_kulala_window(buf)
 
@@ -196,6 +195,74 @@ local function format_body()
   end
 
   return body, filetype
+end
+
+local function get_script_output(response)
+  local pre, post = response.script_pre_output, response.script_post_output
+  local sep = (" "):rep(4)
+
+  pre = #pre > 0 and sep .. "-->  " .. pre:gsub("\n", "\n" .. sep) or ""
+  post = #post > 0 and sep .. "<--  " .. post:gsub("\n", "\n" .. sep) or ""
+
+  return pre .. post
+end
+
+local function generate_requests_report()
+  local db = DB.global_update()
+  local report, row, script_out
+  local status = {}
+
+  local tbl = UI_utils.Ptable:new({
+    header = { "Line", "URL", "Status", "Duration", "Time" },
+    widths = { 5, 50, 8, 10, 10 },
+  })
+
+  report = vim
+    .iter(db.responses)
+    :skip(db.previous_response_pos)
+    :map(function(response)
+      row = tbl:get_row({
+        response.line,
+        response.url,
+        response.status,
+        vim.fn.strftime("%H:%M:%S", response.time),
+        pretty_ms(response.duration / 1e6),
+      }, 1)
+
+      script_out = get_script_output(response)
+      row = #script_out > 0 and row .. "\n" .. get_script_output(response) or row
+
+      status[response.line] = response.status
+
+      return row
+    end)
+    :join("\n")
+
+  report = tbl:get_headers() .. "\n\n" .. report
+
+  return report, status
+end
+
+local function set_report_highlights(report, status)
+  local config = CONFIG.get().ui.report
+  local buf = get_kulala_buffer()
+  local request_line, response_status
+  local hl, icon
+
+  UI_utils.highlight_range(get_kulala_buffer(), 0, 0, 1, config.headersHighlight)
+
+  vim.iter(vim.split(report, "\n")):enumerate():each(function(lnum, line)
+    request_line = line:match("^%s(%d+)")
+
+    if request_line then
+      response_status = status[tonumber(request_line)] or 0
+      hl = response_status == 0 and config.successHighlight or config.errorHighlight
+      icon = response_status == 0 and "done" or "error"
+
+      UI_utils.highlight_range(buf, 0, lnum - 1, lnum, hl)
+      -- vim.fn.sign_place(lnum, "kulala", "kulala." .. icon, buf, { lnum = lnum })
+    end
+  end)
 end
 
 M.show_headers = function()
@@ -242,6 +309,12 @@ M.show_script_output = function()
   contents = contents .. "\n\n===== Post Script Output ====================================\n\n" .. post_file_contents
 
   show(contents, "text", "script_output")
+end
+
+M.show_report = function()
+  local report, status = generate_requests_report()
+  show(report, "text", "report")
+  set_report_highlights(report, status)
 end
 
 M.show_next = function()
@@ -296,6 +369,7 @@ M.open_all = function(_, line_nr)
   line_nr = line_nr or 0
 
   DB.set_current_buffer()
+  DB.global_update().previous_response_pos = #DB.global_update().responses
   INLAY.clear()
 
   CMD.run_parser(nil, line_nr, function(success, duration, icon_linenr)
