@@ -12,7 +12,7 @@ local Inspect = require("kulala.parser.inspect")
 local KEYMAPS = require("kulala.config.keymaps")
 local Logger = require("kulala.logger")
 local PARSER = require("kulala.parser.request")
-local UiHighlight = require("kulala.ui.highlight")
+local UI_utils = require("kulala.ui.utils")
 local WINBAR = require("kulala.ui.winbar")
 
 local M = {}
@@ -164,7 +164,7 @@ local function set_current_response_data(buf)
     :totable()
 
   vim.api.nvim_buf_set_lines(buf, 0, 0, false, data)
-  UiHighlight.highlight_range(
+  UI_utils.highlight_range(
     get_kulala_buffer(),
     0,
     { row = 0, col = 0 },
