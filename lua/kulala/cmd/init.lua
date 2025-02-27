@@ -10,7 +10,7 @@ local INLAY = require("kulala.inlay")
 local INT_PROCESSING = require("kulala.internal_processing")
 local Logger = require("kulala.logger")
 local REQUEST_PARSER = require("kulala.parser.request")
-local UI_utils = require("kulala.ui.utis")
+local UI_utils = require("kulala.ui.utils")
 
 local M = {}
 
@@ -118,7 +118,7 @@ local function save_response(request_status, parsed_request)
     url = parsed_request.url or "",
     method = parsed_request.method or "",
     status = request_status.code or 0,
-    time = vim.fn.strftime("%b %d %X"),
+    time = vim.fn.localtime(),
     duration = request_status.duration or 0,
     body = FS.read_file(GLOBALS.BODY_FILE) or "",
     headers = FS.read_file(GLOBALS.HEADERS_FILE) or "",

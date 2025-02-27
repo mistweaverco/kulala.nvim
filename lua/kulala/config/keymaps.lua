@@ -172,6 +172,12 @@ M.default_kulala_keymaps = {
       require("kulala.ui").show_stats()
     end,
   },
+  ["Show report"] = {
+    "R",
+    function()
+      require("kulala.ui").show_report()
+    end,
+  },
   ["Next response"] = {
     "]",
     function()

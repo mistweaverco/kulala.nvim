@@ -27,6 +27,7 @@ M.data = nil
 ---@field replay Request|nil -- previous request stored for replay
 M.global_data = {
   current_response_pos = nil, -- index of current response shown in UI
+  previous_response_pos = nil, -- index of previous response shown in UI
   responses = {}, -- history of responses
   replay = nil,
 }

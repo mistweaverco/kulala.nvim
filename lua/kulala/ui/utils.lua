@@ -1,35 +1,18 @@
 local DB = require("kulala.db")
 
----@class Position
----@field row number
----@field col number
-
 ---@param bufnr number
 ---@param ns number
----@param start_pos Position|number
----@param end_pos Position|number
+---@param start_pos table|number
+---@param end_pos table|number
 ---@param hl_group string
 local function highlight_range(bufnr, ns, start_pos, end_pos, hl_group)
   bufnr = bufnr == 0 and DB.get_current_buffer() or bufnr
   ns = ns == 0 and vim.api.nvim_create_namespace("kulala_highlight") or ns
 
-  start_pos = type(start_pos) == "table" and start_pos or { row = start_pos, col = 0 }
-  end_pos = type(end_pos) == "table" and end_pos or { row = end_pos, col = -1 }
+  start_pos = type(start_pos) == "table" and start_pos or { start_pos, 0 }
+  end_pos = type(end_pos) == "table" and end_pos or { end_pos, -1 }
 
-  -- don't highlight over the last line
-  if end_pos.col == 0 then
-    end_pos.row = end_pos.row - 1
-    end_pos.col = -1
-  end
-
-  vim.highlight.range(
-    bufnr,
-    ns,
-    hl_group,
-    { start_pos.row, start_pos.col },
-    { end_pos.row, end_pos.col },
-    { regtype = "v" }
-  )
+  vim.highlight.range(bufnr, ns, hl_group, start_pos, end_pos, { regtype = "v", priority = 1000, inclusive = true })
 end
 
 local function flash_highlight(bufnr, ns, timeout, start_pos, end_pos)
@@ -49,13 +32,7 @@ local function highlight_request(request)
   local ns = vim.api.nvim_create_namespace("kulala_requests_flash")
 
   if request.start_line and request.end_line then
-    flash_highlight(
-      DB.get_current_buffer(),
-      ns,
-      100,
-      { row = request.start_line, col = 0 },
-      { row = request.end_line, col = 0 }
-    )
+    flash_highlight(DB.get_current_buffer(), ns, 100, request.start_line, request.end_line)
   end
 end
 
@@ -76,7 +53,7 @@ local Ptable = {
       .iter(row)
       :enumerate()
       :map(function(i, col)
-        return self.sep(indent) .. col .. self.sep(self.widths[i] - #tostring(col) - indent)
+        return self.sep(indent) .. col .. self.sep(math.max(0, self.widths[i] - #tostring(col) - indent))
       end)
       :join("")
   end,
