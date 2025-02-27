@@ -10,7 +10,7 @@ local INLAY = require("kulala.inlay")
 local INT_PROCESSING = require("kulala.internal_processing")
 local Logger = require("kulala.logger")
 local REQUEST_PARSER = require("kulala.parser.request")
-local UiHighlight = require("kulala.ui.highlight")
+local UI_utils = require("kulala.ui.utis")
 
 local M = {}
 
@@ -283,7 +283,7 @@ M.run_parser = function(requests, line_nr, callback)
     INLAY.show("loading", req.show_icon_line_number)
 
     offload_task(function()
-      UiHighlight.highlight_request(req)
+      UI_utils.highlight_request(req)
       process_request(requests, req, variables, callback)
     end)
   end
