@@ -12,7 +12,7 @@
     "@rollup/plugin-typescript": "12.1.0",
     "@types/node": "22.7.4",
     "@typescript-eslint/eslint-plugin": "7.18.0",
-    "eslint": "8.57.1",
+    "eslint": "^8.57.1",
     "eslint-config-love": "83.0.0",
     "eslint-plugin-import": "2.30.0",
     "eslint-plugin-n": "15.7.0",

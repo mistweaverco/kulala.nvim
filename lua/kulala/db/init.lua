@@ -17,6 +17,7 @@ M.data = nil
 ---@field stats string
 ---@field script_pre_output string
 ---@field script_post_output string
+---@field assert_output table
 ---@field buf number
 ---@field buf_name string
 ---@field line number

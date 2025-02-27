@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+
 const _RESPONSE_HEADERS_FILEPATH = path.join(__dirname, '..', '..', 'headers.txt');
 const _RESPONSE_BODY_FILEPATH = path.join(__dirname, '..', '..', 'body.txt');
 
@@ -10,6 +11,18 @@ interface HeaderObject {
 
 type Headers = Record<string, HeaderObject>;
 type Body = null | string | object;
+
+export interface ResponseBody {
+  headers: Record<string, object>;
+  body: Record<string, object>;
+  json: Record<string, object>;
+}
+
+export interface ResponseType {
+  body: ResponseBody;
+  headers: Headers;
+  contentType: object;
+}
 
 let body: Body = null;
 const headers: Headers = {};

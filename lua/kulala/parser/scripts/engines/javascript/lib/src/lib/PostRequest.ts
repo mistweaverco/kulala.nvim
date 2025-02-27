@@ -1,7 +1,20 @@
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/strict-boolean-expressions */
+/* eslint-disable @typescript-eslint/consistent-type-assertions */
+/* eslint-disable @typescript-eslint/no-unnecessary-condition */
+/* eslint-disable @typescript-eslint/no-magic-numbers */
+/* eslint-disable no-extra-boolean-cast */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import * as fs from 'fs';
 import * as path from 'path';
+import { Response, type ResponseType, type ResponseBody } from './PostRequestResponse';
+
 const _REQUEST_FILEPATH = path.join(__dirname, '..', '..', 'request.json');
 const _REQUEST_VARIABLES_FILEPATH = path.join(__dirname, 'request_variables.json');
+const _REQUEST_ASSERTS_FILEPATH = path.join(__dirname, '..', '..', 'request_asserts.json');
 
 type RequestVariables = Record<string, string>;
 
@@ -15,7 +28,6 @@ interface RequestJson {
   url_raw: string,
   url: string,
   environment: Record<string, string>,
-  show_icon_line_number: number,
 };
 
 const getRequestVariables = (): RequestVariables => {
@@ -27,6 +39,25 @@ const getRequestVariables = (): RequestVariables => {
   }
   return reqVariables;
 };
+
+
+interface Asserts {
+  testResults: Array<[string, number]>;
+}
+
+const getAsserts = (): Asserts => {
+  const path = _REQUEST_ASSERTS_FILEPATH;
+  let reqAsserts: Asserts = { testResults: [] };
+
+  if (fs.existsSync(path)) {
+    try {
+      reqAsserts = JSON.parse(fs.readFileSync(path, { encoding: 'utf8' })) as Asserts;
+    } catch (e) {
+      console.log(e);
+    }
+  }
+  return reqAsserts;
+}
 
 interface HeaderObject {
   name: () => string,
@@ -128,33 +159,99 @@ interface AssertFunction {
   (value: any, message?: string): void;
   true: (value: any, message?: string) => void;
   false: (value: any, message?: string) => void;
-  fail: (message?: string) => void;
+  same: (value: any, expected: any, message?: string) => void;
+  hasString: (value: string, expected: any, message?: string) => void;
+  responseHas: (key: string, expected: any, message?: string) => void;
+  headersHas: (key: string, expected: any, message?: string) => void;
+  bodyHas: (key: string, expected: any, message?: string) => void;
+  jsonHas: (key: string, expected: any, message?: string) => void;
+  save: (status: boolean, message?: string, expected?: any, value?: any) => void;
+}
+
+const getResponse = (): ResponseBody => {
+  const response = Response as unknown as ResponseType;
+  response.body = response.body ?? {} as ResponseBody;
+
+  response.body.headers ??= {};
+  response.body.body ??= {}; 
+  response.body.json ??= {}; 
+  
+  return response.body;
+}
+
+const getNestedValue = (obj: any, path: string): any => {
+  return path.split('.').reduce((prev, curr) => 
+    prev && typeof prev === 'object' ? prev[curr] : undefined, obj);
 }
 
 export const Assert: AssertFunction = function (value:any, message?:string) {
-  if (!value) {
-    Assert.fail(message);
-  }
+  const status = Boolean(value);
+  Assert.save(status, message);
 };
 
 Assert.true = function(value: any, message?: string) {
-  if (value !== true) {
-    Assert.fail(message ?? 'Assertion failed: expected true');
-  }
+  const status = value === true;
+  Assert.save(status, message, true, false);
 };
 
 Assert.false = function(value: any, message?: string) {
-  if (value !== false) {
-    Assert.fail(message ?? 'Assertion failed: expected false');
-  }
+  const status = value === false;
+  Assert.save(status, message, false, true);
 };
 
-Assert.fail = function(message?: string, expected?: any, actual?: any) {
-  console.log(message || 'Assertion failed')
+Assert.same = function(value: any, expected: any, message?: string) {
+  const status = value === expected;
+  Assert.save(status, message, expected, value);
+};
 
-  const reqVariables = getRequestVariables()
-  reqVariables[testResults] = reqVariables[testResults] || {}
-  reqVariables[testResults].
+Assert.hasString = function(value: any, expected: any, message?: string) {
+  const status = value.includes(expected) === true;
+  Assert.save(status, message, expected, value);
+};
 
-  fs.writeFileSync(_REQUEST_VARIABLES_FILEPATH, JSON.stringify(reqVariables));
+Assert.responseHas = function(key: string, expected: any, message?: string) {
+  const response = getResponse() as unknown as Record<string, any>;
+  const status = response[key] === expected;
+  Assert.save(status, message, expected, response[key]);
+};
+
+Assert.headersHas = function(key: string, expected: any, message?: string) {
+  const headers = getResponse().headers;
+  const status = headers[key] === expected;
+  Assert.save(status, message, expected, headers[key]);
+};
+
+Assert.bodyHas = function(key: string, expected: any, message?: string) {
+  const body = getResponse().body;
+  const value = getNestedValue(body, key);
+  const status = value === expected;
+
+  Assert.save(status, message, expected, value);
+};
+
+Assert.jsonHas = function(key: string, expected: any, message?: string) {
+  const json = getResponse().json;
+  const value = getNestedValue(json, key);
+  const status = value === expected;
+
+  Assert.save(status, message, expected, value);
+};
+
+Assert.save = function(status: boolean, message?: string, expected?: any, value?: any) {
+  const statusStr = status ? 'succeeded' : 'failed';
+
+  message = message ?? `Assertion ${statusStr}`;
+  message += expected != null ? `: expected "${expected}", got "${value}"` : '';
+
+  const code = Boolean(status) ? 0 : 1;
+
+  try {
+    const reqAsserts = getAsserts();
+
+    reqAsserts.testResults.push([message, code]);
+    fs.writeFileSync(_REQUEST_ASSERTS_FILEPATH, JSON.stringify(reqAsserts));
+
+  } catch (e) {
+    console.log(e);
+  }
 };

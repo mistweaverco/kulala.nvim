@@ -5,14 +5,14 @@ local DB = require("kulala.db")
 ---@param start_pos table|number
 ---@param end_pos table|number
 ---@param hl_group string
-local function highlight_range(bufnr, ns, start_pos, end_pos, hl_group)
+local function highlight_range(bufnr, ns, start_pos, end_pos, hl_group, priority)
   bufnr = bufnr == 0 and DB.get_current_buffer() or bufnr
   ns = ns == 0 and vim.api.nvim_create_namespace("kulala_highlight") or ns
 
   start_pos = type(start_pos) == "table" and start_pos or { start_pos, 0 }
   end_pos = type(end_pos) == "table" and end_pos or { end_pos, -1 }
 
-  vim.highlight.range(bufnr, ns, hl_group, start_pos, end_pos, { regtype = "v", priority = 1000, inclusive = true })
+  vim.highlight.range(bufnr, ns, hl_group, start_pos, end_pos, { priority = priority or 1 })
 end
 
 local function flash_highlight(bufnr, ns, timeout, start_pos, end_pos)
@@ -69,6 +69,7 @@ local Ptable = {
 
 return {
   highlight_range = highlight_range,
+  highlight_line = highlight_line,
   highlight_request = highlight_request,
   Ptable = Ptable,
 }
