@@ -63,4 +63,3 @@ export const Response = {
     charset: null,
   }
 };
-

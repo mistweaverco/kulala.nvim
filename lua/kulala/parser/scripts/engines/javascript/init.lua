@@ -32,12 +32,12 @@ M.install_dependencies = function()
   FS.copy_dir(BASE_DIR, SCRIPTS_BUILD_DIR)
   local res_install = vim.system({ NPM_BIN, "install", "--prefix", SCRIPTS_BUILD_DIR }):wait()
   if res_install.code ~= 0 then
-    Logger.error("npm install fail with code " .. res_install.code)
+    Logger.error("npm install fail with code " .. res_install.code .. res_install.stderr)
     return
   end
   local res_build = vim.system({ NPM_BIN, "run", "build", "--prefix", SCRIPTS_BUILD_DIR }):wait()
   if res_build.code ~= 0 then
-    Logger.error("npm run build fail with code " .. res_build.code)
+    Logger.error("npm run build fail with code " .. res_build.code .. res_build.stderr)
     return
   end
 end

@@ -15,6 +15,7 @@ interface RequestJson {
   url_raw: string,
   url: string,
   environment: Record<string, string>,
+  show_icon_line_number: number,
 };
 
 const getRequestVariables = (): RequestVariables => {
@@ -123,3 +124,37 @@ export const Request = {
   },
 };
 
+interface AssertFunction {
+  (value: any, message?: string): void;
+  true: (value: any, message?: string) => void;
+  false: (value: any, message?: string) => void;
+  fail: (message?: string) => void;
+}
+
+export const Assert: AssertFunction = function (value:any, message?:string) {
+  if (!value) {
+    Assert.fail(message);
+  }
+};
+
+Assert.true = function(value: any, message?: string) {
+  if (value !== true) {
+    Assert.fail(message ?? 'Assertion failed: expected true');
+  }
+};
+
+Assert.false = function(value: any, message?: string) {
+  if (value !== false) {
+    Assert.fail(message ?? 'Assertion failed: expected false');
+  }
+};
+
+Assert.fail = function(message?: string, expected?: any, actual?: any) {
+  console.log(message || 'Assertion failed')
+
+  const reqVariables = getRequestVariables()
+  reqVariables[testResults] = reqVariables[testResults] || {}
+  reqVariables[testResults].
+
+  fs.writeFileSync(_REQUEST_VARIABLES_FILEPATH, JSON.stringify(reqVariables));
+};
