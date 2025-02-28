@@ -103,6 +103,13 @@ local function modify_grpc_response(response)
   return response
 end
 
+local function set_request_stats(response)
+  local _, stats = pcall(vim.json.decode, response.stats, { object = true, array = true })
+  response.response_code = _ and stats.response_code or 0
+
+  return response
+end
+
 local function save_response(request_status, parsed_request)
   local buf = DB.get_current_buffer()
   local line = parsed_request.show_icon_line_number or 0
@@ -132,7 +139,9 @@ local function save_response(request_status, parsed_request)
     line = line,
   }
 
+  response = set_request_stats(response)
   response = modify_grpc_response(response)
+
   table.insert(responses, response)
 end
 

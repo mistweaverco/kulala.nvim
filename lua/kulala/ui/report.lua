@@ -25,14 +25,14 @@ local function set_response_summary(buf)
           .. idx
           .. "/"
           .. #responses
-          .. "  Status: "
+          .. "  Code: "
           .. response.status
           .. "  Duration: "
           .. duration
           .. "  Time: "
           .. vim.fn.strftime("%b %d %X", response.time),
       },
-      { "URL: " .. response.method .. " " .. response.url },
+      { "URL: " .. response.method .. " " .. response.url .. "  Status: " .. response.response_code },
       { "Buffer: " .. response.buf_name .. "::" .. response.line },
       { "" },
     })
@@ -131,7 +131,7 @@ local function generate_requests_report()
   local stats
 
   local tbl = UI_utils.Ptable:new({
-    header = { "Line", "URL", "Status", "Duration", "Time" },
+    header = { "Line", "URL", "Status", "Time", "Duration" },
     widths = { 5, 50, 8, 10, 10 },
   })
 
@@ -142,9 +142,9 @@ local function generate_requests_report()
     row = tbl:get_row({
       response.line,
       response.url,
-      response.status,
-      UI_utils.pretty_ms(response.duration),
+      response.response_code,
       vim.fn.strftime("%H:%M:%S", response.time),
+      UI_utils.pretty_ms(response.duration),
     }, 1)
 
     local asserts, assert_status = get_assert_output(response)

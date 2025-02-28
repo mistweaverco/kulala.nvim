@@ -106,29 +106,32 @@ describe("UI", function()
     end)
 
     it("shows summary of request", function()
-      local responses = DB.global_update().responses
-      DB.global_update().current_response_pos = #responses
+      local db = DB.global_update()
+      db.responses = {}
+      db.current_response_pos = 1
 
       ---@diagnostic disable-next-line: missing-fields
-      responses[#responses] = {
+      table.insert(db.responses, {
         status = 0,
+        response_code = 200,
         duration = 3250000,
-        time = -2203902909,
+        time = 1740826092,
         url = "http://example.com",
         method = "GET",
         line = 15,
         buf_name = "test.txt",
         body = h.load_fixture("fixtures/request_2_headers_body.txt"),
         headers = "",
-      }
+      })
 
       kulala.open()
       result = h.get_buf_lines(h.get_kulala_buf()):to_string()
 
-      assert.has_string(result, "Request: " .. #responses .. "/" .. #responses)
-      assert.has_string(result, "Status: 0")
+      assert.has_string(result, "Request: " .. #db.responses .. "/" .. #db.responses)
+      assert.has_string(result, "Code: 0")
+      assert.has_string(result, "Status: 200")
       assert.has_string(result, "Duration: 3.25 ms")
-      assert.has_string(result, "Time: Feb 28 19:43:15")
+      assert.has_string(result, "Time: Mar 01 10:48:12")
       assert.has_string(result, "URL: GET http://example.com")
       assert.has_string(result, "Buffer: test.txt::15")
     end)
