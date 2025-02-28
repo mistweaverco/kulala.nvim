@@ -12,6 +12,7 @@ local Inspect = require("kulala.parser.inspect")
 local KEYMAPS = require("kulala.config.keymaps")
 local Logger = require("kulala.logger")
 local PARSER = require("kulala.parser.request")
+local REPORT = require("kulala.ui.report")
 local UI_utils = require("kulala.ui.utils")
 local WINBAR = require("kulala.ui.winbar")
 
@@ -134,48 +135,10 @@ local function open_kulala_window(buf)
   return win
 end
 
-local function pretty_ms(ms)
-  return string.format("%.2f ms", ms)
-end
-
-local function set_current_response_data(buf)
-  local config = CONFIG.get()
-  if not config.ui.show_request_summary then return end
-
-  local responses = DB.global_update().responses
-  local response = get_current_response()
-  local idx = get_current_response_pos()
-  local duration = response.duration == "" and 0 or pretty_ms(response.duration / 1e6)
-
-  local data = vim
-    .iter({
-      {
-        "Request: "
-          .. idx
-          .. "/"
-          .. #responses
-          .. "  Status: "
-          .. response.status
-          .. "  Duration: "
-          .. duration
-          .. "  Time: "
-          .. vim.fn.strftime("%b %d %X", response.time),
-      },
-      { "URL: " .. response.method .. " " .. response.url },
-      { "Buffer: " .. response.buf_name .. "::" .. response.line },
-      { "" },
-    })
-    :flatten()
-    :totable()
-
-  vim.api.nvim_buf_set_lines(buf, 0, 0, false, data)
-  UI_utils.highlight_range(get_kulala_buffer(), 0, 0, 3, config.ui.summaryTextHighlight)
-end
-
 local function show(contents, filetype, mode)
   local buf = open_kulala_buffer(filetype)
   set_buffer_contents(buf, contents, filetype)
-  _ = mode ~= "report" and set_current_response_data(buf)
+  _ = mode ~= "report" and REPORT.set_response_summary(buf)
 
   local win = open_kulala_window(buf)
 
@@ -195,141 +158,6 @@ local function format_body()
   end
 
   return body, filetype
-end
-
-local function get_script_output(response)
-  local pre, post = response.script_pre_output, response.script_post_output
-  local sep = (" "):rep(4)
-  local out = {}
-
-  _ = #pre > 0 and vim.list_extend(out, { "--> Pre-script:" }) and vim.list_extend(out, vim.split(pre, "\n"))
-  _ = #post > 0 and vim.list_extend(out, { "<-- Post-script:" }) and vim.list_extend(out, vim.split(post, "\n"))
-  _ = #out > 0 and table.insert(out, 1, " ")
-
-  return vim
-    .iter(out)
-    :map(function(line)
-      return #line > 0 and { sep .. line } or nil
-    end)
-    :totable()
-end
-
-local function get_assert_output(response)
-  local out = vim.deepcopy(response.assert_output.testResults) or {}
-  local status = true
-  local sep = (" "):rep(4)
-
-  out = vim
-    .iter(out)
-    :map(function(assert)
-      status = status and assert[2] == 0
-      return { sep .. assert[1], assert[2] }
-    end)
-    :totable()
-
-  _ = #out > 0 and table.insert(out, 1, { "" })
-
-  return out, status and 0 or 1
-end
-
-local function get_report_summary(stats)
-  local summary = {}
-  local tbl = UI_utils.Ptable:new({
-    header = { "Summary", "Total", "Successful", "Failed" },
-    widths = { 10, 20, 20, 20 },
-  })
-
-  table.insert(summary, { tbl:get_headers() })
-  table.insert(summary, { tbl:get_row({ "Requests", stats.total, stats.success, stats.failed }, 1) })
-  table.insert(
-    summary,
-    { tbl:get_row({ "Asserts", stats.assert_total, stats.assert_success, stats.assert_failed }, 1) }
-  )
-
-  return summary
-end
-
-local function update_report_stats(stats, request_status, asserts)
-  local status
-  stats = stats
-    or {
-      total = 0,
-      success = 0,
-      failed = 0,
-      assert_total = 0,
-      assert_success = 0,
-      assert_failed = 0,
-    }
-
-  stats.total = stats.total + 1
-  stats.success = stats.success + (request_status == 0 and 1 or 0)
-  stats.failed = stats.failed + (request_status > 0 and 1 or 0)
-
-  vim.iter(asserts):each(function(assert)
-    status = assert[2]
-    if status then
-      stats.assert_total = stats.assert_total + 1
-      stats.assert_success = stats.assert_success + (status == 0 and 1 or 0)
-      stats.assert_failed = stats.assert_failed + (status > 0 and 1 or 0)
-    end
-  end)
-
-  return stats
-end
-
-local function generate_requests_report()
-  local db = DB.global_update()
-  if #db.responses == 0 then return {} end
-
-  local row, report, request_status = "", {}, 0
-  local stats
-
-  local tbl = UI_utils.Ptable:new({
-    header = { "Line", "URL", "Status", "Duration", "Time" },
-    widths = { 5, 50, 8, 10, 10 },
-  })
-
-  table.insert(report, { tbl:get_headers() })
-  table.insert(report, { "" })
-
-  vim.iter(db.responses):skip(db.previous_response_pos):each(function(response)
-    row = tbl:get_row({
-      response.line,
-      response.url,
-      response.status,
-      vim.fn.strftime("%H:%M:%S", response.time),
-      pretty_ms(response.duration / 1e6),
-    }, 1)
-
-    local asserts, assert_status = get_assert_output(response)
-    request_status = response.status + assert_status
-    stats = update_report_stats(stats, request_status, asserts)
-
-    table.insert(report, { row, request_status })
-
-    vim.list_extend(report, get_script_output(response))
-    vim.list_extend(report, asserts)
-
-    table.insert(report, { "" })
-  end)
-
-  vim.list_extend(report, get_report_summary(stats))
-  return report
-end
-
-local function set_report_highlights(report)
-  local config = CONFIG.get().ui.report
-  local buf = get_kulala_buffer()
-  local hl, status
-
-  vim.iter(report):enumerate():each(function(lnum, row)
-    status = row[2]
-    hl = status and (status == 0 and config.successHighlight or config.errorHighlight) or "Normal"
-    UI_utils.highlight_range(buf, 0, lnum - 1, lnum, hl)
-  end)
-
-  UI_utils.highlight_range(buf, 0, 0, 1, config.headersHighlight, 100)
-  UI_utils.highlight_range(buf, 0, #report - 4, #report - 3, config.headersHighlight, 100)
 end
 
 M.show_headers = function()
@@ -379,7 +207,7 @@ M.show_script_output = function()
 end
 
 M.show_report = function()
-  local report = generate_requests_report()
+  local report = REPORT.generate_requests_report()
   local contents = vim
     .iter(report)
     :map(function(row)
@@ -388,7 +216,7 @@ M.show_report = function()
     :join("\n")
 
   show(contents, "text", "report")
-  set_report_highlights(report)
+  REPORT.set_report_highlights(report)
 end
 
 M.show_next = function()
@@ -447,14 +275,15 @@ end
 
 M.open_all = function(_, line_nr)
   line_nr = line_nr or 0
+  local db = DB.global_update()
 
   DB.set_current_buffer()
-  DB.global_update().previous_response_pos = #DB.global_update().responses
+  db.previous_response_pos = #db.responses
   INLAY.clear()
 
   CMD.run_parser(nil, line_nr, function(success, duration, icon_linenr)
     if success then
-      local elapsed_ms = pretty_ms(duration / 1e6)
+      local elapsed_ms = UI_utils.pretty_ms(duration)
 
       INLAY.show("done", icon_linenr, elapsed_ms)
     elseif success == nil then
@@ -464,7 +293,7 @@ M.open_all = function(_, line_nr)
       return
     end
 
-    set_current_response(#DB.global_update().responses)
+    set_current_response(#db.responses)
     M.open_default_view()
 
     return true
@@ -473,14 +302,10 @@ end
 
 M.replay = function()
   local last_request = DB.global_find_unique("replay")
-
   if not last_request then return Logger.warn("No request to replay") end
 
   CMD.run_parser({ last_request }, nil, function(success)
-    if success == false then
-      Logger.error("Unable to replay last request")
-      return
-    end
+    if success == false then return Logger.error("Unable to replay last request") end
 
     M.open_default_view()
     return true
@@ -520,38 +345,6 @@ M.copy = function()
   Logger.info("Copied to clipboard")
 end
 
----Prints the parsed Request table into current buffer - uses nvim_put
-local function print_http_spec(spec, curl)
-  local lines = {}
-
-  table.insert(lines, "# " .. curl)
-
-  local url = spec.method .. " " .. spec.url
-  url = spec.http_version ~= "" and url .. " " .. spec.http_version or url
-
-  table.insert(lines, url)
-
-  local headers = vim.tbl_keys(spec.headers)
-  table.sort(headers)
-
-  vim.iter(headers):each(function(header)
-    table.insert(lines, header .. ": " .. spec.headers[header])
-  end)
-
-  _ = #spec.cookie > 0 and table.insert(lines, "Cookie: " .. spec.cookie)
-
-  if #spec.body > 0 then
-    table.insert(lines, "")
-
-    vim.iter(spec.body):each(function(line)
-      line = spec.body[#spec.body] and line or line .. "&"
-      table.insert(lines, line)
-    end)
-  end
-
-  vim.api.nvim_put(lines, "l", false, false)
-end
-
 M.from_curl = function()
   local clipboard = vim.fn.getreg("+")
   local spec, curl = CURL_PARSER.parse(clipboard)
@@ -561,7 +354,7 @@ M.from_curl = function()
     return
   end
   -- put the curl command in the buffer as comment
-  print_http_spec(spec, curl)
+  REPORT.print_http_spec(spec, curl)
 end
 
 M.inspect = function()
@@ -635,5 +428,9 @@ M.inspect = function()
     end,
   })
 end
+
+M.get_kulala_buffer = get_kulala_buffer
+M.get_current_response = get_current_response
+M.get_current_response_pos = get_current_response_pos
 
 return M

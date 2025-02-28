@@ -10,7 +10,7 @@ M.data = nil
 ---@field method string
 ---@field status number
 ---@field duration number
----@field time string
+---@field time number
 ---@field body string
 ---@field headers string
 ---@field errors string

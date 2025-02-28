@@ -15,6 +15,12 @@ local function highlight_range(bufnr, ns, start_pos, end_pos, hl_group, priority
   vim.highlight.range(bufnr, ns, hl_group, start_pos, end_pos, { priority = priority or 1 })
 end
 
+local function highlight_column(bufnr, ns, start_pos, end_pos, hl_group, priority)
+  for line = start_pos[1], end_pos[1] do
+    highlight_range(bufnr, ns, { line, start_pos[2] }, { line, end_pos[2] }, hl_group, priority)
+  end
+end
+
 local function flash_highlight(bufnr, ns, timeout, start_pos, end_pos)
   highlight_range(bufnr, ns, start_pos, end_pos, "IncSearch")
 
@@ -53,6 +59,7 @@ local Ptable = {
       .iter(row)
       :enumerate()
       :map(function(i, col)
+        col = tostring(col):sub(1, self.widths[i] - 1) -- truncate if too long
         return self.sep(indent) .. col .. self.sep(math.max(0, self.widths[i] - #tostring(col) - indent))
       end)
       :join("")
@@ -67,9 +74,15 @@ local Ptable = {
   end,
 }
 
+---Pretty print time in milliseconds
+local function pretty_ms(ms)
+  return ("%.2f ms"):format(ms / 1e6)
+end
+
 return {
   highlight_range = highlight_range,
-  highlight_line = highlight_line,
+  highlight_column = highlight_column,
   highlight_request = highlight_request,
   Ptable = Ptable,
+  pretty_ms = pretty_ms,
 }

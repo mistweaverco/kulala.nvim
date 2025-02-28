@@ -105,7 +105,7 @@ describe("UI", function()
       assert.has_string(result, expected)
     end)
 
-    it("shows summary of requst", function()
+    it("shows summary of request", function()
       local responses = DB.global_update().responses
       DB.global_update().current_response_pos = #responses
 
@@ -113,7 +113,7 @@ describe("UI", function()
       responses[#responses] = {
         status = 0,
         duration = 3250000,
-        time = "Tue Sep 28 2021 12:00:00",
+        time = -2203902909,
         url = "http://example.com",
         method = "GET",
         line = 15,
@@ -127,8 +127,8 @@ describe("UI", function()
 
       assert.has_string(result, "Request: " .. #responses .. "/" .. #responses)
       assert.has_string(result, "Status: 0")
-      assert.has_string(result, "Duration: 3.25ms")
-      assert.has_string(result, "Time: Tue Sep 28 2021 12:00:00")
+      assert.has_string(result, "Duration: 3.25 ms")
+      assert.has_string(result, "Time: Feb 28 19:43:15")
       assert.has_string(result, "URL: GET http://example.com")
       assert.has_string(result, "Buffer: test.txt::15")
     end)
