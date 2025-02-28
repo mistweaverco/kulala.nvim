@@ -233,7 +233,7 @@ local function collect_global_keymaps()
 end
 
 local function set_keymap(map, buf)
-  vim.keymap.set(map.mode or "n", map[1], map[2], { buffer = buf, desc = map.desc, silent = true })
+  vim.keymap.set(map.mode or "n", map[1], map[2], { buffer = buf, desc = map.desc, silent = true, nowait = true })
 end
 
 local function create_ft_autocommand(ft, maps)
