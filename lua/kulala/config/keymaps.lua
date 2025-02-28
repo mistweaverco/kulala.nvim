@@ -190,6 +190,12 @@ M.default_kulala_keymaps = {
       require("kulala.ui").show_previous()
     end,
   },
+  ["Clear responses history"] = {
+    "X",
+    function()
+      require("kulala.ui").clear_responses_history()
+    end,
+  },
   ["Close"] = {
     "q",
     function()

@@ -135,7 +135,7 @@ local function open_kulala_window(buf)
 end
 
 local function pretty_ms(ms)
-  return string.format("%.2fms", ms)
+  return string.format("%.2f ms", ms)
 end
 
 local function set_current_response_data(buf)
@@ -279,6 +279,8 @@ end
 
 local function generate_requests_report()
   local db = DB.global_update()
+  if #db.responses == 0 then return {} end
+
   local row, report, request_status = "", {}, 0
   local stats
 
@@ -403,6 +405,12 @@ M.show_previous = function()
   local previous = current_pos <= 1 and current_pos or current_pos - 1
 
   set_current_response(previous)
+  M.open_default_view()
+end
+
+M.clear_responses_history = function()
+  DB.global_update().responses = {}
+  DB.global_update().current_response_pos = 0
   M.open_default_view()
 end
 
