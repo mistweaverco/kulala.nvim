@@ -160,7 +160,7 @@ interface AssertFunction {
   true: (value: any, message?: string) => void;
   false: (value: any, message?: string) => void;
   same: (value: any, expected: any, message?: string) => void;
-  hasString: (value: string, expected: any, message?: string) => void;
+  hasString: (value: string, expected: string, message?: string) => void;
   responseHas: (key: string, expected: any, message?: string) => void;
   headersHas: (key: string, expected: any, message?: string) => void;
   bodyHas: (key: string, expected: any, message?: string) => void;
@@ -175,7 +175,7 @@ const getResponse = (): ResponseBody => {
   response.body.headers ??= {};
   response.body.body ??= {}; 
   response.body.json ??= {}; 
-  
+
   return response.body;
 }
 
@@ -204,15 +204,17 @@ Assert.same = function(value: any, expected: any, message?: string) {
   Assert.save(status, message, expected, value);
 };
 
-Assert.hasString = function(value: any, expected: any, message?: string) {
-  const status = value.includes(expected) === true;
+Assert.hasString = function(value: any, expected: string, message?: string) {
+  const status = value === 'string' && value.includes(expected) === true;
   Assert.save(status, message, expected, value);
 };
 
 Assert.responseHas = function(key: string, expected: any, message?: string) {
   const response = getResponse() as unknown as Record<string, any>;
-  const status = response[key] === expected;
-  Assert.save(status, message, expected, response[key]);
+  const value = getNestedValue(response, key);
+  const status = value === expected;
+
+  Assert.save(status, message, expected, value);
 };
 
 Assert.headersHas = function(key: string, expected: any, message?: string) {
