@@ -62,8 +62,9 @@ end
 
 local function get_assert_output(response)
   local out = vim.deepcopy(response.assert_output.testResults) or {}
-  local status = true
   local sep = (" "):rep(4)
+
+  local status = true
 
   out = vim
     .iter(out)
@@ -79,24 +80,28 @@ local function get_assert_output(response)
 end
 
 local function get_report_summary(stats)
+  local config = CONFIG.get().ui.report
   local summary = {}
+
   local tbl = UI_utils.Ptable:new({
     header = { "Summary", "Total", "Successful", "Failed" },
     widths = { 20, 20, 20, 20 },
   })
 
-  table.insert(summary, { tbl:get_headers() })
-  table.insert(summary, { tbl:get_row({ "Requests", stats.total, stats.success, stats.failed }, 1) })
-  table.insert(
-    summary,
-    { tbl:get_row({ "Asserts", stats.assert_total, stats.assert_success, stats.assert_failed }, 1) }
-  )
+  table.insert(summary, { tbl:get_headers(), config.headersHighlight })
+  table.insert(summary, {
+    tbl:get_row({ "Requests", stats.total, stats.success, stats.failed }, 1),
+    { config.successHighlight, 40, 60, config.errorHighlight, 60, 80 },
+  })
+  table.insert(summary, {
+    tbl:get_row({ "Asserts", stats.assert_total, stats.assert_success, stats.assert_failed }, 1),
+    { config.successHighlight, 40, 60, config.errorHighlight, 60, 80 },
+  })
 
   return summary
 end
 
 local function update_report_stats(stats, request_status, asserts)
-  local status
   stats = stats
     or {
       total = 0,
@@ -107,16 +112,21 @@ local function update_report_stats(stats, request_status, asserts)
       assert_failed = 0,
     }
 
-  stats.total = stats.total + 1
-  stats.success = stats.success + (request_status == 0 and 1 or 0)
-  stats.failed = stats.failed + (request_status > 0 and 1 or 0)
+  local function update_stat(t, value, status)
+    status = status or 0
+    t[value] = t[value] + (status == 0 and 1 or 0)
+  end
+
+  update_stat(stats, "total")
+  update_stat(stats, "success", request_status)
+  update_stat(stats, "failed", request_status)
 
   vim.iter(asserts):each(function(assert)
-    status = assert[2]
+    local status = assert[2]
     if status then
-      stats.assert_total = stats.assert_total + 1
-      stats.assert_success = stats.assert_success + (status == 0 and 1 or 0)
-      stats.assert_failed = stats.assert_failed + (status > 0 and 1 or 0)
+      update_stat(stats, "assert_total")
+      update_stat(stats, "assert_success", status)
+      update_stat(stats, "assert_failed", status)
     end
   end)
 
@@ -127,15 +137,19 @@ local function generate_requests_report()
   local db = DB.global_update()
   if #db.responses == 0 then return {} end
 
-  local row, report, request_status = "", {}, 0
-  local stats
+  local config = CONFIG.get().ui.report
+  local show_script = config.show_script_output
+  local show_asserts = config.show_asserts_output
+
+  local row, report = "", {}
+  local response_status, stats
 
   local tbl = UI_utils.Ptable:new({
     header = { "Line", "URL", "Status", "Time", "Duration" },
     widths = { 5, 50, 8, 10, 10 },
   })
 
-  table.insert(report, { tbl:get_headers() })
+  table.insert(report, { tbl:get_headers(), config.headersHighlight })
   table.insert(report, { "" })
 
   vim.iter(db.responses):skip(db.previous_response_pos):each(function(response)
@@ -148,42 +162,33 @@ local function generate_requests_report()
     }, 1)
 
     local asserts, assert_status = get_assert_output(response)
-    request_status = response.status + assert_status
-    stats = update_report_stats(stats, request_status, asserts)
+    response_status = response.status + assert_status
+    stats = update_report_stats(stats, response_status, asserts)
 
-    table.insert(report, { row, request_status })
+    table.insert(report, { row, response_status == 0 and config.successHighlight or config.errorHighlight })
 
-    vim.list_extend(report, get_script_output(response))
-    vim.list_extend(report, asserts)
+    _ = show_script
+      and not (response_status == 0 and show_script == "on_error")
+      and vim.list_extend(report, get_script_output(response))
+
+    if show_asserts and not (assert_status == 0 and show_asserts == "on_error") then
+      vim.iter(asserts):each(function(assert)
+        _ = not (show_asserts == "failed_only" and assert[2] == 0)
+          and table.insert(report, { assert[1], assert[2] == 0 and config.successHighlight or config.errorHighlight })
+      end)
+    end
 
     table.insert(report, { "" })
   end)
 
-  vim.list_extend(report, get_report_summary(stats))
-  return report
-end
+  _ = config.show_summary and vim.list_extend(report, get_report_summary(stats))
 
-local function set_report_highlights(report)
-  local config = CONFIG.get().ui.report
-  local buf = UI.get_kulala_buffer()
-  local hl, status
+  local contents, highlights = {}, {}
+  for i, line in ipairs(report) do
+    contents[i], highlights[i] = unpack(line)
+  end
 
-  vim.iter(report):enumerate():each(function(lnum, row)
-    status = row[2]
-    hl = status and (status == 0 and config.successHighlight or config.errorHighlight) or "Normal"
-    UI_utils.highlight_range(buf, 0, lnum - 1, lnum, hl)
-  end)
-
-  -- Highlight headers
-  UI_utils.highlight_range(buf, 0, 0, 1, config.headersHighlight, 100)
-  -- Highlight summary
-  UI_utils.highlight_range(buf, 0, #report - 4, #report - 3, config.headersHighlight, 100)
-
-  -- Highlight summary success
-  UI_utils.highlight_column(buf, 0, { #report - 3, 40 }, { #report - 1, 60 }, config.successHighlight, 100)
-
-  -- Highlight summary failure
-  UI_utils.highlight_column(buf, 0, { #report - 3, 60 }, { #report - 1, 80 }, config.errorHighlight, 100)
+  return contents, highlights
 end
 
 ---Prints the parsed Request table into current buffer - uses nvim_put
@@ -221,6 +226,5 @@ end
 return {
   set_response_summary = set_response_summary,
   generate_requests_report = generate_requests_report,
-  set_report_highlights = set_report_highlights,
   print_http_spec = print_http_spec,
 }

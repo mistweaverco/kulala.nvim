@@ -21,6 +21,25 @@ local function highlight_column(bufnr, ns, start_pos, end_pos, hl_group, priorit
   end
 end
 
+-- TODO: add function description, 1-indexed
+-- { config.successHighlight, 40, 60, config.errorHighlight, 60, 80 },
+local function highlight_buffer(bufnr, ns, highlights, priority)
+  local hl, col_s, col_e
+  local width = vim.api.nvim_win_get_width(vim.fn.bufwinid(bufnr))
+
+  for lnum, highlight in pairs(highlights) do
+    highlight = type(highlight) == "table" and highlight or { highlight }
+
+    for i = 1, #highlight, 3 do
+      hl = highlight[i]
+      col_s = highlight[i + 1] or 0
+      col_e = highlight[i + 2] or width
+
+      highlight_range(bufnr, ns, { lnum - 1, col_s }, { lnum - 1, col_e }, hl, priority)
+    end
+  end
+end
+
 local function flash_highlight(bufnr, ns, timeout, start_pos, end_pos)
   highlight_range(bufnr, ns, start_pos, end_pos, "IncSearch")
 
@@ -82,6 +101,7 @@ end
 return {
   highlight_range = highlight_range,
   highlight_column = highlight_column,
+  highlight_buffer = highlight_buffer,
   highlight_request = highlight_request,
   Ptable = Ptable,
   pretty_ms = pretty_ms,

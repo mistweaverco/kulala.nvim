@@ -87,8 +87,16 @@ M.defaults = {
     show_request_summary = true,
     summaryTextHighlight = "Special",
 
+    -- they will be still written to disk, but not printed immediately
+    disable_script_print_output = false,
+
     report = {
-      style = "full",
+      -- possible values: true | false | "on_error"
+      show_script_output = true,
+      -- possible values: true | false | "on_error" | "failed_only"
+      show_asserts_output = true,
+      -- possible values: true | false | "on_error"
+      show_summary = true,
       headersHighlight = "Special",
       successHighlight = "String",
       errorHighlight = "Error",

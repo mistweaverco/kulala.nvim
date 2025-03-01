@@ -137,10 +137,12 @@ end
 
 local function show(contents, filetype, mode)
   local buf = open_kulala_buffer(filetype)
+
   set_buffer_contents(buf, contents, filetype)
   _ = mode ~= "report" and REPORT.set_response_summary(buf)
 
   local win = open_kulala_window(buf)
+  vim.api.nvim_win_set_cursor(win, { vim.api.nvim_buf_line_count(buf), 0 })
 
   WINBAR.toggle_winbar_tab(buf, win, mode)
   CONFIG.options.default_view = mode
@@ -208,16 +210,9 @@ M.show_script_output = function()
 end
 
 M.show_report = function()
-  local report = REPORT.generate_requests_report()
-  local contents = vim
-    .iter(report)
-    :map(function(row)
-      return row[1]
-    end)
-    :join("\n")
-
-  show(contents, "text", "report")
-  REPORT.set_report_highlights(report)
+  local report, highlights = REPORT.generate_requests_report()
+  show(table.concat(report, "\n"), "text", "report")
+  UI_utils.highlight_buffer(get_kulala_buffer(), 0, highlights, 100)
 end
 
 M.show_next = function()
