@@ -10,13 +10,14 @@ local UI = setmetatable({}, {
 })
 
 local function set_response_summary(buf)
-  local config = CONFIG.get()
-  if not config.ui.show_request_summary then return end
+  local config = CONFIG.get().ui
+  if not config.show_request_summary then return end
 
   local responses = DB.global_update().responses
   local response = UI.get_current_response()
   local idx = UI.get_current_response_pos()
   local duration = response.duration == "" and 0 or UI_utils.pretty_ms(response.duration)
+  local is_error = response.status ~= 0 or tonumber(response.response_code) >= 400
 
   local data = vim
     .iter({
@@ -40,7 +41,7 @@ local function set_response_summary(buf)
     :totable()
 
   vim.api.nvim_buf_set_lines(buf, 0, 0, false, data)
-  UI_utils.highlight_range(UI.get_kulala_buffer(), 0, 0, 3, config.ui.summaryTextHighlight)
+  UI_utils.highlight_range(buf, 0, 0, 3, is_error and config.report.errorHighlight or config.report.successHighlight)
 end
 
 local function get_script_output(response)
@@ -113,20 +114,20 @@ local function update_report_stats(stats, request_status, asserts)
     }
 
   local function update_stat(t, value, status)
-    status = status or 0
-    t[value] = t[value] + (status == 0 and 1 or 0)
+    status = status == nil and true or status
+    t[value] = t[value] + (status and 1 or 0)
   end
 
   update_stat(stats, "total")
-  update_stat(stats, "success", request_status)
-  update_stat(stats, "failed", request_status)
+  update_stat(stats, "success", request_status == 0)
+  update_stat(stats, "failed", request_status ~= 0)
 
   vim.iter(asserts):each(function(assert)
     local status = assert[2]
     if status then
       update_stat(stats, "assert_total")
-      update_stat(stats, "assert_success", status)
-      update_stat(stats, "assert_failed", status)
+      update_stat(stats, "assert_success", status == 0)
+      update_stat(stats, "assert_failed", status ~= 0)
     end
   end)
 
@@ -181,7 +182,7 @@ local function generate_requests_report()
     table.insert(report, { "" })
   end)
 
-  _ = config.show_summary and vim.list_extend(report, get_report_summary(stats))
+  _ = config.show_summary and vim.list_extend(report, get_report_summary(stats or {}))
 
   local contents, highlights = {}, {}
   for i, line in ipairs(report) do

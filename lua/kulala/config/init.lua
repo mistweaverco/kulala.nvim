@@ -24,9 +24,9 @@ M.defaults = {
 
   -- default timeout for the request, set to nil to disable
   request_timeout = nil,
+  -- continue running requests even if one fails
+  halt_on_error = true,
   -- disable the vim.print output of the scripts
-  -- they will be still written to disk, but not printed immediately
-  disable_script_print_output = false,
 
   -- certificates
   certificates = {},
@@ -85,7 +85,6 @@ M.defaults = {
     },
     -- enable/disable request summary in the output window
     show_request_summary = true,
-    summaryTextHighlight = "Special",
 
     -- they will be still written to disk, but not printed immediately
     disable_script_print_output = false,

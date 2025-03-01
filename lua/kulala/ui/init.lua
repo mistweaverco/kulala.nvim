@@ -211,8 +211,8 @@ end
 
 M.show_report = function()
   local report, highlights = REPORT.generate_requests_report()
-  show(table.concat(report, "\n"), "text", "report")
-  UI_utils.highlight_buffer(get_kulala_buffer(), 0, highlights, 100)
+  show(table.concat(report or {}, "\n"), "text", "report")
+  UI_utils.highlight_buffer(get_kulala_buffer(), 0, highlights or {}, 100)
 end
 
 M.show_next = function()
@@ -286,7 +286,6 @@ M.open_all = function(_, line_nr)
       INLAY.show("loading", icon_linenr)
     elseif success == false then
       INLAY.show("error", icon_linenr)
-      return
     end
 
     set_current_response(#db.responses)
