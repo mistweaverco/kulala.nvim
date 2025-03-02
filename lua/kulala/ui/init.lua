@@ -188,10 +188,7 @@ M.show_stats = function()
   local stats = get_current_response().stats
   local diagram
 
-  if stats then
-    --TODO: add xpcall
-    stats = vim.json.decode(stats)
-
+  if stats.timings then
     local diagram_lines = AsciiUtils.get_waterfall_timings(stats.timings)
     diagram = table.concat(diagram_lines, "\n")
   end

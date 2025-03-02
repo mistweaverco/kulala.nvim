@@ -105,7 +105,11 @@ end
 
 local function set_request_stats(response)
   local _, stats = pcall(vim.json.decode, response.stats, { object = true, array = true })
-  response.response_code = _ and stats.response_code or response.status
+
+  response.stats = _ and stats or response.stats
+  response.response_code = _ and tonumber(stats.response_code) or response.code
+  response.assert_status = response.assert_output.status == nil and true or response.assert_output.status
+  response.status = response.code == 0 and response.response_code < 400 and response.assert_status
 
   return response
 end
@@ -116,7 +120,7 @@ local function save_response(request_status, parsed_request)
   local id = buf .. ":" .. line
 
   local responses = DB.global_update().responses
-  if #responses > 0 and responses[#responses].id == id and responses[#responses].status == -1 then
+  if #responses > 0 and responses[#responses].id == id and responses[#responses].code == -1 then
     table.remove(responses) -- remove the last response if it's the same request and status was unfinished
   end
 
@@ -124,7 +128,9 @@ local function save_response(request_status, parsed_request)
     id = id,
     url = parsed_request.url or "",
     method = parsed_request.method or "",
-    status = request_status.code or -1,
+    code = request_status.code or -1,
+    response_code = 0,
+    status = false,
     time = vim.fn.localtime(),
     duration = request_status.duration or 0,
     body = FS.read_file(GLOBALS.BODY_FILE) or "",
@@ -133,29 +139,37 @@ local function save_response(request_status, parsed_request)
     stats = request_status.stdout or "",
     script_pre_output = FS.read_file(GLOBALS.SCRIPT_PRE_OUTPUT_FILE) or "",
     script_post_output = FS.read_file(GLOBALS.SCRIPT_POST_OUTPUT_FILE) or "",
-    assert_output = FS.read_json(GLOBALS.ASSERT_OUTPUT_FILE) or "",
+    assert_output = FS.read_json(GLOBALS.ASSERT_OUTPUT_FILE) or {},
+    assert_status = true,
     buf_name = vim.fn.bufname(buf),
     line = line,
     buf = buf,
   }
 
-  response = set_request_stats(response)
   response = modify_grpc_response(response)
+  response = set_request_stats(response)
 
-  if response.status ~= 0 and #response.body == 0 and #response.errors > 0 then
+  if not response.status and #response.body == 0 and #response.errors > 0 then
     response.body = response.errors
     response.headers = response.headers .. "Content-Type: text/plain\n"
+    --TODO: set kulala_verbose_result
   end
 
   table.insert(responses, response)
+
+  return response.status
 end
 
 local function process_response(request_status, parsed_request)
+  local response_status
+
   process_metadata(parsed_request)
   process_internal(parsed_request)
   process_external(parsed_request)
-  save_response(request_status, parsed_request)
+  response_status = save_response(request_status, parsed_request)
   process_api()
+
+  return response_status
 end
 
 local function process_errors(request, request_status, processing_errors)
@@ -180,17 +194,17 @@ end
 
 local function handle_response(request_status, parsed_request, callback)
   local config = CONFIG.get()
-  local success = request_status.code == 0
+  local status = request_status.code == 0
+  local success
 
-  local status, processing_errors = xpcall(function()
-    -- TODO: add handling of potential errors during process_response and call callback with success=false
-    _ = success and process_response(request_status, parsed_request)
+  local processing_status, processing_errors = xpcall(function()
+    success = status and process_response(request_status, parsed_request)
   end, debug.traceback)
 
-  _ = not (success and status) and process_errors(parsed_request, request_status, processing_errors)
+  _ = not (processing_status and status) and process_errors(parsed_request, request_status, processing_errors)
 
   callback(success, request_status.duration, parsed_request.show_icon_line_number)
-  _ = config.halt_on_error and reset_task_queue() or run_next_task()
+  _ = not success and config.halt_on_error and reset_task_queue() or run_next_task()
 end
 
 local function received_unbffured(request, response)

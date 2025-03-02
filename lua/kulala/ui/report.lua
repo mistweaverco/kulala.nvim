@@ -17,7 +17,6 @@ local function set_response_summary(buf)
   local response = UI.get_current_response()
   local idx = UI.get_current_response_pos()
   local duration = response.duration == "" and 0 or UI_utils.pretty_ms(response.duration)
-  local is_error = response.status ~= 0 or tonumber(response.response_code) >= 400
 
   local data = vim
     .iter({
@@ -27,13 +26,22 @@ local function set_response_summary(buf)
           .. "/"
           .. #responses
           .. "  Code: "
-          .. response.status
+          .. response.code
           .. "  Duration: "
           .. duration
           .. "  Time: "
           .. vim.fn.strftime("%b %d %X", response.time),
       },
-      { "URL: " .. response.method .. " " .. response.url .. "  Status: " .. response.response_code },
+      {
+        "URL: "
+          .. response.method
+          .. " "
+          .. response.url
+          .. "  Status: "
+          .. response.response_code
+          .. "  Assert: "
+          .. (response.assert_status and "success" or "failed"),
+      },
       { "Buffer: " .. response.buf_name .. "::" .. response.line },
       { "" },
     })
@@ -41,7 +49,13 @@ local function set_response_summary(buf)
     :totable()
 
   vim.api.nvim_buf_set_lines(buf, 0, 0, false, data)
-  UI_utils.highlight_range(buf, 0, 0, 3, is_error and config.report.errorHighlight or config.report.successHighlight)
+  UI_utils.highlight_range(
+    buf,
+    0,
+    0,
+    3,
+    response.status and config.report.successHighlight or config.report.errorHighlight
+  )
 end
 
 local function get_script_output(response)
@@ -62,22 +76,35 @@ local function get_script_output(response)
 end
 
 local function get_assert_output(response)
-  local out = vim.deepcopy(response.assert_output.testResults) or {}
-  local sep = (" "):rep(4)
+  local config = CONFIG.get().ui.report
+  local show_asserts = config.show_asserts_output
+  local sep = (" "):rep(2)
 
-  local status = true
+  local hl, test_suite = "", nil
+  local out, value, message = {}, nil, ""
+  local stats = { total = 0, success = 0, failed = 0 }
 
-  out = vim
-    .iter(out)
-    :map(function(assert)
-      status = status and assert[2]
-      return { sep .. assert[1], assert[2] }
-    end)
-    :totable()
+  vim.iter(response.assert_output.results or {}):each(function(assert)
+    value = assert.status and "success" or "failed"
+    stats[value] = stats[value] + 1
+    stats.total = stats.total + 1
 
-  _ = #out > 0 and table.insert(out, 1, { "" })
+    if not (assert.status and show_asserts == "failed_only") then
+      hl = assert.status and config.successHighlight or config.errorHighlight
 
-  return out, status
+      if #assert.name > 0 and test_suite ~= assert.name then
+        test_suite = assert.name
+        table.insert(out, { sep .. test_suite .. ":", config.headersHighlight })
+      elseif #assert.name == 0 then
+        test_suite = nil
+      end
+
+      message = test_suite and sep .. assert.message or assert.message
+      table.insert(out, { sep .. message, hl })
+    end
+  end)
+
+  return out, stats
 end
 
 local function get_report_summary(stats)
@@ -113,22 +140,13 @@ local function update_report_stats(stats, response_status, asserts)
       assert_failed = 0,
     }
 
-  local function update_stat(t, value, status)
-    t[value] = t[value] + (status and 1 or 0)
-  end
+  local value = response_status and "success" or "failed"
+  stats[value] = stats[value] + 1
+  stats.total = stats.total + 1
 
-  update_stat(stats, "total", true)
-  update_stat(stats, "success", response_status)
-  update_stat(stats, "failed", not response_status)
-
-  vim.iter(asserts):each(function(assert)
-    local status = assert[2]
-    if status then
-      update_stat(stats, "assert_total", true)
-      update_stat(stats, "assert_success", status)
-      update_stat(stats, "assert_failed", not status)
-    end
-  end)
+  stats.assert_total = stats.assert_total + asserts.total
+  stats.assert_success = stats.assert_success + asserts.success
+  stats.assert_failed = stats.assert_failed + asserts.failed
 
   return stats
 end
@@ -142,11 +160,11 @@ local function generate_requests_report()
   local show_asserts = config.show_asserts_output
 
   local row, report = "", {}
-  local response_status, stats
+  local stats
 
   local tbl = UI_utils.Ptable:new({
     header = { "Line", "URL", "Status", "Time", "Duration" },
-    widths = { 5, 50, 8, 10, 10 },
+    widths = { 5, 50, 8, 10, 15 },
   })
 
   table.insert(report, { tbl:get_headers(), config.headersHighlight })
@@ -161,22 +179,20 @@ local function generate_requests_report()
       UI_utils.pretty_ms(response.duration),
     }, 1)
 
-    local asserts, assert_status = get_assert_output(response)
-    response_status = response.status == 0 and tonumber(response.response_code) < 400 and assert_status
-    stats = update_report_stats(stats, response_status, asserts)
+    local asserts, assert_stats = get_assert_output(response)
+    stats = update_report_stats(stats, response.status, assert_stats)
 
-    table.insert(report, { row, response_status and config.successHighlight or config.errorHighlight })
+    table.insert(report, { row, response.status and config.successHighlight or config.errorHighlight })
 
     _ = show_script
-      and not (response_status and show_script == "on_error")
+      and not (response.status and show_script == "on_error")
       and vim.list_extend(report, get_script_output(response))
 
-    if show_asserts and not (assert_status and show_asserts == "on_error") then
-      vim.iter(asserts):each(function(assert)
-        _ = not (show_asserts == "failed_only" and assert[2])
-          and table.insert(report, { assert[1], assert[2] and config.successHighlight or config.errorHighlight })
-      end)
-    end
+    _ = show_asserts
+      and #asserts > 0
+      and not (response.assert_status and show_asserts == "on_error")
+      and vim.list_extend(report, { { "" } })
+      and vim.list_extend(report, asserts)
 
     table.insert(report, { "" })
   end)

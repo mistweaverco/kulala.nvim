@@ -87,7 +87,8 @@ describe("keymaps", function()
       DB.global_update().responses = {
         ---@diagnostic disable-next-line: missing-fields
         {
-          status = 0,
+          status = true,
+          code = 0,
           response_code = 200,
           duration = 100,
           time = "2021-01-01T00:00:00Z",

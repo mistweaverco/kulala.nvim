@@ -112,7 +112,8 @@ describe("UI", function()
 
       ---@diagnostic disable-next-line: missing-fields
       table.insert(db.responses, {
-        status = 0,
+        status = true,
+        code = 0,
         response_code = 200,
         duration = 3250000,
         time = 1740826092,
