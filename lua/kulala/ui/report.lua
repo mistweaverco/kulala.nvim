@@ -70,14 +70,14 @@ local function get_assert_output(response)
   out = vim
     .iter(out)
     :map(function(assert)
-      status = status and assert[2] == 0
+      status = status and assert[2]
       return { sep .. assert[1], assert[2] }
     end)
     :totable()
 
   _ = #out > 0 and table.insert(out, 1, { "" })
 
-  return out, status and 0 or 1
+  return out, status
 end
 
 local function get_report_summary(stats)
@@ -102,7 +102,7 @@ local function get_report_summary(stats)
   return summary
 end
 
-local function update_report_stats(stats, request_status, asserts)
+local function update_report_stats(stats, response_status, asserts)
   stats = stats
     or {
       total = 0,
@@ -114,20 +114,19 @@ local function update_report_stats(stats, request_status, asserts)
     }
 
   local function update_stat(t, value, status)
-    status = status == nil and true or status
     t[value] = t[value] + (status and 1 or 0)
   end
 
-  update_stat(stats, "total")
-  update_stat(stats, "success", request_status == 0)
-  update_stat(stats, "failed", request_status ~= 0)
+  update_stat(stats, "total", true)
+  update_stat(stats, "success", response_status)
+  update_stat(stats, "failed", not response_status)
 
   vim.iter(asserts):each(function(assert)
     local status = assert[2]
     if status then
-      update_stat(stats, "assert_total")
-      update_stat(stats, "assert_success", status == 0)
-      update_stat(stats, "assert_failed", status ~= 0)
+      update_stat(stats, "assert_total", true)
+      update_stat(stats, "assert_success", status)
+      update_stat(stats, "assert_failed", not status)
     end
   end)
 
@@ -163,19 +162,19 @@ local function generate_requests_report()
     }, 1)
 
     local asserts, assert_status = get_assert_output(response)
-    response_status = response.status + assert_status
+    response_status = response.status == 0 and tonumber(response.response_code) < 400 and assert_status
     stats = update_report_stats(stats, response_status, asserts)
 
-    table.insert(report, { row, response_status == 0 and config.successHighlight or config.errorHighlight })
+    table.insert(report, { row, response_status and config.successHighlight or config.errorHighlight })
 
     _ = show_script
-      and not (response_status == 0 and show_script == "on_error")
+      and not (response_status and show_script == "on_error")
       and vim.list_extend(report, get_script_output(response))
 
-    if show_asserts and not (assert_status == 0 and show_asserts == "on_error") then
+    if show_asserts and not (assert_status and show_asserts == "on_error") then
       vim.iter(asserts):each(function(assert)
-        _ = not (show_asserts == "failed_only" and assert[2] == 0)
-          and table.insert(report, { assert[1], assert[2] == 0 and config.successHighlight or config.errorHighlight })
+        _ = not (show_asserts == "failed_only" and assert[2])
+          and table.insert(report, { assert[1], assert[2] and config.successHighlight or config.errorHighlight })
       end)
     end
 

@@ -224,6 +224,22 @@ M.show_next = function()
   M.open_default_view()
 end
 
+M.jump_to_response = function()
+  local responses = DB.global_update().responses
+
+  local lnum = tonumber(vim.fn.getline("."):match("^%s*%d+"))
+  if not lnum then return end
+
+  for i = #responses, 1, -1 do
+    if responses[i].line == lnum then
+      set_current_response(i)
+      break
+    end
+  end
+
+  M.show_body()
+end
+
 M.show_previous = function()
   local current_pos = get_current_response_pos()
   local previous = current_pos <= 1 and current_pos or current_pos - 1
@@ -272,6 +288,7 @@ end
 M.open_all = function(_, line_nr)
   line_nr = line_nr or 0
   local db = DB.global_update()
+  local status, elapsed_ms
 
   DB.set_current_buffer()
   db.previous_response_pos = #db.responses
@@ -279,16 +296,15 @@ M.open_all = function(_, line_nr)
 
   CMD.run_parser(nil, line_nr, function(success, duration, icon_linenr)
     if success then
-      local elapsed_ms = UI_utils.pretty_ms(duration)
-
-      INLAY.show("done", icon_linenr, elapsed_ms)
-    elseif success == nil then
-      INLAY.show("loading", icon_linenr)
-    elseif success == false then
-      INLAY.show("error", icon_linenr)
+      elapsed_ms = UI_utils.pretty_ms(duration)
+      status = "done"
+    else
+      status = success == nil and "loading" or "error"
     end
 
     set_current_response(#db.responses)
+
+    INLAY.show(status, icon_linenr, elapsed_ms)
     M.open_default_view()
 
     return true
@@ -299,10 +315,14 @@ M.replay = function()
   local last_request = DB.global_find_unique("replay")
   if not last_request then return Logger.warn("No request to replay") end
 
+  local db = DB.global_update()
+
   CMD.run_parser({ last_request }, nil, function(success)
     if success == false then return Logger.error("Unable to replay last request") end
 
+    set_current_response(#db.responses)
     M.open_default_view()
+
     return true
   end)
 end

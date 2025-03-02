@@ -190,6 +190,12 @@ M.default_kulala_keymaps = {
       require("kulala.ui").show_previous()
     end,
   },
+  ["Jump to response"] = {
+    "<CR>",
+    function()
+      require("kulala.ui").jump_to_response()
+    end,
+  },
   ["Clear responses history"] = {
     "X",
     function()

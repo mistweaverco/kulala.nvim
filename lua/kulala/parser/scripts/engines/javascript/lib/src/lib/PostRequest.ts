@@ -42,7 +42,7 @@ const getRequestVariables = (): RequestVariables => {
 
 
 interface Asserts {
-  testResults: Array<[string, number]>;
+  testResults: Array<[string, boolean]>;
 }
 
 const getAsserts = (): Asserts => {
@@ -245,12 +245,10 @@ Assert.save = function(status: boolean, message?: string, expected?: any, value?
   message = message ?? `Assertion ${statusStr}`;
   message += expected != null ? `: expected "${expected}", got "${value}"` : '';
 
-  const code = Boolean(status) ? 0 : 1;
-
   try {
     const reqAsserts = getAsserts();
 
-    reqAsserts.testResults.push([message, code]);
+    reqAsserts.testResults.push([message, Boolean(status)]);
     fs.writeFileSync(_REQUEST_ASSERTS_FILEPATH, JSON.stringify(reqAsserts));
 
   } catch (e) {
