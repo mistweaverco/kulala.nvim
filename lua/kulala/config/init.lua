@@ -65,8 +65,8 @@ M.defaults = {
     -- enable winbar
     winbar = true,
     -- Specify the panes to be displayed by default
-    -- Current available pane contains { "body", "headers", "headers_body", "script_output", "stats", "verbose", "report" },
-    default_winbar_panes = { "body", "headers", "headers_body", "verbose" },
+    -- Current available pane contains { "body", "headers", "headers_body", "script_output", "stats", "verbose", "report", "help" },
+    default_winbar_panes = { "body", "headers", "headers_body", "verbose", "script_output", "report", "help" },
     -- enable/disable variable info text
     -- this will show the variable name and value as float
     -- possible values: false, "float"

@@ -7,10 +7,16 @@ local FLOAT_POSITION = {
 }
 
 ---@class FloatOpts
+---@field title string? @Title of the floating window
+---@field buf_name string? @Name of the buffer
 ---@field contents string[] @Contents of the buffer
 ---@field ft string? @Filetype of the buffer
 ---@field focusable boolean? @Whether the window is focusable
 ---@field position FloatPosition @Position of the floating window
+---@field width integer? @Width of the floating window
+---@field height integer? @Height of the floating window
+---@field zindex integer? @Z-index of the floating window
+---@field close_keymaps string[]? @List of keymaps to close the floating window
 
 ---Creates a floating window with the contents passed via opts
 ---@param opts FloatOpts
@@ -18,6 +24,7 @@ local FLOAT_POSITION = {
 M.create = function(opts)
   -- Create a new buffer
   local buf = vim.api.nvim_create_buf(false, true)
+  _ = opts.buf_name and vim.api.nvim_buf_set_name(buf, opts.buf_name)
 
   local win_config_relative = "editor"
 
@@ -60,18 +67,28 @@ M.create = function(opts)
 
   -- Define the floating window configuration
   local win_config = {
+    title = opts.title or "",
     relative = win_config_relative,
-    width = win_width,
-    height = win_height,
+    width = opts.width or win_width,
+    height = opts.height or win_height,
     row = row,
     col = col,
     style = "minimal",
     border = "rounded",
     focusable = opts.focusable or false,
+    zindex = opts.zindex or 100,
   }
 
   -- Create the floating window with the buffer
   local win = vim.api.nvim_open_win(buf, opts.focusable or false, win_config)
+
+  -- Set the keymaps to close the floating window
+  vim.iter(opts.close_keymaps or {}):each(function(key)
+    vim.keymap.set("n", key, function()
+      vim.api.nvim_win_close(win, true)
+      vim.api.nvim_buf_delete(buf, { force = true })
+    end, { buffer = buf, noremap = true, silent = true })
+  end)
 
   -- Return the window and buffer IDs
   return win, buf

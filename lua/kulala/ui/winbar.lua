@@ -3,25 +3,36 @@ local M = {}
 
 local winbar_info = {
   body = {
-    desc = "Body (B)",
+    desc = "Body",
+    keymap = "Show body",
   },
   headers = {
-    desc = "Headers (H)",
+    desc = "Headers",
+    keymap = "Show headers",
   },
   headers_body = {
-    desc = "All (A)",
+    desc = "All",
+    keymap = "Show headers and body",
   },
   verbose = {
-    desc = "Verbose (V)",
+    desc = "Verbose",
+    keymap = "Show verbose",
   },
   script_output = {
-    desc = "Script Output (O)",
+    desc = "Script Output",
+    keymap = "Show script output",
   },
   stats = {
-    desc = "Stats (S)",
+    desc = "Stats",
+    keymap = "Show stats",
   },
   report = {
-    desc = "Report (R)",
+    desc = "Report",
+    keymap = "Show report",
+  },
+  help = {
+    desc = "Help",
+    keymap = "Show help",
   },
 }
 
@@ -35,7 +46,7 @@ end
 ---@param view string Body or headers
 M.toggle_winbar_tab = function(_, win_id, view)
   local config = CONFIG.get()
-  local keymaps = config.kulala_keymaps
+  local keymaps = config.kulala_keymaps or {}
 
   if not (win_id and config.winbar) then return end
 
@@ -45,20 +56,16 @@ M.toggle_winbar_tab = function(_, win_id, view)
   for _, key in ipairs(winbar) do
     local info = winbar_info[key]
 
-    if info ~= nil then
+    if info then
       local desc = info.desc .. " %*"
-
-      if view == key then
-        desc = "%#KulalaTabSel# " .. desc
-      else
-        desc = "%#KulalaTab# " .. desc
-      end
+      desc = keymaps[info.keymap] and desc .. " (" .. keymaps[info.keymap][1] .. ")" or desc
+      desc = view == key and "%#KulalaTabSel# " .. desc or "%#KulalaTab# " .. desc
 
       table.insert(winbar_title, desc)
     end
   end
 
-  if keymaps and keymaps["Previous response"] then
+  if keymaps["Previous response"] then
     table.insert(winbar_title, "<- " .. keymaps["Previous response"][1])
     table.insert(winbar_title, keymaps["Next response"][1] .. " ->")
   end

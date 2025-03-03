@@ -202,6 +202,12 @@ M.default_kulala_keymaps = {
       require("kulala.ui").clear_responses_history()
     end,
   },
+  ["Show help"] = {
+    "?",
+    function()
+      require("kulala.ui").show_help()
+    end,
+  },
   ["Close"] = {
     "q",
     function()

@@ -5,6 +5,7 @@ local CURL_PARSER = require("kulala.parser.curl")
 local DB = require("kulala.db")
 local FORMATTER = require("kulala.formatter")
 local FS = require("kulala.utils.fs")
+local Float = require("kulala.ui.float")
 local GLOBALS = require("kulala.globals")
 local INLAY = require("kulala.inlay")
 local INT_PROCESSING = require("kulala.internal_processing")
@@ -263,6 +264,30 @@ M.toggle_headers = function()
 
   config.default_view = default_view
   M.open_default_view()
+end
+
+M.show_help = function()
+  local keymaps = CONFIG.get().kulala_keymaps
+  local help = vim.split(
+    [[
+  Kulala Help
+  ===========
+    ]],
+    "\n"
+  )
+
+  vim.iter(keymaps):each(function(keymap, value)
+    table.insert(help, ("  - %s: `%s`"):format(keymap, value[1]))
+  end)
+
+  Float.create({
+    name = "kulala_help",
+    contents = help,
+    ft = "markdown",
+    position = "cursor",
+    focusable = true,
+    close_keymaps = { "q", "<esc>", "g?" },
+  })
 end
 
 M.scratchpad = function()
