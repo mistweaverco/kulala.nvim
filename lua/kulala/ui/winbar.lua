@@ -1,4 +1,6 @@
 local CONFIG = require("kulala.config")
+local UI_utils = require("kulala.ui.utils")
+
 local M = {}
 
 local winbar_info = {
@@ -44,11 +46,11 @@ end
 
 ---@param win_id integer|nil Window id
 ---@param view string Body or headers
-M.toggle_winbar_tab = function(_, win_id, view)
+M.toggle_winbar_tab = function(buf, win_id, view)
   local config = CONFIG.get()
   local keymaps = config.kulala_keymaps or {}
 
-  if not (win_id and config.winbar) then return end
+  if not (win_id and config.winbar) then return UI_utils.set_virtual_text(buf, 0, "? - help", 0, 0) end
 
   local winbar = config.default_winbar_panes
   local winbar_title = {}

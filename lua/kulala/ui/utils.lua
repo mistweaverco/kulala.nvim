@@ -40,6 +40,20 @@ local function highlight_buffer(bufnr, ns, highlights, priority)
   end
 end
 
+local function set_virtual_text(buf, ns, virtual_text, line, col, opts)
+  opts = opts or {}
+  buf = buf == 0 and DB.get_current_buffer() or buf
+  ns = ns == 0 and vim.api.nvim_create_namespace("kulala_virtual_text") or ns
+
+  opts = vim.tbl_extend("keep", opts, {
+    hl_group = "Comment",
+    virt_text = { { virtual_text, opts.hl_group or "Comment" } },
+    virt_text_pos = "right_align",
+    invalidate = false,
+  })
+  return vim.api.nvim_buf_set_extmark(buf, ns, line, col, opts)
+end
+
 local function flash_highlight(bufnr, ns, timeout, start_pos, end_pos)
   highlight_range(bufnr, ns, start_pos, end_pos, "IncSearch")
 
@@ -103,6 +117,7 @@ return {
   highlight_column = highlight_column,
   highlight_buffer = highlight_buffer,
   highlight_request = highlight_request,
+  set_virtual_text = set_virtual_text,
   Ptable = Ptable,
   pretty_ms = pretty_ms,
 }

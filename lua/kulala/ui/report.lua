@@ -16,7 +16,7 @@ local function set_response_summary(buf)
   local responses = DB.global_update().responses
   local response = UI.get_current_response()
   local idx = UI.get_current_response_pos()
-  local duration = response.duration == "" and 0 or UI_utils.pretty_ms(response.duration)
+  local duration = UI_utils.pretty_ms(response.duration)
 
   local data = vim
     .iter({
