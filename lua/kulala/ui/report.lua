@@ -100,7 +100,9 @@ local function get_assert_output(response)
       end
 
       message = test_suite and sep .. assert.message or assert.message
-      table.insert(out, { sep .. message, hl })
+      vim.iter(vim.split(message, "\n")):each(function(line)
+        table.insert(out, { sep .. line, hl })
+      end)
     end
   end)
 

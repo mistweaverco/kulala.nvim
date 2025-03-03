@@ -109,6 +109,7 @@ local Ptable = {
 
 ---Pretty print time in milliseconds
 local function pretty_ms(ms)
+  ms = ms == "" and 0 or ms
   return ("%.2f ms"):format(ms / 1e6)
 end
 

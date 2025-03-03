@@ -11,7 +11,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { Response, type ResponseType, type ResponseBody } from './PostRequestResponse';
+import { Response, type ResponseType } from './PostRequestResponse';
 
 const _REQUEST_ASSERTS_FILEPATH = path.join(__dirname, '..', '..', 'request_asserts.json');
 
@@ -38,7 +38,7 @@ interface AssertFunction {
   hasString: (value: string, expected: string, message?: string) => void;
   responseHas: (key: string, expected: any, message?: string) => void;
   headersHas: (key: string, expected: any, message?: string) => void;
-  bodyHas: (key: string, expected: any, message?: string) => void;
+  bodyHas: (expected: string, message?: string) => void;
   jsonHas: (key: string, expected: any, message?: string) => void;
   save: (status: boolean, message?: string, expected?: any, value?: any) => void;
 }
@@ -57,15 +57,9 @@ const getAsserts = (): Asserts => {
   return asserts;
 }
 
-const getResponse = (): ResponseBody => {
-  const response = Response as unknown as ResponseType;
-  response.body = response.body ?? {} as ResponseBody;
-
-  response.body.headers ??= {};
-  response.body.body ??= {}; 
-  response.body.json ??= {}; 
-
-  return response.body;
+const getResponse = (): ResponseType => {
+  const response = Response;
+  return response;
 }
 
 const getNestedValue = (obj: any, path: string): any => {
@@ -107,12 +101,16 @@ Assert.same = function(value: any, expected: any, message?: string) {
 
 Assert.hasString = function(value: string, expected: string, message?: string) {
   const status = typeof value === 'string' && value.includes(expected);
-  Assert.save(status, message, expected, value);
+  const shortValue = value.length > 50 
+    ? value.substring(0, 47) + '...' 
+    : value;
+
+  Assert.save(status, message, expected, shortValue);
 };
 
 Assert.responseHas = function(key: string, expected: any, message?: string) {
   const response = getResponse() as unknown as Record<string, any>;
-  const value = getNestedValue(response, key);
+  const value = response[key];
   const status = value === expected;
 
   Assert.save(status, message, expected, value);
@@ -120,22 +118,26 @@ Assert.responseHas = function(key: string, expected: any, message?: string) {
 
 Assert.headersHas = function(key: string, expected: any, message?: string) {
   const headers = getResponse().headers;
-  const status = headers[key] === expected;
-  Assert.save(status, message, expected, headers[key]);
-};
-
-Assert.bodyHas = function(key: string, expected: any, message?: string) {
-  const body = getResponse().body;
-  const value = getNestedValue(body, key);
+  const value = headers.valueOf(key);
   const status = value === expected;
 
   Assert.save(status, message, expected, value);
 };
 
+Assert.bodyHas = function(expected: string, message?: string) {
+  const body = getResponse().body as string;
+  Assert.hasString(body, expected, message);
+};
+
 Assert.jsonHas = function(key: string, expected: any, message?: string) {
-  const json = getResponse().json;
-  const value = getNestedValue(json, key);
-  const status = value === expected;
+  const json = getResponse().body;
+  let status = false;
+  let value = null;
+
+  if (typeof json === 'object') {
+    value = getNestedValue(json, key);
+    status = value === expected;
+  }
 
   Assert.save(status, message, expected, value);
 };

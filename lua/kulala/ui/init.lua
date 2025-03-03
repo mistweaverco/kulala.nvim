@@ -282,7 +282,7 @@ M.show_help = function()
   end)
 
   Float.create({
-    name = "kulala_help",
+    buf_name = "kulala_help",
     contents = help,
     ft = "markdown",
     position = "cursor",
