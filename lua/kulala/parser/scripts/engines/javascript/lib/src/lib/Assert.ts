@@ -86,12 +86,12 @@ Assert.test = function (name: string, fn: () => void) {
 
 Assert.true = function(value: any, message?: string) {
   const status = value === true;
-  Assert.save(status, message, true, false);
+  Assert.save(status, message, true, status);
 };
 
 Assert.false = function(value: any, message?: string) {
   const status = value === false;
-  Assert.save(status, message, false, true);
+  Assert.save(status, message, false, !status);
 };
 
 Assert.same = function(value: any, expected: any, message?: string) {

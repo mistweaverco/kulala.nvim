@@ -27,9 +27,14 @@ vim.system("curl -X GET http://localhost:3000")
 
 ### Kulala UI
 
+![Kulala UI](./../../static/img/kulala_ui.png)
+
 - Kulala UI is opened automatically when you run a request or you can open it manually with `<leader>Ro` at any time.
-- You can switch between different views with `(H) Headers`, `B (Body)`, `(A) All`, `(V) Verbose`, `(S) Stats`, `(O) Script output`
+- You can switch between different views with `(H) Headers`, `B (Body)`, `(A) All`, `(V) Verbose`, `(S) Stats`, `(O) Script output`, `(R) Report`
 - To scroll through the history of responses use `[` and `]`.
+- To clear responses history press `X`.
+- To jump to the request in the request buffer press `<CR>`.
+- To open help window press `?`.
 - To open the Kulala scratch buffer use `<leader>Rb`.
 
 ### Syntax summary

@@ -108,8 +108,8 @@ local function set_request_stats(response)
 
   response.stats = _ and stats or response.stats
   response.response_code = _ and tonumber(stats.response_code) or response.code
-  response.assert_status = response.assert_output.status == nil and true or response.assert_output.status
-  response.status = response.code == 0 and response.response_code < 400 and response.assert_status
+  response.assert_status = response.assert_output.status
+  response.status = response.code == 0 and response.response_code < 400 and response.assert_status ~= false
 
   return response
 end
@@ -140,7 +140,7 @@ local function save_response(request_status, parsed_request)
     script_pre_output = FS.read_file(GLOBALS.SCRIPT_PRE_OUTPUT_FILE) or "",
     script_post_output = FS.read_file(GLOBALS.SCRIPT_POST_OUTPUT_FILE) or "",
     assert_output = FS.read_json(GLOBALS.ASSERT_OUTPUT_FILE) or {},
-    assert_status = true,
+    assert_status = nil,
     buf_name = vim.fn.bufname(buf),
     line = line,
     buf = buf,
@@ -149,10 +149,7 @@ local function save_response(request_status, parsed_request)
   response = modify_grpc_response(response)
   response = set_request_stats(response)
 
-  if not response.status and #response.body == 0 and #response.errors > 0 then
-    response.body = response.errors
-    response.headers = response.headers .. "Content-Type: kulala/verbose\n"
-  end
+  response.body = #response.body == 0 and "No response body (check Verbose output)" or response.body
 
   table.insert(responses, response)
 
@@ -187,6 +184,9 @@ local function process_errors(request, request_status, processing_errors)
 
   Logger.error(message, 2)
   _ = processing_errors and Logger.error(processing_errors, 2)
+
+  request_status.errors = processing_errors and request_status.errors .. "\n" .. processing_errors
+    or request_status.errors
 
   save_response(request_status, request)
 end
@@ -294,7 +294,7 @@ M.run_parser = function(requests, line_nr, callback)
   reset_task_queue()
 
   if not requests then
-    variables, requests = DOCUMENT_PARSER.get_document() -- TODO: add xpcall and handle parsing errors
+    variables, requests = DOCUMENT_PARSER.get_document()
   end
 
   if not requests then return Logger.error("No requests found in the document") end

@@ -24,9 +24,8 @@ M.defaults = {
 
   -- default timeout for the request, set to nil to disable
   request_timeout = nil,
-  -- continue running requests even if one fails
+  -- continue running requests when a request failure is encountered
   halt_on_error = true,
-  -- disable the vim.print output of the scripts
 
   -- certificates
   certificates = {},
@@ -83,10 +82,10 @@ M.defaults = {
       lualine = "🐼",
       textHighlight = "WarningMsg", -- highlight group for request elapsed time
     },
+
     -- enable/disable request summary in the output window
     show_request_summary = true,
-
-    -- they will be still written to disk, but not printed immediately
+    -- disable notifications of script output
     disable_script_print_output = false,
 
     report = {
@@ -96,6 +95,7 @@ M.defaults = {
       show_asserts_output = true,
       -- possible values: true | false | "on_error"
       show_summary = true,
+
       headersHighlight = "Special",
       successHighlight = "String",
       errorHighlight = "Error",

@@ -59,8 +59,6 @@ M.close_kulala_buffer = function()
 end
 
 -- Create an autocmd to delete the buffer when the window is closed
--- This is necessary to prevent the buffer from being left behind
--- when the window is closed
 local function set_maps_autocommands(buf)
   CONFIG.get().kulala_keymaps = KEYMAPS.setup_kulala_keymaps(buf)
 
@@ -144,7 +142,7 @@ local function show(contents, filetype, mode)
   _ = mode ~= "report" and REPORT.set_response_summary(buf)
 
   local win = open_kulala_window(buf)
-  vim.api.nvim_win_set_cursor(win, { vim.api.nvim_buf_line_count(buf), 0 })
+  _ = mode == "report" and vim.api.nvim_win_set_cursor(win, { vim.api.nvim_buf_line_count(buf), 0 })
 
   WINBAR.toggle_winbar_tab(buf, win, mode)
   CONFIG.options.default_view = mode
@@ -225,18 +223,27 @@ end
 
 M.jump_to_response = function()
   local responses = DB.global_update().responses
+  local win = vim.fn.bufwinid(get_current_response().buf)
 
-  local lnum = tonumber(vim.fn.getline("."):match("^%s*%d+"))
-  if not lnum then return end
+  if CONFIG.get().default_view == "report" then
+    local lnum = tonumber(vim.fn.getline("."):match("^%s*%d+"))
+    if not lnum then return end
 
-  for i = #responses, 1, -1 do
-    if responses[i].line == lnum then
-      set_current_response(i)
-      break
+    for i = #responses, 1, -1 do
+      if responses[i].line == lnum then
+        set_current_response(i)
+        break
+      end
     end
-  end
 
-  M.show_body()
+    M.show_body()
+  elseif win > 0 then
+    vim.api.nvim_set_current_win(win)
+    vim.api.nvim_win_set_cursor(win, { get_current_response().line, 0 })
+
+    win = get_kulala_window()
+    _ = vim.api.nvim_win_get_config(win).relative == "editor" and vim.api.nvim_win_close(win, true)
+  end
 end
 
 M.show_previous = function()
@@ -287,7 +294,7 @@ M.show_help = function()
     ft = "markdown",
     position = "cursor",
     focusable = true,
-    close_keymaps = { "q", "<esc>", "g?" },
+    close_keymaps = { "q", "<esc>", "?" },
   })
 end
 
@@ -340,9 +347,7 @@ M.replay = function()
 
   local db = DB.global_update()
 
-  CMD.run_parser({ last_request }, nil, function(success)
-    if not success then return Logger.error("Unable to replay last request") end
-
+  CMD.run_parser({ last_request }, nil, function(_)
     set_current_response(#db.responses)
     M.open_default_view()
 

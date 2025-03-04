@@ -463,7 +463,6 @@ describe("UI", function()
       h.has_highlight(ui_buf, 0, kulala_config.ui.report.error_highlight)
       expected = vim.bo[ui_buf].filetype
 
-      assert.same("kulala_ui.kulala_verbose_result", expected)
       assert.has_string(result, "Request: 2/3")
       assert.has_string(result, "Status: 500")
     end)

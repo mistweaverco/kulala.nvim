@@ -15,6 +15,7 @@ local function set_response_summary(buf)
 
   local responses = DB.global_update().responses
   local response = UI.get_current_response()
+  local assert_status = response.assert_status and "success" or (response.assert_status == false and "failed" or "-")
   local idx = UI.get_current_response_pos()
   local duration = UI_utils.pretty_ms(response.duration)
 
@@ -40,7 +41,7 @@ local function set_response_summary(buf)
           .. "  Status: "
           .. response.response_code
           .. "  Assert: "
-          .. (response.assert_status and "success" or "failed"),
+          .. assert_status,
       },
       { "Buffer: " .. response.buf_name .. "::" .. response.line },
       { "" },
@@ -53,7 +54,7 @@ local function set_response_summary(buf)
     buf,
     0,
     0,
-    3,
+    2,
     response.status and config.report.successHighlight or config.report.errorHighlight
   )
 end

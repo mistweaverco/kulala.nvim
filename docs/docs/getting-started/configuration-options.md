@@ -30,9 +30,8 @@ the Kulala plugin with the available `opts`:
 
   -- default timeout for the request, set to nil to disable
   request_timeout = nil,
-  -- disable the vim.print output of the scripts
-  -- they will be still written to disk, but not printed immediately
-  disable_script_print_output = false,
+  -- continue running requests when a request failure is encountered
+  halt_on_error = true,
 
   -- certificates
   certificates = {},
@@ -74,8 +73,8 @@ the Kulala plugin with the available `opts`:
     -- enable winbar
     winbar = true,
     -- Specify the panes to be displayed by default
-    -- Current available pane contains { "body", "headers", "headers_body", "script_output", "stats", "verbose" },
-    default_winbar_panes = { "body", "headers", "headers_body", "verbose" },
+    -- Current available pane contains { "body", "headers", "headers_body", "script_output", "stats", "verbose", "report", "help" },
+    default_winbar_panes = { "body", "headers", "headers_body", "verbose", "script_output", "report", "help" },
     -- enable/disable variable info text
     -- this will show the variable name and value as float
     -- possible values: false, "float"
@@ -91,11 +90,25 @@ the Kulala plugin with the available `opts`:
       },
       lualine = "🐼",
       textHighlight = "WarningMsg", -- highlight group for request elapsed time
-      lineHighlight = "Normal", -- highlight group for icons line highlight
     },
+
     -- enable/disable request summary in the output window
     show_request_summary = true,
-    summaryTextHighlight = "Special",
+    -- disable notifications of script output
+    disable_script_print_output = false,
+
+    report = {
+      -- possible values: true | false | "on_error"
+      show_script_output = true,
+      -- possible values: true | false | "on_error" | "failed_only"
+      show_asserts_output = true,
+      -- possible values: true | false
+      show_summary = true,
+
+      headersHighlight = "Special",
+      successHighlight = "String",
+      errorHighlight = "Error",
+    },
 
     -- scratchpad default contents
     scratchpad_default_contents = {
@@ -308,27 +321,9 @@ Example:
 }
 ```
 
-### disable_script_print_output
+### halt_on_error
 
-Disable the vim.print output of the scripts as they are executed.
-The output will be still written to disk, but not printed immediately.
-
-Possible values:
-
-- `true|false`
-
-Default: `false`
-
-Example:
-
-```lua
-{
-  "mistweaverco/kulala.nvim",
-  opts = {
-    disable_script_print_output = true,
-  },
-}
-```
+Allows to halt/continue running a sequence of requests when a request failure is encountered.
 
 ### certificates
 
@@ -663,22 +658,26 @@ Setting the default view to a function allows you to define a custom view handle
 The response object has the following properties:
 
 ```lua
-  ---@class Response
-  ---@field id number
-  ---@field url string
-  ---@field method string
-  ---@field status number
-  ---@field duration number
-  ---@field time string
-  ---@field body string
-  ---@field headers string
-  ---@field errors string
-  ---@field stats string
-  ---@field script_pre_output string
-  ---@field script_post_output string
-  ---@field buf number
-  ---@field buf_name string
-  ---@field line number
+---@class Response
+---@field id string
+---@field url string
+---@field method string
+---@field status boolean
+---@field code number -- request command code
+---@field response_code number -- http response code
+---@field duration number
+---@field time number
+---@field body string
+---@field headers string
+---@field errors string
+---@field stats table|string
+---@field script_pre_output string
+---@field script_post_output string
+---@field assert_output table
+---@field assert_status boolean
+---@field buf number
+---@field buf_name string
+---@field line number
   local response = {}
 ```
 
@@ -718,6 +717,7 @@ Possible values:
 - `verbose`
 - `script_output`
 - `stats`
+- `report`
 
 Default: `body`
 
@@ -822,6 +822,28 @@ Example:
 }
 ```
 
+### ui.disable_script_print_output
+
+Disable the vim.print output of the scripts as they are executed.
+The output will be still saved, but not printed immediately.
+
+Possible values:
+
+- `true|false`
+
+Default: `false`
+
+Example:
+
+```lua
+{
+  "mistweaverco/kulala.nvim",
+  opts = {
+    disable_script_print_output = true,
+  },
+}
+```
+
 ### ui.show_request_summary
 
 Enable/disable request summary in the output window.
@@ -846,11 +868,36 @@ Example:
 }
 ```
 
-### ui.summaryTextHighlight
+### ui.report options
 
-Highlight group for the request summary in the output window.
+```lua 
+  {
+    report = {
+      -- possible values: true | false | "on_error"
+      show_script_output = true,
+      -- possible values: true | false | "on_error" | "failed_only"
+      show_asserts_output = true,
+      -- possible values: true | false
+      show_summary = true,
+    }
+  }
+```
 
-Default: `Special`
+### ui.report.disable_script_print_output
+
+Disables/enables notifications of the script output
+
+### ui.report.ui.report.show_script_output
+
+Shows/hides the script output.  `on_error` will show the output only when request status is failed.
+
+### ui.report.ui.report.show_asserts_output
+
+Shows/hides the assert output. `on_error` will show the output only when request status is failed, `failed_only` will show only the failed asserts.
+
+### ui.report.ui.report.show_summary
+
+Shows/hides the stats summary of the test results.
 
 ### ui.scratchpad_default_contents
 
