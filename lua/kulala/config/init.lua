@@ -117,7 +117,7 @@ M.defaults = {
   },
 
   -- enable/disable debug mode
-  debug = false,
+  debug = 3,
 
   -- set to true to enable default keymaps (check docs or {plugins_path}/kulala.nvim/lua/kulala/config/keymaps.lua for details)
   -- or override default keymaps as shown in the example below.
@@ -183,6 +183,8 @@ M.setup = function(config)
 
   set_signcolumn_icons()
   M.options.global_keymaps, M.options.ft_keymaps = keymaps.setup_global_keymaps()
+
+  M.options.initialized = true
 
   return M.options
 end

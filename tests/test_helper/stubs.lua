@@ -163,8 +163,8 @@ function Curl.request(job)
     job.opts.on_stderr = mappings.errors
   else
     job.code = mappings.code or 0
-    job.stdout = mappings.stdout or mappings.stats
-    job.stderr = mappings.errors
+    job.stdout = mappings.stdout or mappings.stats or ""
+    job.stderr = mappings.errors or ""
   end
 
   local curl_flags = parse_curl_cmd(cmd)

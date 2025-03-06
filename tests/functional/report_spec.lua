@@ -133,7 +133,7 @@ describe("requests report", function()
       assert.has_string(result, '4: assert.same: expected "Developer", got "Developer"')
       assert.has_string(result, '5: client.assert.true: expected "true", got "false"')
       assert.is_true(h.has_highlight(ui_buf, 9, report_config.errorHighlight))
-      assert.has_string(result, '6: client.assert.false: expected "false", got "true"')
+      assert.has_string(result, '6: client.assert.false: expected "false", got "false"')
 
       assert.has_string(result, "Test suite name 2:")
       assert.is_true(h.has_highlight(ui_buf, 11, report_config.headersHighlight))

@@ -87,10 +87,9 @@ local function process_internal(result)
 end
 
 local function process_external(result)
-  REQUEST_PARSER.scripts.javascript.run("post_request", result.scripts.post_request)
-  REQUEST_PARSER.process_variables(result, {}, true)
+  _ = REQUEST_PARSER.scripts.javascript.run("post_request", result.scripts.post_request)
+    and REQUEST_PARSER.process_variables(result, {}, true)
 
-  LOG("result.environment: ", result.environment)
   return result.environment["__replay_request"] == "true"
 end
 
@@ -214,7 +213,7 @@ local function handle_response(request_status, parsed_request, callback)
   _ = not (code and processing_status) and process_errors(parsed_request, request_status, processing_errors)
 
   callback(success, request_status.duration, parsed_request.show_icon_line_number)
-  _ = not success and config.halt_on_error and reset_task_queue() or run_next_task()
+  _ = (not success and config.halt_on_error) and reset_task_queue() or run_next_task()
 end
 
 local function received_unbffured(request, response)
@@ -258,11 +257,15 @@ end
 ---@param variables? DocumentVariables|nil
 ---@param callback function
 function process_request(requests, request, variables, callback)
+  local config = CONFIG.get()
   --  to allow running fastAPI within vim.system callbacks
   handle_response = vim.schedule_wrap(handle_response)
 
   local parsed_request = parse_request(requests, request, variables)
-  if not parsed_request then return callback(false, 0, request.start_line) end
+  if not parsed_request then
+    callback(false, 0, request.start_line)
+    return config.halt_on_error and reset_task_queue() or run_next_task()
+  end
 
   local start_time = vim.uv.hrtime()
   local errors

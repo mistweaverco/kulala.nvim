@@ -12,7 +12,7 @@ local function debug_level()
 end
 
 M.log = function(message)
-  M.info(message)
+  vim.notify(message, log_levels.INFO, default_options)
 end
 
 M.info = function(message)

@@ -5,7 +5,7 @@ local GLOBALS = require("kulala.globals")
 local kulala = require("kulala")
 
 local kulala_name = GLOBALS.UI_ID
-local kulala_config = CONFIG.options
+local kulala_config
 
 local h = require("test_helper")
 

@@ -19,6 +19,10 @@ local WINBAR = require("kulala.ui.winbar")
 
 local M = {}
 
+local is_initialized = function()
+  return CONFIG.get().initialized
+end
+
 local function get_kulala_buffer()
   local buf = vim.fn.bufnr(GLOBALS.UI_ID)
   return buf > 0 and buf
@@ -316,6 +320,8 @@ M.open = function()
 end
 
 M.open_all = function(_, line_nr)
+  if not is_initialized() then return Logger.error("Kulala setup is not initialized. Check the config.") end
+
   line_nr = line_nr or 0
   local db = DB.global_update()
   local status, elapsed_ms
