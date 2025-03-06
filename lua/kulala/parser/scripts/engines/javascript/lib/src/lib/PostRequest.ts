@@ -122,4 +122,7 @@ export const Request = {
       return null;
     }
   },
+  replay: () => {
+    Request.variables.set('__replay_request', "true");
+  }
 };

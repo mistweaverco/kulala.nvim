@@ -190,3 +190,41 @@ Returns the request URL with variables substituted.
 ```javascript
 client.log(request.url.tryGetSubstituted());
 ```
+
+## request.skip
+
+Skips the current request and moves to the next one. Useful for conditional requests, see below.
+
+```javascript
+request.skip();
+```
+
+## request.replay
+
+Replays the current request. Useful for conditional requests, see below.
+
+```javascript
+request.replay();
+```
+
+### Conditional requests
+
+```http
+< {%
+  if (!client.global.get("Token")) {
+    request.skip()
+  }
+%}
+
+@URL = "500"
+GET https://httpbin.org/status/{{URL}}
+
+> {%
+  console.log(response.responseCode)
+
+  if (response.responseCode === 500) {
+    request.variables.set('URL', "200");
+    request.replay()
+  }
+%}
+```

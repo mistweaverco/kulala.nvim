@@ -121,5 +121,8 @@ export const Request = {
       return null;
     }
   },
+  skip: () => {
+    Request.variables.set('__skip_request', "true");
+  }
 };
 

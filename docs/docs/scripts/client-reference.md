@@ -32,19 +32,11 @@ client.log("Hello, world!");
 
 ## client.test
 
-:::warning
+Define a test suite and individual test cases within it.  See [Testing and Reporting](./../usage/testing-and-reporting.md) for more information.
 
-Not yet implemented.
+## client.assert and client.assert.*
 
-:::
-
-## client.assert
-
-:::warning
-
-Not yet implemented.
-
-:::
+A collection of assertion functions to validate various aspects of the response.  See [Testing and Reporting](./../usage/testing-and-reporting.md) for more information.
 
 ## client.exit
 

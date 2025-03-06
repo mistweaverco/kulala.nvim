@@ -17,6 +17,8 @@ local M = {}
 local TASK_QUEUE = {}
 local RUNNING_TASK = false
 
+local process_request
+
 local reset_task_queue = function()
   TASK_QUEUE = {} -- Clear the task queue and stop processing
   RUNNING_TASK = false
@@ -86,6 +88,10 @@ end
 
 local function process_external(result)
   REQUEST_PARSER.scripts.javascript.run("post_request", result.scripts.post_request)
+  REQUEST_PARSER.process_variables(result, {}, true)
+
+  LOG("result.environment: ", result.environment)
+  return result.environment["__replay_request"] == "true"
 end
 
 local function process_api()
@@ -156,12 +162,17 @@ local function save_response(request_status, parsed_request)
   return response.status
 end
 
-local function process_response(request_status, parsed_request)
+local function process_response(request_status, parsed_request, callback)
   local response_status
 
   process_metadata(parsed_request)
   process_internal(parsed_request)
-  process_external(parsed_request)
+
+  if process_external(parsed_request) then
+    process_request({ parsed_request }, parsed_request, {}, callback)
+    return true
+  end
+
   response_status = save_response(request_status, parsed_request)
   process_api()
 
@@ -197,7 +208,7 @@ local function handle_response(request_status, parsed_request, callback)
   local success
 
   local processing_status, processing_errors = xpcall(function()
-    success = code and process_response(request_status, parsed_request)
+    success = code and process_response(request_status, parsed_request, callback)
   end, debug.traceback)
 
   _ = not (code and processing_status) and process_errors(parsed_request, request_status, processing_errors)
@@ -223,9 +234,10 @@ local function parse_request(requests, request, variables)
     return Logger.warn("Prompt failed. Skipping this and all following requests.")
   end
 
-  local parsed_request = REQUEST_PARSER.parse(requests, variables, request.start_line)
+  local parsed_request, status = REQUEST_PARSER.parse(requests, variables, request.start_line)
   if not parsed_request then
-    return Logger.warn(("Request at line: %s could not be parsed"):format(request.start_line))
+    status = status == "skipped" and "is skipped" or "could not be parsed"
+    return Logger.warn(("Request at line: %s " .. status):format(request.start_line))
   end
 
   return parsed_request
@@ -245,7 +257,7 @@ end
 ---@param request DocumentRequest
 ---@param variables? DocumentVariables|nil
 ---@param callback function
-local function process_request(requests, request, variables, callback)
+function process_request(requests, request, variables, callback)
   --  to allow running fastAPI within vim.system callbacks
   handle_response = vim.schedule_wrap(handle_response)
 
