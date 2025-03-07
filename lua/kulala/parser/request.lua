@@ -267,22 +267,15 @@ local function process_graphql(request)
 end
 
 local function process_pre_request_scripts(request, document_variables)
-  if #request.scripts.pre_request.inline + #request.scripts.pre_request.files == 0 then return end
-
-  -- PERF: We only want to run the scripts if they exist
-  -- Also we don't want to re-run the environment replace_variables_in_url_headers_body
-  -- if we don't actually have any scripts to run that could have changed the environment
-
-  -- INFO:
-  -- This runs a client and request script that can be used to magic things
-  -- See: https://www.jetbrains.com/help/idea/http-response-reference.html
-  M.scripts.javascript.run("pre_request", request.scripts.pre_request)
+  if #request.scripts.pre_request.inline + #request.scripts.pre_request.files == 0 then return true end
 
   -- INFO: now replace the variables in the URL, headers and body again,
   -- because user scripts could have changed them,
   -- but this time also warn the user if a variable is not found
+  M.scripts.javascript.run("pre_request", request.scripts.pre_request)
 
   process_variables(request, document_variables)
+  return not (request.environment["__skip_request"] == "true")
 end
 
 local function process_body(request)
@@ -537,6 +530,7 @@ end
 ---@param document_variables? DocumentVariables|nil Document variables
 ---@param line_nr? number|nil The line number within the document to locate the request
 ---@return Request|nil -- Table containing the request data or nil if parsing fails
+---@return string|nil -- Error message if parsing fails
 M.parse = function(requests, document_variables, line_nr)
   if not requests then
     DB.set_current_buffer()
@@ -557,7 +551,7 @@ M.parse = function(requests, document_variables, line_nr)
   local json = vim.json.encode(request)
   FS.write_file(GLOBALS.REQUEST_FILE, json, false)
 
-  process_pre_request_scripts(request, document_variables)
+  if not process_pre_request_scripts(request, document_variables) then return nil, "skipped" end
 
   if request.method == "GRPC" then
     build_grpc_command(request)
@@ -574,5 +568,7 @@ M.parse = function(requests, document_variables, line_nr)
 
   return request
 end
+
+M.process_variables = process_variables
 
 return M

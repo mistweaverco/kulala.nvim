@@ -5,7 +5,7 @@ local GLOBALS = require("kulala.globals")
 local kulala = require("kulala")
 
 local kulala_name = GLOBALS.UI_ID
-local kulala_config = CONFIG.options
+local kulala_config
 
 local h = require("test_helper")
 
@@ -105,30 +105,36 @@ describe("UI", function()
       assert.has_string(result, expected)
     end)
 
-    it("shows summary of requst", function()
-      local responses = DB.global_update().responses
-      DB.global_update().current_response_pos = #responses
+    it("shows summary of request", function()
+      local db = DB.global_update()
+      db.responses = {}
+      db.current_response_pos = 1
 
       ---@diagnostic disable-next-line: missing-fields
-      responses[#responses] = {
-        status = 0,
+      table.insert(db.responses, {
+        status = true,
+        code = 0,
+        response_code = 200,
+        assert_status = false,
         duration = 3250000,
-        time = "Tue Sep 28 2021 12:00:00",
+        time = 1740826092,
         url = "http://example.com",
         method = "GET",
         line = 15,
         buf_name = "test.txt",
         body = h.load_fixture("fixtures/request_2_headers_body.txt"),
         headers = "",
-      }
+      })
 
       kulala.open()
       result = h.get_buf_lines(h.get_kulala_buf()):to_string()
 
-      assert.has_string(result, "Request: " .. #responses .. "/" .. #responses)
-      assert.has_string(result, "Status: 0")
-      assert.has_string(result, "Duration: 3.25ms")
-      assert.has_string(result, "Time: Tue Sep 28 2021 12:00:00")
+      assert.has_string(result, "Request: " .. #db.responses .. "/" .. #db.responses)
+      assert.has_string(result, "Code: 0")
+      assert.has_string(result, "Status: 200")
+      assert.has_string(result, "Assert: failed")
+      assert.has_string(result, "Duration: 3.25 ms")
+      assert.has_string(result, "Time: Mar 01 10:48:12")
       assert.has_string(result, "URL: GET http://example.com")
       assert.has_string(result, "Buffer: test.txt::15")
     end)
@@ -325,6 +331,9 @@ describe("UI", function()
 
   describe("history of responses", function()
     before_each(function()
+      DB.global_update().responses = {}
+      h.delete_all_bufs()
+
       input.stub({ ["PROMPT_VAR prompt"] = "TEST_PROMPT_VAR" })
       curl.stub({
         ["https://httpbin.org/advanced_e1"] = {
@@ -346,7 +355,6 @@ describe("UI", function()
     end)
 
     it("stores responses of consequtive requests", function()
-      DB.global_update().responses = {}
       vim.cmd.edit(h.expand_path("requests/advanced_E.http"))
 
       kulala.run_all()
@@ -421,6 +429,63 @@ describe("UI", function()
         JS: POST TEST
       ]]):to_string(true)
       )
+    end)
+
+    it("shows failed requests and errors", function()
+      kulala_config.halt_on_error = false
+
+      curl.stub({
+        ["https://request_1"] = {
+          boby = '{ "data": { "foo": "baz" } }',
+          stats = '{"response_code": 500}',
+          errors = "Curt error",
+        },
+      })
+
+      h.create_buf(
+        ([[
+          POST https://request_1
+          ###
+          POST https://request_1
+          ###
+          POST https://request_2
+
+      ]]):to_table(true),
+        "test.http"
+      )
+
+      kulala.run_all()
+      wait_for_requests(3)
+      h.send_keys("[")
+
+      result = h.get_buf_lines(ui_buf):to_string()
+
+      h.has_highlight(ui_buf, 0, kulala_config.ui.report.error_highlight)
+      expected = vim.bo[ui_buf].filetype
+
+      assert.has_string(result, "Request: 2/3")
+      assert.has_string(result, "Status: 500")
+    end)
+
+    it("it clears responses history", function()
+      h.create_buf(
+        ([[
+          POST https://request_1
+          ###
+          POST https://request_1
+          ###
+          POST https://request_2
+
+      ]]):to_table(true),
+        "test.http"
+      )
+
+      kulala.run_all()
+      wait_for_requests(3)
+      h.send_keys("X")
+
+      result = h.get_buf_lines(ui_buf):to_string()
+      assert.has_string(result, "Request: 0/0")
     end)
   end)
 
@@ -552,6 +617,35 @@ describe("UI", function()
       )
       result = vim.fn.getreg("+")
       assert.has_string(result, expected)
+    end)
+
+    it("it shows help hint and window", function()
+      kulala_config.winbar = false
+
+      kulala.run()
+      wait_for_requests(1)
+
+      result = h.get_extmarks(ui_buf, 0, 1, { type = "virt_text" })[1][4].virt_text[1]
+      assert.is_same("? - help", result[1])
+
+      h.send_keys("?")
+      ui_buf = vim.fn.bufnr("kulala_help")
+
+      result = h.get_buf_lines(ui_buf):to_string()
+      assert.has_string(result, "Kulala Help")
+    end)
+
+    it("shows winbar", function()
+      kulala_config.winbar = true
+      kulala_config.default_view = "body"
+      kulala_config.default_winbar_panes = { "body", "report", "help" }
+
+      kulala.run()
+      wait_for_requests(1)
+
+      result = vim.api.nvim_get_option_value("winbar", { win = vim.fn.bufwinid(ui_buf) })
+      expected = "%#KulalaTabSel# Body %* (B) %#KulalaTab# Report %* (R) %#KulalaTab# Help %* (?) <- [ ] ->"
+      assert.same(expected, result)
     end)
   end)
 end)

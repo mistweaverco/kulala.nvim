@@ -2,7 +2,7 @@
 local fs = require("kulala.utils.fs")
 local h = require("test_helper")
 local kulala = require("kulala")
-local kulala_config = require("kulala.config").get()
+local kulala_config = require("kulala.config")
 local parser = require("kulala.parser.request")
 
 describe("grpc", function()
@@ -36,7 +36,7 @@ describe("grpc", function()
         end)
       end
 
-      kulala_config.default_view = "headers_body"
+      kulala_config.setup({ default_view = "headers_body" })
     end)
 
     after_each(function()

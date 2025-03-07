@@ -172,6 +172,12 @@ M.default_kulala_keymaps = {
       require("kulala.ui").show_stats()
     end,
   },
+  ["Show report"] = {
+    "R",
+    function()
+      require("kulala.ui").show_report()
+    end,
+  },
   ["Next response"] = {
     "]",
     function()
@@ -182,6 +188,24 @@ M.default_kulala_keymaps = {
     "[",
     function()
       require("kulala.ui").show_previous()
+    end,
+  },
+  ["Jump to response"] = {
+    "<CR>",
+    function()
+      require("kulala.ui").jump_to_response()
+    end,
+  },
+  ["Clear responses history"] = {
+    "X",
+    function()
+      require("kulala.ui").clear_responses_history()
+    end,
+  },
+  ["Show help"] = {
+    "?",
+    function()
+      require("kulala.ui").show_help()
     end,
   },
   ["Close"] = {

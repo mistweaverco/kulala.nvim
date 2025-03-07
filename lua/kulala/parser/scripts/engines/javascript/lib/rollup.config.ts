@@ -37,6 +37,7 @@ export default [
             'client',
             'response',
             'request',
+            'assert'
           ],
         },
       }),

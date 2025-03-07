@@ -1,26 +1,29 @@
-[
-  {
-    "name": "namelookup",
-    "duration": "0.005449"
-  },
-  {
-    "name": "connect",
-    "duration": "0.035805"
-  },
-  {
-    "name": "appconnect",
-    "duration": "0.150167"
-  },
-  {
-    "name": "pretransfer",
-    "duration": "0.150432"
-  },
-  {
-    "name": "redirect",
-    "duration": "0.000000"
-  },
-  {
-    "name": "starttransfer",
-    "duration": "0.150565"
-  }
-]
+{
+  "response_code": 200,
+  "timings": [
+    {
+      "name": "namelookup",
+      "duration": "0.005449"
+    },
+    {
+      "name": "connect",
+      "duration": "0.035805"
+    },
+    {
+      "name": "appconnect",
+      "duration": "0.150167"
+    },
+    {
+      "name": "pretransfer",
+      "duration": "0.150432"
+    },
+    {
+      "name": "redirect",
+      "duration": "0.000000"
+    },
+    {
+      "name": "starttransfer",
+      "duration": "0.150565"
+    }
+  ]
+}

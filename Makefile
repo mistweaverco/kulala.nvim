@@ -1,7 +1,9 @@
 test = nvim -l tests/minit.lua tests --shuffle-tests
+build_ts = scripts/build_ts.sh
 
 tag ?= wip
 watch = '*.lua' -o -name "*.js" -o -name "*.http" -name "*.txt"
+git_ls = git ls-files -cdmo --exclude-standard 
 
 version:
 	./scripts/set-version.sh $(VERSION)
@@ -20,4 +22,7 @@ watch:
 	@while sleep 0.1; do find . -name $(watch) | entr -d -c $(test); done
 
 watch_tag:
-	@while sleep 0.1; do find . -name $(watch) | entr -d -c $(test) --tags=$(tag); done
+	@while sleep 0.1; do $(git_ls) | entr -d -c $(test) --tags=$(tag); done
+
+watch_ts:
+	@while sleep 0.1; do find . -name '*.ts' | entr -d -c $(build_ts); done

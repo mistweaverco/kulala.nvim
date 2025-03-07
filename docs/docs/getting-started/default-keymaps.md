@@ -48,9 +48,17 @@ Keymaps with `ft` set will only be available in buffers with the specified filet
   ["Show body"] = { "B", function() require("kulala.ui").show_body() end, },
   ["Show headers and body"] = { "A", function() require("kulala.ui").show_headers_body() end, },
   ["Show verbose"] = { "V", function() require("kulala.ui").show_verbose() end, },
+
   ["Show script output"] = { "O", function() require("kulala.ui").show_script_output() end, },
   ["Show stats"] = { "S", function() require("kulala.ui").show_stats() end, },
+  ["Show report"] = { "R", function() require("kulala.ui").show_report() end, },
+
   ["Next response"] = { "]", function() require("kulala.ui").show_next() end, },
   ["Previous response"] = { "[", function() require("kulala.ui").show_previous() end, },
+  ["Jump to response"] = { "<CR>", function() require("kulala.ui").jump_to_response() end, },
+
+  ["Clear responses history"] = { "X", function() require("kulala.ui").clear_responses_history() end, },
+
+  ["Show help"] = { "?", function() require("kulala.ui").show_help() end, },
   ["Close"] = { "q", function() require("kulala.ui").close_kulala_buffer() end, },
 ```

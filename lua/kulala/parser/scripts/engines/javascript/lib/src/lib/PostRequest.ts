@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+
 const _REQUEST_FILEPATH = path.join(__dirname, '..', '..', 'request.json');
 const _REQUEST_VARIABLES_FILEPATH = path.join(__dirname, 'request_variables.json');
 
@@ -121,5 +122,7 @@ export const Request = {
       return null;
     }
   },
+  replay: () => {
+    Request.variables.set('__replay_request', "true");
+  }
 };
-

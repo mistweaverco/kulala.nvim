@@ -1,5 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { Assert  } from './Assert';
+
 const _GLOBAL_VARIABLES_FILEPATH = path.join(__dirname, '..', 'global_variables.json');
 
 const getGlobalVariables = (): Record<string, string> => {
@@ -14,12 +16,10 @@ export const Client = {
   log: (...args: unknown[]): void => {
     console.log(...args);
   },
-  test: (): void => {
-    console.error('Not yet implemented');
+  test: (name: string, fn: () => void): void => {
+    Assert.test(name, fn);
   },
-  assert: (): void => {
-    console.error('Not yet implemented');
-  },
+  assert: Assert,
   exit: (): void => {
     process.exit();
   },
@@ -49,3 +49,4 @@ export const Client = {
     }
   }
 };
+

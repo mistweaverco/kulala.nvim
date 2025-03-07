@@ -1,5 +1,7 @@
+/* eslint-disable @typescript-eslint/no-magic-numbers */
 import * as fs from 'fs';
 import * as path from 'path';
+
 const _RESPONSE_HEADERS_FILEPATH = path.join(__dirname, '..', '..', 'headers.txt');
 const _RESPONSE_BODY_FILEPATH = path.join(__dirname, '..', '..', 'body.txt');
 
@@ -11,6 +13,20 @@ interface HeaderObject {
 type Headers = Record<string, HeaderObject>;
 type Body = null | string | object;
 
+interface ResponseHeaders {
+  valueOf: (headerName: string) => string | null;
+  valuesOf: (headerName: string) => HeaderObject | null;
+  all: () => Headers;
+}
+
+export interface ResponseType {
+  responseCode: number;
+  body: Body;
+  headers: ResponseHeaders;
+  contentType: object;
+}
+
+let responseCode = 0;
 let body: Body = null;
 const headers: Headers = {};
 
@@ -18,6 +34,7 @@ if (fs.existsSync(_RESPONSE_HEADERS_FILEPATH)) {
   const bodyRaw = fs.readFileSync(_RESPONSE_HEADERS_FILEPATH, { encoding: 'utf8' })
   const lines = bodyRaw.split('\n');
   const delimiter = ":";
+
   for (const line of lines) {
     if (!line.includes(delimiter)) {
       continue;
@@ -27,6 +44,11 @@ if (fs.existsSync(_RESPONSE_HEADERS_FILEPATH)) {
       name: key,
       value: line.slice(key.length + delimiter.length).trim()
     }
+  }
+
+  if (lines[0].length > 0) {
+    const matches = lines[0].match(/HTTP\/\d(?:\.\d)?\s+(\d+)/);
+    responseCode = ((matches?.[1]) != null) ? parseInt(matches[1], 10) : 0;
   }
 }
 
@@ -39,7 +61,8 @@ if (fs.existsSync(_RESPONSE_BODY_FILEPATH)) {
   }
 }
 
-export const Response = {
+export const Response: ResponseType = {
+  responseCode,
   body,
   headers: {
     valueOf: (headerName: string): string | null => {
@@ -63,4 +86,3 @@ export const Response = {
     charset: null,
   }
 };
-

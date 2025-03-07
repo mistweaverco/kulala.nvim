@@ -47,6 +47,7 @@ const sidebars: SidebarsConfig = {
         "usage/sending-form-data",
         "usage/using-environment-variables",
         "usage/using-variables",
+        "usage/testing-and-reporting",
         'usage/http-file-spec',
       ],
     },

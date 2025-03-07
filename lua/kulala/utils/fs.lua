@@ -331,6 +331,13 @@ M.read_file = function(filename, is_binary)
   return content
 end
 
+M.read_json = function(filename)
+  local content = M.read_file(filename)
+  if not content then return end
+
+  return vim.json.decode(content, { object = true, array = true })
+end
+
 ---@param content string
 ---@param binary? boolean|nil
 M.get_temp_file = function(content, binary)
