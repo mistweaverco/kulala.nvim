@@ -839,7 +839,9 @@ Example:
 {
   "mistweaverco/kulala.nvim",
   opts = {
-    disable_script_print_output = true,
+    ui = {
+      disable_script_print_output = true,
+    }
   },
 }
 ```
@@ -882,10 +884,6 @@ Example:
     }
   }
 ```
-
-### ui.report.disable_script_print_output
-
-Disables/enables notifications of the script output
 
 ### ui.report.ui.report.show_script_output
 

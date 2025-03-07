@@ -6,8 +6,6 @@ These helper functions are available in the response object in scripts.
 
 THe HTTP response code.
 
-```javascript
-
 ## response.body
 
 The response body, as a string, or json object if the response is json.
