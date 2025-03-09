@@ -10,12 +10,14 @@ local INLAY = require("kulala.inlay")
 local INT_PROCESSING = require("kulala.internal_processing")
 local Logger = require("kulala.logger")
 local REQUEST_PARSER = require("kulala.parser.request")
-local UiHighlight = require("kulala.ui.highlight")
+local UI_utils = require("kulala.ui.utils")
 
 local M = {}
 
 local TASK_QUEUE = {}
 local RUNNING_TASK = false
+
+local process_request
 
 local reset_task_queue = function()
   TASK_QUEUE = {} -- Clear the task queue and stop processing
@@ -85,7 +87,10 @@ local function process_internal(result)
 end
 
 local function process_external(result)
-  REQUEST_PARSER.scripts.javascript.run("post_request", result.scripts.post_request)
+  _ = REQUEST_PARSER.scripts.javascript.run("post_request", result.scripts.post_request)
+    and REQUEST_PARSER.process_variables(result, {}, true)
+
+  return result.environment["__replay_request"] == "true"
 end
 
 local function process_api()
@@ -98,7 +103,18 @@ local function modify_grpc_response(response)
 
   response.body = response.stats
   response.stats = ""
-  response.headers = "Content-Type: application/json\n\n"
+  response.headers = "Content-Type: application/json"
+
+  return response
+end
+
+local function set_request_stats(response)
+  local _, stats = pcall(vim.json.decode, response.stats, { object = true, array = true })
+
+  response.stats = _ and stats or response.stats
+  response.response_code = _ and tonumber(stats.response_code) or response.code
+  response.assert_status = response.assert_output.status
+  response.status = response.code == 0 and response.response_code < 400 and response.assert_status ~= false
 
   return response
 end
@@ -109,7 +125,7 @@ local function save_response(request_status, parsed_request)
   local id = buf .. ":" .. line
 
   local responses = DB.global_update().responses
-  if #responses > 0 and responses[#responses].id == id and responses[#responses].status == -1 then
+  if #responses > 0 and responses[#responses].id == id and responses[#responses].code == -1 then
     table.remove(responses) -- remove the last response if it's the same request and status was unfinished
   end
 
@@ -117,8 +133,10 @@ local function save_response(request_status, parsed_request)
     id = id,
     url = parsed_request.url or "",
     method = parsed_request.method or "",
-    status = request_status.code or 0,
-    time = vim.fn.strftime("%b %d %X"),
+    code = request_status.code or -1,
+    response_code = 0,
+    status = false,
+    time = vim.fn.localtime(),
     duration = request_status.duration or 0,
     body = FS.read_file(GLOBALS.BODY_FILE) or "",
     headers = FS.read_file(GLOBALS.HEADERS_FILE) or "",
@@ -126,21 +144,38 @@ local function save_response(request_status, parsed_request)
     stats = request_status.stdout or "",
     script_pre_output = FS.read_file(GLOBALS.SCRIPT_PRE_OUTPUT_FILE) or "",
     script_post_output = FS.read_file(GLOBALS.SCRIPT_POST_OUTPUT_FILE) or "",
-    buf = buf,
+    assert_output = FS.read_json(GLOBALS.ASSERT_OUTPUT_FILE) or {},
+    assert_status = nil,
     buf_name = vim.fn.bufname(buf),
     line = line,
+    buf = buf,
   }
 
   response = modify_grpc_response(response)
+  response = set_request_stats(response)
+
+  response.body = #response.body == 0 and "No response body (check Verbose output)" or response.body
+
   table.insert(responses, response)
+
+  return response.status
 end
 
-local function process_response(request_status, parsed_request)
+local function process_response(request_status, parsed_request, callback)
+  local response_status
+
   process_metadata(parsed_request)
   process_internal(parsed_request)
-  process_external(parsed_request)
-  save_response(request_status, parsed_request)
+
+  if process_external(parsed_request) then
+    process_request({ parsed_request }, parsed_request, {}, callback)
+    return true
+  end
+
+  response_status = save_response(request_status, parsed_request)
   process_api()
+
+  return response_status
 end
 
 local function process_errors(request, request_status, processing_errors)
@@ -156,25 +191,29 @@ local function process_errors(request, request_status, processing_errors)
     request.show_icon_line_number or "-",
     request_status.errors or ""
   )
+
   Logger.error(message, 2)
-  Logger.error(processing_errors or "", 2)
+  _ = processing_errors and Logger.error(processing_errors, 2)
+
+  request_status.errors = processing_errors and request_status.errors .. "\n" .. processing_errors
+    or request_status.errors
+
+  save_response(request_status, request)
 end
 
 local function handle_response(request_status, parsed_request, callback)
-  local success = request_status.code == 0
+  local config = CONFIG.get()
+  local code = request_status.code == 0
+  local success
 
-  local status, processing_errors = xpcall(function()
-    _ = success and process_response(request_status, parsed_request)
-    -- TODO: add handling of potential errors during process_response and call callback with success=false
-    callback(success, request_status.duration, parsed_request.show_icon_line_number)
+  local processing_status, processing_errors = xpcall(function()
+    success = code and process_response(request_status, parsed_request, callback)
   end, debug.traceback)
 
-  if success and status then
-    run_next_task()
-  else
-    process_errors(parsed_request, request_status, processing_errors)
-    reset_task_queue()
-  end
+  _ = not (code and processing_status) and process_errors(parsed_request, request_status, processing_errors)
+
+  callback(success, request_status.duration, parsed_request.show_icon_line_number)
+  _ = (not success and config.halt_on_error) and reset_task_queue() or run_next_task()
 end
 
 local function received_unbffured(request, response)
@@ -194,9 +233,10 @@ local function parse_request(requests, request, variables)
     return Logger.warn("Prompt failed. Skipping this and all following requests.")
   end
 
-  local parsed_request = REQUEST_PARSER.parse(requests, variables, request.start_line)
+  local parsed_request, status = REQUEST_PARSER.parse(requests, variables, request.start_line)
   if not parsed_request then
-    return Logger.warn(("Request at line: %s could not be parsed"):format(request.start_line))
+    status = status == "skipped" and "is skipped" or "could not be parsed"
+    return Logger.warn(("Request at line: %s " .. status):format(request.start_line))
   end
 
   return parsed_request
@@ -216,12 +256,16 @@ end
 ---@param request DocumentRequest
 ---@param variables? DocumentVariables|nil
 ---@param callback function
-local function process_request(requests, request, variables, callback)
+function process_request(requests, request, variables, callback)
+  local config = CONFIG.get()
   --  to allow running fastAPI within vim.system callbacks
   handle_response = vim.schedule_wrap(handle_response)
 
   local parsed_request = parse_request(requests, request, variables)
-  if not parsed_request then return callback(false, 0, request.start_line) end
+  if not parsed_request then
+    callback(false, 0, request.start_line)
+    return config.halt_on_error and reset_task_queue() or run_next_task()
+  end
 
   local start_time = vim.uv.hrtime()
   local errors
@@ -265,7 +309,7 @@ M.run_parser = function(requests, line_nr, callback)
   reset_task_queue()
 
   if not requests then
-    variables, requests = DOCUMENT_PARSER.get_document() -- TODO: add xpcall
+    variables, requests = DOCUMENT_PARSER.get_document()
   end
 
   if not requests then return Logger.error("No requests found in the document") end
@@ -283,7 +327,7 @@ M.run_parser = function(requests, line_nr, callback)
     INLAY.show("loading", req.show_icon_line_number)
 
     offload_task(function()
-      UiHighlight.highlight_request(req)
+      UI_utils.highlight_request(req)
       process_request(requests, req, variables, callback)
     end)
   end

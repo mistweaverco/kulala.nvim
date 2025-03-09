@@ -154,7 +154,7 @@ end
 function Curl.request(job)
   local cmd = job.args.cmd
   local url = vim.split(cmd[#cmd], "?")[1]
-  local mappings = vim.tbl_deep_extend("force", Curl.url_mappings["*"], Curl.url_mappings[url] or {})
+  local mappings = vim.tbl_deep_extend("force", Curl.url_mappings["*"] or {}, Curl.url_mappings[url] or {})
 
   if not mappings then return end
 
@@ -162,8 +162,9 @@ function Curl.request(job)
     job.opts.on_stdout = mappings.stats
     job.opts.on_stderr = mappings.errors
   else
-    job.stdout = mappings.stdout or mappings.stats
-    job.stderr = mappings.errors
+    job.code = mappings.code or 0
+    job.stdout = mappings.stdout or mappings.stats or ""
+    job.stderr = mappings.errors or ""
   end
 
   local curl_flags = parse_curl_cmd(cmd)
@@ -185,6 +186,9 @@ function Curl.reset()
   vim.iter(Curl.paths):each(function(path)
     vim.uv.fs_unlink(path)
   end)
+
+  Curl.paths = {}
+  Curl.url_mappings = {}
 end
 
 function Jobstart.stub(cmd, opts)

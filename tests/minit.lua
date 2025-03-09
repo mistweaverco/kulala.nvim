@@ -9,7 +9,7 @@ vim.opt.rtp:append(vim.uv.cwd())
 _, _G.LOG = pcall(require, "log")
 
 -- Install JS scripts dependencies
-require("kulala.parser.scripts.engines.javascript").install_dependencies()
+require("kulala.parser.scripts.engines.javascript").install_dependencies(true)
 
 -- Setup lazy.nvim
 require("lazy.minit").busted({

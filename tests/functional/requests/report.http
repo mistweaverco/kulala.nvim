@@ -1,0 +1,53 @@
+@OCCUPATION = Developer
+POST https://httpbin.org/post?key1=value1 HTTP/1.1
+accept: application/json
+content-type: application/json
+
+{
+  "data": {
+    "name": "John Doe",
+    "occupation": "{{OCCUPATION}}",
+    "age": 30
+  }
+}
+
+> {%
+  let json = response.body.json.data;
+
+  client.test("Test suite name 1", function() {
+    assert(json.name == "1: John Doe")
+    assert(json.name == "John Doe", "2: assert")
+
+    assert.same(json.occupation, "3: assert.same")
+    assert.same(json.occupation, "Developer", "4: assert.same")
+
+    client.assert.true(json.age == 50, "5: client.assert.true")
+    client.assert.false(json.age == 40, "6: client.assert.false")
+  });
+
+  client.log("Test Script Output 1")
+
+  client.test("Test suite name 2", function() {
+    assert.hasString(json.occupation, "Develop", "7: hasString")
+    assert.responseHas('responseCode', 200, "8: responseHas")
+    assert.headersHas('Content-Type', "application/json", "9: headersHas")
+  });
+  assert.jsonHas("json.data.occupation", "Developer", "10: jsonHas")
+%}
+
+###
+
+GET https://httpbin.org/html
+Content-Type: text/csv
+Accept: text/csv
+
+Text, text, text
+Apples, Oranges, Bannanas
+
+> {%
+  client.test("Test suite name 1", function() {
+    assert.bodyHas("Hello", "11: bodyHas")
+  });
+
+  client.log("Test Script Output 2")
+%}

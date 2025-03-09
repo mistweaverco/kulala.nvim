@@ -27,7 +27,10 @@ end
 ---@param silent boolean|nil -- Whether to suppress not found variable warnings
 local function parse_string_variables(str, variables, env, silent)
   -- Early check: if the input string is a blob (represented as userdata in Neovim)
-  if contains_binary_data(str) then return str end
+  if not str then return end
+  str = tostring(str)
+
+  if #str == 0 or contains_binary_data(str) then return str end
 
   local function replace_placeholder(variable_name)
     local value

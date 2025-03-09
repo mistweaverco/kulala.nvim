@@ -5,6 +5,7 @@ local CURL_PARSER = require("kulala.parser.curl")
 local DB = require("kulala.db")
 local FORMATTER = require("kulala.formatter")
 local FS = require("kulala.utils.fs")
+local Float = require("kulala.ui.float")
 local GLOBALS = require("kulala.globals")
 local INLAY = require("kulala.inlay")
 local INT_PROCESSING = require("kulala.internal_processing")
@@ -12,10 +13,15 @@ local Inspect = require("kulala.parser.inspect")
 local KEYMAPS = require("kulala.config.keymaps")
 local Logger = require("kulala.logger")
 local PARSER = require("kulala.parser.request")
-local UiHighlight = require("kulala.ui.highlight")
+local REPORT = require("kulala.ui.report")
+local UI_utils = require("kulala.ui.utils")
 local WINBAR = require("kulala.ui.winbar")
 
 local M = {}
+
+local is_initialized = function()
+  return CONFIG.get().initialized
+end
 
 local function get_kulala_buffer()
   local buf = vim.fn.bufnr(GLOBALS.UI_ID)
@@ -57,8 +63,6 @@ M.close_kulala_buffer = function()
 end
 
 -- Create an autocmd to delete the buffer when the window is closed
--- This is necessary to prevent the buffer from being left behind
--- when the window is closed
 local function set_maps_autocommands(buf)
   CONFIG.get().kulala_keymaps = KEYMAPS.setup_kulala_keymaps(buf)
 
@@ -97,7 +101,7 @@ end
 
 local function open_kulala_window(buf)
   local config = CONFIG.get()
-  local previous_win, win_config
+  local win_config
 
   local win = get_kulala_window()
   if win then return win end
@@ -124,61 +128,25 @@ local function open_kulala_window(buf)
   end
 
   win = vim.api.nvim_open_win(buf, true, win_config)
-  if config.display_mode == "split" then vim.api.nvim_set_current_win(request_win) end
+
+  vim.api.nvim_set_option_value("signcolumn", "yes:1", { win = win })
+  vim.api.nvim_set_option_value("number", false, { win = win })
+  vim.api.nvim_set_option_value("relativenumber", false, { win = win })
+
+  _ = config.display_mode == "split" and vim.api.nvim_set_current_win(request_win)
 
   return win
 end
 
-local function pretty_ms(ms)
-  return string.format("%.2fms", ms)
-end
-
-local function set_current_response_data(buf)
-  local config = CONFIG.get()
-  if not config.ui.show_request_summary then return end
-
-  local responses = DB.global_update().responses
-  local response = get_current_response()
-  local idx = get_current_response_pos()
-  local duration = response.duration == "" and 0 or pretty_ms(response.duration / 1e6)
-
-  local data = vim
-    .iter({
-      {
-        "Request: "
-          .. idx
-          .. "/"
-          .. #responses
-          .. "  Status: "
-          .. response.status
-          .. "  Duration: "
-          .. duration
-          .. "  Time: "
-          .. response.time,
-      },
-      { "URL: " .. response.method .. " " .. response.url },
-      { "Buffer: " .. response.buf_name .. "::" .. response.line },
-      { "" },
-    })
-    :flatten()
-    :totable()
-
-  vim.api.nvim_buf_set_lines(buf, 0, 0, false, data)
-  UiHighlight.highlight_range(
-    get_kulala_buffer(),
-    0,
-    { row = 0, col = 0 },
-    { row = 2, col = -1 },
-    config.ui.summaryTextHighlight
-  )
-end
-
 local function show(contents, filetype, mode)
+  filetype = filetype and "kulala_ui." .. filetype or "kulala_ui.text"
   local buf = open_kulala_buffer(filetype)
+
   set_buffer_contents(buf, contents, filetype)
-  set_current_response_data(buf)
+  _ = mode ~= "report" and REPORT.set_response_summary(buf)
 
   local win = open_kulala_window(buf)
+  _ = mode == "report" and vim.api.nvim_win_set_cursor(win, { vim.api.nvim_buf_line_count(buf), 0 })
 
   WINBAR.toggle_winbar_tab(buf, win, mode)
   CONFIG.options.default_view = mode
@@ -195,7 +163,7 @@ local function format_body()
     filetype = contenttype.ft
   end
 
-  return body, filetype
+  return body, filetype or contenttype.ft
 end
 
 M.show_headers = function()
@@ -224,10 +192,8 @@ M.show_stats = function()
   local stats = get_current_response().stats
   local diagram
 
-  if stats then
-    stats = vim.json.decode(stats)
-
-    local diagram_lines = AsciiUtils.get_waterfall_timings(stats)
+  if stats.timings then
+    local diagram_lines = AsciiUtils.get_waterfall_timings(stats.timings)
     diagram = table.concat(diagram_lines, "\n")
   end
 
@@ -244,6 +210,12 @@ M.show_script_output = function()
   show(contents, "text", "script_output")
 end
 
+M.show_report = function()
+  local report, highlights = REPORT.generate_requests_report()
+  show(table.concat(report or {}, "\n"), "text", "report")
+  UI_utils.highlight_buffer(get_kulala_buffer(), 0, highlights or {}, 100)
+end
+
 M.show_next = function()
   local responses = DB.global_update().responses
   local current_pos = get_current_response_pos()
@@ -253,11 +225,42 @@ M.show_next = function()
   M.open_default_view()
 end
 
+M.jump_to_response = function()
+  local responses = DB.global_update().responses
+  local win = vim.fn.bufwinid(get_current_response().buf)
+
+  if CONFIG.get().default_view == "report" then
+    local lnum = tonumber(vim.fn.getline("."):match("^%s*%d+"))
+    if not lnum then return end
+
+    for i = #responses, 1, -1 do
+      if responses[i].line == lnum then
+        set_current_response(i)
+        break
+      end
+    end
+
+    M.show_body()
+  elseif win > 0 then
+    vim.api.nvim_set_current_win(win)
+    vim.api.nvim_win_set_cursor(win, { get_current_response().line, 0 })
+
+    win = get_kulala_window()
+    _ = vim.api.nvim_win_get_config(win).relative == "editor" and vim.api.nvim_win_close(win, true)
+  end
+end
+
 M.show_previous = function()
   local current_pos = get_current_response_pos()
   local previous = current_pos <= 1 and current_pos or current_pos - 1
 
   set_current_response(previous)
+  M.open_default_view()
+end
+
+M.clear_responses_history = function()
+  DB.global_update().responses = {}
+  DB.global_update().current_response_pos = 0
   M.open_default_view()
 end
 
@@ -273,6 +276,30 @@ M.toggle_headers = function()
 
   config.default_view = default_view
   M.open_default_view()
+end
+
+M.show_help = function()
+  local keymaps = CONFIG.get().kulala_keymaps
+  local help = vim.split(
+    [[
+  Kulala Help
+  ===========
+    ]],
+    "\n"
+  )
+
+  vim.iter(keymaps):each(function(keymap, value)
+    table.insert(help, ("  - %s: `%s`"):format(keymap, value[1]))
+  end)
+
+  Float.create({
+    buf_name = "kulala_help",
+    contents = help,
+    ft = "markdown",
+    position = "cursor",
+    focusable = true,
+    close_keymaps = { "q", "<esc>", "?" },
+  })
 end
 
 M.scratchpad = function()
@@ -293,24 +320,27 @@ M.open = function()
 end
 
 M.open_all = function(_, line_nr)
+  if not is_initialized() then return Logger.error("Kulala setup is not initialized. Check the config.") end
+
   line_nr = line_nr or 0
+  local db = DB.global_update()
+  local status, elapsed_ms
 
   DB.set_current_buffer()
+  db.previous_response_pos = #db.responses
   INLAY.clear()
 
   CMD.run_parser(nil, line_nr, function(success, duration, icon_linenr)
     if success then
-      local elapsed_ms = pretty_ms(duration / 1e6)
-
-      INLAY.show("done", icon_linenr, elapsed_ms)
-    elseif success == nil then
-      INLAY.show("loading", icon_linenr)
-    elseif success == false then
-      INLAY.show("error", icon_linenr)
-      return
+      elapsed_ms = UI_utils.pretty_ms(duration)
+      status = "done"
+    else
+      status = success == nil and "loading" or "error"
     end
 
-    set_current_response(#DB.global_update().responses)
+    set_current_response(#db.responses)
+
+    INLAY.show(status, icon_linenr, elapsed_ms)
     M.open_default_view()
 
     return true
@@ -319,16 +349,14 @@ end
 
 M.replay = function()
   local last_request = DB.global_find_unique("replay")
-
   if not last_request then return Logger.warn("No request to replay") end
 
-  CMD.run_parser({ last_request }, nil, function(success)
-    if success == false then
-      Logger.error("Unable to replay last request")
-      return
-    end
+  local db = DB.global_update()
 
+  CMD.run_parser({ last_request }, nil, function(_)
+    set_current_response(#db.responses)
     M.open_default_view()
+
     return true
   end)
 end
@@ -366,38 +394,6 @@ M.copy = function()
   Logger.info("Copied to clipboard")
 end
 
----Prints the parsed Request table into current buffer - uses nvim_put
-local function print_http_spec(spec, curl)
-  local lines = {}
-
-  table.insert(lines, "# " .. curl)
-
-  local url = spec.method .. " " .. spec.url
-  url = spec.http_version ~= "" and url .. " " .. spec.http_version or url
-
-  table.insert(lines, url)
-
-  local headers = vim.tbl_keys(spec.headers)
-  table.sort(headers)
-
-  vim.iter(headers):each(function(header)
-    table.insert(lines, header .. ": " .. spec.headers[header])
-  end)
-
-  _ = #spec.cookie > 0 and table.insert(lines, "Cookie: " .. spec.cookie)
-
-  if #spec.body > 0 then
-    table.insert(lines, "")
-
-    vim.iter(spec.body):each(function(line)
-      line = spec.body[#spec.body] and line or line .. "&"
-      table.insert(lines, line)
-    end)
-  end
-
-  vim.api.nvim_put(lines, "l", false, false)
-end
-
 M.from_curl = function()
   local clipboard = vim.fn.getreg("+")
   local spec, curl = CURL_PARSER.parse(clipboard)
@@ -407,7 +403,7 @@ M.from_curl = function()
     return
   end
   -- put the curl command in the buffer as comment
-  print_http_spec(spec, curl)
+  REPORT.print_http_spec(spec, curl)
 end
 
 M.inspect = function()
@@ -481,5 +477,9 @@ M.inspect = function()
     end,
   })
 end
+
+M.get_kulala_buffer = get_kulala_buffer
+M.get_current_response = get_current_response
+M.get_current_response_pos = get_current_response_pos
 
 return M

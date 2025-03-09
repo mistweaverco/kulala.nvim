@@ -24,9 +24,8 @@ M.defaults = {
 
   -- default timeout for the request, set to nil to disable
   request_timeout = nil,
-  -- disable the vim.print output of the scripts
-  -- they will be still written to disk, but not printed immediately
-  disable_script_print_output = false,
+  -- continue running requests when a request failure is encountered
+  halt_on_error = true,
 
   -- certificates
   certificates = {},
@@ -65,8 +64,8 @@ M.defaults = {
     -- enable winbar
     winbar = true,
     -- Specify the panes to be displayed by default
-    -- Current available pane contains { "body", "headers", "headers_body", "script_output", "stats", "verbose" },
-    default_winbar_panes = { "body", "headers", "headers_body", "verbose" },
+    -- Current available pane contains { "body", "headers", "headers_body", "script_output", "stats", "verbose", "report", "help" },
+    default_winbar_panes = { "body", "headers", "headers_body", "verbose", "script_output", "report", "help" },
     -- enable/disable variable info text
     -- this will show the variable name and value as float
     -- possible values: false, "float"
@@ -82,11 +81,25 @@ M.defaults = {
       },
       lualine = "🐼",
       textHighlight = "WarningMsg", -- highlight group for request elapsed time
-      lineHighlight = "Normal", -- highlight group for icons line highlight
     },
+
     -- enable/disable request summary in the output window
     show_request_summary = true,
-    summaryTextHighlight = "Special",
+    -- disable notifications of script output
+    disable_script_print_output = false,
+
+    report = {
+      -- possible values: true | false | "on_error"
+      show_script_output = true,
+      -- possible values: true | false | "on_error" | "failed_only"
+      show_asserts_output = true,
+      -- possible values: true | false | "on_error"
+      show_summary = true,
+
+      headersHighlight = "Special",
+      successHighlight = "String",
+      errorHighlight = "Error",
+    },
 
     -- scratchpad default contents
     scratchpad_default_contents = {
@@ -104,7 +117,7 @@ M.defaults = {
   },
 
   -- enable/disable debug mode
-  debug = false,
+  debug = 3,
 
   -- set to true to enable default keymaps (check docs or {plugins_path}/kulala.nvim/lua/kulala/config/keymaps.lua for details)
   -- or override default keymaps as shown in the example below.
@@ -152,12 +165,10 @@ M.default_contenttype = {
 M.options = M.defaults
 
 local function set_signcolumn_icons()
-  local linehl = M.options.icons.lineHighlight
-
   vim.fn.sign_define({
-    { name = "kulala.done", text = M.options.icons.inlay.done, linehl = linehl },
-    { name = "kulala.error", text = M.options.icons.inlay.error, linehl = linehl },
-    { name = "kulala.loading", text = M.options.icons.inlay.loading, linehl = linehl },
+    { name = "kulala.done", text = M.options.icons.inlay.done },
+    { name = "kulala.error", text = M.options.icons.inlay.error },
+    { name = "kulala.loading", text = M.options.icons.inlay.loading },
     { name = "kulala.space", text = " " },
   })
 end
@@ -172,6 +183,8 @@ M.setup = function(config)
 
   set_signcolumn_icons()
   M.options.global_keymaps, M.options.ft_keymaps = keymaps.setup_global_keymaps()
+
+  M.options.initialized = true
 
   return M.options
 end

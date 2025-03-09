@@ -5,7 +5,7 @@ local GLOBALS = require("kulala.globals")
 local kulala = require("kulala")
 
 local kulala_name = GLOBALS.UI_ID
-local kulala_config = CONFIG.options
+local kulala_config
 
 local h = require("test_helper")
 
@@ -52,8 +52,11 @@ describe("requests", function()
         end)
       end
 
-      kulala_config.default_view = "body"
-      kulala_config.display_mode = "split"
+      kulala_config = CONFIG.setup({
+        default_view = "body",
+        display_mode = "split",
+        debug = true,
+      })
     end)
 
     after_each(function()
@@ -225,6 +228,63 @@ describe("requests", function()
       assert.has_string(result, expected)
     end)
 
+    it("skips request conditionally", function()
+      kulala_config.halt_on_error = false
+      curl.stub({ ["*"] = { body = '{ "foo": "bar" }' } })
+
+      h.create_buf(
+        ([[
+          < {%
+            if (!request.variables.get("Token")) {
+               request.skip();
+            }
+          %}
+          GET http://localhost:3001/request_1
+
+          ###
+
+          GET http://localhost:3001/request_2
+      ]]):to_table(true),
+        "test.http"
+      )
+
+      kulala.run_all()
+      wait_for_requests(1)
+
+      expected = DB.data.current_request.url
+
+      assert.is_same(1, curl.requests_no)
+      assert.is_same("http://localhost:3001/request_2", expected)
+    end)
+
+    it("replays request conditionally", function()
+      curl.stub({
+        ["http://localhost:3001/request_1"] = { headers = "HTTP/2 500" },
+        ["http://localhost:3001/request_2"] = { headers = "HTTP/2 200" },
+      })
+
+      h.create_buf(
+        ([[
+          < {%
+            request.variables.set("URL", "request_1");
+          %}
+          GET http://localhost:3001/{{URL}}
+
+          > {%
+            if (response.responseCode === 500) {
+              request.variables.set("URL", "request_2");
+              request.replay();
+            }
+          %}
+      ]]):to_table(true),
+        "test.http"
+      )
+
+      kulala.run()
+      wait_for_requests(2)
+      assert.is_same(2, curl.requests_no)
+    end)
+
     it("shows chunks as they arrive", function()
       local lines = h.to_table(
         [[
@@ -392,6 +452,102 @@ describe("requests", function()
 
       assert.has_string(result, "#After 1")
       assert.is_not.has_string(result, "#After next")
+    end)
+
+    describe("it halts on errors", function()
+      before_each(function()
+        DB.global_data.responses = {}
+        kulala_config.halt_on_error = true
+        kulala_config.debug = true
+
+        curl.reset()
+        curl.stub({
+          ["https://request_2"] = {
+            body = h.load_fixture("fixtures/request_1_body.txt"),
+          },
+        })
+
+        h.create_buf(
+          ([[
+          POST https://request_2
+          ###
+          POST https://request_1
+          ###
+          POST https://request_2
+
+      ]]):to_table(true),
+          "test.http"
+        )
+      end)
+
+      it("it halts on command error", function()
+        curl.stub({
+          ["https://request_1"] = {
+            code = 124,
+          },
+        })
+
+        kulala.run_all()
+        wait_for_requests(2)
+
+        result = h.get_buf_lines(ui_buf):to_string()
+        assert.has_string(result, "Request: 2/2")
+        assert.has_string(result, "Code: 124")
+      end)
+
+      it("it halts on response error", function()
+        kulala_config.halt_on_error = true
+
+        curl.stub({
+          ["https://request_1"] = {
+            stats = '{ "response_code": 500 }',
+          },
+        })
+
+        kulala.run_all()
+        wait_for_requests(2)
+
+        result = h.get_buf_lines(ui_buf):to_string()
+        assert.has_string(result, "Request: 2/2")
+        assert.has_string(result, "Status: 500")
+      end)
+
+      it("it halts on assert error", function()
+        kulala_config.halt_on_error = true
+
+        curl.stub({
+          ["https://request_1"] = {
+            boby = '{ "data": { "foo": "baz" } }',
+          },
+        })
+
+        h.delete_all_bufs()
+        h.create_buf(
+          ([[
+          POST https://request_2
+          ###
+          POST https://request_1
+
+          > {%
+
+            assert.jsonHas("data.foo", "bar", "Check json");
+
+          %}
+
+          ###
+          POST https://request_2
+
+      ]]):to_table(true),
+          "test.http"
+        )
+
+        kulala.run_all()
+        wait_for_requests(2)
+
+        result = h.get_buf_lines(ui_buf):to_string()
+        assert.has_string(result, "Request: 2/2")
+        assert.has_string(result, "Assert: failed")
+      end)
     end)
   end)
 end)

@@ -2,6 +2,10 @@
 
 These helper functions are available in the response object in scripts.
 
+## response.responseCode
+
+THe HTTP response code.
+
 ## response.body
 
 The response body, as a string, or json object if the response is json.
@@ -22,4 +26,3 @@ Each header object has the following methods:
 ```javascript
 client.log(response.headers.valueOf("Content-Type"));
 ```
-
