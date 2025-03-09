@@ -202,6 +202,19 @@ M.default_kulala_keymaps = {
       require("kulala.ui").clear_responses_history()
     end,
   },
+  ["Send WS message"] = {
+    "<S-CR>",
+    function()
+      require("kulala.cmd.websocket").send()
+    end,
+    mode = { "n", "v" },
+  },
+  ["Close WS connection"] = {
+    "<C-c>",
+    function()
+      require("kulala.cmd.websocket").close()
+    end,
+  },
   ["Show help"] = {
     "?",
     function()
@@ -261,7 +274,7 @@ local function create_ft_autocommand(ft, maps)
   })
 end
 
-M.setup_kulala_keymaps = function(buf)
+M.get_kulala_keymaps = function()
   local config = require("kulala.config")
   local config_kulala_keymaps = config.options.kulala_keymaps
 
@@ -271,14 +284,20 @@ M.setup_kulala_keymaps = function(buf)
       and vim.tbl_extend("force", M.default_kulala_keymaps, config_kulala_keymaps)
     or M.default_kulala_keymaps
 
-  vim.iter(config_kulala_keymaps or {}):each(function(name, map)
+  return config_kulala_keymaps
+end
+
+M.setup_kulala_keymaps = function(buf)
+  local keymaps = M.get_kulala_keymaps() or {}
+
+  vim.iter(keymaps):each(function(name, map)
     if map then
       map.desc = map.desc or name
       set_keymap(map, buf)
     end
   end)
 
-  return config_kulala_keymaps
+  return keymaps
 end
 
 M.setup_global_keymaps = function()
