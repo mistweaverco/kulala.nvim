@@ -124,7 +124,7 @@ local function open_kulala_window(buf)
       style = "minimal",
     }
   else
-    win_config = { split = config.split_direction == "vertical" and "right" or "below", win = request_win }
+    win_config = { vertical = config.split_direction == "vertical", win = request_win }
   end
 
   win = vim.api.nvim_open_win(buf, true, win_config)
