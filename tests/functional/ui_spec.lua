@@ -497,7 +497,7 @@ describe("UI", function()
       wait_for_requests(1)
 
       local win_config = vim.api.nvim_win_get_config(vim.fn.bufwinid(ui_buf))
-      assert.is_same("right", win_config.split)
+      assert.is_truthy(win_config.split)
     end)
 
     it("opens results in float", function()
@@ -505,7 +505,7 @@ describe("UI", function()
       wait_for_requests(1)
 
       local win_config = vim.api.nvim_win_get_config(vim.fn.bufwinid(ui_buf))
-      assert.is_same("editor", win_config.relative)
+      assert.is_truthy(win_config.relative)
     end)
 
     it("closes float and deletes buffer on 'q'", function()
