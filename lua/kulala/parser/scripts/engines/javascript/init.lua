@@ -26,12 +26,12 @@ local FILE_MAPPING = {
 
 local is_uptodate = function()
   local version = FS.read_file(BASE_FILE_VER) or 0
-  return GLOBALS.VERSION == version
+  return GLOBALS.VERSION == version and FS.file_exists(BASE_FILE_PRE) and FS.file_exists(BASE_FILE_POST)
 end
 
 ---@param wait boolean -- wait to complete
 M.install_dependencies = function(wait)
-  if FS.file_exists(BASE_FILE_PRE) and FS.file_exists(BASE_FILE_POST) and is_uptodate() then return true end
+  if is_uptodate() then return true end
 
   Logger.warn("Javascript base files not found or are out of date.")
   Logger.info(
