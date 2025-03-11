@@ -64,7 +64,8 @@ end
 ---Either returns the absolute path if the path is already absolute or
 ---joins the path with the current buffer directory
 M.get_file_path = function(path)
-  path = vim.fn.expand(path)
+  local ex_path = vim.fn.expand(path, true)
+  path = ex_path ~= "" and ex_path or path
 
   if M.is_absolute_path(path) then return path end
   if path:sub(1, 2) == "./" or path:sub(1, 2) == ".\\" then path = path:sub(3) end
@@ -203,6 +204,7 @@ M.get_plugin_tmp_dir = function()
   local cache = vim.fn.stdpath("cache")
   ---@cast cache string
   local dir = M.join_paths(cache, "kulala")
+
   M.ensure_dir_exists(dir)
   return dir
 end
@@ -214,8 +216,6 @@ end
 
 M.get_tmp_scripts_build_dir = function()
   local dir = M.join_paths(M.get_plugin_tmp_dir(), "scripts", "build")
-  M.ensure_dir_exists(dir)
-
   return dir
 end
 
@@ -325,6 +325,8 @@ M.read_file = function(filename, is_binary)
   if not f then return end
 
   local content = f:read("*a")
+  if not content then return end
+
   content = is_binary and content or content:gsub("\r\n", "\n")
   f:close()
 
