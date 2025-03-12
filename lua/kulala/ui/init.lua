@@ -109,8 +109,8 @@ local function open_kulala_window(buf)
   local request_win = vim.fn.win_findbuf(DB.get_current_buffer())[1] or vim.api.nvim_get_current_win()
 
   if config.display_mode == "float" then
-    local width = math.max(vim.api.nvim_win_get_width(0) - 10, 1)
-    local height = math.max(vim.api.nvim_win_get_height(0) - 10, 1)
+    local width = math.max(vim.o.columns - 10, 1)
+    local height = math.max(vim.o.lines - 10, 1)
 
     win_config = {
       title = "Kulala",
