@@ -39,6 +39,7 @@ M.scripts.javascript = require("kulala.parser.scripts.javascript")
 ---@field scripts Scripts -- The scripts to run before and after the request
 ---@field redirect_response_body_to_files ResponseBodyToFile[]
 ---@field body_temp_file string -- The path to the temporary file containing the body
+---@field processed boolean -- Indicates if request has been already processed, used by replay()
 
 ---@class GrpcCommand
 ---@field address string|nil -- host:port, can be omitted if proto|proto-set is provided
@@ -84,6 +85,7 @@ local default_request = {
   },
   show_icon_line_number = 1,
   body_temp_file = "",
+  processed = false
 }
 
 local function process_grpc_flags(request, flag, value)
@@ -505,6 +507,7 @@ function M.get_basic_request_data(requests, line_nr)
 
   if not document_request then return end
 
+  --TODO: replace with merge
   request.scripts.pre_request = document_request.scripts.pre_request
   request.scripts.post_request = document_request.scripts.post_request
   request.show_icon_line_number = document_request.show_icon_line_number
@@ -544,9 +547,11 @@ M.parse = function(requests, document_variables, line_nr)
   local request = M.get_basic_request_data(requests, line_nr)
   if not request then return end
 
-  set_variables(request, document_variables)
-  set_headers(request)
-  process_graphql(request)
+  if not request.processed then
+    set_variables(request, document_variables)
+    set_headers(request)
+    process_graphql(request)
+  end
 
   local json = vim.json.encode(request)
   FS.write_file(GLOBALS.REQUEST_FILE, json, false)
@@ -565,6 +570,7 @@ M.parse = function(requests, document_variables, line_nr)
   -- Save this to global, so .replay() can be triggered from any buffer or window
   DB.global_update().replay = vim.deepcopy(request)
   DB.global_update().replay.show_icon_line_number = nil
+  DB.global_update().replay.processed = true
 
   return request
 end

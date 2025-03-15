@@ -81,6 +81,21 @@ describe("requests", function()
         })
       end)
 
+      it("processes request only if it has not been processed yet", function()
+        h.create_buf(
+          ([[
+            POST https://httpbin.org/Time 12:00 Date 24/12
+      ]]):to_table(true),
+          "test.http"
+        )
+
+        result = parser.parse() or {}
+        assert.is_same(result.url, "https://httpbin.org/Time%2012%")
+
+        result = parser.parse({result})
+        assert.is_same(result.url, "https://httpbin.org/Time%2012%")
+      end)
+
       it("skips reequests comented out with # ", function()
         h.create_buf(
           ([[
