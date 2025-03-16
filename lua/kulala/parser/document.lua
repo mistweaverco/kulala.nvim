@@ -298,9 +298,11 @@ M.get_document = function()
     request.end_line = block.end_lnum
 
     for relative_linenr, line in ipairs(block.lines) do
-      -- skip comments, silently skip URLs that are commented out
-      if line:match("^#%S") then
-        if parse_url(line:sub(2)) then skip_block = true end
+      if line:match("^# @") then
+        parse_metadata(request, line)
+      -- skip comments and silently skip URLs that are commented out
+      elseif line:match("^%s*#") or line:match("^%s*//") then
+        if parse_url(line:match("^[^#/]+") or "") then skip_block = true end
       -- end of inline scripting
       elseif is_request_line and line:match("^%%}$") then
         is_prerequest_handler_script_inline = false
@@ -313,8 +315,6 @@ M.get_document = function()
       -- inline scripting active: add the line to the prerequest handler scripts
       elseif is_prerequest_handler_script_inline then
         table.insert(request.scripts.pre_request.inline, line)
-      elseif line:sub(1, 1) == "#" then
-        parse_metadata(request, line)
       -- we're still in(/before) the request line and we have a pre-request inline handler script
       elseif is_request_line and line:match("^< %{%%$") then
         is_prerequest_handler_script_inline = true

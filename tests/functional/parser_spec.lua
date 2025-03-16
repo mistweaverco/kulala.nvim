@@ -96,7 +96,7 @@ describe("requests", function()
         assert.is_same(result.url, "https://httpbin.org/Time%2012%")
       end)
 
-      it("skips reequests comented out with # ", function()
+      it("skips requests commented out with # ", function()
         h.create_buf(
           ([[
             # @name SIMPLE REQUEST
@@ -109,6 +109,42 @@ describe("requests", function()
 
         result = parser.parse() or {}
         assert.is.same({}, result)
+      end)
+
+      it("skips lines commented out with # ", function()
+        h.create_buf(
+          ([[
+            # @name SIMPLE REQUEST
+            POST https://httpbingo.org/simple
+
+            {
+              # "skip": "true",
+              "test": "value"
+            }
+      ]]):to_table(true),
+          "test.http"
+        )
+
+        result = parser.parse() or {}
+        assert.is_same(result.body:gsub("\n",""), '{"test": "value"}')
+      end)
+
+      it("skips lines commented out with //", function()
+        h.create_buf(
+          ([[
+            # @name SIMPLE REQUEST
+            POST https://httpbingo.org/simple
+
+            {
+              // "skip": "true",
+              "test": "value"
+            }
+      ]]):to_table(true),
+          "test.http"
+        )
+
+        result = parser.parse() or {}
+        assert.is_same(result.body:gsub("\n", ""), '{"test": "value"}')
       end)
 
       it("processes headers", function()
