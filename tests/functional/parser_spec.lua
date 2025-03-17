@@ -84,16 +84,18 @@ describe("requests", function()
       it("processes request only if it has not been processed yet", function()
         h.create_buf(
           ([[
-            POST https://httpbin.org/Time 12:00 Date 24/12
+            GET https://typicode.com/todos?date=2020-01-01 12:34:56
       ]]):to_table(true),
           "test.http"
         )
 
         result = parser.parse() or {}
-        assert.is_same(result.url, "https://httpbin.org/Time%2012%")
+        assert.is_same("https://typicode.com/todos?date=2020-01-01%2012%3A34%3A56", result.url)
 
-        result = parser.parse({result})
-        assert.is_same(result.url, "https://httpbin.org/Time%2012%")
+        result.processed = true
+
+        result = parser.parse({ result })
+        assert.is_same("https://typicode.com/todos?date=2020-01-01%2012%3A34%3A56", result.url)
       end)
 
       it("skips requests commented out with # ", function()
@@ -126,7 +128,7 @@ describe("requests", function()
         )
 
         result = parser.parse() or {}
-        assert.is_same(result.body:gsub("\n",""), '{"test": "value"}')
+        assert.is_same(result.body:gsub("\n", ""), '{"test": "value"}')
       end)
 
       it("skips lines commented out with //", function()

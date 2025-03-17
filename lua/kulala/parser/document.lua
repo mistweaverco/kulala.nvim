@@ -5,6 +5,30 @@ local PARSER_UTILS = require("kulala.parser.utils")
 
 local M = {}
 
+---@class DocumentRequest
+---@field metadata table<{name: string, value: string}>
+---@field variables DocumentVariables
+---@field method string
+---@field url string
+---@field http_version string
+---@field headers table<string, string>
+---@field headers_raw table<string, string>
+---@field cookie string
+---@field body string
+---@field body_display string
+---@field start_line number
+---@field end_line number
+---@field show_icon_line_number number
+---@field redirect_response_body_to_files ResponseBodyToFile[]
+---@field scripts Scripts
+---@field processed boolean -- Whether the request has been processed, used by replay()
+
+---@alias DocumentVariables table<string, string|number|boolean>
+
+---@class ResponseBodyToFile
+---@field file string -- The file path to write the response body to
+---@field overwrite boolean -- Whether to overwrite the file if it already exists
+
 ---@class Scripts
 ---@field pre_request ScriptData
 ---@field post_request ScriptData
@@ -13,41 +37,21 @@ local M = {}
 ---@field inline string[]
 ---@field files string[]
 
----@class DocumentRequest
----@field headers table<string, string>
----@field headers_raw table<string, string>
----@field cookie string
----@field metadata table<{name: string, value: string}>
----@field body string
----@field body_display string
----@field start_line number
----@field end_line number
----@field show_icon_line_number number
----@field variables DocumentVariables
----@field redirect_response_body_to_files ResponseBodyToFile[]
----@field scripts Scripts
----@field url string
----@field method string
----@field http_version string
-
----@alias DocumentVariables table<string, string|number|boolean>
-
----@class ResponseBodyToFile
----@field file string -- The file path to write the response body to
----@field overwrite boolean -- Whether to overwrite the file if it already exists
-
 ---@type DocumentRequest
 local default_document_request = {
+  metadata = {},
+  variables = {},
+  method = "",
+  url = "",
+  http_version = "",
   headers = {},
   headers_raw = {},
   cookie = "",
-  metadata = {},
   body = "",
   body_display = "",
   start_line = 0, -- 1-based
   end_line = 0, -- 1-based
   show_icon_line_number = 1,
-  variables = {},
   redirect_response_body_to_files = {},
   scripts = {
     pre_request = {
@@ -59,9 +63,7 @@ local default_document_request = {
       files = {},
     },
   },
-  url = "",
-  http_version = "",
-  method = "",
+  processed = false,
 }
 
 local function split_content_by_blocks(lines, line_offset)
@@ -236,6 +238,8 @@ local function parse_url(line)
   if not method then
     method, url = line:match("^([A-Z]+)%s+(.+)$")
   end
+
+  method = method or "GET"
 
   return method, url, http_version
 end
