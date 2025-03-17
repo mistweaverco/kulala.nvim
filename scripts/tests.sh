@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+export TERM=xterm-color
+
 if ! command -v nvim &> /dev/null; then
   echo "nvim is not installed"
   exit 1
@@ -31,7 +33,7 @@ run() {
   if [[ -n $1 ]]; then
     nvim -l tests/minit.lua tests --filter "$1"
   else
-    nvim -l tests/minit.lua tests
+    nvim -l tests/minit.lua tests -o utfTerminal -Xoutput --color
   fi
 }
 

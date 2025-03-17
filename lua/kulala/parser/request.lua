@@ -250,7 +250,8 @@ local function set_headers(request)
 end
 
 local function process_graphql(request)
-  local is_graphql = PARSER_UTILS.contains_meta_tag(request, "graphql")
+  local is_graphql = request.method == "GRAPHQL"
+    or PARSER_UTILS.contains_meta_tag(request, "graphql")
     or PARSER_UTILS.contains_header(request.headers, "x-request-type", "graphql")
 
   if request.body and #request.body > 0 and is_graphql then
