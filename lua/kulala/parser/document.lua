@@ -6,21 +6,22 @@ local PARSER_UTILS = require("kulala.parser.utils")
 local M = {}
 
 ---@class DocumentRequest
----@field metadata table<{name: string, value: string}>
----@field variables DocumentVariables
----@field method string
----@field url string
----@field http_version string
 ---@field headers table<string, string>
 ---@field headers_raw table<string, string>
 ---@field cookie string
+---@field metadata table<{name: string, value: string}>
 ---@field body string
 ---@field body_display string
 ---@field start_line number
 ---@field end_line number
 ---@field show_icon_line_number number
+---@field variables DocumentVariables
 ---@field redirect_response_body_to_files ResponseBodyToFile[]
 ---@field scripts Scripts
+---@field url string
+---@field method string
+---@field http_version string
+---@field name string|nil
 ---@field processed boolean -- Whether the request has been processed, used by replay()
 
 ---@alias DocumentVariables table<string, string|number|boolean>
@@ -28,14 +29,6 @@ local M = {}
 ---@class ResponseBodyToFile
 ---@field file string -- The file path to write the response body to
 ---@field overwrite boolean -- Whether to overwrite the file if it already exists
-
----@class Scripts
----@field pre_request ScriptData
----@field post_request ScriptData
-
----@class ScriptData
----@field inline string[]
----@field files string[]
 
 ---@type DocumentRequest
 local default_document_request = {
@@ -64,10 +57,11 @@ local default_document_request = {
     },
   },
   processed = false,
+  name = nil,
 }
 
 local function split_content_by_blocks(lines, line_offset)
-  local new_block = { lines = {}, start_lnum = math.max(1, line_offset), end_lnum = 1 }
+  local new_block = { lines = {}, name = nil, start_lnum = math.max(1, line_offset), end_lnum = 1 }
   local delimiter = "###"
   local blocks = {}
 
@@ -87,6 +81,7 @@ local function split_content_by_blocks(lines, line_offset)
 
       block = vim.deepcopy(new_block)
       block.start_lnum = line_offset + lnum + 1
+      block.name = line:match("^" .. delimiter .. "%s*(.+)$")
     else
       table.insert(block.lines, line)
     end
@@ -246,7 +241,51 @@ end
 
 local function parse_request_urL_method(request, line, relative_linenr)
   request.method, request.url, request.http_version = parse_url(line)
+  request.name = request.name or request.method .. " " .. (request.url or "")
   request.show_icon_line_number = request.start_line + relative_linenr
+end
+
+local function run_file(path, variables, requests)
+  local file = FS.read_file(path)
+  if not file then return Logger.warn("The file '" .. path .. "' was not found. Skipping ...") end
+
+  local r_variables, r_requests = M.get_document(vim.split(file, "\n"))
+
+  vim.list_extend(requests, r_requests)
+  vim.tbl_extend("keep", variables, r_variables)
+end
+
+local function run_request(name, variables, requests, imported_requests, variables_to_replace)
+  local request = vim.iter(imported_requests):find(function(request)
+    return request.name == name
+  end)
+
+  table.insert(requests, request)
+
+  vim.iter(vim.split(variables_to_replace or "", ",%s*")):each(function(variable)
+    parse_variables(variables, variable)
+  end)
+end
+
+local function parse_run_command(variables, requests, imported_requests, line)
+  local variables_to_replace = line:match("^run .+ %((.+)%)%s*$")
+  if variables_to_replace then line = line:gsub("%s+(" .. variables_to_replace .. ")%s*", "") end
+
+  local path = line:gsub("^run ", "")
+  if path:match("^#") then run_request(path:sub(2), variables, requests, imported_requests, variables_to_replace) end
+  if path:match("%.http$") then run_file(path, variables, requests) end
+end
+
+local function parse_import_command(variables, imported_requests, line)
+  local path = line:gsub("^import ", "")
+  if not path:match("%.http$") then return end
+
+  local file = FS.read_file(path)
+  if not file then return Logger.warn("The file '" .. path .. "' was not found. Skipping ...") end
+
+  local r_variables, r_requests = M.get_document(vim.split(file, "\n"))
+  vim.list_extend(imported_requests, r_requests)
+  vim.tbl_extend("keep", variables, r_variables)
 end
 
 -- expand path for included files, so can be used in request replay(), when cwd has changed
@@ -265,8 +304,9 @@ M.expand_included_filepath = function(line)
 end
 
 ---Parses the DB.current_buffer document and returns a list of DocumentRequests or nil if no valid requests found
+---@param lines string[]|nil
 ---@return DocumentVariables|nil, DocumentRequest[]|nil
-M.get_document = function()
+M.get_document = function(lines)
   local buf = DB.get_current_buffer()
 
   local content_lines, line_offset = get_visual_selection() -- first: try to get the visual selection
@@ -280,13 +320,14 @@ M.get_document = function()
 
   content_lines = FS.is_non_http_file() and PARSER_UTILS.strip_invalid_chars(content_lines or {}) or content_lines
 
-  content_lines = content_lines or vim.api.nvim_buf_get_lines(buf, 0, -1, false) -- finally: get the whole buffer if the three methods above failed
+  content_lines = lines or content_lines or vim.api.nvim_buf_get_lines(buf, 0, -1, false) -- finally: get the whole buffer if the three methods above failed
   line_offset = line_offset or 0
 
   if not content_lines then return end
 
   local variables = {}
   local requests = {}
+  local imported_requests = {}
   local blocks = split_content_by_blocks(content_lines, line_offset)
 
   for _, block in ipairs(blocks) do
@@ -300,6 +341,7 @@ M.get_document = function()
 
     request.start_line = block.start_lnum
     request.end_line = block.end_lnum
+    request.name = block.name
 
     for relative_linenr, line in ipairs(block.lines) do
       if line:match("^# @") then
@@ -307,8 +349,17 @@ M.get_document = function()
       -- skip comments and silently skip URLs that are commented out
       elseif line:match("^%s*#") or line:match("^%s*//") then
         local _, url = parse_url(line:match("^%s*[#/]+%s*(.+)") or "")
-        if url then skip_block = true end
+        if url then
+          is_request_line = false
+          skip_block = true
+        end
       -- end of inline scripting
+      elseif is_request_line and line:match("^import ") then
+        parse_import_command(variables, imported_requests, line)
+        skip_block = true
+      elseif is_request_line and line:match("^run ") then
+        parse_run_command(variables, requests, imported_requests, line)
+        skip_block = true
       elseif is_request_line and line:match("^%%}$") then
         is_prerequest_handler_script_inline = false
       -- end of inline scripting
