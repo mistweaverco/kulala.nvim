@@ -49,6 +49,7 @@ const sidebars: SidebarsConfig = {
         "usage/using-environment-variables",
         "usage/using-variables",
         "usage/testing-and-reporting",
+        "usage/import-and-run-http",
         'usage/http-file-spec',
       ],
     },

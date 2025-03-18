@@ -2,33 +2,51 @@ local DB = require("kulala.db")
 local FS = require("kulala.utils.fs")
 local Logger = require("kulala.logger")
 local PARSER_UTILS = require("kulala.parser.utils")
+local utils = require("kulala.utils.table")
 
 local M = {}
-
 ---@class DocumentRequest
+---@field metadata table<{name: string, value: string}>
+---@field variables DocumentVariables
+---
+---@field method string
+---@field url string
+---@field request_target string|nil
+---@field http_version string
+---
 ---@field headers table<string, string>
 ---@field headers_raw table<string, string>
 ---@field cookie string
----@field metadata table<{name: string, value: string}>
+---
 ---@field body string
 ---@field body_display string
+---
 ---@field start_line number
 ---@field end_line number
 ---@field show_icon_line_number number
----@field variables DocumentVariables
+---
 ---@field redirect_response_body_to_files ResponseBodyToFile[]
+---
 ---@field scripts Scripts
----@field url string
----@field method string
----@field http_version string
----@field name string|nil
+---
+---@field name string|nil -- The name of the request, used for run()
+---@field file string|nil -- The file the request was imported from, used for run()
+---
 ---@field processed boolean -- Whether the request has been processed, used by replay()
-
+---
 ---@alias DocumentVariables table<string, string|number|boolean>
-
+---
 ---@class ResponseBodyToFile
 ---@field file string -- The file path to write the response body to
 ---@field overwrite boolean -- Whether to overwrite the file if it already exists
+---
+---@class Scripts
+---@field pre_request ScriptData
+---@field post_request ScriptData
+---
+---@class ScriptData
+---@field inline string[]
+---@field files string[]
 
 ---@type DocumentRequest
 local default_document_request = {
@@ -56,8 +74,9 @@ local default_document_request = {
       files = {},
     },
   },
-  processed = false,
   name = nil,
+  file = nil,
+  processed = false,
 }
 
 local function split_content_by_blocks(lines, line_offset)
@@ -241,51 +260,74 @@ end
 
 local function parse_request_urL_method(request, line, relative_linenr)
   request.method, request.url, request.http_version = parse_url(line)
-  request.name = request.name or request.method .. " " .. (request.url or "")
+  request.name = request.name or (request.method or "") .. " " .. (request.url or "")
   request.show_icon_line_number = request.start_line + relative_linenr
 end
 
-local function run_file(path, variables, requests)
+local function import_requests(path, variables)
   local file = FS.read_file(path)
   if not file then return Logger.warn("The file '" .. path .. "' was not found. Skipping ...") end
 
-  local r_variables, r_requests = M.get_document(vim.split(file, "\n"))
+  local r_variables, requests = M.get_document(vim.split(file, "\n"))
+  utils.merge(variables, r_variables)
 
-  vim.list_extend(requests, r_requests)
-  vim.tbl_extend("keep", variables, r_variables)
+  vim.iter(requests):each(function(request)
+    request.file = vim.fn.fnamemodify(path, ":t")
+  end)
+
+  return requests
 end
 
-local function run_request(name, variables, requests, imported_requests, variables_to_replace)
+local function update_imported_request(requests, request, lnum, name)
+  local offset = 10000 * #requests
+
+  request.name = name or request.name
+  request.start_line = request.start_line + offset -- to make sure it does not interfere with requests in the calling file
+  request.end_line = request.end_line + offset
+  request.show_icon_line_number = lnum
+end
+
+local function run_file(path, variables, requests, lnum)
+  local r_requests = import_requests(path, variables)
+
+  vim.iter(r_requests):each(function(request)
+    update_imported_request(requests, request, lnum, "RUN")
+  end)
+
+  vim.list_extend(requests, r_requests)
+end
+
+local function run_request(name, variables, requests, imported_requests, variables_to_replace, lnum)
   local request = vim.iter(imported_requests):find(function(request)
     return request.name == name
   end)
 
+  if not request then return end
+
+  update_imported_request(requests, request, lnum)
   table.insert(requests, request)
 
+  -- replace variables in the calling request
   vim.iter(vim.split(variables_to_replace or "", ",%s*")):each(function(variable)
     parse_variables(variables, variable)
   end)
-end
-
-local function parse_run_command(variables, requests, imported_requests, line)
-  local variables_to_replace = line:match("^run .+ %((.+)%)%s*$")
-  if variables_to_replace then line = line:gsub("%s+(" .. variables_to_replace .. ")%s*", "") end
-
-  local path = line:gsub("^run ", "")
-  if path:match("^#") then run_request(path:sub(2), variables, requests, imported_requests, variables_to_replace) end
-  if path:match("%.http$") then run_file(path, variables, requests) end
 end
 
 local function parse_import_command(variables, imported_requests, line)
   local path = line:gsub("^import ", "")
   if not path:match("%.http$") then return end
 
-  local file = FS.read_file(path)
-  if not file then return Logger.warn("The file '" .. path .. "' was not found. Skipping ...") end
+  vim.list_extend(imported_requests, import_requests(path, variables))
+end
 
-  local r_variables, r_requests = M.get_document(vim.split(file, "\n"))
-  vim.list_extend(imported_requests, r_requests)
-  vim.tbl_extend("keep", variables, r_variables)
+local function parse_run_command(variables, requests, imported_requests, line, lnum)
+  local variables_to_replace = line:match("^run .+ %((.+)%)%s*$")
+  if variables_to_replace then line = line:gsub("%s*%(" .. variables_to_replace .. "%)%s*", "") end
+
+  local path = line:gsub("^run ", "")
+
+  _ = path:match("^#") and run_request(path:sub(2), variables, requests, imported_requests, variables_to_replace, lnum)
+  _ = path:match("%.http$") and run_file(path, variables, requests, lnum)
 end
 
 -- expand path for included files, so can be used in request replay(), when cwd has changed
@@ -305,7 +347,7 @@ end
 
 ---Parses the DB.current_buffer document and returns a list of DocumentRequests or nil if no valid requests found
 ---@param lines string[]|nil
----@return DocumentVariables|nil, DocumentRequest[]|nil
+---@return DocumentVariables|nil, DocumentRequest[]|nil, DocumentRequest[]|nil
 M.get_document = function(lines)
   local buf = DB.get_current_buffer()
 
@@ -358,7 +400,7 @@ M.get_document = function(lines)
         parse_import_command(variables, imported_requests, line)
         skip_block = true
       elseif is_request_line and line:match("^run ") then
-        parse_run_command(variables, requests, imported_requests, line)
+        parse_run_command(variables, requests, imported_requests, line, request.start_line + relative_linenr)
         skip_block = true
       elseif is_request_line and line:match("^%%}$") then
         is_prerequest_handler_script_inline = false
@@ -416,19 +458,34 @@ M.get_document = function(lines)
     end
   end
 
-  return variables, requests
+  return variables, requests, imported_requests
 end
 
 ---Returns a DocumentRequest within specified line number from a list of DocumentRequests
 ---or returns the first DocumentRequest in the list if no line number is provided
 ---@param requests DocumentRequest[]
 ---@param linenr? number|nil
----@return DocumentRequest|nil
+---@return DocumentRequest[]|nil
 M.get_request_at = function(requests, linenr)
-  if not linenr then return requests[1] end
+  if not linenr then return { requests[1] } end
+
+  local line = vim.fn.getline(linenr)
+  local request_name = line:match("^run #(.+)$")
+  request_name = request_name and request_name:gsub("%s*%(.+%)%s*$", "")
+
+  if not request_name and line:match("^run .+%.http$") then request_name = "RUN" end
+
+  if request_name then
+    return vim
+      .iter(requests)
+      :filter(function(request)
+        return request.name == request_name
+      end)
+      :totable()
+  end
 
   for _, request in ipairs(requests) do
-    if linenr >= request.start_line and linenr <= request.end_line then return request end
+    if linenr >= request.start_line and linenr <= request.end_line then return { request } end
   end
 end
 

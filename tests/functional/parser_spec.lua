@@ -423,6 +423,7 @@ describe("requests", function()
 
           assert.is_same("new_bar", result["foobar"])
           assert.is_same("new_username", result["ENV_USER"])
+          assert.is_same("project_name", result["ENV_PROJECT"])
         end)
       end)
     end)
