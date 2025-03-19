@@ -208,6 +208,12 @@ M.default_kulala_keymaps = {
       require("kulala.ui").show_help()
     end,
   },
+  ["Show news"] = {
+    "g?",
+    function()
+      require("kulala.ui").show_news()
+    end,
+  },
   ["Close"] = {
     "q",
     function()

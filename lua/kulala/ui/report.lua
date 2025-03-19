@@ -9,6 +9,16 @@ local UI = setmetatable({}, {
   end,
 })
 
+local function hide_response_summary()
+  local buf = UI.get_kulala_buffer()
+
+  local config = CONFIG.get().ui
+  if not config.show_request_summary then return end
+
+  vim.fn.deletebufline(buf, 1, 4)
+  UI_utils.clear_highlights(buf)
+end
+
 local function set_response_summary(buf)
   local config = CONFIG.get().ui
   if not config.show_request_summary then return end
@@ -243,6 +253,7 @@ local function print_http_spec(spec, curl)
 end
 
 return {
+  hide_response_summary = hide_response_summary,
   set_response_summary = set_response_summary,
   generate_requests_report = generate_requests_report,
   print_http_spec = print_http_spec,
