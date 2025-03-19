@@ -10,8 +10,10 @@ M.defaults = {
   -- additional cURL options
   -- see: https://curl.se/docs/manpage.html
   additional_curl_options = {},
-  -- gRPCurl path, get from https://github.com/fullstorydev/grpcurl
+  -- gRPCurl path, get from https://github.com/fullstorydev/grpcurl.git
   grpcurl_path = "grpcurl",
+  -- websocat path, get from https://github.com/vi/websocat.git
+  websocat_path = "websocat",
 
   -- set scope for environment and request variables
   -- possible values: b = buffer, g = global

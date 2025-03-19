@@ -42,6 +42,7 @@ const sidebars: SidebarsConfig = {
         "usage/redirect-the-response",
         "usage/graphql",
         "usage/grpc",
+        "usage/websockets",
         "usage/streaming-and-transfer-chunked",
         "usage/magic-variables",
         "usage/sending-form-data",

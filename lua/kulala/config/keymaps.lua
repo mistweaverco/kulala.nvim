@@ -195,6 +195,8 @@ M.default_kulala_keymaps = {
     function()
       require("kulala.ui").jump_to_response()
     end,
+    mode = { "n", "v" },
+    desc = "also: Send WS message for WS connections",
   },
   ["Clear responses history"] = {
     "X",
