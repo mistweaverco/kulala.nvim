@@ -1,0 +1,9 @@
+### Set cookies
+
+# @name setCookies
+GET https://httpbin.org/cookies/set?sample=cookie123&test=cookie456 HTTP/1.1
+
+### Call protected resource with cookies
+
+GET https://httpbin.org/cookies HTTP/1.1
+Cookie: sample={{setCookies.response.cookies.sample.value}}; test={{setCookies.response.cookies.test.value}}

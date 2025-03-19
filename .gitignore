@@ -14,5 +14,6 @@ http-client.env.json
 /http-examples
 *.http
 !/tests/functional/requests/*.http
+!http-runable-demo/**
 
 todo.md
