@@ -404,10 +404,7 @@ M.get_document = function(lines)
       -- skip comments and silently skip URLs that are commented out
       elseif line:match("^%s*#") or line:match("^%s*//") then
         local _, url = parse_url(request, line:match("^%s*[#/]+%s*(.+)") or "")
-        if url then
-          is_request_line = false
-          skip_block = true
-        end
+        if url then skip_block = true end
       -- end of inline scripting
       elseif is_request_line and line:match("^import ") then
         parse_import_command(variables, imported_requests, line)
