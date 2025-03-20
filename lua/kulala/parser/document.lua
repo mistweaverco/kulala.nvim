@@ -403,7 +403,7 @@ M.get_document = function(lines)
         parse_metadata(request, line)
       -- skip comments and silently skip URLs that are commented out
       elseif line:match("^%s*#") or line:match("^%s*//") then
-        local _, url = parse_url(line:match("^%s*[#/]+%s*(.+)") or "")
+        local _, url = parse_url(request, line:match("^%s*[#/]+%s*(.+)") or "")
         if url then
           is_request_line = false
           skip_block = true
