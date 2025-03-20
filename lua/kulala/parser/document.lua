@@ -54,6 +54,7 @@ local default_document_request = {
   variables = {},
   method = "",
   url = "",
+  request_target = nil,
   http_version = "",
   headers = {},
   headers_raw = {},
@@ -244,22 +245,34 @@ local function parse_body(request, line)
   request.body_display = request.body_display .. line .. line_ending
 end
 
--- Request line (e.g., GET http://example.com HTTP/1.1)
--- Split the line into method, URL and HTTP version (optional)
-local function parse_url(line)
-  local method, url, http_version = line:match("^([A-Z]+)%s+(.+)%s+HTTP/(%d[.%d]*)%s*$")
+local function parse_url(request, line)
+  local method, http_version
 
-  if not method then
-    method, url = line:match("^([A-Z]+)%s+(.+)$")
-  end
+  method = line:match("^([A-Z]+).+")
+
+  if method then line = line:gsub("^" .. method .. "%s+", "") end
+  if method == "GRPC" then return method, line end
 
   method = method or "GET"
 
-  return method, url, http_version
+  http_version = line:match("HTTP/(%d[.%d]*)")
+  if http_version then line = line:gsub("%s*HTTP/" .. http_version .. "%s*", "") end
+
+  if line == "*" then
+    request.request_target = "*"
+    line = ""
+  end
+
+  return method, line, http_version
+end
+
+local function parse_host(request, line)
+  line = line:gsub("^Host:%s*", "")
+  request.url = line .. request.url
 end
 
 local function parse_request_urL_method(request, line, relative_linenr)
-  request.method, request.url, request.http_version = parse_url(line)
+  request.method, request.url, request.http_version = parse_url(request, line)
   request.name = request.name or (request.method or "") .. " " .. (request.url or "")
   request.show_icon_line_number = request.start_line + relative_linenr
 end
@@ -438,8 +451,12 @@ M.get_document = function(lines)
         parse_body(request, line)
       elseif not is_request_line and line:match("^%s*[?&]") and #request.headers == 0 and request.url then
         parse_query_params(request, line)
-      elseif not is_request_line and line:match("^([^:]+):%s*(.*)$") then
+      elseif line:match("^Host:") then
+        parse_host(request, line)
+        is_request_line = false
+      elseif line:match("^(.+):%s*(.*)$") and not line:match("://") and not line:match(":%d+") then
         parse_headers(request, line)
+        is_request_line = false
       elseif is_request_line then
         parse_request_urL_method(request, line, relative_linenr)
         is_request_line = false
