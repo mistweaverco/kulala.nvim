@@ -116,6 +116,8 @@ M.defaults = {
       '  "foo": "bar"',
       "}",
     },
+
+    disable_news_popup = false,
   },
 
   -- enable/disable debug mode
