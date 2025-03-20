@@ -487,6 +487,7 @@ end
 function M.get_basic_request_data(requests, line_nr)
   local request = vim.deepcopy(default_request)
   local document_request = DOCUMENT_PARSER.get_request_at(requests, line_nr)
+  document_request = document_request and document_request[1]
 
   if not document_request then return end
 
@@ -495,7 +496,7 @@ function M.get_basic_request_data(requests, line_nr)
   request.url_raw = document_request.url
   request.body_raw = document_request.body
 
-  utils.remove_keys(request, { "body", "variables", "start_line", "end_line" })
+  utils.remove_keys(request, { "name", "file", "body", "variables", "start_line", "end_line" })
 
   return request
 end

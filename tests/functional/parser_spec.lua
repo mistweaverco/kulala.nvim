@@ -427,6 +427,74 @@ describe("requests", function()
           },
         })
       end)
+
+      describe("it processes run and import directives", function()
+        local doc_parser = require("kulala.parser.document")
+
+        -- import|run filename_in_cwd|relative_path|absolute_path
+        it("run - filename", function()
+          h.create_buf(
+            ([[
+            POST https://httpbin.org/post HTTP/1.1
+            Content-Type: text/plain
+
+            ###
+            run tests/functional/requests/advanced_A.http
+          ]]):to_table(true),
+            "test.http"
+          )
+
+          result = select(2, doc_parser.get_document()) or {}
+          assert.is_same("https://httpbin.org/post", result[1].url)
+          assert.is_same("https://httpbin.org/advanced_1", result[2].url)
+          assert.is_same("https://httpbin.org/advanced_2", result[3].url)
+        end)
+
+        it("import/run - filename", function()
+          h.create_buf(
+            ([[
+            import tests/functional/requests/advanced_A.http
+
+            POST https://httpbin.org/post HTTP/1.1
+            Content-Type: text/plain
+
+            ###
+            run #Request 1
+            run #POST https://httpbin.org/advanced_2
+          ]]):to_table(true),
+            "test.http"
+          )
+
+          result = select(2, doc_parser.get_document()) or {}
+
+          assert.is_same("https://httpbin.org/post", result[1].url)
+          assert.is_same("https://httpbin.org/advanced_1", result[2].url)
+          assert.is_same("https://httpbin.org/advanced_2", result[3].url)
+        end)
+
+        it("run - replaces variables", function()
+          -- run #GET request with two vars (@host=example.com, @user=userName)
+          h.create_buf(
+            ([[
+            import tests/functional/requests/advanced_A.http
+
+            POST https://httpbin.org/post HTTP/1.1
+            Content-Type: text/plain
+
+            ###
+            run #Request 1 (@foobar=new_bar, @ENV_USER = new_username)
+            run #POST https://httpbin.org/advanced_2
+          ]]):to_table(true),
+            "test.http"
+          )
+
+          result = doc_parser.get_document() or {}
+
+          assert.is_same("new_bar", result["foobar"])
+          assert.is_same("new_username", result["ENV_USER"])
+          assert.is_same("project_name", result["ENV_PROJECT"])
+        end)
+      end)
     end)
   end)
 end)

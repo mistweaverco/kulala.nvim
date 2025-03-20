@@ -319,6 +319,7 @@ end
 ---Parses and executes DocumentRequest/s:
 ---if requests are provied then runs the first request in the list
 ---if line_nr is provided then runs the request from current buffer within the line number
+---if line_nr is 0, then runs visually selected requests
 ---or runs all requests in the document
 ---@param requests? DocumentRequest[]|nil
 ---@param line_nr? number|nil
@@ -336,10 +337,10 @@ M.run_parser = function(requests, line_nr, callback)
   if not requests then return Logger.error("No requests found in the document") end
 
   if line_nr and line_nr > 0 then
-    local request = DOCUMENT_PARSER.get_request_at(requests, line_nr)
-    if not request then return Logger.error("No request found at current line") end
+    local requests_l = DOCUMENT_PARSER.get_request_at(requests, line_nr)
+    if not requests_l then return Logger.error("No request found at current line") end
 
-    reqs_to_process = { request }
+    reqs_to_process = requests_l
   end
 
   reqs_to_process = reqs_to_process or requests
