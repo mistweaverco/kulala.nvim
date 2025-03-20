@@ -243,6 +243,8 @@ M.jump_to_response = function()
     end
 
     M.show_body()
+  elseif get_current_response().method == "WS" then
+    require("kulala.cmd.websocket").send()
   elseif win > 0 then
     vim.api.nvim_set_current_win(win)
     vim.api.nvim_win_set_cursor(win, { get_current_response().line, 0 })

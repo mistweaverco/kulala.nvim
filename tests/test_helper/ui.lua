@@ -150,6 +150,10 @@ h.get_kulala_buf = function()
   return vim.fn.bufnr(GLOBALS.UI_ID)
 end
 
+h.get_kulala_win = function()
+  return vim.fn.bufwinid(GLOBALS.UI_ID)
+end
+
 h.get_extmarks = function(buf, line_start, line_end, opts)
   opts = vim.tbl_extend("keep", opts or {}, { details = true })
   return vim.api.nvim_buf_get_extmarks(buf, -1, { line_start or 0, 0 }, { line_end or -1, -1 }, opts)
@@ -171,8 +175,8 @@ end
 
 ---@param bufnr integer
 ---@param lines string[]
-UITestHelper.set_buf_lines = function(bufnr, lines)
-  return vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, h.to_table(lines))
+UITestHelper.set_buf_lines = function(bufnr, lines, line_s, line_e)
+  return vim.api.nvim_buf_set_lines(bufnr, line_s or 0, line_e or -1, false, h.to_table(lines))
 end
 
 ---@return integer[] bufnr list
