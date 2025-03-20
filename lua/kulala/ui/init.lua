@@ -127,6 +127,7 @@ local function open_kulala_window(buf)
     win_config = { split = config.split_direction == "vertical" and "right" or "below", win = request_win }
   end
 
+  vim.tbl_extend("force", win_config, config.ui.win_opts or {})
   win = vim.api.nvim_open_win(buf, true, win_config)
 
   vim.api.nvim_set_option_value("signcolumn", "yes:1", { win = win })
@@ -139,7 +140,7 @@ local function open_kulala_window(buf)
 end
 
 local function show(contents, filetype, mode)
-  filetype = filetype and "kulala_ui." .. filetype or "kulala_ui.text"
+  filetype = filetype and filetype .. ".kulala_ui" or "text.kulala_ui"
   local buf = open_kulala_buffer(filetype)
 
   set_buffer_contents(buf, contents, filetype)
@@ -150,6 +151,7 @@ local function show(contents, filetype, mode)
 
   WINBAR.toggle_winbar_tab(buf, win, mode)
   CONFIG.options.default_view = mode
+  M.show_news_popup()
 end
 
 local function format_body()
@@ -241,6 +243,8 @@ M.jump_to_response = function()
     end
 
     M.show_body()
+  elseif get_current_response().method == "WS" then
+    require("kulala.cmd.websocket").send()
   elseif win > 0 then
     vim.api.nvim_set_current_win(win)
     vim.api.nvim_win_set_cursor(win, { get_current_response().line, 0 })
@@ -300,6 +304,36 @@ M.show_help = function()
     focusable = true,
     close_keymaps = { "q", "<esc>", "?" },
   })
+end
+
+M.show_news_popup = function()
+  if CONFIG.get().disable_news_popup then return end
+
+  local news_ver = FS.get_plugin_tmp_dir() .. "/.version.news"
+  local ver = FS.read_file(news_ver) or 0
+  if ver == GLOBALS.VERSION then return end
+
+  local lines = "Check out the latest Kulala changes with `g?`"
+  Float.create_window_footer(
+    get_kulala_buffer(),
+    get_kulala_window(),
+    lines,
+    { hl_group = "Special", buf_name = "kulala://news_popup" }
+  )
+end
+
+M.show_news = function()
+  local news = FS.get_plugin_root_dir() .. "/../../NEWS.md"
+  local contents = FS.read_file(news) or "No news found"
+
+  show(contents, "markdown", "body")
+  REPORT.hide_response_summary()
+
+  local footer = vim.fn.bufnr("kulala://news_popup")
+  _ = footer > -1 and vim.api.nvim_buf_delete(footer, { force = true })
+
+  local news_ver = FS.get_plugin_tmp_dir() .. "/.version.news"
+  FS.write_file(news_ver, GLOBALS.VERSION)
 end
 
 M.scratchpad = function()
@@ -479,6 +513,7 @@ M.inspect = function()
 end
 
 M.get_kulala_buffer = get_kulala_buffer
+M.get_kulala_window = get_kulala_window
 M.get_current_response = get_current_response
 M.get_current_response_pos = get_current_response_pos
 

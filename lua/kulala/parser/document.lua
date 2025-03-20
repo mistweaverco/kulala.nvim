@@ -5,6 +5,30 @@ local PARSER_UTILS = require("kulala.parser.utils")
 
 local M = {}
 
+---@class DocumentRequest
+---@field metadata table<{name: string, value: string}>
+---@field variables DocumentVariables
+---@field method string
+---@field url string
+---@field http_version string
+---@field headers table<string, string>
+---@field headers_raw table<string, string>
+---@field cookie string
+---@field body string
+---@field body_display string
+---@field start_line number
+---@field end_line number
+---@field show_icon_line_number number
+---@field redirect_response_body_to_files ResponseBodyToFile[]
+---@field scripts Scripts
+---@field processed boolean -- Whether the request has been processed, used by replay()
+
+---@alias DocumentVariables table<string, string|number|boolean>
+
+---@class ResponseBodyToFile
+---@field file string -- The file path to write the response body to
+---@field overwrite boolean -- Whether to overwrite the file if it already exists
+
 ---@class Scripts
 ---@field pre_request ScriptData
 ---@field post_request ScriptData
@@ -13,41 +37,21 @@ local M = {}
 ---@field inline string[]
 ---@field files string[]
 
----@class DocumentRequest
----@field headers table<string, string>
----@field headers_raw table<string, string>
----@field cookie string
----@field metadata table<{name: string, value: string}>
----@field body string
----@field body_display string
----@field start_line number
----@field end_line number
----@field show_icon_line_number number
----@field variables DocumentVariables
----@field redirect_response_body_to_files ResponseBodyToFile[]
----@field scripts Scripts
----@field url string
----@field method string
----@field http_version string
-
----@alias DocumentVariables table<string, string|number|boolean>
-
----@class ResponseBodyToFile
----@field file string -- The file path to write the response body to
----@field overwrite boolean -- Whether to overwrite the file if it already exists
-
 ---@type DocumentRequest
 local default_document_request = {
+  metadata = {},
+  variables = {},
+  method = "",
+  url = "",
+  http_version = "",
   headers = {},
   headers_raw = {},
   cookie = "",
-  metadata = {},
   body = "",
   body_display = "",
   start_line = 0, -- 1-based
   end_line = 0, -- 1-based
   show_icon_line_number = 1,
-  variables = {},
   redirect_response_body_to_files = {},
   scripts = {
     pre_request = {
@@ -59,9 +63,7 @@ local default_document_request = {
       files = {},
     },
   },
-  url = "",
-  http_version = "",
-  method = "",
+  processed = false,
 }
 
 local function split_content_by_blocks(lines, line_offset)
@@ -237,6 +239,8 @@ local function parse_url(line)
     method, url = line:match("^([A-Z]+)%s+(.+)$")
   end
 
+  method = method or "GET"
+
   return method, url, http_version
 end
 
@@ -298,9 +302,12 @@ M.get_document = function()
     request.end_line = block.end_lnum
 
     for relative_linenr, line in ipairs(block.lines) do
-      -- skip comments, silently skip URLs that are commented out
-      if line:match("^#%S") then
-        if parse_url(line:sub(2)) then skip_block = true end
+      if line:match("^# @") then
+        parse_metadata(request, line)
+      -- skip comments and silently skip URLs that are commented out
+      elseif line:match("^%s*#") or line:match("^%s*//") then
+        local _, url = parse_url(line:match("^%s*[#/]+%s*(.+)") or "")
+        if url then skip_block = true end
       -- end of inline scripting
       elseif is_request_line and line:match("^%%}$") then
         is_prerequest_handler_script_inline = false
@@ -313,8 +320,6 @@ M.get_document = function()
       -- inline scripting active: add the line to the prerequest handler scripts
       elseif is_prerequest_handler_script_inline then
         table.insert(request.scripts.pre_request.inline, line)
-      elseif line:sub(1, 1) == "#" then
-        parse_metadata(request, line)
       -- we're still in(/before) the request line and we have a pre-request inline handler script
       elseif is_request_line and line:match("^< %{%%$") then
         is_prerequest_handler_script_inline = true

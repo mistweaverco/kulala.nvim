@@ -11,6 +11,7 @@ local INT_PROCESSING = require("kulala.internal_processing")
 local Logger = require("kulala.logger")
 local REQUEST_PARSER = require("kulala.parser.request")
 local UI_utils = require("kulala.ui.utils")
+local WS = require("kulala.cmd.websocket")
 
 local M = {}
 
@@ -22,6 +23,7 @@ local process_request
 local reset_task_queue = function()
   TASK_QUEUE = {} -- Clear the task queue and stop processing
   RUNNING_TASK = false
+  return true
 end
 
 local function run_next_task()
@@ -45,8 +47,10 @@ local function run_next_task()
   end)
 end
 
-local function offload_task(fn, callback)
+local function offload_task(fn, pos, callback)
+  pos = pos or #TASK_QUEUE + 1
   table.insert(TASK_QUEUE, { fn = fn, callback = callback })
+
   if not RUNNING_TASK then run_next_task() end
 end
 
@@ -158,7 +162,7 @@ local function save_response(request_status, parsed_request)
 
   table.insert(responses, response)
 
-  return response.status
+  return response.status, response
 end
 
 local function process_response(request_status, parsed_request, callback)
@@ -167,9 +171,12 @@ local function process_response(request_status, parsed_request, callback)
   process_metadata(parsed_request)
   process_internal(parsed_request)
 
-  if process_external(parsed_request) then
-    process_request({ parsed_request }, parsed_request, {}, callback)
-    return true
+  if process_external(parsed_request) then -- replay request
+    parsed_request.processed = true
+
+    offload_task(function()
+      process_request({ parsed_request }, parsed_request, {}, callback)
+    end, 1)
   end
 
   response_status = save_response(request_status, parsed_request)
@@ -251,6 +258,16 @@ local function check_executable(cmd)
   return true
 end
 
+local function process_ws_request(request, callback)
+  local _, response = save_response({ code = 0 }, request)
+  local status = WS.connect(request, response, callback)
+
+  response.code = status and 0 or -1
+  response.status = status and true or false
+
+  return callback(status, 0, response.line) and reset_task_queue()
+end
+
 ---Executes DocumentRequest
 ---@param requests DocumentRequest[]
 ---@param request DocumentRequest
@@ -271,6 +288,10 @@ function process_request(requests, request, variables, callback)
   local errors
 
   if not check_executable(parsed_request.cmd) then return callback(false, 0, parsed_request.show_icon_line_number) end
+
+  if parsed_request.method == "WS" or parsed_request.method == "WEBSOCKET" then
+    return process_ws_request(parsed_request, callback)
+  end
 
   vim.system(parsed_request.cmd, {
     text = true,
