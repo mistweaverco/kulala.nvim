@@ -17,4 +17,10 @@ M.slice = function(tbl, first, last)
   return sliced
 end
 
+M.remove_keys = function(tbl, keys)
+  vim.iter(keys):each(function(key)
+    tbl[key] = nil
+  end)
+end
+
 return M
