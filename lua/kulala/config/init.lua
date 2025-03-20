@@ -187,7 +187,7 @@ M.setup = function(config)
   M.options = vim.tbl_deep_extend("force", M.defaults, config or {})
   set_legacy_options()
 
-  set_signcolumn_icons()
+  _ = M.options.show_icons == "signcolumn" and pcall(set_signcolumn_icons)
   M.options.global_keymaps, M.options.ft_keymaps = keymaps.setup_global_keymaps()
 
   M.options.initialized = true
