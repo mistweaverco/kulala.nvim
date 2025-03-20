@@ -10,8 +10,10 @@ M.defaults = {
   -- additional cURL options
   -- see: https://curl.se/docs/manpage.html
   additional_curl_options = {},
-  -- gRPCurl path, get from https://github.com/fullstorydev/grpcurl
+  -- gRPCurl path, get from https://github.com/fullstorydev/grpcurl.git
   grpcurl_path = "grpcurl",
+  -- websocat path, get from https://github.com/vi/websocat.git
+  websocat_path = "websocat",
 
   -- set scope for environment and request variables
   -- possible values: b = buffer, g = global
@@ -59,6 +61,8 @@ M.defaults = {
     display_mode = "split",
     -- split direction: possible values: "vertical", "horizontal"
     split_direction = "vertical",
+    -- window options to override defaults: width/height/split/vertical
+    win_opts = {},
     -- default view: "body" or "headers" or "headers_body" or "verbose" or fun(response: Response)
     default_view = "body",
     -- enable winbar
@@ -114,6 +118,8 @@ M.defaults = {
       '  "foo": "bar"',
       "}",
     },
+
+    disable_news_popup = false,
   },
 
   -- enable/disable debug mode
@@ -181,7 +187,7 @@ M.setup = function(config)
   M.options = vim.tbl_deep_extend("force", M.defaults, config or {})
   set_legacy_options()
 
-  set_signcolumn_icons()
+  _ = M.options.show_icons == "signcolumn" and pcall(set_signcolumn_icons)
   M.options.global_keymaps, M.options.ft_keymaps = keymaps.setup_global_keymaps()
 
   M.options.initialized = true

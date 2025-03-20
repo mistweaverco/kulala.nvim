@@ -94,4 +94,47 @@ M.create = function(opts)
   return win, buf
 end
 
+M.create_window_footer = function(buf_id, win_id, text, opts)
+  buf_id = buf_id or 0
+  win_id = win_id or 0
+  opts = opts or {}
+
+  local win_height = vim.api.nvim_win_get_height(win_id)
+  local win_width = vim.api.nvim_win_get_width(win_id)
+
+  local buf = vim.api.nvim_create_buf(false, true)
+  local buf_name = opts.buf_name or "kulala://footer"
+
+  _ = vim.fn.bufnr(buf_name) > -1 and vim.api.nvim_buf_delete(vim.fn.bufnr(buf_name), { force = true })
+  vim.api.nvim_buf_set_name(buf, buf_name)
+
+  text = (" "):rep(win_width - #text) .. text
+  vim.api.nvim_buf_set_lines(buf, 0, -1, true, { text })
+
+  if opts.hl_group then vim.api.nvim_buf_add_highlight(buf, -1, opts.hl_group, 0, 0, -1) end
+
+  local float_win = vim.api.nvim_open_win(buf, false, {
+    relative = "win",
+    win = win_id,
+    width = win_width,
+    height = 1,
+    row = win_height - 2,
+    col = 0,
+    style = "minimal",
+    focusable = false,
+    zindex = 100,
+    border = opts.border or "none",
+  })
+
+  vim.api.nvim_create_autocmd({ "BufLeave", "WinLeave" }, {
+    buffer = buf_id,
+    once = true,
+    callback = function()
+      _ = vim.api.nvim_win_is_valid(float_win) and vim.api.nvim_win_close(float_win, true)
+    end,
+  })
+
+  return float_win, buf
+end
+
 return M
