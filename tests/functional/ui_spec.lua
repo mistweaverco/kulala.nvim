@@ -616,7 +616,7 @@ describe("UI", function()
         GLOBALS.VERSION
       )
       result = vim.fn.getreg("+")
-      assert.has_string(result, expected)
+      assert.has_string(expected, result)
     end)
 
     it("it shows help hint and window", function()

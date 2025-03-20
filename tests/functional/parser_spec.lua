@@ -81,7 +81,24 @@ describe("requests", function()
         })
       end)
 
-      it("skips reequests comented out with # ", function()
+      it("processes request only if it has not been processed yet", function()
+        h.create_buf(
+          ([[
+            GET https://typicode.com/todos?date=2020-01-01 12:34:56
+      ]]):to_table(true),
+          "test.http"
+        )
+
+        result = parser.parse() or {}
+        assert.is_same("https://typicode.com/todos?date=2020-01-01%2012%3A34%3A56", result.url)
+
+        result.processed = true
+
+        result = parser.parse({ result })
+        assert.is_same("https://typicode.com/todos?date=2020-01-01%2012%3A34%3A56", result.url)
+      end)
+
+      it("skips requests commented out with # ", function()
         h.create_buf(
           ([[
             # @name SIMPLE REQUEST
@@ -94,6 +111,42 @@ describe("requests", function()
 
         result = parser.parse() or {}
         assert.is.same({}, result)
+      end)
+
+      it("skips lines commented out with # ", function()
+        h.create_buf(
+          ([[
+            # @name SIMPLE REQUEST
+            POST https://httpbingo.org/simple
+
+            {
+              # "skip": "true",
+              "test": "value"
+            }
+      ]]):to_table(true),
+          "test.http"
+        )
+
+        result = parser.parse() or {}
+        assert.is_same(result.body:gsub("\n", ""), '{"test": "value"}')
+      end)
+
+      it("skips lines commented out with //", function()
+        h.create_buf(
+          ([[
+            # @name SIMPLE REQUEST
+            POST https://httpbingo.org/simple
+
+            {
+              // "skip": "true",
+              "test": "value"
+            }
+      ]]):to_table(true),
+          "test.http"
+        )
+
+        result = parser.parse() or {}
+        assert.is_same(result.body:gsub("\n", ""), '{"test": "value"}')
       end)
 
       it("processes headers", function()
