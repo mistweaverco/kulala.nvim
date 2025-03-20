@@ -23,6 +23,7 @@ M.scripts.javascript = require("kulala.parser.scripts.javascript")
 ---@field method string -- The HTTP method of the request
 ---@field url string -- The URL with variables and dynamic variables replaced
 ---@field url_raw string -- The raw URL as it appears in the document
+---@field request_target string|nil -- The target of the request
 ---@field http_version string -- The HTTP version of the request
 ---@field headers table<string, string> -- The headers with variables and dynamic variables replaced
 ---@field headers_raw table<string, string> -- The headers as they appear in the document
@@ -455,6 +456,9 @@ local function build_curl_command(request)
   table.insert(request.cmd, GLOBALS.BODY_FILE)
   table.insert(request.cmd, "-w")
   table.insert(request.cmd, "@" .. CURL_FORMAT_FILE)
+
+  _ = request.request_target and vim.list_extend(request.cmd, { "--request-target", request.request_target })
+
   table.insert(request.cmd, "-X")
   table.insert(request.cmd, request.method)
   table.insert(request.cmd, "-v") -- verbose mode
