@@ -59,6 +59,8 @@ M.defaults = {
     display_mode = "split",
     -- split direction: possible values: "vertical", "horizontal"
     split_direction = "vertical",
+    -- window options to override defaults: width/height/split/vertical
+    win_opts = {},
     -- default view: "body" or "headers" or "headers_body" or "verbose" or fun(response: Response)
     default_view = "body",
     -- enable winbar

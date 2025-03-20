@@ -127,6 +127,7 @@ local function open_kulala_window(buf)
     win_config = { split = config.split_direction == "vertical" and "right" or "below", win = request_win }
   end
 
+  vim.tbl_extend("force", win_config, config.ui.win_opts or {})
   win = vim.api.nvim_open_win(buf, true, win_config)
 
   vim.api.nvim_set_option_value("signcolumn", "yes:1", { win = win })
