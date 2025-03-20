@@ -416,6 +416,39 @@ describe("requests", function()
       assert.has_string(request_body_computed, '"variables":{"id":1}')
     end)
 
+    it("runs GraphQL request method", function()
+      curl.stub({
+        ["https://countries.trevorblades.com"] = {
+          body = h.load_fixture("fixtures/graphql_schema_body.txt"),
+        },
+      })
+
+      h.create_buf(
+        ([[
+          GRAPHQL https://countries.trevorblades.com
+
+          query Person($id: ID) {
+            person(personID: $id) {
+              name
+            }
+          }
+
+          {
+            "id": 1
+          }
+      ]]):to_table(true),
+        "test.http"
+      )
+
+      kulala.run()
+      wait_for_requests(1)
+
+      local request_body_computed = DB.data.current_request.body_computed
+
+      assert.has_string(request_body_computed, '"query":"query Person($id: ID) { person(personID: $id) { name } }')
+      assert.has_string(request_body_computed, '"variables":{"id":1}')
+    end)
+
     it("runs API callbacks", function()
       curl.stub({
         ["https://httpbin.org/simple"] = {
