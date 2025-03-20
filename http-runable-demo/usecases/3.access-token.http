@@ -1,0 +1,27 @@
+###
+
+# https://neovim.getkulala.net/docs/usage/dynamically-setting-environment-variables-based-on-response-json
+# <request-name>.response.body.<json.path>
+  
+
+### Get token (simulating login)
+
+# @name login
+POST https://httpbin.org/post HTTP/1.1
+Content-Type: application/json
+
+{
+  "username": "demo",
+  "password": "demo123",
+  "access_token": "asdfasdfasdfasdf"
+}
+
+### Access protected resource with Bearer token
+
+GET https://httpbin.org/bearer HTTP/1.1
+Authorization: Bearer {{login.response.body.json.access_token}}
+
+### Access protected resource with custom token header
+
+GET https://httpbin.org/headers HTTP/1.1
+X-API-Key: {{login.response.body.json.username}}

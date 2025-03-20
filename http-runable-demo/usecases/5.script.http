@@ -1,0 +1,84 @@
+### Get token (simulating login)
+
+< {%
+  // Pre-request script
+  const crypto = require('crypto');
+  const timestamp = Date.now();
+  const nonce = crypto.randomBytes(8).toString('hex');
+  
+  // Set request-scoped variables
+  request.variables.set('TIMESTAMP', timestamp);
+  request.variables.set('NONCE', nonce);
+  
+  console.log('Pre-request variables set:', { timestamp, nonce });
+%}
+# @name login
+POST https://httpbin.org/post HTTP/1.1
+Content-Type: application/json
+
+{
+  "username": "demo",
+  "password": "demo123",
+  "timestamp": "{{TIMESTAMP}}",
+  "nonce": "{{NONCE}}"
+}
+
+> {%
+  // Post-request script
+  const token = response.body.json.username + '_' + response.body.json.nonce;
+  
+  // Set global variable for use in subsequent requests
+  client.global.set('AUTH_TOKEN', token);
+  
+  console.log('Received response and set AUTH_TOKEN:', token);
+%}
+
+###
+
+# @name REQUEST_ONE
+POST https://httpbin.org/post HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{AUTH_TOKEN}}
+
+{
+  "token": "SOME_TOKEN",
+  "deep": {
+    "nested": [
+      {
+        "key": "foo"
+      }
+    ]
+  }
+}
+
+> {%
+  var fs = require('fs');
+  fs.writeFileSync('TOKEN.txt', "Demo with bilibili");
+  client.global.set('GORILLA_TOKEN', response.body.json.token);
+  console.log('Received response and set GORILLA_TOKEN:', response.body.json.token);
+%}
+
+###
+
+# @name REQUEST_TWO
+POST https://httpbin.org/post HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+
+{
+  "gorilla": "{{GORILLA_TOKEN}}"
+}
+
+> ./post-request.js
+
+###
+
+# @name REQUEST_THREE
+POST https://httpbin.org/post HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+
+{
+  "date_header_from_request_two": "{{BONOBO}}"
+}
