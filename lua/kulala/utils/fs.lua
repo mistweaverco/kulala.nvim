@@ -247,8 +247,8 @@ M.delete_files_in_directory = function(dir)
 
       if not name then break end
 
-      -- Only delete files, not directories except .gitingore
-      if type == "file" and not name:match(".gitignore$") then
+      -- Only delete files, not directories except .*
+      if type == "file" and not name:match("^%.") then
         local filepath = M.join_paths(dir, name)
         local success, err = vim.uv.fs_unlink(filepath)
 

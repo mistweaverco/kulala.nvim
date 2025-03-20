@@ -23,6 +23,7 @@ local process_request
 local reset_task_queue = function()
   TASK_QUEUE = {} -- Clear the task queue and stop processing
   RUNNING_TASK = false
+  return true
 end
 
 local function run_next_task()
@@ -46,8 +47,10 @@ local function run_next_task()
   end)
 end
 
-local function offload_task(fn, callback)
+local function offload_task(fn, pos, callback)
+  pos = pos or #TASK_QUEUE + 1
   table.insert(TASK_QUEUE, { fn = fn, callback = callback })
+
   if not RUNNING_TASK then run_next_task() end
 end
 
@@ -168,9 +171,12 @@ local function process_response(request_status, parsed_request, callback)
   process_metadata(parsed_request)
   process_internal(parsed_request)
 
-  if process_external(parsed_request) then
-    process_request({ parsed_request }, parsed_request, {}, callback)
-    return true
+  if process_external(parsed_request) then -- replay request
+    parsed_request.processed = true
+
+    offload_task(function()
+      process_request({ parsed_request }, parsed_request, {}, callback)
+    end, 1)
   end
 
   response_status = save_response(request_status, parsed_request)

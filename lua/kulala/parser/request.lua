@@ -10,6 +10,7 @@ local STRING_UTILS = require("kulala.utils.string")
 local CURL_FORMAT_FILE = FS.get_plugin_path({ "parser", "curl-format.json" })
 local Logger = require("kulala.logger")
 local StringVariablesParser = require("kulala.parser.string_variables_parser")
+local utils = require("kulala.utils.table")
 
 local M = {}
 
@@ -18,27 +19,28 @@ M.scripts.javascript = require("kulala.parser.scripts.javascript")
 
 ---@class Request
 ---@field metadata { name: string, value: string }[] -- Metadata of the request
+---@field environment table<string, string|number> -- The environment- and document-variables
 ---@field method string -- The HTTP method of the request
----@field grpc GrpcCommand|nil -- The gRPC command
----@field url_raw string -- The raw URL as it appears in the document
 ---@field url string -- The URL with variables and dynamic variables replaced
+---@field url_raw string -- The raw URL as it appears in the document
+---@field http_version string -- The HTTP version of the request
 ---@field headers table<string, string> -- The headers with variables and dynamic variables replaced
----@field headers_display table<string, string> -- The headers with variables and dynamic variables replaced and sanitized
 ---@field headers_raw table<string, string> -- The headers as they appear in the document
+---@field headers_display table<string, string> -- The headers with variables and dynamic variables replaced and sanitized
+---@field ft string -- The filetype of the document
 ---@field cookie string -- The cookie as it appears in the document
+---@field body string|nil -- The body with variables and dynamic variables replaced
 ---@field body_raw string|nil -- The raw body as it appears in the document
 ---@field body_computed string|nil -- The computed body as sent by curl; with variables and dynamic variables replaced
 ---@field body_display string|nil -- The body with variables and dynamic variables replaced and sanitized
 ---(e.g. with binary files replaced with a placeholder)
----@field body string|nil -- The body with variables and dynamic variables replaced
----@field environment table<string, string|number> -- The environment- and document-variables
----@field cmd string[] -- The command to execute the request
----@field ft string -- The filetype of the document
----@field http_version string -- The HTTP version of the request
 ---@field show_icon_line_number number|nil -- The line number to show the icon
----@field scripts Scripts -- The scripts to run before and after the request
 ---@field redirect_response_body_to_files ResponseBodyToFile[]
+---@field scripts Scripts -- The scripts to run before and after the request
+---@field cmd string[] -- The command to execute the request
 ---@field body_temp_file string -- The path to the temporary file containing the body
+---@field grpc GrpcCommand|nil -- The gRPC command
+---@field processed boolean -- Indicates if request has been already processed, used by replay()
 
 ---@class GrpcCommand
 ---@field address string|nil -- host:port, can be omitted if proto|proto-set is provided
@@ -53,36 +55,12 @@ local default_grpc_command = {
 }
 
 ---@type Request
+---@diagnostic disable-next-line: missing-fields
 local default_request = {
-  metadata = {},
-  method = "GET",
-  grpc = nil,
-  http_version = "",
-  url = "",
-  url_raw = "",
-  headers = {},
-  headers_display = {},
-  headers_raw = {},
-  cookie = "",
-  body = nil,
-  body_raw = nil,
-  body_computed = nil,
-  body_display = nil,
-  cmd = {},
-  ft = "text",
   environment = {},
-  redirect_response_body_to_files = {},
-  scripts = {
-    pre_request = {
-      inline = {},
-      files = {},
-    },
-    post_request = {
-      inline = {},
-      files = {},
-    },
-  },
-  show_icon_line_number = 1,
+  headers_display = {},
+  ft = "text",
+  cmd = {},
   body_temp_file = "",
 }
 
@@ -169,6 +147,8 @@ end
 ---@param document_variables DocumentVariables -- The variables defined in the document
 ---@param silent boolean|nil -- Whether to suppress not found variable warnings
 local process_variables = function(request, document_variables, silent)
+  if request.processed then return end
+
   local env = ENV_PARSER.get_env() or {}
   local params = { document_variables, env, silent }
 
@@ -505,19 +485,12 @@ function M.get_basic_request_data(requests, line_nr)
 
   if not document_request then return end
 
-  request.scripts.pre_request = document_request.scripts.pre_request
-  request.scripts.post_request = document_request.scripts.post_request
-  request.show_icon_line_number = document_request.show_icon_line_number
-  request.headers = document_request.headers
-  request.cookie = document_request.cookie
-  request.headers_raw = document_request.headers_raw
+  request = vim.tbl_extend("keep", request, document_request)
+
   request.url_raw = document_request.url
-  request.method = document_request.method
-  request.http_version = document_request.http_version
   request.body_raw = document_request.body
-  request.body_display = document_request.body_display
-  request.metadata = document_request.metadata
-  request.redirect_response_body_to_files = document_request.redirect_response_body_to_files
+
+  utils.remove_keys(request, { "body", "variables", "start_line", "end_line" })
 
   return request
 end
@@ -544,9 +517,11 @@ M.parse = function(requests, document_variables, line_nr)
   local request = M.get_basic_request_data(requests, line_nr)
   if not request then return end
 
-  set_variables(request, document_variables)
-  set_headers(request)
-  process_graphql(request)
+  if not request.processed then
+    set_variables(request, document_variables)
+    set_headers(request)
+    process_graphql(request)
+  end
 
   local json = vim.json.encode(request)
   FS.write_file(GLOBALS.REQUEST_FILE, json, false)
@@ -565,6 +540,7 @@ M.parse = function(requests, document_variables, line_nr)
   -- Save this to global, so .replay() can be triggered from any buffer or window
   DB.global_update().replay = vim.deepcopy(request)
   DB.global_update().replay.show_icon_line_number = nil
+  DB.global_update().replay.processed = true
 
   return request
 end

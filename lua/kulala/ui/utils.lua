@@ -1,5 +1,12 @@
 local DB = require("kulala.db")
 
+local function clear_highlights(bufnr, ns)
+  bufnr = bufnr and bufnr or DB.get_current_buffer()
+  ns = ns and ns or vim.api.nvim_create_namespace("kulala_highlight")
+
+  vim.api.nvim_buf_clear_namespace(bufnr, ns, 0, -1)
+end
+
 ---@param bufnr number
 ---@param ns number
 ---@param start_pos table|number
@@ -114,6 +121,7 @@ local function pretty_ms(ms)
 end
 
 return {
+  clear_highlights = clear_highlights,
   highlight_range = highlight_range,
   highlight_column = highlight_column,
   highlight_buffer = highlight_buffer,

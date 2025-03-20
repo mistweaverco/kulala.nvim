@@ -31,7 +31,7 @@ run() {
   if [[ -n $1 ]]; then
     nvim -l tests/minit.lua tests --filter "$1"
   else
-    nvim -l tests/minit.lua tests
+    nvim -l tests/minit.lua tests -o utfTerminal
   fi
 }
 
