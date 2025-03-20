@@ -149,6 +149,75 @@ describe("requests", function()
         assert.is_same(result.body:gsub("\n", ""), '{"test": "value"}')
       end)
 
+      describe("processes url", function()
+        local http_buf = h.create_buf({}, "test_url.http")
+
+        local assert_url = function(lines, method, url, version)
+          h.set_buf_lines(http_buf, lines)
+
+          result = parser.parse() or {}
+          assert.is.same(method, result.method)
+          assert.is.same(url, result.url)
+          assert.is.same(version, result.http_version)
+
+          return result
+        end
+
+        -- [method required-whitespace] request-target [required-whitespace http-version]
+        it("processes request line", function()
+          -- full
+          assert_url({
+            "POST https://httpbin.org:8080/simple?query=value#fragment HTTP/1.1",
+          }, "POST", "https://httpbin.org:8080/simple?query=value#fragment", "1.1")
+
+          --- no method, default GET
+          assert_url({ "https://httpbin.org/simple HTTP/1.1" }, "GET", "https://httpbin.org/simple", "1.1")
+
+          --- no version
+          assert_url({ "https://httpbin.org/simple" }, "GET", "https://httpbin.org/simple")
+
+          --- no scheme
+          assert_url({ "httpbin.org/simple" }, "GET", "httpbin.org/simple")
+
+          --- origin form: absolute-path [‘?’ query] [‘#’ fragment]
+          assert_url(
+            ([[
+            GET /api/get?query=value#fragment HTTP/2
+            Host: https://httpbin.org:443
+          ]]):to_table(true),
+            "GET",
+            "https://httpbin.org:443/api/get?query=value#fragment",
+            "2"
+          )
+
+          --- no scheme
+          assert_url(
+            ([[
+            GET /api/get?query=value#fragment HTTP/2
+            Host: httpbin.org
+          ]]):to_table(true),
+            "GET",
+            "httpbin.org/api/get?query=value#fragment",
+            "2"
+          )
+
+          --- asterisk form
+          result = assert_url(
+            ([[
+            OPTIONS * HTTP/1.1
+            Host: http://example.com:8080
+          ]]):to_table(true),
+            "OPTIONS",
+            "http://example.com:8080",
+            "1.1"
+          )
+          assert.is.same("*", result.request_target)
+
+          assert_url({ "127.0.0.1:80" }, "GET", "127.0.0.1:80")
+          assert_url({ "http://[::1]" }, "GET", "http://[::1]")
+        end)
+      end)
+
       it("processes headers", function()
         h.create_buf(
           ([[
