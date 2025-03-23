@@ -84,30 +84,41 @@ local function kulala_env_select(_)
   pickers
     .new({}, {
       prompt_title = "Select Environment",
+
       finder = finders.new_table({
         results = envs,
       }),
+
       attach_mappings = function(prompt_bufnr)
         actions.select_default:replace(function()
           local selection = action_state.get_selected_entry()
           actions.close(prompt_bufnr)
-          if selection == nil then return end
+
+          if not selection then return end
+
           vim.g.kulala_selected_env = selection.value
         end)
         return true
       end,
+
       previewer = previewers.new_buffer_previewer({
         title = "Environment",
         define_preview = function(self, entry)
           local env = http_client_env[entry.value]
-          if env == nil then return end
+          if not env then return end
+
           local lines = {}
           for key, value in pairs(env) do
-            table.insert(lines, string.format("%s: %s", key, value))
+            value = vim.split(vim.inspect(value), "\n")
+            value[1] = key .. ": " .. value[1]
+
+            vim.list_extend(lines, value)
           end
+
           vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, lines)
         end,
       }),
+
       sorter = config.generic_sorter({}),
     })
     :find()

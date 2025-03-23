@@ -80,6 +80,21 @@ local function get_http_client_env()
   end
 end
 
+M.update_http_client_auth = function(config_id, config)
+  local env_path = FS.find_file_in_parent_dirs("http-client.env.json")
+  local env = FS.read_json(env_path)
+  if not env then return end
+
+  local cur_env = vim.g.kulala_selected_env or Config.get().default_env
+
+  env[cur_env].Security = env[cur_env].Security or {}
+  env[cur_env].Security.Auth = env[cur_env].Security.Auth or {}
+
+  env[cur_env].Security.Auth[config_id] = config
+
+  FS.write_json(env_path, env)
+end
+
 local function get_http_client_private_env()
   local http_client_private_env_json = FS.find_file_in_parent_dirs("http-client.private.env.json")
 
