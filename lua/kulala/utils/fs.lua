@@ -340,7 +340,18 @@ M.read_json = function(filename)
   local content = M.read_file(filename)
   if not content then return end
 
-  return vim.json.decode(content, { object = true, array = true })
+  local status, result = pcall(vim.json.decode, content, { object = true, array = true })
+  if not status then return Logger.error("Error decoding JSON file: " .. filename .. ": " .. result) end
+
+  return result
+end
+
+M.write_json = function(filename, data)
+  local content = vim.json.encode(data)
+  if not content then return end
+
+  content = content:gsub("\\/", "/"):gsub('\\"', '"')
+  return M.write_file(filename, content)
 end
 
 ---@param content string
