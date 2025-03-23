@@ -8,42 +8,42 @@ local M = {}
 ---@class DocumentRequest
 ---@field metadata table<{name: string, value: string}>
 ---@field variables DocumentVariables
----
+
 ---@field method string
 ---@field url string
 ---@field request_target string|nil
 ---@field http_version string
----
+
 ---@field headers table<string, string>
 ---@field headers_raw table<string, string>
 ---@field cookie string
----
+
 ---@field body string
 ---@field body_display string
----
+
 ---@field start_line number
 ---@field end_line number
 ---@field show_icon_line_number number
----
+
 ---@field redirect_response_body_to_files ResponseBodyToFile[]
----
+
 ---@field scripts Scripts
----
+
 ---@field name string|nil -- The name of the request, used for run()
 ---@field file string|nil -- The file the request was imported from, used for run()
----
+
 ---@field processed boolean -- Whether the request has been processed, used by replay()
----
+
 ---@alias DocumentVariables table<string, string|number|boolean>
----
+
 ---@class ResponseBodyToFile
 ---@field file string -- The file path to write the response body to
 ---@field overwrite boolean -- Whether to overwrite the file if it already exists
----
+
 ---@class Scripts
 ---@field pre_request ScriptData
 ---@field post_request ScriptData
----
+
 ---@class ScriptData
 ---@field inline string[]
 ---@field files string[]
