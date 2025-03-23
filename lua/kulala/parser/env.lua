@@ -81,6 +81,8 @@ local function get_http_client_env()
 end
 
 M.update_http_client_auth = function(config_id, config)
+  --TODO: sanitize secrets
+
   local env_path = FS.find_file_in_parent_dirs("http-client.env.json")
   local env = FS.read_json(env_path)
   if not env then return end

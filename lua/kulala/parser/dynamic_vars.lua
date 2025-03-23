@@ -17,8 +17,8 @@ local function uuid()
 end
 
 local function auth_token(name)
-  local config = name:match("^%$auth.token%(['\"](.+)['\"]%)")
-  return Oauth.get_token(config)
+  local type, config = name:match("^%$auth%.(%a+)%(['\"](.+)['\"]%)")
+  return Oauth["get_" .. type] and config and Oauth["get_" .. type](config) or nil
 end
 
 ---Retrieve all dynamic variables from both rest.nvim and the ones declared by
@@ -45,12 +45,11 @@ end
 ---@return string|nil The dynamic variable value or `nil` if the dynamic variable was not found
 function M.read(name)
   local vars = M.retrieve_all()
-  if name:match("^%$auth.token") then return auth_token(name) end
+  if name:match("^%$auth%.") then return auth_token(name) end
 
   if not vim.tbl_contains(vim.tbl_keys(vars), name) then
-    return Logger.warn(
-      "The dynamic variable '" .. name .. "' was not found. Maybe it's written wrong or doesn't exist?"
-    )
+    Logger.warn("The dynamic variable '" .. name .. "' was not found. Maybe it's written wrong or doesn't exist?")
+    return nil
   end
 
   return vars[name]()
