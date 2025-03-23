@@ -3,6 +3,7 @@ local Api = require("kulala.api")
 local CONFIG = require("kulala.config")
 local DB = require("kulala.db")
 local DOCUMENT_PARSER = require("kulala.parser.document")
+local ParserUtils = require("kulala.parser.utils")
 local EXT_PROCESSING = require("kulala.external_processing")
 local FS = require("kulala.utils.fs")
 local GLOBALS = require("kulala.globals")
@@ -12,6 +13,7 @@ local Logger = require("kulala.logger")
 local REQUEST_PARSER = require("kulala.parser.request")
 local UI_utils = require("kulala.ui.utils")
 local WS = require("kulala.cmd.websocket")
+local LanguageServer = require("kulala.utils.language_server")
 
 local M = {}
 
@@ -123,8 +125,22 @@ local function set_request_stats(response)
   return response
 end
 
+local function response_to_lsp(buf_filepath, req, res)
+  local req_name = ParserUtils.get_meta_tag(req, "name")
+  if req_name then
+    LanguageServer.add_request_variables(
+      buf_filepath,
+      req_name,
+      {},
+      res.body
+    )
+  end
+end
+
 local function save_response(request_status, parsed_request)
   local buf = DB.get_current_buffer()
+  local buf_name = vim.fn.bufname(buf)
+  local buf_filepath = vim.fn.fnamemodify(buf_name, ":p")
   local line = parsed_request.show_icon_line_number or 0
   local id = buf .. ":" .. line
 
@@ -159,6 +175,9 @@ local function save_response(request_status, parsed_request)
   response = set_request_stats(response)
 
   response.body = #response.body == 0 and "No response body (check Verbose output)" or response.body
+
+  -- TODO: where does this really belong?
+  response_to_lsp(buf_filepath, parsed_request, response)
 
   table.insert(responses, response)
 
