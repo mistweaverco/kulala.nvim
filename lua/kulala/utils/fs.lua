@@ -320,6 +320,7 @@ end
 ---@return string|nil
 ---@usage local p = fs.read_file('Makefile')
 M.read_file = function(filename, is_binary)
+  if not filename then return end
   local read_mode = is_binary and "rb" or "r"
 
   filename = M.get_file_path(filename)

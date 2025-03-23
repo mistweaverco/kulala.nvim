@@ -64,6 +64,34 @@ local function get_dot_env(env)
   return env
 end
 
+local function get_http_client_private_env()
+  local http_client_private_env_json = FS.find_file_in_parent_dirs("http-client.private.env.json")
+  if not http_client_private_env_json then return end
+
+  local f = FS.read_json(http_client_private_env_json)
+  if not f then return end
+
+  if f["$shared"] then
+    DB.update().http_client_env_shared =
+      vim.tbl_deep_extend("force", DB.find_unique("http_client_env_shared"), f["$shared"])
+  end
+
+  f["$shared"] = nil
+  DB.update().http_client_env = vim.tbl_deep_extend("force", DB.find_unique("http_client_env"), f)
+
+  return f
+end
+
+local function get_http_client_env_shared(env)
+  local http_client_env_shared = DB.find_unique("http_client_env_shared") or {}
+
+  for key, value in pairs(http_client_env_shared) do
+    if key ~= "$default_headers" then env[key] = value end
+  end
+
+  return env
+end
+
 local function get_http_client_env()
   local http_client_env_json = FS.find_file_in_parent_dirs("http-client.env.json")
 
@@ -80,8 +108,21 @@ local function get_http_client_env()
   end
 end
 
+local function sanitize_secrets(config_id, config)
+  local cur_env = vim.g.kulala_selected_env or Config.get().default_env
+  local private = get_http_client_private_env()[cur_env]
+
+  vim.iter(config):each(function(key, value)
+    if key:match("[Ss]ecret") and vim.tbl_get(private, "Security", "Auth", config_id, key) == value then
+      config[key] = nil
+    end
+  end)
+
+  return config
+end
+
 M.update_http_client_auth = function(config_id, config)
-  --TODO: sanitize secrets
+  config = sanitize_secrets(config_id, config)
 
   local env_path = FS.find_file_in_parent_dirs("http-client.env.json")
   local env = FS.read_json(env_path)
@@ -95,32 +136,6 @@ M.update_http_client_auth = function(config_id, config)
   env[cur_env].Security.Auth[config_id] = config
 
   FS.write_json(env_path, env)
-end
-
-local function get_http_client_private_env()
-  local http_client_private_env_json = FS.find_file_in_parent_dirs("http-client.private.env.json")
-
-  if http_client_private_env_json then
-    local f = vim.fn.json_decode(vim.fn.readfile(http_client_private_env_json))
-
-    if f["$shared"] then
-      DB.update().http_client_env_shared =
-        vim.tbl_deep_extend("force", DB.find_unique("http_client_env_shared"), f["$shared"])
-    end
-
-    f["$shared"] = nil
-    DB.update().http_client_env = vim.tbl_deep_extend("force", DB.find_unique("http_client_env"), f)
-  end
-end
-
-local function get_http_client_env_shared(env)
-  local http_client_env_shared = DB.find_unique("http_client_env_shared") or {}
-
-  for key, value in pairs(http_client_env_shared) do
-    if key ~= "$default_headers" then env[key] = value end
-  end
-
-  return env
 end
 
 local function get_scripts_variables(env)
