@@ -1,6 +1,7 @@
 local CONFIG = require("kulala.config")
 local Logger = require("kulala.logger")
-local Oauth = require("kulala.parser.oauth")
+local Oauth = require("kulala.cmd.oauth")
+
 local M = {}
 
 math.randomseed(os.time())

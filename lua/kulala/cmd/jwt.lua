@@ -5,9 +5,10 @@ local Logger = require("kulala.logger")
 local M = {}
 
 M.encode = function(header, payload, key)
-  header = vim.tbl_extend("keep", header, { typ = "JWT" })
-
   local err_msg = "Failure to encode JWT: "
+
+  local digest = header.digest or "sha256"
+  header.digest = nil
 
   -- Base64url encode the header and payload
   local header_b64 = vim.base64.encode(vim.json.encode(header)):gsub("+", "-"):gsub("/", "_"):gsub("=", "")
@@ -34,8 +35,9 @@ M.encode = function(header, payload, key)
   -- Sign with OpenSSL
   local signature_file = os.tmpname()
   local cmd = string.format(
-    "%s dgst -sha256 -sign %s -out %s %s",
+    "%s dgst -%s -sign %s -out %s %s",
     Config.get().openssl_path or "openssl",
+    digest,
     key_file,
     signature_file,
     input_file

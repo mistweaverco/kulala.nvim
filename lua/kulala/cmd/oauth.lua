@@ -1,7 +1,7 @@
 local Config = require("kulala.config")
 local DB = require("kulala.db")
 local Env = require("kulala.parser.env")
-local Jwt = require("kulala.parser.jwt")
+local Jwt = require("kulala.cmd.jwt")
 local Logger = require("kulala.logger")
 local table = require("kulala.utils.table")
 
@@ -73,6 +73,36 @@ local function update_auth_config(config_id, update)
   return config
 end
 
+local function to_query(key, value)
+  if type(value) == "table" and not vim.islist(value) then return "nested tables not supported" end
+  value = vim.islist(value) and value or { value }
+
+  return vim.iter(value):fold("", function(ret, v)
+    ret = ret .. "&" .. key .. "=" .. v
+    return ret
+  end)
+end
+
+---Add custom request parameters to the reuqest body
+---@param config_id string
+---@param body string
+---@param use string - "Everywhere" | "In Auth Request" | "In Token Request"
+local function add_custom_params(config_id, body, use)
+  local config = get_auth_config(config_id)
+  local custom_params = config["Custom Request Parameters"]
+
+  if not custom_params then return body end
+
+  vim.iter(custom_params):each(function(key, value)
+    local _use = type(value) == "table" and value.Use or "Everywhere"
+    local _value = type(value) == "table" and value.Value or value
+
+    if _use == use or _use == "Everywhere" then body = body .. to_query(key, _value) end
+  end)
+
+  return body
+end
+
 ---Grant Type "Device Authorization"
 ---Acquire a device code for the given config_id
 M.get_device_code = function(config_id)
@@ -81,6 +111,7 @@ M.get_device_code = function(config_id)
 
   local url = config["Device Auth URL"]
   local body = "client_id=" .. config["Client ID"] .. "&scope=" .. vim.uri_encode(config["Scope"])
+  body = add_custom_params(config_id, body, "In Auth Request")
 
   Logger.info("Acquiring device code for config: " .. config_id)
 
@@ -112,7 +143,7 @@ M.get_device_token = function(config_id)
   local config = get_auth_config(config_id)
   local device_code = M.get_device_code(config_id)
 
-  local required_params = { "Grant Type", "Client ID", "Client Secret", "Token URL" }
+  local required_params = { "Grant Type", "Client ID", "Token URL" }
   if not device_code or not validate_auth_params(config_id, required_params) then return end
 
   M.verify_device_code(config_id)
@@ -120,11 +151,12 @@ M.get_device_token = function(config_id)
   local url = config["Token URL"]
   local body = "client_id="
     .. config["Client ID"]
-    .. "&client_secret="
-    .. config["Client Secret"]
     .. "&device_code="
     .. device_code
     .. "&grant_type=urn:ietf:params:oauth:grant-type:device_code"
+
+  body = config["Client Secret"] and body .. "&client_secret=" .. config["Client Secret"] or body
+  body = add_custom_params(config_id, body, "In Token Request")
 
   Logger.info("Acquiring device token for config: " .. config_id)
 
@@ -201,18 +233,15 @@ end
 
 M.create_JWT = function(config_id)
   local config = get_auth_config(config_id)
-  if not validate_auth_params(config_id, { "Grant Type", "iss", "aud", "Scope", "private_key" }) then return end
+  if not validate_auth_params(config_id, { "Grant Type", "Scope", "private_key", "JWT" }) then return end
 
-  local expires_in = 50
+  local jwt = vim.deepcopy(config.JWT)
 
-  local header = { alg = "RS256" }
-  local payload = {
-    iss = config.iss,
-    aud = config.aud,
-    scope = config.Scope,
-    exp = os.time() + expires_in,
-    iat = os.time(),
-  }
+  local header = vim.tbl_extend("keep", jwt.header or {}, { alg = "RS256", typ = "JWT" })
+  local payload = jwt.payload or {}
+
+  payload.exp = os.time() + (jwt.payload.exp or 50)
+  payload.iat = os.time()
 
   return Jwt.encode(header, payload, config.private_key)
 end
@@ -224,8 +253,10 @@ M.acquire_token_jwt = function(config_id)
   local assertion = config.assertion or M.create_JWT(config_id)
 
   if not assertion or not validate_auth_params(config_id, { "Grant Type", "Token URL" }) then return end
+
   local url = config["Token URL"]
   local body = "grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=" .. assertion
+  body = add_custom_params(config_id, body, "In Token Request")
 
   Logger.info("Acquiring token for config: " .. config_id)
 
@@ -257,8 +288,7 @@ M.acquire_code = function(config_id)
 
   body = config["Grant Type"] == "Authorization Code" and body .. "&access_type=offline&response_type=code" or body
   body = config["Grant Type"] == "Implicit" and body .. "&response_type=token" or body
-
-  -- state=state_parameter_passthrough_value& -- TODO: add optional parameters to request
+  body = add_custom_params(config_id, body, "In Auth Request")
 
   local uri = url .. "?" .. body
 
@@ -287,19 +317,20 @@ M.acquire_token = function(config_id)
   local code = M.acquire_code(config_id)
   if config["Grant Type"] == "Implicit" then return code end
 
-  local required_params = { "Grant Type", "Client ID", "Client Secret", "Redirect URL", "Token URL" }
+  local required_params = { "Grant Type", "Client ID", "Redirect URL", "Token URL" }
   if not code or not validate_auth_params(config_id, required_params) then return end
 
   local url = config["Token URL"]
   local body = "client_id="
     .. config["Client ID"]
-    .. "&client_secret="
-    .. config["Client Secret"]
     .. "&code="
     .. code
     .. "&redirect_uri="
     .. config["Redirect URL"]
     .. "&grant_type=authorization_code"
+
+  body = config["Client Secret"] and body .. "&client_secret=" .. config["Client Secret"] or body
+  body = add_custom_params(config_id, body, "In Token Request")
 
   Logger.info("Acquiring new token for config: " .. config_id)
 
@@ -321,16 +352,13 @@ M.refresh_token = function(config_id)
   local refresh_token = not M.is_token_expired(config_id, "refresh_token") and config.refresh_token
   if not refresh_token then return M.acquire_token(config_id) end
 
-  if not validate_auth_params(config_id, { "Grant Type", "Client ID", "Client Secret", "Token URL" }) then return end
+  if not validate_auth_params(config_id, { "Grant Type", "Client ID", "Token URL" }) then return end
 
   local url = config["Token URL"]
-  local body = "client_id="
-    .. config["Client ID"]
-    .. "&client_secret="
-    .. config["Client Secret"]
-    .. "&refresh_token="
-    .. refresh_token
-    .. "&grant_type=refresh_token"
+  local body = "client_id=" .. config["Client ID"] .. "&refresh_token=" .. refresh_token .. "&grant_type=refresh_token"
+
+  body = config["Client Secret"] and body .. "&client_secret=" .. config["Client Secret"] or body
+  body = add_custom_params(config_id, body, "In Token Request")
 
   Logger.info("Refreshing token for config: " .. config_id)
 
@@ -450,9 +478,10 @@ M.tcp_server = function(host, port, on_request)
   local server = vim.uv.new_tcp() or {}
   server:bind(host, port)
 
+  Logger.info("Server listening for code/token on " .. host .. ":" .. port)
+
   server:listen(128, function(err)
     if err then return Logger.error("Failed to start TCP server: " .. err) end
-    Logger.info("Server listening for code/token on " .. host .. ":" .. port)
 
     local client = vim.uv.new_tcp() or {}
     server:accept(client)
