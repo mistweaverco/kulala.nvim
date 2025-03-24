@@ -67,7 +67,10 @@ M.show = function(event, linenr, text)
     text = icon .. " " .. text
   end
 
-  vim.api.nvim_buf_set_extmark(bufnr, NS, linenr - 1, 0, { virt_text = { { text, config.icons.textHighlight } } })
+  vim.api.nvim_buf_set_extmark(bufnr, NS, linenr - 1, 0, {
+    hl_mode = "combine",
+    virt_text = { { text, config.icons.textHighlight } },
+  })
 end
 
 return M
