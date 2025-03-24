@@ -113,7 +113,10 @@ local function sanitize_secrets(config_id, config)
   local private = get_http_client_private_env()[cur_env]
 
   vim.iter(config):each(function(key, value)
-    if key:match("[Ss]ecret") and vim.tbl_get(private, "Security", "Auth", config_id, key) == value then
+    if
+      key:match("[Ss]ecret")
+      or key:match("private") and vim.tbl_get(private, "Security", "Auth", config_id, key) == value
+    then
       config[key] = nil
     end
   end)

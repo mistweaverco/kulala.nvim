@@ -1,12 +1,11 @@
 local Config = require("kulala.config")
 local DB = require("kulala.db")
 local Env = require("kulala.parser.env")
+local Jwt = require("kulala.parser.jwt")
 local Logger = require("kulala.logger")
 local table = require("kulala.utils.table")
 
 local M = {}
-
---"Authorization Code", "Implicit", "Client Credentials" (Service Account JWT), "Device Authorization", "Password".
 
 local request_timeout = 30000 -- 30 seconds
 local request_interval = 5000 -- 5 seconds
@@ -78,9 +77,9 @@ end
 ---Acquire a device code for the given config_id
 M.get_device_code = function(config_id)
   local config = get_auth_config(config_id)
-  if not validate_auth_params(config_id, { "Client ID", "Auth URL", "Scope" }) then return end
+  if not validate_auth_params(config_id, { "Client ID", "Device Auth URL", "Scope" }) then return end
 
-  local url = config["Auth URL"]
+  local url = config["Device Auth URL"]
   local body = "client_id=" .. config["Client ID"] .. "&scope=" .. vim.uri_encode(config["Scope"])
 
   Logger.info("Acquiring device code for config: " .. config_id)
@@ -200,13 +199,49 @@ M.receive_code = function(config_id)
   return config.code or config.access_token
 end
 
+M.create_JWT = function(config_id)
+  local config = get_auth_config(config_id)
+  if not validate_auth_params(config_id, { "Grant Type", "iss", "aud", "Scope", "private_key" }) then return end
+
+  local expires_in = 50
+
+  local header = { alg = "RS256" }
+  local payload = {
+    iss = config.iss,
+    aud = config.aud,
+    scope = config.Scope,
+    exp = os.time() + expires_in,
+    iat = os.time(),
+  }
+
+  return Jwt.encode(header, payload, config.private_key)
+end
+
+---Grant Type "Client Credentials"
+---Acquire a token using the client credentials for the given config_id
+M.acquire_token_jwt = function(config_id)
+  local config = get_auth_config(config_id)
+  local assertion = config.assertion or M.create_JWT(config_id)
+
+  if not assertion or not validate_auth_params(config_id, { "Grant Type", "Token URL" }) then return end
+  local url = config["Token URL"]
+  local body = "grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=" .. assertion
+
+  Logger.info("Acquiring token for config: " .. config_id)
+
+  local out = make_request(url, body, "acquire token")
+  if not out then return end
+
+  out.acquired_at = os.time()
+  config = update_auth_config(config_id, out)
+
+  return config.access_token
+end
+
 ---Grant Type "Authorization Code" or "Implicit"
 ---Acquire an auth code for the given config_id
 M.acquire_code = function(config_id)
   local config = get_auth_config(config_id)
-
-  table.remove_keys(config, { "code", "access_token", "id_token", "refresh_token" })
-  config = update_auth_config(config_id, config)
 
   local required_params = { "Grant Type", "Client ID", "Redirect URL", "Auth URL", "Scope" }
   if not validate_auth_params(config_id, required_params) then return end
@@ -238,12 +273,16 @@ M.acquire_code = function(config_id)
   return code
 end
 
----Grant Type "Authorization Code" or "Implicit" or "Device Authorization"
+---Grant Type "Authorization Code" or "Implicit" or "Device Authorization" or "Client Credentials"
 ---Acquire a new token for the given config_id
 M.acquire_token = function(config_id)
   local config = get_auth_config(config_id)
 
+  table.remove_keys(config, { "code", "device_code", "user_code", "access_token", "id_token", "refresh_token" })
+  config = update_auth_config(config_id, config)
+
   if config["Grant Type"] == "Device Authorization" then return M.get_device_token(config_id) end
+  if config["Grant Type"] == "Client Credentials" then return M.acquire_token_jwt(config_id) end
 
   local code = M.acquire_code(config_id)
   if config["Grant Type"] == "Implicit" then return code end
@@ -268,7 +307,7 @@ M.acquire_token = function(config_id)
   if not out then return end
 
   out.acquired_at = os.time()
-  out.refresh_token_acquired_at = os.time()
+  if out.refresh_token then out.refresh_token_acquired_at = os.time() end
 
   config = update_auth_config(config_id, out)
 
@@ -305,6 +344,7 @@ M.refresh_token = function(config_id)
 end
 
 ---Grant Type - all
+---Entry point to get the token for the given config_id
 M.get_token = function(config_id)
   local config = get_auth_config(config_id)
 
@@ -323,7 +363,6 @@ end
 
 ---Revoke the token for the given config_id
 M.revoke_token = function(config_id)
-  M.test()
   local config = get_auth_config(config_id)
 
   local token = config.access_token
@@ -354,7 +393,6 @@ end
 ---@param config_id string
 ---@param type string|nil - default: "access" | "refresh"
 M.is_token_expired = function(config_id, type)
-  M.test()
   type = type and type .. "_" or ""
   local config = get_auth_config(config_id)
 
