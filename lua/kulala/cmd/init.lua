@@ -3,17 +3,17 @@ local Api = require("kulala.api")
 local CONFIG = require("kulala.config")
 local DB = require("kulala.db")
 local DOCUMENT_PARSER = require("kulala.parser.document")
-local ParserUtils = require("kulala.parser.utils")
 local EXT_PROCESSING = require("kulala.external_processing")
 local FS = require("kulala.utils.fs")
 local GLOBALS = require("kulala.globals")
 local INLAY = require("kulala.inlay")
 local INT_PROCESSING = require("kulala.internal_processing")
+local LanguageServer = require("kulala.utils.language_server")
 local Logger = require("kulala.logger")
+local ParserUtils = require("kulala.parser.utils")
 local REQUEST_PARSER = require("kulala.parser.request")
 local UI_utils = require("kulala.ui.utils")
 local WS = require("kulala.cmd.websocket")
-local LanguageServer = require("kulala.utils.language_server")
 
 local M = {}
 
@@ -127,14 +127,7 @@ end
 
 local function response_to_lsp(buf_filepath, req, res)
   local req_name = ParserUtils.get_meta_tag(req, "name")
-  if req_name then
-    LanguageServer.add_request_variables(
-      buf_filepath,
-      req_name,
-      {},
-      res.body
-    )
-  end
+  if req_name then LanguageServer.add_request_variables(buf_filepath, req_name, {}, res.body) end
 end
 
 local function save_response(request_status, parsed_request)
