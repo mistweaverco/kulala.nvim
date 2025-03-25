@@ -111,6 +111,7 @@ end
 local function sanitize_secrets(config_id, config)
   local cur_env = vim.g.kulala_selected_env or Config.get().default_env
   local secrets = { "secret", "private", "password" }
+  local _config = {}
 
   local private = get_http_client_private_env()
   private = private and private[cur_env] or nil
@@ -118,21 +119,23 @@ local function sanitize_secrets(config_id, config)
   if not private then return config end
 
   vim.iter(config):each(function(key, value)
+    _config[key] = value
+
     if
       vim.tbl_get(private, "Security", "Auth", config_id, key) == value
       and vim.iter(secrets):any(function(secret)
         return key:lower():match(secret)
       end)
     then
-      config[key] = nil
+      _config[key] = nil
     end
   end)
 
-  return config
+  return _config
 end
 
 M.update_http_client_auth = function(config_id, config)
-  config = sanitize_secrets(config_id, config)
+  local _config = sanitize_secrets(config_id, config)
 
   local env_path = FS.find_file_in_parent_dirs("http-client.env.json")
   local env = FS.read_json(env_path)
@@ -143,7 +146,7 @@ M.update_http_client_auth = function(config_id, config)
   env[cur_env].Security = env[cur_env].Security or {}
   env[cur_env].Security.Auth = env[cur_env].Security.Auth or {}
 
-  env[cur_env].Security.Auth[config_id] = config
+  env[cur_env].Security.Auth[config_id] = _config
 
   FS.write_json(env_path, env)
 end

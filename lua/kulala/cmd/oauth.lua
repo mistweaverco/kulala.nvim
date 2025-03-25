@@ -171,8 +171,8 @@ end
 ---Grant Type "Device Authorization"
 ---Acquire a device token for the given config_id
 M.acquire_device_token = function(config_id)
-  local config = get_auth_config(config_id)
   local device_code = M.get_device_code(config_id)
+  local config = get_auth_config(config_id)
 
   local required_params = { "Grant Type", "Client ID", "Token URL" }
   if not device_code or not validate_auth_params(config_id, required_params) then return end
@@ -216,7 +216,6 @@ M.acquire_device_token = function(config_id)
 end
 
 local function parse_params(request)
-  request = request:match("/%?(.+) HTTP")
   request = vim.split(request or "", "&") or {}
 
   return vim.iter(request):fold({}, function(acc, param)
@@ -239,7 +238,7 @@ M.receive_code = function(config_id)
 
   local port = url:match(":(%d+)") or 80
 
-  M.tcp_server("127.0.0.1", port, function(request)
+  local server = M.tcp_server("127.0.0.1", port, function(request)
     local params = parse_params(request) or {}
 
     if params.code or params.access_token then
@@ -251,13 +250,18 @@ M.receive_code = function(config_id)
     end
   end)
 
+  if not server then return end
+
   Logger.info("Waiting for authorization code/token")
   local wait = vim.wait(request_timeout, function()
     config = get_auth_config(config_id)
     return config.code or config.access_token
   end, request_interval)
 
-  if not wait then return Logger.error("Timeout waiting for authorization code/token for: " .. config_id) end
+  if not wait then
+    server.stop()
+    return Logger.error("Timeout waiting for authorization code/token for: " .. config_id)
+  end
 
   return config.code or config.access_token
 end
@@ -315,7 +319,6 @@ M.acquire_auth = function(config_id)
   local url = config["Auth URL"]
   local body = "scope="
     .. vim.uri_encode(config["Scope"])
-    .. "&include_granted_scopes=true"
     .. "&redirect_uri="
     .. config["Redirect URL"]
     .. "&client_id="
@@ -514,16 +517,6 @@ M.is_token_expired = function(config_id, type)
   return diff > expires_in, expires_in - diff
 end
 
-local function stop_server(server)
-  server:shutdown()
-  server:close()
-end
-
-local function stop_client(client)
-  client:shutdown()
-  client:close()
-end
-
 local function redirect_script()
   return [[
     <!DOCTYPE html>
@@ -546,15 +539,23 @@ end
 
 M.tcp_server = function(host, port, on_request)
   host = host or "127.0.0.1"
-  port = port or 80
+  port = tonumber(port) or 80
 
   local server = vim.uv.new_tcp() or {}
-  server:bind(host, port)
+  local status, err = pcall(server.bind, server, host, port)
+  if not status then return Logger.error("Failed to start TCP server: " .. err) end
 
   Logger.info("Server listening for code/token on " .. host .. ":" .. port)
 
+  local function stop_tcp(tcp)
+    pcall(function()
+      tcp:shutdown()
+      tcp:close()
+    end)
+  end
+
   server:listen(128, function(err)
-    if err then return Logger.error("Failed to start TCP server: " .. err) end
+    if err then return Logger.error("Failed to process request: " .. err) end
 
     local client = vim.uv.new_tcp() or {}
     server:accept(client)
@@ -562,25 +563,31 @@ M.tcp_server = function(host, port, on_request)
     client:read_start(function(err, chunk)
       if err then return Logger.error("Failed to read server response: " .. err) end
       ---@diagnostic disable-next-line: redundant-return-value
-      if not chunk then return pcall(stop_client, client) end
+      if not chunk then return stop_tcp(client) end
 
       local response, result
 
       if chunk:match("GET / HTTP") then
         response = redirect_script()
       elseif chunk:match("GET /%?") then
-        result = on_request(chunk)
+        result = on_request(chunk:match("GET /%?(.+) HTTP"))
         response = result or "OK"
       end
 
       client:write("HTTP/1.1 200 OKn\r\n\r\n" .. response .. "\n")
-      pcall(stop_client, client)
+      stop_tcp(client)
 
-      if result then pcall(stop_server, server) end
+      if result then stop_tcp(server) end
     end)
   end)
 
   vim.uv.run()
+
+  return {
+    stop = function()
+      stop_tcp(server)
+    end,
+  }
 end
 
 M.add_auth_config = function(config_id)
@@ -602,6 +609,10 @@ M.add_auth_config = function(config_id)
     ["Token URL"] = "",
     ["Custom Request Parameters"] = {
       ["my-custom-parameter"] = "my-custom-value",
+      ["access_type"] = {
+        ["Value"] = "offline",
+        ["Use"] = "In Auth Request",
+      },
       ["audience"] = {
         ["Use"] = "In Token Request",
         ["Value"] = "https://my-audience.com/",

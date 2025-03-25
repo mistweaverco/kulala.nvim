@@ -33,7 +33,7 @@ end
 M.pkce_challenge = function(verifier, method)
   method = method or "S256"
 
-  if method == "PLAIN" then return verifier end
+  if method == "Plain" then return verifier end
   if method ~= "S256" then return Logger.error("Unsupported PKCE method: " .. method) end
 
   local err_msg = "Failure to generate PKCE challenge: "
@@ -64,9 +64,12 @@ end
 
 M.jwt_encode = function(header, payload, key)
   local err_msg = "Failure to encode JWT: "
+  local supported_alg = { "RS256", "HS256" }
 
-  local digest = header.digest or "sha256"
-  header.digest = nil
+  if not vim.tbl_contains(supported_alg, header.alg) then
+    return Logger.error("Unsupported Algorithm: " .. header.alg)
+  end
+  local method = header.alg == "RS256" and "sign" or "hmac"
 
   -- Base64url encode the header and payload
   local header_b64 = base64_encode(vim.json.encode(header))
@@ -87,7 +90,7 @@ M.jwt_encode = function(header, payload, key)
 
   -- Sign with OpenSSL
   local signature_file = os.tmpname()
-  local cmd = ("%s dgst -%s -sign %s -out %s %s"):format(openssl_path(), digest, key_file, signature_file, input_file)
+  local cmd = ("%s dgst -sha256 -%s %s -out %s %s"):format(openssl_path(), method, key_file, signature_file, input_file)
 
   local ret = os.execute(cmd)
   if ret ~= 0 then return Logger.error(err_msg .. "failed to sign with OpenSSL") end
