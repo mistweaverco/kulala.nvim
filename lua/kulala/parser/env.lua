@@ -77,7 +77,7 @@ local function get_http_client_private_env()
   end
 
   f["$shared"] = nil
-  DB.update().http_client_env = vim.tbl_deep_extend("force", DB.find_unique("http_client_env"), f)
+  DB.update().http_client_env = vim.tbl_deep_extend("force", DB.find_unique("http_client_env") or {}, f)
 
   return f
 end
@@ -110,12 +110,19 @@ end
 
 local function sanitize_secrets(config_id, config)
   local cur_env = vim.g.kulala_selected_env or Config.get().default_env
-  local private = get_http_client_private_env()[cur_env]
+  local secrets = { "secret", "private", "password" }
+
+  local private = get_http_client_private_env()
+  private = private and private[cur_env] or nil
+
+  if not private then return config end
 
   vim.iter(config):each(function(key, value)
     if
-      key:match("[Ss]ecret")
-      or key:match("private") and vim.tbl_get(private, "Security", "Auth", config_id, key) == value
+      vim.tbl_get(private, "Security", "Auth", config_id, key) == value
+      and vim.iter(secrets):any(function(secret)
+        return key:lower():match(secret)
+      end)
     then
       config[key] = nil
     end
