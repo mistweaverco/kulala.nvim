@@ -43,7 +43,10 @@ end
 ---@return table - get the auth config for the current environment, under Security.Auth
 local function get_auth_config(config_id)
   local cur_env = vim.g.kulala_selected_env or Config.get().default_env
-  local env = DB.find_unique("http_client_env") and DB.find_unique("http_client_env")[cur_env] or {}
+  local env = DB.find_unique("http_client_env") or (Env.get_env() and DB.find_unique("http_client_env")) or {}
+
+  env = env[cur_env] or {}
+
   return vim.tbl_get(env, "Security", "Auth", config_id) or {}
 end
 
@@ -52,7 +55,7 @@ local function validate_auth_params(config_id, keys)
   local valid = true
 
   vim.iter(keys):each(function(key)
-    if not config[key] then
+    if not (config[key] and #tostring(config[key]) > 0) then
       valid = false
       return Logger.error("Missing required field [" .. key .. "] in the Auth config: " .. config_id)
     end
@@ -167,7 +170,7 @@ end
 
 ---Grant Type "Device Authorization"
 ---Acquire a device token for the given config_id
-M.get_device_token = function(config_id)
+M.acquire_device_token = function(config_id)
   local config = get_auth_config(config_id)
   local device_code = M.get_device_code(config_id)
 
@@ -252,7 +255,7 @@ M.receive_code = function(config_id)
   local wait = vim.wait(request_timeout, function()
     config = get_auth_config(config_id)
     return config.code or config.access_token
-  end)
+  end, request_interval)
 
   if not wait then return Logger.error("Timeout waiting for authorization code/token for: " .. config_id) end
 
@@ -280,7 +283,7 @@ end
 
 ---Grant Type "Client Credentials"
 ---Acquire a token using the client credentials for the given config_id
-M.acquire_token_jwt = function(config_id)
+M.acquire_jwt_token = function(config_id)
   local config = get_auth_config(config_id)
   local assertion = config.assertion or M.create_JWT(config_id)
 
@@ -303,7 +306,7 @@ end
 
 ---Grant Type "Authorization Code" or "Implicit"
 ---Acquire an auth code for the given config_id
-M.acquire_code = function(config_id)
+M.acquire_auth = function(config_id)
   local config = get_auth_config(config_id)
 
   local required_params = { "Grant Type", "Client ID", "Redirect URL", "Auth URL", "Scope" }
@@ -338,6 +341,38 @@ M.acquire_code = function(config_id)
   return code
 end
 
+M.acquire_password_token = function(config_id)
+  local config = get_auth_config(config_id)
+  local required_params = { "Client ID", "Client Secret", "Token URL", "Scope", "Username", "Password" }
+  if not validate_auth_params(config_id, required_params) then return end
+
+  local url = config["Token URL"]
+  local body = "client_id="
+    .. config["Client ID"]
+    .. "&username="
+    .. config.Username
+    .. "&password="
+    .. config.Password
+    .. "&grant_type=password"
+    .. "&scope="
+    .. config["Scope"]
+
+  body = config["Client Secret"] and body .. "&client_secret=" .. config["Client Secret"] or body
+  body = add_custom_params(config_id, body, "In Token Request")
+
+  Logger.info("Acquiring token for config: " .. config_id)
+
+  local out = make_request(url, body, "acquire token")
+  if not out then return end
+
+  out.acquired_at = os.time()
+  if out.refresh_token then out.refresh_token_acquired_at = os.time() end
+
+  config = update_auth_config(config_id, out)
+
+  return config.access_token
+end
+
 ---Grant Type "Authorization Code" or "Implicit" or "Device Authorization" or "Client Credentials"
 ---Acquire a new token for the given config_id
 M.acquire_token = function(config_id)
@@ -346,13 +381,14 @@ M.acquire_token = function(config_id)
   table.remove_keys(config, { "code", "device_code", "user_code", "access_token", "id_token", "refresh_token" })
   config = update_auth_config(config_id, config)
 
-  if config["Grant Type"] == "Device Authorization" then return M.get_device_token(config_id) end
-  if config["Grant Type"] == "Client Credentials" then return M.acquire_token_jwt(config_id) end
+  if config["Grant Type"] == "Device Authorization" then return M.acquire_device_token(config_id) end
+  if config["Grant Type"] == "Client Credentials" then return M.acquire_jwt_token(config_id) end
+  if config["Grant Type"] == "Password" then return M.acquire_password_token(config_id) end
 
-  local code = M.acquire_code(config_id)
+  local code = M.acquire_auth(config_id)
   if config["Grant Type"] == "Implicit" then return code end
 
-  local required_params = { "Grant Type", "Client ID", "Redirect URL", "Token URL" }
+  local required_params = { "Client ID", "Redirect URL", "Token URL" }
   if not code or not validate_auth_params(config_id, required_params) then return end
 
   local url = config["Token URL"]
@@ -385,11 +421,15 @@ end
 ---Grant Type "Authorization Code" or "Device Authorization"
 ---Refresh the token for the given config_id
 M.refresh_token = function(config_id)
+  if not validate_auth_params(config_id, { "Grant Type" }) then return end
+
   local config = get_auth_config(config_id)
+  if config["Acquire Automatically"] == false then return end
+
   local refresh_token = not M.is_token_expired(config_id, "refresh_token") and config.refresh_token
   if not refresh_token then return M.acquire_token(config_id) end
 
-  if not validate_auth_params(config_id, { "Grant Type", "Client ID", "Token URL" }) then return end
+  if not validate_auth_params(config_id, { "Client ID", "Token URL" }) then return end
 
   local url = config["Token URL"]
   local body = "client_id=" .. config["Client ID"] .. "&refresh_token=" .. refresh_token .. "&grant_type=refresh_token"
@@ -412,6 +452,7 @@ end
 ---Entry point to get the token for the given config_id
 M.get_token = function(config_id)
   local config = get_auth_config(config_id)
+  if config["Use ID Token"] then return M.get_idToken(config_id) end
 
   local token = not M.is_token_expired(config_id) and config.access_token
   return token or M.refresh_token(config_id)
@@ -451,7 +492,7 @@ M.revoke_token = function(config_id)
   })
   update_auth_config(config_id, config)
 
-  return true
+  return "Token revoked for config: " .. config_id
 end
 
 ---Check if the token for the given config_id is expired
@@ -471,11 +512,6 @@ M.is_token_expired = function(config_id, type)
     and Logger.warn((type == "" and "Access" or "Refresh") .. " token expired for config: " .. config_id)
 
   return diff > expires_in, expires_in - diff
-end
-
-M.test = function()
-  DB.current_buffer = vim.fn.bufnr("gapi.http")
-  Env.get_env()
 end
 
 local function stop_server(server)
@@ -545,6 +581,63 @@ M.tcp_server = function(host, port, on_request)
   end)
 
   vim.uv.run()
+end
+
+M.add_auth_config = function(config_id)
+  local auth_template = {
+    ["Type"] = "OAuth2",
+    ["Username"] = "",
+    ["Scope"] = "",
+    ["Client ID"] = "",
+    ["Client Secret"] = "",
+    ["Grant Type"] = {
+      "Authorization Code",
+      "Client Credentials",
+      "Device Authorization",
+      "Implicit",
+      "Password",
+    },
+    ["Use ID Token"] = false,
+    ["Redirect URL"] = "",
+    ["Token URL"] = "",
+    ["Custom Request Parameters"] = {
+      ["my-custom-parameter"] = "my-custom-value",
+      ["audience"] = {
+        ["Use"] = "In Token Request",
+        ["Value"] = "https://my-audience.com/",
+      },
+      ["usage"] = {
+        ["Use"] = "In Auth Request",
+        ["Value"] = "https://my-usage.com/",
+      },
+      ["resource"] = {
+        "https =//my-resource/resourceId1",
+        "https =//my-resource/resourceId2",
+      },
+    },
+    ["Password"] = "",
+    ["PKCE"] = {
+      true,
+      {
+        ["Code Challenge Method"] = {
+          "Plain",
+          "SHA-256",
+        },
+        ["Code Verifier"] = "YYLzIBzrXpVaH5KRx86itubKLXHNGnJBPAogEwkhveM",
+      },
+    },
+    ["Revoke URL"] = "",
+    ["Device Auth URL"] = "",
+    ["Client Credentials"] = {
+      "none",
+      "in body",
+      "basic",
+    },
+    ["Acquire Automatically"] = true,
+    ["Auth URL"] = "",
+  }
+
+  if update_auth_config(config_id, auth_template) then return "Added new auth config: " .. config_id end
 end
 
 return M
