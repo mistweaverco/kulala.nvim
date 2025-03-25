@@ -1,7 +1,7 @@
 local Config = require("kulala.config")
+local Crypto = require("kulala.cmd.crypto")
 local DB = require("kulala.db")
 local Env = require("kulala.parser.env")
-local Jwt = require("kulala.cmd.jwt")
 local Logger = require("kulala.logger")
 local table = require("kulala.utils.table")
 
@@ -83,6 +83,33 @@ local function to_query(key, value)
   end)
 end
 
+local function add_pkce(config_id, body, request_type)
+  local config = get_auth_config(config_id)
+  local pkce = config.PKCE
+
+  if not pkce then return body end
+  pkce = pkce == true and {} or pkce
+
+  local challenge_method = pkce["Code Challenge Method"] or "S256"
+  local verifier = config.pkce_verifier or pkce["Code Verifier"] or Crypto.pkce_verifier()
+
+  config.pkce_verifier = request_type == "auth" and verifier or nil
+
+  local challenge = Crypto.pkce_challenge(verifier, challenge_method)
+
+  if not verifier or not challenge then
+    return body, Logger.error("Failed to create PKCE pair for config " .. config_id)
+  end
+
+  if request_type == "auth" then
+    body = body .. "&code_challenge=" .. challenge .. "&code_challenge_method=" .. challenge_method
+  elseif request_type == "token" then
+    body = body .. "&code_verifier=" .. verifier
+  end
+
+  return body
+end
+
 ---Add custom request parameters to the reuqest body
 ---@param config_id string
 ---@param body string
@@ -134,6 +161,7 @@ M.verify_device_code = function(config_id)
   local browser, status = vim.ui.open(config.verification_url)
   if not browser then return Logger.error("Failed to open browser: " .. status) end
 
+  Logger.info("Verification code: " .. config.user_code)
   vim.fn.setreg("+", config.user_code)
 end
 
@@ -233,17 +261,21 @@ end
 
 M.create_JWT = function(config_id)
   local config = get_auth_config(config_id)
-  if not validate_auth_params(config_id, { "Grant Type", "Scope", "private_key", "JWT" }) then return end
+  if not validate_auth_params(config_id, { "Grant Type", "Scope", "JWT" }) then return end
 
   local jwt = vim.deepcopy(config.JWT)
 
   local header = vim.tbl_extend("keep", jwt.header or {}, { alg = "RS256", typ = "JWT" })
   local payload = jwt.payload or {}
 
+  if (header.alg == "RS256" and not config.private_key) or (header.alg == "HS256" and not config["Client Secret"]) then
+    return Logger.error(header.alg .. " key not found for config " .. config_id)
+  end
+
   payload.exp = os.time() + (jwt.payload.exp or 50)
   payload.iat = os.time()
 
-  return Jwt.encode(header, payload, config.private_key)
+  return Crypto.jwt_encode(header, payload, config.private_key or config["Client Secret"])
 end
 
 ---Grant Type "Client Credentials"
@@ -286,8 +318,11 @@ M.acquire_code = function(config_id)
     .. "&client_id="
     .. config["Client ID"]
 
-  body = config["Grant Type"] == "Authorization Code" and body .. "&access_type=offline&response_type=code" or body
-  body = config["Grant Type"] == "Implicit" and body .. "&response_type=token" or body
+  local response_type = config["Grant Type"] == "Authorization Code" and "code" or "token"
+  response_type = config.response_type or response_type
+
+  body = body .. "&response_type=" .. response_type
+  body = add_pkce(config_id, body, "auth")
   body = add_custom_params(config_id, body, "In Auth Request")
 
   local uri = url .. "?" .. body
@@ -330,6 +365,8 @@ M.acquire_token = function(config_id)
     .. "&grant_type=authorization_code"
 
   body = config["Client Secret"] and body .. "&client_secret=" .. config["Client Secret"] or body
+
+  body = add_pkce(config_id, body, "token")
   body = add_custom_params(config_id, body, "In Token Request")
 
   Logger.info("Acquiring new token for config: " .. config_id)
@@ -394,13 +431,13 @@ M.revoke_token = function(config_id)
   local config = get_auth_config(config_id)
 
   local token = config.access_token
-  if not token or not validate_auth_params(config_id, { "Revoke URL" }) then return end
+  if not token then return end
 
   local url = config["Revoke URL"]
   local body = "token=" .. config.access_token
 
   Logger.info("Revoking token for config: " .. config_id)
-  make_request(url, body, "revoke token")
+  if url and #url > 0 then make_request(url, body, "revoke token") end
 
   table.remove_keys(config, {
     "code",
