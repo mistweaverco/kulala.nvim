@@ -4,16 +4,20 @@
 
 node_modules
 package-lock.json
+docs/package-lock.json
+
 
 *graphql-schema.json
 
 http-client.env.json
 !/schemas/http-client.env.json
-!/tests/functional/requests/http-client.env.json
+!/tests/**/http-client*.json
+!/docs/**/*.json
+
 
 /http-examples
 *.http
-!/tests/functional/requests/*.http
-!http-runable-demo/**
+!/docs/**/*.http
+!/tests/**/*.http
 
 todo.md

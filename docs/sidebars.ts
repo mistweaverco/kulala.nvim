@@ -51,6 +51,7 @@ const sidebars: SidebarsConfig = {
         "usage/testing-and-reporting",
         "usage/import-and-run-http",
         'usage/http-file-spec',
+        'usage/demos'
       ],
     },
     {

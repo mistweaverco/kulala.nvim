@@ -18,25 +18,6 @@ Kulala is swahili for "rest" or "relax".
 
 It allows you to make HTTP requests from within Neovim.
 
-Features include:
-  
-  - Protocols: HTTP, GRPC, GraphQL, WebSocket, Streaming
-  - Specs: HTTP File Spec and IntelliJ HTTP Client compliant
-  - Variables: Environment, Document, Request, Dynamic, Prompt, `http-profile.env` files
-  - Importing and running requests from external `*.http` files
-  - Importing and saving request/response data to/from external files
-  - Scripts: Pre-request, Post-request, Conditional, Inline, External
-  - Authentication: Basic, Bearer, Digest, NTLM, OAuth2, Negotiate, AWS Signature, SSL
-  - Assertions and Reporting
-  - Scratchpad: for making requests
-
-  Together with Kulala Language Server and Kulala Formatter, Kulala aims to provide the best REST Client experience on the web without leaving your favourite editor!
-
-  We are closely watching products, such as IntelliJ HTTP Client, VS Code REST Client, Postman, Hurl, Bruno, rest.nvim and others for ideas and inspiration and 
-  our focus is to achieve 100% compatibility with IntelliJ HTTP Client, while providing the features of others and more.
-
-  We love feature requests and feedback, so if you have any ideas or suggestions, please let us know!  We will be happy to implement them.
-
 <p></p>
 
 ![demo](./assets/demo.gif)
@@ -44,6 +25,27 @@ Features include:
 <p></p>
 
 </div>
+<br>
+
+## Features
+  
+  - Protocols: HTTP, GRPC, GraphQL, WebSocket, Streaming
+  - Specs: HTTP File Spec and IntelliJ HTTP Client compliant
+  - Variables: Environment, Document, Request, Dynamic, Prompt, `http-profile.env` files
+  - Importing and running requests from external `*.http` files
+  - Importing and saving request/response data to/from external files
+  - JS scripts: Pre-request, Post-request, Conditional, Inline, External
+  - Authentication: Basic, Bearer, Digest, NTLM, OAuth2, Negotiate, AWS, SSL
+  - Assertions, automated testing and reporting
+  - Scratchpad: for making requests
+
+#### Together with [Kulala Language Server](#) and [Kulala Formatter](#), Kulala aims to provide the best REST Client experience on the web without leaving your favourite editor!
+
+We are closely watching products, such as IntelliJ HTTP Client, VS Code REST Client, Postman, Hurl, Bruno, rest.nvim and others for ideas and inspiration and our focus is to achieve 100% compatibility with IntelliJ HTTP Client, while providing the features of others and more.
+
+#### We love feature requests and feedback, so if you have any ideas or suggestions, please let us know!  We will be happy to implement them.
+
+<br>
 
 ## Install
 
