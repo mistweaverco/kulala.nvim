@@ -13,11 +13,11 @@
  - `GRAPHQL` method support
  
 ### Enhancement: `win_opts` [config option](https://neovim.getkulala.net/docs/getting-started/configuration-options) to customize Kulala UI properties 
-
+ 
 ## Version 5.1.0
 
 ### Feature: `Cookie:` header support
-### Feature: Use `{{vars}}` in external json files
+### Feature: Use `{{vars}}` in [external](https://neovim.getkulala.net/docs/usage/request-variables) json files
 ### Feature: [Asserts, Automated testing and Reporting](https://neovim.getkulala.net/docs/usage/testing-and-reporting)
 ### Enhancement: keymaps for `Jump to response` and `Jump to request` in response view
 ### Feature: [conditional requests](https://neovim.getkulala.net/docs/scripts/request-reference) with `request.skip()` and `request.replay()`
