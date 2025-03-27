@@ -16,6 +16,8 @@ M.defaults = {
   websocat_path = "websocat",
   -- openssl path
   openssl_path = "openssl",
+  -- jq path
+  jq_path = "jq",
 
   -- set scope for environment and request variables
   -- possible values: b = buffer, g = global

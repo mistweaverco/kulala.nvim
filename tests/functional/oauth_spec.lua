@@ -29,7 +29,7 @@ local update_env = function(tbl)
   fs.write_json(http_client_path, env)
 end
 
-describe("oauth", function()
+describe("#wip oauth", function()
   local curl, system, wait_for_requests
   local http_buf, ui_buf, ui_buf_tick
   local on_request, redirect_request
@@ -87,7 +87,7 @@ describe("oauth", function()
       end)
     end
 
-    kulala_config.setup({ default_view = "body", debug = true })
+    kulala_config.setup({ default_view = "body", debug = 1, jq_path = "no_jq" })
     http_buf = h.create_buf(
       ([[
         GET https://secure.com
@@ -187,12 +187,13 @@ describe("oauth", function()
         scope = "scope:sample",
         username = "test@mail.com",
       })
+
       assert.has_properties(get_env(), {
         access_token = "new_access_token",
         refresh_token = "new_refresh_token",
-        acquired_at = os.time(),
-        refresh_token_acquired_at = os.time(),
       })
+      assert.near(os.time(), get_env().acquired_at, 1)
+      assert.near(os.time(), get_env().refresh_token_acquired_at, 1)
     end)
 
     it("#wip grant type - Client Credentials: generate JWT", function()
@@ -225,13 +226,13 @@ describe("oauth", function()
 
       assert.has_properties(get_env(), {
         access_token = "new_access_token",
-        acquired_at = os.time(),
       })
+      assert.near(os.time(), get_env().acquired_at, 1)
 
       assert.is.same("new_access_token", get_auth_header())
     end)
 
-    it("#wip grant type - Client Credentials: use provided", function()
+    it("grant type - Client Credentials: use provided", function()
       update_env({
         ["Grant Type"] = "Client Credentials",
         assertion = "custom_assertion",
@@ -251,6 +252,7 @@ describe("oauth", function()
         access_token = "new_access_token",
         acquired_at = os.time(),
       })
+      assert.near(os.time(), get_env().acquired_at, 1)
 
       assert.is.same("new_access_token", get_auth_header())
     end)
@@ -279,8 +281,8 @@ describe("oauth", function()
       assert.is.same("new_access_token", get_auth_header())
       assert.has_properties(get_env(), {
         access_token = "new_access_token",
-        acquired_at = os.time(),
       })
+      assert.near(os.time(), get_env().acquired_at, 1)
     end)
 
     it("grant type - Authorization code", function()
@@ -327,9 +329,9 @@ describe("oauth", function()
         code = "auth_code",
         access_token = "new_access_token",
         refresh_token = "new_refresh_token",
-        acquired_at = os.time(),
-        refresh_token_acquired_at = os.time(),
       })
+      assert.near(os.time(), get_env().acquired_at, 1)
+      assert.near(os.time(), get_env().refresh_token_acquired_at, 1)
     end)
 
     it("grant type - Device code", function()
@@ -366,9 +368,9 @@ describe("oauth", function()
         user_code = "new_user_code",
         device_code = "new_device_code",
         verification_url = "verification_url",
-        acquired_at = os.time(),
         interval = 1,
       })
+      assert.near(os.time(), get_env().acquired_at, 1)
 
       -- Opens browser with the verification URL and copies the user code to clipboard
       assert.is.same("verification_url", result.url_params.url)
@@ -387,8 +389,8 @@ describe("oauth", function()
       -- Saves new access token and refresh token
       assert.has_properties(get_env(), {
         access_token = "new_access_token",
-        acquired_at = os.time(),
       })
+      assert.near(os.time(), get_env().acquired_at, 1)
 
       assert.is.same("new_access_token", get_auth_header())
     end)
