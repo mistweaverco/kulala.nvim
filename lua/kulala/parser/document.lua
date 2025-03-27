@@ -504,6 +504,7 @@ M.get_request_at = function(requests, linenr)
 end
 
 M.get_previous_request = function(requests)
+  DB.set_current_buffer()
   local cursor_line = PARSER_UTILS.get_current_line_number()
 
   for i, request in ipairs(requests) do
@@ -512,6 +513,7 @@ M.get_previous_request = function(requests)
 end
 
 M.get_next_request = function(requests)
+  DB.set_current_buffer()
   local cursor_line = PARSER_UTILS.get_current_line_number()
 
   for i, request in ipairs(requests) do
