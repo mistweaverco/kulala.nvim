@@ -32,4 +32,19 @@ M.merge = function(tbl_1, tbl_2)
   return tbl_1
 end
 
+M.set_at = function(tbl, keys, value)
+  local _tbl = tbl
+
+  keys = type(keys) == "table" and keys or { keys }
+  for i = 1, #keys - 1 do
+    local key = keys[i]
+    tbl[key] = tbl[key] or {}
+    tbl = tbl[key]
+  end
+
+  tbl[keys[#keys]] = value
+
+  return _tbl
+end
+
 return M

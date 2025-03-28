@@ -1,6 +1,7 @@
 local Config = require("kulala.config")
 local DB = require("kulala.db")
 local FS = require("kulala.utils.fs")
+local Table = require("kulala.utils.table")
 
 local M = {}
 
@@ -108,45 +109,29 @@ local function get_http_client_env()
   end
 end
 
-local function sanitize_secrets(config_id, config)
+local function create_private_env()
+  local env_path = FS.find_file_in_parent_dirs("http-client.env.json")
+  env_path = env_path and vim.fn.fnamemodify(env_path, ":h") or FS.get_current_buffer_dir()
+
+  local private_env_path = env_path .. "/http-client.private.env.json"
   local cur_env = vim.g.kulala_selected_env or Config.get().default_env
-  local secrets = { "secret", "private", "password" }
-  local _config = {}
 
-  local private = get_http_client_private_env()
-  private = private and private[cur_env] or nil
+  local env = { cur_env = { Security = { Auth = {} } } }
+  FS.write_json(private_env_path, env)
+  Logger.info("Created private env file: " .. private_env_path)
 
-  if not private then return config end
-
-  vim.iter(config):each(function(key, value)
-    _config[key] = value
-
-    if
-      vim.tbl_get(private, "Security", "Auth", config_id, key) == value
-      and vim.iter(secrets):any(function(secret)
-        return key:lower():match(secret)
-      end)
-    then
-      _config[key] = nil
-    end
-  end)
-
-  return _config
+  return private_env_path
 end
 
-M.update_http_client_auth = function(config_id, config)
-  local _config = sanitize_secrets(config_id, config)
+M.update_http_client_auth = function(config_id, data)
+  local env_path = FS.find_file_in_parent_dirs("http-client.private.env.json")
+  env_path = env_path or create_private_env()
 
-  local env_path = FS.find_file_in_parent_dirs("http-client.env.json")
   local env = FS.read_json(env_path)
   if not env then return end
 
   local cur_env = vim.g.kulala_selected_env or Config.get().default_env
-
-  env[cur_env].Security = env[cur_env].Security or {}
-  env[cur_env].Security.Auth = env[cur_env].Security.Auth or {}
-
-  env[cur_env].Security.Auth[config_id] = _config
+  Table.set_at(env, { cur_env, "Security", "Auth", config_id, "auth_data" }, data)
 
   FS.write_json(env_path, env)
 end
