@@ -107,15 +107,10 @@ local function kulala_env_select(_)
           local env = http_client_env[entry.value]
           if not env then return end
 
-          local lines = {}
-          for key, value in pairs(env) do
-            value = vim.split(vim.inspect(value), "\n")
-            value[1] = key .. ": " .. value[1]
-
-            vim.list_extend(lines, value)
-          end
+          local lines = vim.split(vim.inspect(env), "\n")
 
           vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, lines)
+          vim.api.nvim_set_option_value("filetype", "lua", { buf = self.state.bufnr })
         end,
       }),
 

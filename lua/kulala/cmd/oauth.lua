@@ -30,7 +30,7 @@ local function make_request(url, body, request_desc)
     error = "Request error:\n" .. result.stderr
   end
 
-  result = result or { stdout = "" }
+  result = result or { stdout = "{}" }
   status, result = pcall(vim.json.decode, result.stdout or "", { object = nil, array = nil })
   if not status then error = "Error parsing authentication response:\n" .. result end
 
@@ -43,15 +43,18 @@ end
 ---@return table - get the auth config for the current environment, under Security.Auth
 local function get_auth_config(config_id)
   local cur_env = vim.g.kulala_selected_env or Config.get().default_env
-  local env = DB.find_unique("http_client_env") or (Env.get_env() and DB.find_unique("http_client_env")) or {}
+  local env = Env.get_env() and DB.find_unique("http_client_env") or {}
 
-  env = env[cur_env] or {}
+  local auth_config = vim.tbl_get(env, cur_env, "Security", "Auth", config_id) or {}
+  auth_config.auth_data = auth_config.auth_data or {}
 
-  return vim.tbl_get(env, "Security", "Auth", config_id) or {}
+  return auth_config
 end
 
-local function validate_auth_params(config_id, keys)
+local function validate_auth_params(config_id, keys, nested_key)
   local config = get_auth_config(config_id)
+  config = nested_key and config[nested_key] or config
+
   local valid = true
 
   vim.iter(keys):each(function(key)
@@ -64,16 +67,15 @@ local function validate_auth_params(config_id, keys)
   return valid
 end
 
----Updates the auth config for the current environment and persists changes in http_client_env.json
+---Updates the auth data for the current environment and config and persists changes in http-client.private.env.json
 ---@param config_id string
----@param update table - new values to update the auth config
-local function update_auth_config(config_id, update)
-  local config = vim.tbl_extend("force", get_auth_config(config_id), update)
+---@param data table - new values to update the auth config
+---@param replace boolean|nil - replace the existing auth data
+local function update_auth_data(config_id, data, replace)
+  local auth_data = replace and data or vim.tbl_extend("force", get_auth_config(config_id).auth_data, data)
 
-  Env.update_http_client_auth(config_id, config)
-  Env.get_env()
-
-  return config
+  Env.update_http_client_auth(config_id, auth_data)
+  return get_auth_config(config_id)
 end
 
 local function to_query(key, value)
@@ -94,9 +96,9 @@ local function add_pkce(config_id, body, request_type)
   pkce = pkce == true and {} or pkce
 
   local challenge_method = pkce["Code Challenge Method"] or "S256"
-  local verifier = config.pkce_verifier or pkce["Code Verifier"] or Crypto.pkce_verifier()
+  local verifier = config.auth_data.pkce_verifier or pkce["Code Verifier"] or Crypto.pkce_verifier()
 
-  config.pkce_verifier = request_type == "auth" and verifier or nil
+  config.auth_data.pkce_verifier = request_type == "auth" and verifier or nil
 
   local challenge = Crypto.pkce_challenge(verifier, challenge_method)
 
@@ -151,9 +153,9 @@ M.get_device_code = function(config_id)
   if not out then return end
 
   out.acquired_at = os.time()
-  config = update_auth_config(config_id, out)
+  config = update_auth_data(config_id, out)
 
-  return config.device_code
+  return config.auth_data.device_code
 end
 
 ---Grant Type "Device Authorization"
@@ -161,13 +163,13 @@ end
 ---Open browser with the verification URL and copy the user code to the clipboard
 M.verify_device_code = function(config_id)
   local config = get_auth_config(config_id)
-  if not validate_auth_params(config_id, { "verification_url", "user_code" }) then return end
+  if not validate_auth_params(config_id, { "verification_url", "user_code" }, "auth_data") then return end
 
-  local browser, status = vim.ui.open(config.verification_url)
+  local browser, status = vim.ui.open(config.auth_data.verification_url)
   if not browser then return Logger.error("Failed to open browser: " .. status) end
 
-  Logger.info("Verification code: " .. config.user_code)
-  vim.fn.setreg("+", config.user_code)
+  Logger.info("Verification code: " .. config.auth_data.user_code)
+  vim.fn.setreg("+", config.auth_data.user_code)
 end
 
 ---Grant Type "Device Authorization"
@@ -193,7 +195,7 @@ M.acquire_device_token = function(config_id)
 
   Logger.info("Acquiring device token for config: " .. config_id)
 
-  local period = config.interval and tonumber(config.interval) * 2000 or request_interval
+  local period = config.auth_data.interval and tonumber(config.auth_data.interval) * 2000 or request_interval
   Logger.info("Waiting for device token.  Press <C-c> to cancel.")
 
   local out, err
@@ -206,15 +208,15 @@ M.acquire_device_token = function(config_id)
     if not out and not err:match("authorization_pending") and not err:match("slow_down") then return true end
     out = out or {}
 
-    return out.access_token or os.difftime(os.time(), config.acquired_at) > config.expires_in
+    return out.access_token or os.difftime(os.time(), config.auth_data.acquired_at) > config.auth_data.expires_in
   end, period)
 
   if not out.access_token then return Logger.error("Timeout acquiring device token for config: " .. config_id) end
 
   out.acquired_at = os.time()
-  config = update_auth_config(config_id, out)
+  config = update_auth_data(config_id, out)
 
-  return config.access_token
+  return config.auth_data.access_token
 end
 
 local function parse_params(request)
@@ -246,7 +248,7 @@ M.receive_code = function(config_id)
     if params.code or params.access_token then
       vim.schedule(function()
         if params.access_token then params.acquired_at = os.time() end
-        update_auth_config(config_id, params)
+        update_auth_data(config_id, params)
       end)
       return "Code/Token received.  You can close the browser now."
     end
@@ -257,7 +259,7 @@ M.receive_code = function(config_id)
   Logger.info("Waiting for authorization code/token.  Press <C-c> to cancel.")
   local wait = vim.wait(request_timeout, function()
     config = get_auth_config(config_id)
-    return config.code or config.access_token
+    return config.auth_data.code or config.auth_data.access_token
   end, request_interval)
 
   if not wait then
@@ -265,7 +267,7 @@ M.receive_code = function(config_id)
     return Logger.error("Timeout waiting for authorization code/token for: " .. config_id)
   end
 
-  return config.code or config.access_token
+  return config.auth_data.code or config.auth_data.access_token
 end
 
 M.create_JWT = function(config_id)
@@ -305,9 +307,9 @@ M.acquire_jwt_token = function(config_id)
   if not out then return end
 
   out.acquired_at = os.time()
-  config = update_auth_config(config_id, out)
+  config = update_auth_data(config_id, out)
 
-  return config.access_token
+  return config.auth_data.access_token
 end
 
 ---Grant Type "Authorization Code" or "Implicit"
@@ -370,9 +372,9 @@ M.acquire_password_token = function(config_id)
   out.acquired_at = os.time()
   if out.refresh_token then out.refresh_token_acquired_at = os.time() end
 
-  config = update_auth_config(config_id, out)
+  config = update_auth_data(config_id, out)
 
-  return config.access_token
+  return config.auth_data.access_token
 end
 
 ---Grant Type "Authorization Code" or "Implicit" or "Device Authorization" or "Client Credentials"
@@ -380,8 +382,11 @@ end
 M.acquire_token = function(config_id)
   local config = get_auth_config(config_id)
 
-  table.remove_keys(config, { "code", "device_code", "user_code", "access_token", "id_token", "refresh_token" })
-  config = update_auth_config(config_id, config)
+  table.remove_keys(
+    config.auth_data,
+    { "code", "device_code", "user_code", "access_token", "id_token", "refresh_token" }
+  )
+  config = update_auth_data(config_id, config.auth_data, true)
 
   if config["Grant Type"] == "Device Authorization" then return M.acquire_device_token(config_id) end
   if config["Grant Type"] == "Client Credentials" then return M.acquire_jwt_token(config_id) end
@@ -415,9 +420,9 @@ M.acquire_token = function(config_id)
   out.acquired_at = os.time()
   if out.refresh_token then out.refresh_token_acquired_at = os.time() end
 
-  config = update_auth_config(config_id, out)
+  config = update_auth_data(config_id, out)
 
-  return config.access_token
+  return config.auth_data.access_token
 end
 
 ---Grant Type "Authorization Code" or "Device Authorization"
@@ -428,7 +433,7 @@ M.refresh_token = function(config_id)
   local config = get_auth_config(config_id)
   if config["Acquire Automatically"] == false then return end
 
-  local refresh_token = not M.is_token_expired(config_id, "refresh_token") and config.refresh_token
+  local refresh_token = not M.is_token_expired(config_id, "refresh_token") and config.auth_data.refresh_token
   if not refresh_token then return M.acquire_token(config_id) end
 
   if not validate_auth_params(config_id, { "Client ID", "Token URL" }) then return end
@@ -445,9 +450,9 @@ M.refresh_token = function(config_id)
   if not out then return end
 
   out.acquired_at = os.time()
-  config = update_auth_config(config_id, out)
+  config = update_auth_data(config_id, out)
 
-  return config.access_token
+  return config.auth_data.access_token
 end
 
 ---Grant Type - all
@@ -456,33 +461,32 @@ M.get_token = function(config_id)
   local config = get_auth_config(config_id)
   if config["Use ID Token"] then return M.get_idToken(config_id) end
 
-  local token = not M.is_token_expired(config_id) and config.access_token
+  local token = not M.is_token_expired(config_id) and config.auth_data.access_token
   return token or M.refresh_token(config_id)
 end
 
 M.get_idToken = function(config_id)
   local config = get_auth_config(config_id)
 
-  local token = not M.is_token_expired(config_id) and config.id_token
+  local token = not M.is_token_expired(config_id) and config.auth_data.id_token
   _ = not token and M.refresh_token(config_id)
 
-  return config.id_token
+  return config.auth_data.id_token
 end
 
 ---Revoke the token for the given config_id
 M.revoke_token = function(config_id)
   local config = get_auth_config(config_id)
 
-  local token = config.access_token
-  if not token then return end
+  local token = config.auth_data.access_token
+  if not token then return Logger.info("No token to revoke for config: " .. config_id) end
 
-  local url = config["Revoke URL"]
-  local body = "token=" .. config.access_token
+  local body = "token=" .. config.auth_data.access_token
 
   Logger.info("Revoking token for config: " .. config_id)
-  if url and #url > 0 then make_request(url, body, "revoke token") end
+  if validate_auth_params(config_id, { "Revoke URL" }) then make_request(config["Revoke URL"], body, "revoke token") end
 
-  table.remove_keys(config, {
+  table.remove_keys(config.auth_data, {
     "code",
     "access_token",
     "id_token",
@@ -492,7 +496,7 @@ M.revoke_token = function(config_id)
     "refresh_token_acquired_at",
     "refresh_token_expires_in",
   })
-  update_auth_config(config_id, config)
+  update_auth_data(config_id, config.auth_data, true)
 
   return "Token revoked for config: " .. config_id
 end
@@ -502,7 +506,7 @@ end
 ---@param type string|nil - default: "access" | "refresh"
 M.is_token_expired = function(config_id, type)
   type = type and type .. "_" or ""
-  local config = get_auth_config(config_id)
+  local config = get_auth_config(config_id).auth_data
 
   local acquired_at = tonumber(config[type .. "acquired_at"])
   local expires_in = tonumber(config[type .. "expires_in"])
@@ -587,67 +591,6 @@ M.tcp_server = function(host, port, on_request)
       stop_tcp(server)
     end,
   }
-end
-
-M.add_auth_config = function(config_id)
-  local auth_template = {
-    ["Type"] = "OAuth2",
-    ["Username"] = "",
-    ["Scope"] = "",
-    ["Client ID"] = "",
-    ["Client Secret"] = "",
-    ["Grant Type"] = {
-      "Authorization Code",
-      "Client Credentials",
-      "Device Authorization",
-      "Implicit",
-      "Password",
-    },
-    ["Use ID Token"] = false,
-    ["Redirect URL"] = "",
-    ["Token URL"] = "",
-    ["Custom Request Parameters"] = {
-      ["my-custom-parameter"] = "my-custom-value",
-      ["access_type"] = {
-        ["Value"] = "offline",
-        ["Use"] = "In Auth Request",
-      },
-      ["audience"] = {
-        ["Use"] = "In Token Request",
-        ["Value"] = "https://my-audience.com/",
-      },
-      ["usage"] = {
-        ["Use"] = "In Auth Request",
-        ["Value"] = "https://my-usage.com/",
-      },
-      ["resource"] = {
-        "https =//my-resource/resourceId1",
-        "https =//my-resource/resourceId2",
-      },
-    },
-    ["Password"] = "",
-    ["PKCE"] = {
-      true,
-      {
-        ["Code Challenge Method"] = {
-          "Plain",
-          "SHA-256",
-        },
-        ["Code Verifier"] = "YYLzIBzrXpVaH5KRx86itubKLXHNGnJBPAogEwkhveM",
-      },
-    },
-    ["Revoke URL"] = "",
-    ["Device Auth URL"] = "",
-    ["Client Credentials"] = {
-      "none",
-      "in body",
-      "basic",
-    },
-    ["Acquire Automatically"] = true,
-    ["Auth URL"] = "",
-  }
-
-  if update_auth_config(config_id, auth_template) then return "Added new auth config: " .. config_id end
 end
 
 return M

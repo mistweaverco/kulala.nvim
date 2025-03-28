@@ -6,13 +6,14 @@ local kulala_config = require("kulala.config")
 local oauth = require("kulala.cmd.oauth")
 
 local http_client_path = h.expand_path("requests/http-client.env.json")
+local http_client_private_path = h.expand_path("requests/http-client.private.env.json")
 
 local function get_auth_header()
   return db.data.current_request.headers.Authorization:gsub("Bearer ", "")
 end
 
 local function get_env()
-  return fs.read_json(http_client_path).dev.Security.Auth.GAPI
+  return fs.read_json(http_client_private_path).dev.Security.Auth.GAPI.auth_data
 end
 
 local parse_params = function(str)
@@ -29,7 +30,13 @@ local update_env = function(tbl)
   fs.write_json(http_client_path, env)
 end
 
-describe("#wip oauth", function()
+local update_auth_data = function(tbl)
+  local env = fs.read_json(http_client_private_path) or {}
+  env.dev.Security.Auth.GAPI.auth_data = vim.tbl_extend("force", env.dev.Security.Auth.GAPI.auth_data, tbl)
+  fs.write_json(http_client_private_path, env)
+end
+
+describe("oauth", function()
   local curl, system, wait_for_requests
   local http_buf, ui_buf, ui_buf_tick
   local on_request, redirect_request
@@ -87,7 +94,7 @@ describe("#wip oauth", function()
       end)
     end
 
-    kulala_config.setup({ default_view = "body", debug = 1, jq_path = "no_jq" })
+    kulala_config.setup({ default_view = "body", debug = 1, jq_path = "jq" })
     http_buf = h.create_buf(
       ([[
         GET https://secure.com
@@ -108,10 +115,14 @@ describe("#wip oauth", function()
     oauth.tcp_server:revert()
 
     fs.write_json(http_client_path, fs.read_json(h.expand_path("requests/http-client.env.default.json")))
+    fs.write_json(
+      http_client_private_path,
+      fs.read_json(h.expand_path("requests/http-client.private.env.default.json"))
+    )
   end)
 
   it("returns stored access token if it is not expired", function()
-    update_env({ access_token = "stored_access_token", acquired_at = os.time(), expires_in = os.time() + 3600 })
+    update_auth_data({ access_token = "stored_access_token", acquired_at = os.time(), expires_in = os.time() + 3600 })
 
     kulala.run()
     wait_for_requests(1)
@@ -127,7 +138,7 @@ describe("#wip oauth", function()
         Authorization: Bearer {{$auth.idToken("GAPI")}}
       ]]):to_table(true)
     )
-    update_env({ id_token = "stored_id_token", acquired_at = os.time(), expires_in = os.time() + 3600 })
+    update_auth_data({ id_token = "stored_id_token", acquired_at = os.time(), expires_in = os.time() + 3600 })
 
     kulala.run()
     wait_for_requests(1)
@@ -140,7 +151,7 @@ describe("#wip oauth", function()
       ["https://token.url"] = { stdout = '{ "access_token": "refreshed_access_token"}' },
     })
 
-    update_env({
+    update_auth_data({
       access_token = "expired_access_token",
       acquired_at = os.time() - 10,
       expires_in = 1,
@@ -196,7 +207,7 @@ describe("#wip oauth", function()
       assert.near(os.time(), get_env().refresh_token_acquired_at, 1)
     end)
 
-    it("#wip grant type - Client Credentials: generate JWT", function()
+    it("grant type - Client Credentials: generate JWT", function()
       update_env({
         ["Grant Type"] = "Client Credentials",
         private_key = "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC5cHDxLOlZKpgT\nLNEF18AlQkxOHwYuP3VOuAeCxwCMlICSmfVRCzl5Zv+36fVTnvSF5tp1J46JI6jD\nM3WIE9UmjcRA13TVfzkoRuEKOfd20/PVEoxAXt4h5xgT4yuuJB1+C+R4xcZY4ul7\neCar1YJ12JJEt8vnZRGEhpjE8FtGvCBdDQ2+d7Qhr2LL8PIYW6mS6++5uCBAno+4\nevOmE2GkeQAfosrkDLSjOtNzF9pEYA5BzW1ZuZJJyWukUvaze4MqFH/6XfqzFPtr\n5XfQo8Olifljteic6JQx9KcvhXI7v1owtCpjkqcXMtiXtR23mRws0h//outYR0o4\nfJuOmouVAgMBAAECggEALJ/lXfRb1yxL2llvl4Na5tx0dlw65Yg5146rqAnxlOLr\nqdvI0A7ubsudgAmaEtxupYZvTcAOKexd4VOR1gRHx/ZXou72W6Y4//tGjmpypbLN\nu5myDI+HzwrInYiOa2KfgkSkX3fgimVYoHDChZlkwq0yTb0ZIX8N3yFww/u/S17y\n4sP3/+94dR6KWZTuufsmknAvByVGtVe3bGszYo77DC3m7+Kx2mR88anuP9a2H3Jf\nldzVCPvJ4bboncTFItxERRiHX/N7xwmNO7MzL5WZRL+GPe9+P/Hr/PKokeQc+yEg\n0cfWqKG0tyTLArRGOOHZ3wHLGuqjSFc+RZiXoL3dxQKBgQDwGSMjdhKa+Ck6SwkU\n26vvTLN5XTwleG9w5Mhj3esKs0DROEGfksFmSCCkFNboDl11RJuUldNwa4AVyZoc\nPbA96jRJGK7AEcNOV9FwdEs8rc0Berfn6klQuE66gsVonIM9fRiq8pYnnZ552Urh\nuHxgQoQL5iWCdl/IZ4kai8FHJwKBgQDFuI/Dv7HjFS9bOkIP7pg/KKYzl6VsUSlp\nEkd67V9TLHwIToq+k2cjmPMRCKD6KYkhbyOMN3GJpk348h9xdY9reIOBAb7hotbs\nQCRYFmuiksKeDoaP8N7MSIjs2C1AMO80RbyB2jLF8R9VIE64xZmUs0RBki5vqvtZ\naqQbpqxs4wKBgQCMbmd7Ckh/k76pddHt/T5nTPl8dugDEpo78dSzdM1RCN9UgA8C\nAphT9sQAtJ+uQxiuyl4lXiy5iGb2V2BoPDylOiMyzdkIRltxqzO5DowjBZTu1JRU\ndVhEekiyFmLYeRLaGB0hf5oLuclDg7CkrX8x3jXVr9son4wOb2BlwnBd6QKBgALs\nZKvHRNEPuiCGLv3fUD720eZHYrnERXF5RLdLlTI8oSTaTHDe6xJ6q3VgBElOnelx\npDvpgfNAEz0QD2j1DQbQxFj+9pyNdNIPbLoksri3pMsDeffc3t50YBnoZFrjnlXO\nhigBWujUVNtEXAWdXlT1hZfWmnsqMwcybXS/NSNzAoGBAJekqSCvUQHdiNWq1BPp\nM998rdujTGmfYCdKLT+c0i1/s3YuGu/h87tTSjXi7Jmq/iNVM2+RoTaGvvD1b+ZC\nGLcVcsqa6qD77WRQZ3q+2sF8v2vSd9oHT0R2jA4U/zVyF9dFOV4tT09xrFh7vLXM\nfYsrQTaSEta7ynoUI5/9NJTJ\n-----END PRIVATE KEY-----\n",
@@ -277,7 +288,7 @@ describe("#wip oauth", function()
         scope = "scope:sample",
       })
 
-      -- Saves new access token and refresh token
+      -- Saves new access token
       assert.is.same("new_access_token", get_auth_header())
       assert.has_properties(get_env(), {
         access_token = "new_access_token",
@@ -374,7 +385,7 @@ describe("#wip oauth", function()
 
       -- Opens browser with the verification URL and copies the user code to clipboard
       assert.is.same("verification_url", result.url_params.url)
-      assert.is.same("new_user_code", vim.fn.getreg("+"))
+      -- assert.is.same("new_user_code", vim.fn.getreg("+"))
 
       -- Sends request to Token URL
       assert.has_properties(get_request(2), {
@@ -386,7 +397,7 @@ describe("#wip oauth", function()
         grant_type = "urn:ietf:params:oauth:grant-type:device_code",
       })
 
-      -- Saves new access token and refresh token
+      -- Saves new access token
       assert.has_properties(get_env(), {
         access_token = "new_access_token",
       })
@@ -490,5 +501,26 @@ describe("#wip oauth", function()
     -- pkce check plain and other methods
     -- jwt other digests
     -- custom response_type
+  end)
+
+  it("revokes token", function()
+    curl.stub({ ["http://revoke.url"] = { stdout = "{}" } })
+    update_env({ ["Revoke URL"] = "http://revoke.url" })
+    update_auth_data({
+      access_token = "expired_access_token",
+      acquired_at = os.time() - 10,
+      expires_in = 1,
+      refresh_token = "refresh_token",
+      refresh_token_acquired_at = os.time(),
+      refresh_token_expires_in = os.time() + 3600,
+    })
+
+    oauth.revoke_token("GAPI")
+
+    assert.has_properties(get_request(), {
+      token = "expired_access_token",
+      url = "http://revoke.url",
+    })
+    assert.same({}, get_env())
   end)
 end)

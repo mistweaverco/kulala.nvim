@@ -14,7 +14,7 @@ M.format = function(json_string)
   if #json_string > system_arg_limit then
     temp_file = os.tmpname()
     require("kulala.utils.fs").write_file(temp_file, json_string)
-    cmd = { "jq", ".", temp_file }
+    cmd = { "jq", "--sort-keys", ".", temp_file }
   end
 
   cmd = cmd or { "jq", "-n", json_string }
