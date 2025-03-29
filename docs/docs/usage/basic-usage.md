@@ -60,6 +60,12 @@ vim.system("curl -X GET http://localhost:3000")
 - `{{variable}}` allows you to use variables defined in `metadata`, `system environment` variables, `http-client.env.json` file or `.env` file.
 - `{{$dynamic-variable}}` allows you to use predefined dynamic, aka `magic` variables.
 
+#### Requests import
+
+- `import /path/to/file` allows you to import requests from another file.
+- `run #request-name` allows you to run a named request.
+- `run /path/to/file` allows you to run all requests in another file.
+
 #### File input/output
 
 - `< /path/to/file` allows you to include the contents of a file in the request.

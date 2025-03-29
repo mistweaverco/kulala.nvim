@@ -1,0 +1,4 @@
+POST https://httpbin.org/post
+Content-Type: application/json
+
+< ./body-from-file.json
