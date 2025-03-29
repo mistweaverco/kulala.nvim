@@ -28,6 +28,23 @@ M.merge = function(tbl_1, tbl_2)
   vim.iter(tbl_2):each(function(k, v)
     if not tbl_1[k] then tbl_1[k] = v end
   end)
+
+  return tbl_1
+end
+
+M.set_at = function(tbl, keys, value)
+  local _tbl = tbl
+
+  keys = type(keys) == "table" and keys or { keys }
+  for i = 1, #keys - 1 do
+    local key = keys[i]
+    tbl[key] = tbl[key] or {}
+    tbl = tbl[key]
+  end
+
+  tbl[keys[#keys]] = value
+
+  return _tbl
 end
 
 return M

@@ -48,6 +48,13 @@ M.default_global_keymaps = {
     end,
     ft = { "http", "rest" },
   },
+  ["Manage Auth Config"] = {
+    "<leader>Ru",
+    function()
+      require("lua.kulala.ui.auth_manager").open_auth_config()
+    end,
+    ft = { "http", "rest" },
+  },
   ["Send request"] = {
     "<leader>Rs",
     function()

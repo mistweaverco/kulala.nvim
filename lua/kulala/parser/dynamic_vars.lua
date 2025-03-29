@@ -1,7 +1,9 @@
 local CONFIG = require("kulala.config")
+local Logger = require("kulala.logger")
+local Oauth = require("kulala.cmd.oauth")
+
 local M = {}
 
-local random = math.random
 math.randomseed(os.time())
 
 ---Generate a random uuid
@@ -10,9 +12,14 @@ local function uuid()
   local template = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx"
   ---@diagnostic disable-next-line redundant-return-value
   return string.gsub(template, "[xy]", function(c)
-    local v = (c == "x") and random(0, 0xf) or random(8, 0xb)
+    local v = (c == "x") and math.random(0, 0xf) or math.random(8, 0xb)
     return string.format("%x", v)
   end)
+end
+
+local function auth_token(name)
+  local type, config = name:match("^%$auth%.(%a+)%(['\"](.+)['\"]%)")
+  return Oauth["get_" .. type] and config and Oauth["get_" .. type](config) or nil
 end
 
 ---Retrieve all dynamic variables from both rest.nvim and the ones declared by
@@ -39,9 +46,10 @@ end
 ---@return string|nil The dynamic variable value or `nil` if the dynamic variable was not found
 function M.read(name)
   local vars = M.retrieve_all()
+  if name:match("^%$auth%.") then return auth_token(name) end
+
   if not vim.tbl_contains(vim.tbl_keys(vars), name) then
-    ---@diagnostic disable-next-line need-check-nil
-    vim.notify("The dynamic variable '" .. name .. "' was not found. Maybe it's written wrong or doesn't exist?")
+    Logger.warn("The dynamic variable '" .. name .. "' was not found. Maybe it's written wrong or doesn't exist?")
     return nil
   end
 

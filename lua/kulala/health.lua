@@ -28,6 +28,7 @@ M.check = function()
   check_executable("cURL", config.curl_path)
   check_executable("gRPCurl", config.grpcurl_path)
   check_executable("websocat", config.websocat_path)
+  check_executable("openssl", config.openssl_path)
 
   health.start("Checking formatters")
 

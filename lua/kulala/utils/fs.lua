@@ -1,3 +1,4 @@
+local Json = require("kulala.utils.json")
 local Logger = require("kulala.logger")
 
 local M = {}
@@ -317,6 +318,7 @@ end
 ---@return string|nil
 ---@usage local p = fs.read_file('Makefile')
 M.read_file = function(filename, is_binary)
+  if not filename then return end
   local read_mode = is_binary and "rb" or "r"
 
   filename = M.get_file_path(filename)
@@ -337,7 +339,20 @@ M.read_json = function(filename)
   local content = M.read_file(filename)
   if not content then return end
 
-  return vim.json.decode(content, { object = true, array = true })
+  local status, result = pcall(vim.json.decode, content, { object = true, array = true })
+  if not status then return Logger.error("Error decoding JSON file: " .. filename .. ": " .. result) end
+
+  return result
+end
+
+M.write_json = function(filename, data)
+  local content = vim.json.encode(data)
+  if not content then return end
+
+  content = Json.format(content)
+
+  content = content:gsub("\\/", "/"):gsub('\\"', '"')
+  return M.write_file(filename, content)
 end
 
 ---@param content string
