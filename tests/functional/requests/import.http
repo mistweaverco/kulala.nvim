@@ -1,0 +1,9 @@
+import advanced_A.http
+
+### Request Imported
+run advanced_B.http
+
+run #Request 1
+
+POST https://httpbin.org/imported HTTP/1.1
+
