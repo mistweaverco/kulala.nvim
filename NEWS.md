@@ -5,24 +5,19 @@
 ### Feature: [Oauth2 support](https://neovim.getkulala.net/docs/usage/authentication)
 ### Feature: [Websockets support](https://neovim.getkulala.net/docs/usage/websockets)
 ### Docs: added runnable [demo](https://neovim.getkulala.net/docs/usage/demos) `*.http` examples
-### Feature: `import` and `run` [commands](https://neovim.getkulala.net/docs/usage/demos) to import and run requests from external `*.http` files
--- add to docs nested
+### Feature: `import` and `run` [commands](https://neovim.getkulala.net/docs/usage/import-and-run-http) to import and run requests from external `*.http` files
 ### Enhancement: improved compatibility with IntelliJ HTTP Client spec:
 
  - URL line support for `absolute/origin/asterisk path`
  - `#` and `//` comments support
  - `GRAPHQL` method support
- -- add to syntax docs 
  
 ### Enhancement: `win_opts` [config option](https://neovim.getkulala.net/docs/getting-started/configuration-options) to customize Kulala UI properties 
--- add to docs
 
 ## Version 5.1.0
 
-### Feature: `Cookie:` header [support](https://neovim.getkulala.net/docs/usage/cookies)
--- add to docs
-### Feature: Use `{{vars}}` in [external](https://neovim.getkulala.net/docs/usage/request-variables) json files
--- add to docs
+### Feature: `Cookie:` header support
+### Feature: Use `{{vars}}` in external json files
 ### Feature: [Asserts, Automated testing and Reporting](https://neovim.getkulala.net/docs/usage/testing-and-reporting)
 ### Enhancement: keymaps for `Jump to response` and `Jump to request` in response view
 ### Feature: [conditional requests](https://neovim.getkulala.net/docs/scripts/request-reference) with `request.skip()` and `request.replay()`

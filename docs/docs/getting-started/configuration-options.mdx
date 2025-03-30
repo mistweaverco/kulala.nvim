@@ -10,7 +10,7 @@ Kulala can be configured with the following options.
 Here is a full example of setting up
 the Kulala plugin with the available `opts`:
 
-<CodeBlock language="lua" title="default.lua">{Config}</CodeBlock>
+<CodeBlock language="lua" title="kulala.nvim/lua/config/default.lua">{Config}</CodeBlock>
 
 ### curl_path
 
@@ -408,8 +408,14 @@ Enable debug mode.
 
 Possible values:
 
-- `true`
-- `false`
+- `true` - enable debug mode
+- `false` - disable debug mode
+- `1/2/3` - set log level 
+  - `0` = silence all notifications
+  - `1` = only error
+  - `2` = error and warn
+  - `3` = error, warn and info
+  - `4` = debug
 
 Default: `false`
 
@@ -468,6 +474,32 @@ Example:
   opts = {
     ui = {
       split_direction = "vertical",
+    },
+  },
+}
+```
+
+### ui.win_opts
+
+Kualala UI window options.
+
+You can set your own window options here.
+
+
+Default: `{}`
+
+Example:
+
+```lua
+{
+  "mistweaverco/kulala.nvim",
+  opts = {
+    ui = {
+      win_opts = {
+        width = 80,
+        height = 20,
+        split = "vertical",
+      },
     },
   },
 }

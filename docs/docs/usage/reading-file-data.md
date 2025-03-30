@@ -26,3 +26,5 @@ be used as the request body.
   }
 }
 ```
+
+Variables in the included file will be evaluated as normal.
