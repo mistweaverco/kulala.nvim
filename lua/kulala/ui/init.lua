@@ -147,7 +147,8 @@ local function show(contents, filetype, mode)
   _ = mode ~= "report" and REPORT.set_response_summary(buf)
 
   local win = open_kulala_window(buf)
-  _ = mode == "report" and vim.api.nvim_win_set_cursor(win, { vim.api.nvim_buf_line_count(buf), 0 })
+  local lnum = mode == "report" and vim.api.nvim_buf_line_count(buf) or 4
+  vim.fn.cursor(lnum, 0)
 
   WINBAR.toggle_winbar_tab(buf, win, mode)
   CONFIG.options.default_view = mode
