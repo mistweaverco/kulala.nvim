@@ -158,13 +158,10 @@ end
 --- @return boolean
 --- @usage local p = fs.write_file('Makefile', 'all: \n\t@echo "Hello World"')
 M.write_file = function(filename, content, append)
-  local f
-  if append then
-    f = io.open(filename, "a")
-  else
-    f = io.open(filename, "w")
-  end
+  local f, mode
+  mode = append and "a" or "w"
 
+  f = io.open(filename, mode)
   if not f then return false end
 
   f:write(content)

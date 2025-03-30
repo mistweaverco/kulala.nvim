@@ -23,10 +23,11 @@ M.remove_keys = function(tbl, keys)
   end)
 end
 
---- Merge table 2 into table 1, keeping existing keys
-M.merge = function(tbl_1, tbl_2)
+--- Merge table 2 into table 1
+--- @param mode "force" | "keep" -- force: overwrite existing keys, keep: only add new keys
+M.merge = function(mode, tbl_1, tbl_2)
   vim.iter(tbl_2):each(function(k, v)
-    if not tbl_1[k] then tbl_1[k] = v end
+    if not tbl_1[k] or mode == "force" then tbl_1[k] = v end
   end)
 
   return tbl_1

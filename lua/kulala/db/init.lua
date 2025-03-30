@@ -1,4 +1,7 @@
 local CONFIG = require("kulala.config")
+local FS = require("kulala.utils.fs")
+local GLOBAL = require("kulala.globals")
+local Table = require("kulala.utils.table")
 
 local M = {}
 
@@ -120,5 +123,29 @@ end
 M.find_unique = function(key)
   return M.find_many()[key]
 end
+
+local mt_settings
+
+mt_settings = {
+  __index = {
+    write = function(self, update)
+      Table.merge("force", self, update or {})
+      FS.write_json(GLOBAL.SETTINGS_FILE, vim.deepcopy(self))
+      return self
+    end,
+  },
+
+  create = function()
+    FS.ensure_dir_exists(vim.fn.fnamemodify(GLOBAL.SETTINGS_FILE, ":h"))
+    return FS.write_json(GLOBAL.SETTINGS_FILE, {}) and {}
+  end,
+
+  read = function(self)
+    local settings = FS.read_json(GLOBAL.SETTINGS_FILE) or self:create()
+    return setmetatable(settings, mt_settings)
+  end,
+}
+
+M.settings = mt_settings:read()
 
 return M

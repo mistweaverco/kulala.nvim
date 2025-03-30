@@ -1,7 +1,9 @@
 local CONFIG = require("kulala.config")
+local DB = require("kulala.db")
 local FS = require("kulala.utils.fs")
 local GLOBALS = require("kulala.globals")
 local Logger = require("kulala.logger")
+
 local M = {}
 
 local NPM_EXISTS = vim.fn.executable("npm") == 1
@@ -17,6 +19,7 @@ local BASE_FILE_VER = FS.join_paths(SCRIPTS_BUILD_DIR, "dist", ".version")
 local BASE_FILE_PRE = FS.join_paths(SCRIPTS_BUILD_DIR, "dist", "pre_request.js")
 local BASE_FILE_POST_CLIENT_ONLY = FS.join_paths(SCRIPTS_BUILD_DIR, "dist", "post_request_client_only.js")
 local BASE_FILE_POST = FS.join_paths(SCRIPTS_BUILD_DIR, "dist", "post_request.js")
+
 local FILE_MAPPING = {
   pre_request_client_only = BASE_FILE_PRE_CLIENT_ONLY,
   pre_request = BASE_FILE_PRE,
@@ -25,21 +28,22 @@ local FILE_MAPPING = {
 }
 
 local is_uptodate = function()
-  local version = FS.read_file(BASE_FILE_VER) or 0
+  local version = DB.settings.js_version
   return GLOBALS.VERSION == version and FS.file_exists(BASE_FILE_PRE) and FS.file_exists(BASE_FILE_POST)
 end
 
 ---@param wait boolean -- wait to complete
 M.install_dependencies = function(wait)
-  if is_uptodate() then return true end
+  if is_uptodate() or vim.g.kulala_js_installing then return true end
 
-  Logger.warn("Javascript base files not found or are out of date.")
-  Logger.info(
-    "Installing Javascript dependencies...\nPlease wait until the installation is complete and rerun requests."
-  )
+  local log_info, log_err = vim.schedule_wrap(Logger.info), vim.schedule_wrap(Logger.error)
+
+  log_info("Javascript base files not found or are out of date.")
+  log_info("Installing Javascript dependencies...\nPlease wait until the installation is complete and rerun requests.")
+
+  vim.g.kulala_js_installing = true
 
   local cmd_install, cmd_build
-  local log_info, log_err = vim.schedule_wrap(Logger.info), vim.schedule_wrap(Logger.error)
 
   FS.copy_dir(BASE_DIR, SCRIPTS_BUILD_DIR)
 
@@ -49,7 +53,9 @@ M.install_dependencies = function(wait)
     cmd_build = vim.system({ NPM_BIN, "run", "build", "--prefix", SCRIPTS_BUILD_DIR }, { text = true }, function(out)
       if out.code ~= 0 then return log_err("npm run build fail with code " .. out.code .. out.stderr) end
 
-      FS.write_file(BASE_FILE_VER, GLOBALS.VERSION)
+      DB.settings:write({ js_version = GLOBALS.VERSION })
+      vim.g.kulala_js_installing = false
+
       log_info("Javascript dependencies installed.")
     end)
   end)
