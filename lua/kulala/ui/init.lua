@@ -331,7 +331,7 @@ M.show_news = function()
   local footer = vim.fn.bufnr("kulala://news_popup")
   _ = footer > -1 and vim.api.nvim_buf_delete(footer, { force = true })
 
-  DB.settings.news_ver = GLOBALS.VERSION
+  DB.settings:write({ news_ver = GLOBALS.VERSION })
 end
 
 M.scratchpad = function()

@@ -70,12 +70,7 @@ M.close = function()
 end
 
 M.search = function()
-  local has_telescope, telescope = pcall(require, "telescope")
-  if has_telescope then
-    telescope.extensions.kulala.search()
-  else
-    SELECTOR.search()
-  end
+  require("kulala.ui.request_manager").open()
 end
 
 M.scripts_clear_global = function(key_or_keys)
