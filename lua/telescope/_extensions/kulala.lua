@@ -2,7 +2,6 @@ local has_telescope, telescope = pcall(require, "telescope")
 
 if not has_telescope then return nil end
 
-local DB = require("kulala.db")
 local Parser = require("kulala.parser.document")
 local ParserUtils = require("kulala.parser.utils")
 
@@ -72,56 +71,8 @@ local function kulala_search(_)
     :find()
 end
 
-local function kulala_env_select(_)
-  local http_client_env = DB.find_unique("http_client_env")
-  if not http_client_env then return end
-
-  local envs = {}
-  for key, _ in pairs(http_client_env) do
-    if key ~= "$schema" and key ~= "$shared" then table.insert(envs, key) end
-  end
-
-  pickers
-    .new({}, {
-      prompt_title = "Select Environment",
-
-      finder = finders.new_table({
-        results = envs,
-      }),
-
-      attach_mappings = function(prompt_bufnr)
-        actions.select_default:replace(function()
-          local selection = action_state.get_selected_entry()
-          actions.close(prompt_bufnr)
-
-          if not selection then return end
-
-          vim.g.kulala_selected_env = selection.value
-        end)
-        return true
-      end,
-
-      previewer = previewers.new_buffer_previewer({
-        title = "Environment",
-        define_preview = function(self, entry)
-          local env = http_client_env[entry.value]
-          if not env then return end
-
-          local lines = vim.split(vim.inspect(env), "\n")
-
-          vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, lines)
-          vim.api.nvim_set_option_value("filetype", "lua", { buf = self.state.bufnr })
-        end,
-      }),
-
-      sorter = config.generic_sorter({}),
-    })
-    :find()
-end
-
 return telescope.register_extension({
   exports = {
     search = kulala_search,
-    select_env = kulala_env_select,
   },
 })

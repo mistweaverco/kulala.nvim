@@ -1,4 +1,4 @@
-local has_telescope, telescope = pcall(require, "telescope")
+local has_telescope = pcall(require, "telescope")
 local has_snacks, snacks_picker = pcall(require, "snacks.picker")
 
 local Config = require("kulala.config")

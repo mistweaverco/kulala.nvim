@@ -96,16 +96,7 @@ end
 
 M.set_selected_env = function(env)
   ENV.get_env()
-
-  if not env then
-    local has_telescope, telescope = pcall(require, "telescope")
-    local selector = has_telescope and telescope.extensions.kulala or SELECTOR
-
-    selector.select_env()
-    return
-  end
-
-  vim.g.kulala_selected_env = env
+  vim.g.kulala_selected_env = env or require("kulala.ui.env_manager").open()
 end
 
 ---Clears all cached files
