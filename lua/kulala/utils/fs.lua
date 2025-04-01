@@ -345,11 +345,15 @@ M.read_json = function(filename)
   return result
 end
 
-M.write_json = function(filename, data)
+---Write JSON to file
+---@param filename string
+---@param data table
+---@param format boolean|nil -- format the JSON with jq
+M.write_json = function(filename, data, format)
   local content = vim.json.encode(data)
   if not content then return end
 
-  content = Json.format(content)
+  content = format and Json.format(content) or content
 
   content = content:gsub("\\/", "/"):gsub('\\"', '"')
   return M.write_file(filename, content)

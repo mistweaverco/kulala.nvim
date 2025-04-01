@@ -8,6 +8,11 @@ local oauth = require("kulala.cmd.oauth")
 local http_client_path = h.expand_path("requests/http-client.env.json")
 local http_client_private_path = h.expand_path("requests/http-client.private.env.json")
 
+local function restore_http_client_files()
+  fs.write_json(http_client_path, fs.read_json(h.expand_path("requests/http-client.env.default.json")))
+  fs.write_json(http_client_private_path, fs.read_json(h.expand_path("requests/http-client.private.env.default.json")))
+end
+
 local function get_auth_header()
   return db.data.current_request.headers.Authorization:gsub("Bearer ", "")
 end
@@ -40,7 +45,7 @@ describe("oauth", function()
   local curl, system, wait_for_requests
   local http_buf, ui_buf, ui_buf_tick
   local on_request, redirect_request
-  local result, expected = {}, {}
+  local result = {}
 
   local function get_request(no)
     return system.log[no or 1]
@@ -48,6 +53,7 @@ describe("oauth", function()
 
   before_each(function()
     ui_buf_tick = 0
+    restore_http_client_files()
     curl = h.Curl.stub({ ["https://www.secure.com"] = {} })
 
     stub(vim.uv, "sleep", function() end)
@@ -114,11 +120,7 @@ describe("oauth", function()
     vim.uv.sleep:revert()
     oauth.tcp_server:revert()
 
-    fs.write_json(http_client_path, fs.read_json(h.expand_path("requests/http-client.env.default.json")))
-    fs.write_json(
-      http_client_private_path,
-      fs.read_json(h.expand_path("requests/http-client.private.env.default.json"))
-    )
+    restore_http_client_files()
   end)
 
   it("returns stored access token if it is not expired", function()
@@ -246,7 +248,7 @@ describe("oauth", function()
     it("grant type - Client Credentials: use provided", function()
       update_env({
         ["Grant Type"] = "Client Credentials",
-        assertion = "custom_assertion",
+        Assertion = "custom_assertion",
       })
 
       kulala.run()
@@ -267,8 +269,6 @@ describe("oauth", function()
 
       assert.is.same("new_access_token", get_auth_header())
     end)
-
-    --TODO: use provided assetion, add exp and iat, payload.exp
 
     it("grant type - Implicit", function()
       update_env({ ["Grant Type"] = "Implicit" })
@@ -407,7 +407,7 @@ describe("oauth", function()
     end)
 
     it("adds custom response_type to Auth request", function()
-      update_env({ ["Grant Type"] = "Authorization Code", response_type = "code token" })
+      update_env({ ["Grant Type"] = "Authorization Code", ["Response Type"] = "code token" })
       redirect_request = "code=auth_code&state=state"
 
       kulala.run()
@@ -496,11 +496,6 @@ describe("oauth", function()
         state = "state",
       })
     end)
-
-    --TODO:
-    -- pkce check plain and other methods
-    -- jwt other digests
-    -- custom response_type
   end)
 
   it("revokes token", function()

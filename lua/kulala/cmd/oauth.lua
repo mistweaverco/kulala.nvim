@@ -293,7 +293,7 @@ end
 ---Acquire a token using the client credentials for the given config_id
 M.acquire_jwt_token = function(config_id)
   local config = get_auth_config(config_id)
-  local assertion = config.assertion or M.create_JWT(config_id)
+  local assertion = config.Assertion or M.create_JWT(config_id)
 
   if not assertion or not validate_auth_params(config_id, { "Grant Type", "Token URL" }) then return end
 
@@ -324,7 +324,7 @@ M.acquire_auth = function(config_id)
   local body = "redirect_uri=" .. config["Redirect URL"] .. "&client_id=" .. config["Client ID"]
 
   local response_type = config["Grant Type"] == "Authorization Code" and "code" or "token"
-  response_type = config.response_type or response_type
+  response_type = config["Response Type"] or response_type
 
   body = body .. "&response_type=" .. response_type
   body = config["Scope"] and body .. "&scope=" .. config["Scope"] or body

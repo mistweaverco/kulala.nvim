@@ -2,7 +2,7 @@ local DB = require("kulala.db")
 local FS = require("kulala.utils.fs")
 local Logger = require("kulala.logger")
 local PARSER_UTILS = require("kulala.parser.utils")
-local utils = require("kulala.utils.table")
+local Table = require("kulala.utils.table")
 
 local M = {}
 ---@class DocumentRequest
@@ -289,7 +289,7 @@ local function import_requests(path, variables, request)
   if not file then return Logger.warn("The file '" .. path .. "' was not found. Skipping ...") end
 
   local r_variables, requests = M.get_document(vim.split(file, "\n"), path)
-  utils.merge(variables, r_variables)
+  Table.merge("keep", variables, r_variables)
 
   return requests
 end

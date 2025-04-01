@@ -133,7 +133,7 @@ M.update_http_client_auth = function(config_id, data)
   local cur_env = vim.g.kulala_selected_env or Config.get().default_env
   Table.set_at(env, { cur_env, "Security", "Auth", config_id, "auth_data" }, data)
 
-  FS.write_json(env_path, env)
+  FS.write_json(env_path, env, true)
 end
 
 local function get_scripts_variables(env)

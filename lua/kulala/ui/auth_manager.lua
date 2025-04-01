@@ -62,13 +62,18 @@ local function auth_template()
     },
     ["Revoke URL"] = "",
     ["Device Auth URL"] = "",
-    ["Client Credentials"] = {
-      "none",
-      "in body",
-      "basic",
-    },
     ["Acquire Automatically"] = true,
     ["Auth URL"] = "",
+    ["JWT"] = {
+      header = {
+        alg = "RS256",
+        typ = "JWT",
+      },
+      payload = {
+        ia = 0,
+        exp = 50,
+      },
+    },
   }
 end
 
@@ -96,7 +101,7 @@ local function update_auth_config(name, value)
 
   Table.set_at(public_env, { cur_env, "Security", "Auth", name }, value)
 
-  Fs.write_json(public_env_path, public_env)
+  Fs.write_json(public_env_path, public_env, true)
   Env.get_env()
 end
 
@@ -121,7 +126,12 @@ local function edit_env_file(config, buf_or_picker, name)
   file = Fs.find_file_in_parent_dirs(file)
   if not file then return end
 
-  _ = type(buf_or_picker) == "number" and actions.close(buf_or_picker) or buf_or_picker:close()
+  if type(buf_or_picker) == "number" then
+    actions.close(buf_or_picker)
+  else
+    buf_or_picker:close()
+  end
+
   vim.cmd(('edit +/"%s": %s'):format(config, file))
 
   return true
@@ -232,7 +242,7 @@ local function open_auth_snacks()
   local keys = {}
 
   vim.iter(commands):each(function(key)
-    _actions[key] = function(ctx, item, map)
+    _actions[key] = function(ctx, item, action)
       run_cmd(key, ctx, item)
     end
     keys[key] = { key, mode = { "n" }, desc = commands[key][2] }
@@ -277,8 +287,8 @@ local function open_auth_snacks()
       input = { keys = keys },
       list = { title = "Auth Configurations" },
     },
-    confirm = function(picker)
-      run_cmd("e", picker)
+    confirm = function(picker, item)
+      run_cmd("e", picker, item)
     end,
   })
 end
