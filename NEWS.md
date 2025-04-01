@@ -13,7 +13,7 @@
  - `GRAPHQL` method support
  
 ### Enhancement: `win_opts` [config option](https://neovim.getkulala.net/docs/getting-started/configuration-options) to customize Kulala UI properties 
- 
+
 ## Version 5.1.0
 
 ### Feature: `Cookie:` header support
