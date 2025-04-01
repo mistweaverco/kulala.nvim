@@ -63,14 +63,17 @@ end
 
 ---Either returns the absolute path if the path is already absolute or
 ---joins the path with the current buffer directory
-M.get_file_path = function(path)
+---@param path string
+---@param root string|nil -- root directory
+M.get_file_path = function(path, root)
   local ex_path = vim.fn.expand(path, true)
   path = ex_path ~= "" and ex_path or path
+  root = root and vim.fn.fnamemodify(root, ":h")
 
   if M.is_absolute_path(path) then return path end
   if path:sub(1, 2) == "./" or path:sub(1, 2) == ".\\" then path = path:sub(3) end
 
-  return M.join_paths(M.get_current_buffer_dir(), path)
+  return M.join_paths(root or M.get_current_buffer_dir(), path)
 end
 
 -- This is mainly used for determining if the current buffer is a non-http file
