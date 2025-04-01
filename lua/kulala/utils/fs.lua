@@ -1,3 +1,4 @@
+local Json = require("kulala.utils.json")
 local Logger = require("kulala.logger")
 
 local M = {}
@@ -350,6 +351,8 @@ end
 M.write_json = function(filename, data)
   local content = vim.json.encode(data)
   if not content then return end
+
+  content = Json.format(content)
 
   content = content:gsub("\\/", "/"):gsub('\\"', '"')
   return M.write_file(filename, content)

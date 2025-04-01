@@ -137,10 +137,12 @@ end
 ---Acquire a device code for the given config_id
 M.get_device_code = function(config_id)
   local config = get_auth_config(config_id)
-  if not validate_auth_params(config_id, { "Client ID", "Device Auth URL", "Scope" }) then return end
+  if not validate_auth_params(config_id, { "Client ID", "Device Auth URL" }) then return end
 
   local url = config["Device Auth URL"]
-  local body = "client_id=" .. config["Client ID"] .. "&scope=" .. vim.uri_encode(config["Scope"])
+  local body = "client_id=" .. config["Client ID"]
+
+  body = config["Scope"] and body .. "&scope=" .. config["Scope"] or body
   body = add_custom_params(config_id, body, "In Auth Request")
 
   Logger.info("Acquiring device code for config: " .. config_id)
@@ -192,7 +194,7 @@ M.acquire_device_token = function(config_id)
   Logger.info("Acquiring device token for config: " .. config_id)
 
   local period = config.interval and tonumber(config.interval) * 2000 or request_interval
-  Logger.info("Waiting for device token")
+  Logger.info("Waiting for device token.  Press <C-c> to cancel.")
 
   local out, err
   vim.wait(request_timeout * 2, function()
@@ -252,7 +254,7 @@ M.receive_code = function(config_id)
 
   if not server then return end
 
-  Logger.info("Waiting for authorization code/token")
+  Logger.info("Waiting for authorization code/token.  Press <C-c> to cancel.")
   local wait = vim.wait(request_timeout, function()
     config = get_auth_config(config_id)
     return config.code or config.access_token
@@ -268,7 +270,7 @@ end
 
 M.create_JWT = function(config_id)
   local config = get_auth_config(config_id)
-  if not validate_auth_params(config_id, { "Grant Type", "Scope", "JWT" }) then return end
+  if not validate_auth_params(config_id, { "Grant Type", "JWT" }) then return end
 
   local jwt = vim.deepcopy(config.JWT)
 
@@ -313,21 +315,18 @@ end
 M.acquire_auth = function(config_id)
   local config = get_auth_config(config_id)
 
-  local required_params = { "Grant Type", "Client ID", "Redirect URL", "Auth URL", "Scope" }
+  local required_params = { "Grant Type", "Client ID", "Redirect URL", "Auth URL" }
   if not validate_auth_params(config_id, required_params) then return end
 
   local url = config["Auth URL"]
-  local body = "scope="
-    .. vim.uri_encode(config["Scope"])
-    .. "&redirect_uri="
-    .. config["Redirect URL"]
-    .. "&client_id="
-    .. config["Client ID"]
+  local body = "redirect_uri=" .. config["Redirect URL"] .. "&client_id=" .. config["Client ID"]
 
   local response_type = config["Grant Type"] == "Authorization Code" and "code" or "token"
   response_type = config.response_type or response_type
 
   body = body .. "&response_type=" .. response_type
+  body = config["Scope"] and body .. "&scope=" .. config["Scope"] or body
+
   body = add_pkce(config_id, body, "auth")
   body = add_custom_params(config_id, body, "In Auth Request")
 
@@ -346,7 +345,7 @@ end
 
 M.acquire_password_token = function(config_id)
   local config = get_auth_config(config_id)
-  local required_params = { "Client ID", "Client Secret", "Token URL", "Scope", "Username", "Password" }
+  local required_params = { "Client ID", "Client Secret", "Token URL", "Username", "Password" }
   if not validate_auth_params(config_id, required_params) then return end
 
   local url = config["Token URL"]
@@ -357,10 +356,10 @@ M.acquire_password_token = function(config_id)
     .. "&password="
     .. config.Password
     .. "&grant_type=password"
-    .. "&scope="
-    .. config["Scope"]
 
   body = config["Client Secret"] and body .. "&client_secret=" .. config["Client Secret"] or body
+  body = config["Scope"] and body .. "&scope=" .. config["Scope"] or body
+
   body = add_custom_params(config_id, body, "In Token Request")
 
   Logger.info("Acquiring token for config: " .. config_id)

@@ -2,7 +2,8 @@ test = nvim -l tests/minit.lua tests --shuffle-tests
 build_ts = scripts/build_ts.sh
 
 tag ?= wip
-watch = '*.lua' -o -name "*.js" -o -name "*.http" -name "*.txt"
+watch = '*.lua'
+# watch = '*.lua' -o -name "*.js" -o -name "*.http" -name "*.txt"
 git_ls = git ls-files -cdmo --exclude-standard 
 
 version:
@@ -17,6 +18,9 @@ docker-build:
 docker-push:
 	if [ "$(OS)" != "linux" ] && [ "$(OS)" != "windows" ]; then (echo "OS must be either linux or windows"; exit 1); fi
 	docker push gorillamoe/kulala-nvim-$(OS)-testrunner:latest
+
+test:
+	$(test)
 
 watch:
 	@while sleep 0.1; do find . -name $(watch) | entr -d -c $(test); done
