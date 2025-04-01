@@ -18,5 +18,6 @@ http-client.env.json
 *.http
 !/docs/**/*.http
 !/tests/**/*.http
+!/tests/functional/requests/*.http
 
 todo.md
