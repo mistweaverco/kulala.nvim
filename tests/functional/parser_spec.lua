@@ -508,6 +508,32 @@ describe("requests", function()
           assert.is_same("new_username", result["ENV_USER"])
           assert.is_same("project_name", result["ENV_PROJECT"])
         end)
+
+        it("imports and runs nested imports/requests", function()
+          h.create_buf(
+            ([[
+            POST https://httpbin.org/request_0
+            Content-Type: text/plain
+            ###
+            run import.http
+          ]]):to_table(true),
+            h.expand_path("requests/simple.http")
+          )
+
+          _, result = doc_parser.get_document()
+
+          assert.is_same(4, #result)
+
+          local function assert_url(no, url, file)
+            assert.is_same(url, result[no].url)
+            assert.match(file, result[no].file)
+          end
+
+          assert_url(1, "https://httpbin.org/request_0", "simple.http")
+          assert_url(2, "https://httpbin.org/advanced_b", "advanced_B.http")
+          assert_url(3, "https://httpbin.org/advanced_1", "advanced_A.http")
+          assert_url(4, "https://httpbin.org/imported", "import.http")
+        end)
       end)
     end)
   end)

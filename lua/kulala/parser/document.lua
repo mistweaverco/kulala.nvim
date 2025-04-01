@@ -282,48 +282,48 @@ local function parse_multiline_url(request, line)
   if request.url and path then request.url = request.url .. path end
 end
 
-local function import_requests(path, variables)
+local function import_requests(path, variables, request)
+  path = FS.get_file_path(path, request.file)
+
   local file = FS.read_file(path)
   if not file then return Logger.warn("The file '" .. path .. "' was not found. Skipping ...") end
 
-  local r_variables, requests = M.get_document(vim.split(file, "\n"))
+  local r_variables, requests = M.get_document(vim.split(file, "\n"), path)
   utils.merge(variables, r_variables)
-
-  vim.iter(requests):each(function(request)
-    request.file = vim.fn.fnamemodify(path, ":t")
-  end)
 
   return requests
 end
 
-local function update_imported_request(requests, request, lnum, name)
-  local offset = 10000 * #requests
+local function update_imported_request(request, imported_request, lnum)
+  imported_request.start_line = request.start_line
+  imported_request.end_line = request.end_line
+  imported_request.show_icon_line_number = lnum
 
-  request.name = name or request.name
-  request.start_line = request.start_line + offset -- to make sure it does not interfere with requests in the calling file
-  request.end_line = request.end_line + offset
-  request.show_icon_line_number = lnum
+  return imported_request
 end
 
-local function run_file(path, variables, requests, lnum)
-  local r_requests = import_requests(path, variables)
+local function run_file(path, variables, requests, request, lnum)
+  local imported_requests = import_requests(path, variables, request)
 
-  vim.iter(r_requests):each(function(request)
-    update_imported_request(requests, request, lnum, "RUN")
-  end)
+  imported_requests = vim
+    .iter(imported_requests)
+    :map(function(imported_request)
+      return update_imported_request(request, imported_request, lnum)
+    end)
+    :totable()
 
-  vim.list_extend(requests, r_requests)
+  vim.list_extend(requests, imported_requests)
 end
 
-local function run_request(name, variables, requests, imported_requests, variables_to_replace, lnum)
-  local request = vim.iter(imported_requests):find(function(request)
-    return request.name == name
+local function run_request(name, variables, requests, request, imported_requests, variables_to_replace, lnum)
+  local imported_request = vim.iter(imported_requests):find(function(imported_request)
+    return imported_request.name == name
   end)
 
-  if not request then return end
+  if not imported_request then return end
 
-  update_imported_request(requests, request, lnum)
-  table.insert(requests, request)
+  update_imported_request(request, imported_request, lnum)
+  table.insert(requests, imported_request)
 
   -- replace variables in the calling request
   vim.iter(vim.split(variables_to_replace or "", ",%s*")):each(function(variable)
@@ -331,21 +331,22 @@ local function run_request(name, variables, requests, imported_requests, variabl
   end)
 end
 
-local function parse_import_command(variables, imported_requests, line)
-  local path = line:gsub("^import ", "")
+local function parse_import_command(variables, request, imported_requests, line)
+  local path = line:match("^import (.+)%s*") or ""
   if not path:match("%.http$") then return end
 
-  vim.list_extend(imported_requests, import_requests(path, variables))
+  vim.list_extend(imported_requests, import_requests(path, variables, request))
 end
 
-local function parse_run_command(variables, requests, imported_requests, line, lnum)
+local function parse_run_command(variables, requests, request, imported_requests, line, lnum)
   local variables_to_replace = line:match("^run .+ %((.+)%)%s*$")
   if variables_to_replace then line = line:gsub("%s*%(" .. variables_to_replace .. "%)%s*", "") end
 
   local path = line:gsub("^run ", "")
 
-  _ = path:match("^#") and run_request(path:sub(2), variables, requests, imported_requests, variables_to_replace, lnum)
-  _ = path:match("%.http$") and run_file(path, variables, requests, lnum)
+  _ = path:match("^#")
+    and run_request(path:sub(2), variables, requests, request, imported_requests, variables_to_replace, lnum)
+  _ = path:match("%.http$") and run_file(path, variables, requests, request, lnum)
 end
 
 -- expand path for included files, so can be used in request replay(), when cwd has changed
@@ -365,8 +366,9 @@ end
 
 ---Parses the DB.current_buffer document and returns a list of DocumentRequests or nil if no valid requests found
 ---@param lines string[]|nil
+---@param path string|nil
 ---@return DocumentVariables|nil, DocumentRequest[]|nil, DocumentRequest[]|nil
-M.get_document = function(lines)
+M.get_document = function(lines, path)
   local buf = DB.get_current_buffer()
 
   local content_lines, line_offset = get_visual_selection() -- first: try to get the visual selection
@@ -401,6 +403,7 @@ M.get_document = function(lines)
     request.start_line = block.start_lnum
     request.end_line = block.end_lnum
     request.name = block.name
+    request.file = path or vim.fn.bufname(DB.get_current_buffer())
 
     for relative_linenr, line in ipairs(block.lines) do
       if line:match("^# @") then
@@ -410,9 +413,9 @@ M.get_document = function(lines)
         parse_url(request, line:match("^%s*[#/]+%s*(.+)") or "")
       -- end of inline scripting
       elseif is_request_line and line:match("^import ") then
-        parse_import_command(variables, imported_requests, line)
+        parse_import_command(variables, request, imported_requests, line)
       elseif is_request_line and line:match("^run ") then
-        parse_run_command(variables, requests, imported_requests, line, request.start_line + relative_linenr)
+        parse_run_command(variables, requests, request, imported_requests, line, request.start_line + relative_linenr)
       elseif is_request_line and line:match("^%%}$") then
         is_prerequest_handler_script_inline = false
       -- end of inline scripting
@@ -485,25 +488,30 @@ end
 ---@return DocumentRequest[]|nil
 M.get_request_at = function(requests, linenr)
   if not linenr then return { requests[1] } end
-
   local line = vim.fn.getline(linenr)
+
   local request_name = line:match("^run #(.+)$")
   request_name = request_name and request_name:gsub("%s*%(.+%)%s*$", "")
 
-  if not request_name and line:match("^run .+%.http$") then request_name = "RUN" end
+  local file = line:match("^run (.+%.http)%s*$")
+  file = file and vim.fn.fnamemodify(file, ":t")
 
-  if request_name then
+  if request_name or file then
     return vim
       .iter(requests)
       :filter(function(request)
-        return request.name == request_name
+        return (request_name and request.name == request_name)
+          or (file and vim.fn.fnamemodify(request.file, ":t") == file)
       end)
       :totable()
   end
 
-  for _, request in ipairs(requests) do
-    if linenr >= request.start_line and linenr <= request.end_line then return { request } end
-  end
+  return vim
+    .iter(requests)
+    :filter(function(request)
+      return linenr >= request.start_line and linenr <= request.end_line
+    end)
+    :totable()
 end
 
 M.get_previous_request = function(requests)

@@ -240,7 +240,7 @@ local function parse_request(requests, request, variables)
     return Logger.warn("Prompt failed. Skipping this and all following requests.")
   end
 
-  local parsed_request, status = REQUEST_PARSER.parse(requests, variables, request.start_line)
+  local parsed_request, status = REQUEST_PARSER.parse(requests, variables, request)
   if not parsed_request then
     status = status == "skipped" and "is skipped" or "could not be parsed"
     return Logger.warn(("Request at line: %s " .. status):format(request.start_line))
@@ -338,7 +338,7 @@ M.run_parser = function(requests, line_nr, callback)
 
   if line_nr and line_nr > 0 then
     local requests_l = DOCUMENT_PARSER.get_request_at(requests, line_nr)
-    if not requests_l then return Logger.error("No request found at current line") end
+    if #requests_l == 0 then return Logger.error("No request found at current line") end
 
     reqs_to_process = requests_l
   end

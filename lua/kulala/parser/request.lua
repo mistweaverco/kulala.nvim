@@ -20,28 +20,38 @@ M.scripts.javascript = require("kulala.parser.scripts.javascript")
 ---@class Request
 ---@field metadata { name: string, value: string }[] -- Metadata of the request
 ---@field environment table<string, string|number> -- The environment- and document-variables
+---
 ---@field method string -- The HTTP method of the request
 ---@field url string -- The URL with variables and dynamic variables replaced
 ---@field url_raw string -- The raw URL as it appears in the document
 ---@field request_target string|nil -- The target of the request
 ---@field http_version string -- The HTTP version of the request
+---
 ---@field headers table<string, string> -- The headers with variables and dynamic variables replaced
 ---@field headers_raw table<string, string> -- The headers as they appear in the document
 ---@field headers_display table<string, string> -- The headers with variables and dynamic variables replaced and sanitized
----@field ft string -- The filetype of the document
 ---@field cookie string -- The cookie as it appears in the document
+---
 ---@field body string|nil -- The body with variables and dynamic variables replaced
 ---@field body_raw string|nil -- The raw body as it appears in the document
 ---@field body_computed string|nil -- The computed body as sent by curl; with variables and dynamic variables replaced
 ---@field body_display string|nil -- The body with variables and dynamic variables replaced and sanitized
 ---(e.g. with binary files replaced with a placeholder)
+---
 ---@field show_icon_line_number number|nil -- The line number to show the icon
+---
 ---@field redirect_response_body_to_files ResponseBodyToFile[]
+---
 ---@field scripts Scripts -- The scripts to run before and after the request
+---
 ---@field cmd string[] -- The command to execute the request
 ---@field body_temp_file string -- The path to the temporary file containing the body
+---
 ---@field grpc GrpcCommand|nil -- The gRPC command
+---
 ---@field processed boolean -- Indicates if request has been already processed, used by replay()
+---@field file string -- The file path of the document
+---@field ft string -- The filetype of the document
 
 ---@class GrpcCommand
 ---@field address string|nil -- host:port, can be omitted if proto|proto-set is provided
@@ -480,14 +490,15 @@ local function build_curl_command(request)
   table.insert(request.cmd, request.url)
 end
 
----Returns a DocumentRequest within specified line or the first request in the list if no line is given
+---Gets data from specified DocumentRequest or a request within specified line or the first request in the list if no request or line is provided
 ---@param requests DocumentRequest[] List of document requests
+---@param request DocumentRequest|nil The request to parse
 ---@param line_nr number|nil The line number where the request starts
 ---@return Request|nil -- Table containing the request data or nil if parsing fails
-function M.get_basic_request_data(requests, line_nr)
+function M.get_basic_request_data(requests, document_request, line_nr)
   local request = vim.deepcopy(default_request)
-  local document_request = DOCUMENT_PARSER.get_request_at(requests, line_nr)
-  document_request = document_request and document_request[1]
+  document_request = document_request and { document_request } or DOCUMENT_PARSER.get_request_at(requests, line_nr)
+  document_request = #document_request > 0 and document_request[1]
 
   if not document_request then return end
 
@@ -496,21 +507,22 @@ function M.get_basic_request_data(requests, line_nr)
   request.url_raw = document_request.url
   request.body_raw = document_request.body
 
-  utils.remove_keys(request, { "name", "file", "body", "variables", "start_line", "end_line" })
+  utils.remove_keys(request, { "name", "body", "variables", "start_line", "end_line" })
 
   return request
 end
 
----Parses a document request within specified line and returns the request ready to be processed
----or the first request in the list if no line number is provided
----or the request in DB.current_buffer current line if no arguments are provided
----or the request in current buffer at current line
+---Parses specified document request or a request within specified line and returns the request ready to be processed
+---or the first request in the list if no document_request or line number is provided
+---or the request in current_buffer at current line if no arguments are provided
 ---@param requests? DocumentRequest[]|nil Document requests
 ---@param document_variables? DocumentVariables|nil Document variables
----@param line_nr? number|nil The line number within the document to locate the request
+---@param document_request? DocumentRequest|nil The request to parse
 ---@return Request|nil -- Table containing the request data or nil if parsing fails
 ---@return string|nil -- Error message if parsing fails
-M.parse = function(requests, document_variables, line_nr)
+M.parse = function(requests, document_variables, document_request)
+  local line_nr
+
   if not requests then
     DB.set_current_buffer()
 
@@ -520,7 +532,7 @@ M.parse = function(requests, document_variables, line_nr)
 
   if not requests then return end
 
-  local request = M.get_basic_request_data(requests, line_nr)
+  local request = M.get_basic_request_data(requests, document_request, line_nr)
   if not request then return end
 
   if not request.processed then
