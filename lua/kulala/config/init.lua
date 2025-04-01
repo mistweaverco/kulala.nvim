@@ -1,4 +1,3 @@
-local FS = require("kulala.utils.fs")
 local defaults = require("kulala.config.defaults")
 local keymaps = require("kulala.config.keymaps")
 
