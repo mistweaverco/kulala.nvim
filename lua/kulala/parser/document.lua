@@ -277,6 +277,11 @@ local function parse_request_urL_method(request, line, relative_linenr)
   request.show_icon_line_number = request.start_line + relative_linenr
 end
 
+local function parse_multiline_url(request, line)
+  local path = line:match("^%s*(/%w+)$")
+  if request.url and path then request.url = request.url .. path end
+end
+
 local function import_requests(path, variables)
   local file = FS.read_file(path)
   if not file then return Logger.warn("The file '" .. path .. "' was not found. Skipping ...") end
@@ -390,7 +395,6 @@ M.get_document = function(lines)
     local is_prerequest_handler_script_inline = false
     local is_postrequest_handler_script_inline = false
     local is_body_section = false
-    local skip_block = false
 
     local request = vim.deepcopy(default_document_request)
 
@@ -403,15 +407,12 @@ M.get_document = function(lines)
         parse_metadata(request, line)
       -- skip comments and silently skip URLs that are commented out
       elseif line:match("^%s*#") or line:match("^%s*//") then
-        local _, url = parse_url(request, line:match("^%s*[#/]+%s*(.+)") or "")
-        if url then skip_block = true end
+        parse_url(request, line:match("^%s*[#/]+%s*(.+)") or "")
       -- end of inline scripting
       elseif is_request_line and line:match("^import ") then
         parse_import_command(variables, imported_requests, line)
-        skip_block = true
       elseif is_request_line and line:match("^run ") then
         parse_run_command(variables, requests, imported_requests, line, request.start_line + relative_linenr)
-        skip_block = true
       elseif is_request_line and line:match("^%%}$") then
         is_prerequest_handler_script_inline = false
       -- end of inline scripting
@@ -446,6 +447,8 @@ M.get_document = function(lines)
         parse_variables(variables, line)
       elseif is_body_section then
         parse_body(request, line)
+      elseif not is_request_line and line:match("^%s*/%a+") then
+        parse_multiline_url(request, line)
       elseif not is_request_line and line:match("^%s*[?&]") and #request.headers == 0 and request.url then
         parse_query_params(request, line)
       elseif line:match("^Host:") then
@@ -467,7 +470,7 @@ M.get_document = function(lines)
 
     if request.url and #request.url > 0 then
       table.insert(requests, request)
-    elseif not skip_block then
+    else
       Logger.warn(("Request without URL found at line: %s. Skipping ..."):format(request.start_line))
     end
   end

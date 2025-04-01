@@ -215,6 +215,20 @@ describe("requests", function()
 
           assert_url({ "127.0.0.1:80" }, "GET", "127.0.0.1:80")
           assert_url({ "http://[::1]" }, "GET", "http://[::1]")
+
+          --- muiltiline URL
+          assert_url(
+            ([[
+              GET http://example.com:8080
+                  /api
+                  /html
+                  /get
+                  ?id=123
+                  &value=content
+          ]]):to_table(true),
+            "GET",
+            "http://example.com:8080/api/html/get?id=123&value=content"
+          )
         end)
       end)
 
