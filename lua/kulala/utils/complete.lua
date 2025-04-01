@@ -15,7 +15,7 @@ local function complete_requests(_)
     :map(function(request)
       return {
         word = "#" .. request.name,
-        menu = request.file,
+        menu = vim.fn.fnamemodify(request.file, ":t"),
       }
     end)
     :totable()

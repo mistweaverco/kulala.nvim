@@ -15,9 +15,21 @@ GET https://weater.com:7220/weatherforecast
 ```
 
  `Origin` format: `HTTPMethod` `URL`:
+
+Single line
 ```http
 GET /api/get
 Host: example.com
+```
+
+Multiline
+```http
+GET http://example.com:8080
+    /api
+    /html
+    /get
+    ?id=123
+    &value=content
 ```
 
  `Asterisk` format: `HTTPMethod` `URL`:
