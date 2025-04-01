@@ -1,0 +1,39 @@
+# Testing and Reporting Demo
+
+# Define environment variables
+@BASE_URL = https://httpbin.org
+@OCCUPATION = Developer
+
+### POST request with JSON body
+POST {{BASE_URL}}/post HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+
+{
+  "data": {
+    "name": "John Doe",
+    "occupation": "{{OCCUPATION}}",
+    "age": 30
+  }
+}
+
+> {%
+  let json = response.body.json.data;
+
+  client.test("Test suite 1", function() {
+    assert(json.name == "John Doe", "Check if name is correct")
+    assert.same(json.occupation, "Developer", "Check occupation")
+    client.assert.true(json.age == 30, "Age is correct")
+    client.assert.false(json.age == 40, "Age is not 40")
+  });
+
+  client.log("Test Script Output 1")
+
+  client.test("Test suite 2", function() {
+    assert.hasString(json.occupation, "Develop", "Check if occupation contains 'Develop'")
+    assert.responseHas('responseCode', 200, "Check if response code is 200")
+    assert.headersHas('Content-Type', "application/json", "Check content type")
+  });
+
+  assert.jsonHas("json.data.occupation", "Developer", "Check json payload")
+%}
