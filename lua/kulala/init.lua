@@ -70,12 +70,7 @@ M.close = function()
 end
 
 M.search = function()
-  local has_telescope, telescope = pcall(require, "telescope")
-  if has_telescope then
-    telescope.extensions.kulala.search()
-  else
-    SELECTOR.search()
-  end
+  require("kulala.ui.request_manager").open()
 end
 
 M.scripts_clear_global = function(key_or_keys)
@@ -96,16 +91,7 @@ end
 
 M.set_selected_env = function(env)
   ENV.get_env()
-
-  if not env then
-    local has_telescope, telescope = pcall(require, "telescope")
-    local selector = has_telescope and telescope.extensions.kulala or SELECTOR
-
-    selector.select_env()
-    return
-  end
-
-  vim.g.kulala_selected_env = env
+  vim.g.kulala_selected_env = env or require("kulala.ui.env_manager").open()
 end
 
 ---Clears all cached files

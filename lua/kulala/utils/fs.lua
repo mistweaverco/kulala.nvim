@@ -1,3 +1,4 @@
+local Json = require("kulala.utils.json")
 local Logger = require("kulala.logger")
 
 local M = {}
@@ -157,13 +158,10 @@ end
 --- @return boolean
 --- @usage local p = fs.write_file('Makefile', 'all: \n\t@echo "Hello World"')
 M.write_file = function(filename, content, append)
-  local f
-  if append then
-    f = io.open(filename, "a")
-  else
-    f = io.open(filename, "w")
-  end
+  local f, mode
+  mode = append and "a" or "w"
 
+  f = io.open(filename, mode)
   if not f then return false end
 
   f:write(content)
@@ -320,6 +318,7 @@ end
 ---@return string|nil
 ---@usage local p = fs.read_file('Makefile')
 M.read_file = function(filename, is_binary)
+  if not filename then return end
   local read_mode = is_binary and "rb" or "r"
 
   filename = M.get_file_path(filename)
@@ -340,7 +339,24 @@ M.read_json = function(filename)
   local content = M.read_file(filename)
   if not content then return end
 
-  return vim.json.decode(content, { object = true, array = true })
+  local status, result = pcall(vim.json.decode, content, { object = true, array = true })
+  if not status then return Logger.error("Error decoding JSON file: " .. filename .. ": " .. result) end
+
+  return result
+end
+
+---Write JSON to file
+---@param filename string
+---@param data table
+---@param format boolean|nil -- format the JSON with jq
+M.write_json = function(filename, data, format)
+  local content = vim.json.encode(data)
+  if not content then return end
+
+  content = format and Json.format(content) or content
+
+  content = content:gsub("\\/", "/"):gsub('\\"', '"')
+  return M.write_file(filename, content)
 end
 
 ---@param content string

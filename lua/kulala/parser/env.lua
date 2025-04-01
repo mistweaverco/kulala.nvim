@@ -1,6 +1,7 @@
 local Config = require("kulala.config")
 local DB = require("kulala.db")
 local FS = require("kulala.utils.fs")
+local Table = require("kulala.utils.table")
 
 local M = {}
 
@@ -64,6 +65,34 @@ local function get_dot_env(env)
   return env
 end
 
+local function get_http_client_private_env()
+  local http_client_private_env_json = FS.find_file_in_parent_dirs("http-client.private.env.json")
+  if not http_client_private_env_json then return end
+
+  local f = FS.read_json(http_client_private_env_json)
+  if not f then return end
+
+  if f["$shared"] then
+    DB.update().http_client_env_shared =
+      vim.tbl_deep_extend("force", DB.find_unique("http_client_env_shared"), f["$shared"])
+  end
+
+  f["$shared"] = nil
+  DB.update().http_client_env = vim.tbl_deep_extend("force", DB.find_unique("http_client_env") or {}, f)
+
+  return f
+end
+
+local function get_http_client_env_shared(env)
+  local http_client_env_shared = DB.find_unique("http_client_env_shared") or {}
+
+  for key, value in pairs(http_client_env_shared) do
+    if key ~= "$default_headers" then env[key] = value end
+  end
+
+  return env
+end
+
 local function get_http_client_env()
   local http_client_env_json = FS.find_file_in_parent_dirs("http-client.env.json")
 
@@ -80,30 +109,31 @@ local function get_http_client_env()
   end
 end
 
-local function get_http_client_private_env()
-  local http_client_private_env_json = FS.find_file_in_parent_dirs("http-client.private.env.json")
+local function create_private_env()
+  local env_path = FS.find_file_in_parent_dirs("http-client.env.json")
+  env_path = env_path and vim.fn.fnamemodify(env_path, ":h") or FS.get_current_buffer_dir()
 
-  if http_client_private_env_json then
-    local f = vim.fn.json_decode(vim.fn.readfile(http_client_private_env_json))
+  local private_env_path = env_path .. "/http-client.private.env.json"
+  local cur_env = vim.g.kulala_selected_env or Config.get().default_env
 
-    if f["$shared"] then
-      DB.update().http_client_env_shared =
-        vim.tbl_deep_extend("force", DB.find_unique("http_client_env_shared"), f["$shared"])
-    end
+  local env = { cur_env = { Security = { Auth = {} } } }
+  FS.write_json(private_env_path, env)
+  Logger.info("Created private env file: " .. private_env_path)
 
-    f["$shared"] = nil
-    DB.update().http_client_env = vim.tbl_deep_extend("force", DB.find_unique("http_client_env"), f)
-  end
+  return private_env_path
 end
 
-local function get_http_client_env_shared(env)
-  local http_client_env_shared = DB.find_unique("http_client_env_shared") or {}
+M.update_http_client_auth = function(config_id, data)
+  local env_path = FS.find_file_in_parent_dirs("http-client.private.env.json")
+  env_path = env_path or create_private_env()
 
-  for key, value in pairs(http_client_env_shared) do
-    if key ~= "$default_headers" then env[key] = value end
-  end
+  local env = FS.read_json(env_path)
+  if not env then return end
 
-  return env
+  local cur_env = vim.g.kulala_selected_env or Config.get().default_env
+  Table.set_at(env, { cur_env, "Security", "Auth", config_id, "auth_data" }, data)
+
+  FS.write_json(env_path, env, true)
 end
 
 local function get_scripts_variables(env)

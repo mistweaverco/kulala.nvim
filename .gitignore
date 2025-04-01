@@ -21,3 +21,5 @@ http-client.env.json
 !/tests/functional/requests/*.http
 
 todo.md
+selene.toml
+neovim.yml

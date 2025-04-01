@@ -147,7 +147,8 @@ local function show(contents, filetype, mode)
   _ = mode ~= "report" and REPORT.set_response_summary(buf)
 
   local win = open_kulala_window(buf)
-  _ = mode == "report" and vim.api.nvim_win_set_cursor(win, { vim.api.nvim_buf_line_count(buf), 0 })
+  local lnum = mode == "report" and vim.api.nvim_buf_line_count(buf) or 4
+  vim.fn.cursor(lnum, 0)
 
   WINBAR.toggle_winbar_tab(buf, win, mode)
   CONFIG.options.default_view = mode
@@ -309,9 +310,7 @@ end
 M.show_news_popup = function()
   if CONFIG.get().disable_news_popup then return end
 
-  local news_ver = FS.get_plugin_tmp_dir() .. "/.version.news"
-  local ver = FS.read_file(news_ver) or 0
-  if ver == GLOBALS.VERSION then return end
+  if DB.settings.news_ver == GLOBALS.VERSION then return end
 
   local lines = "Check out the latest Kulala changes with `g?`"
   Float.create_window_footer(
@@ -332,8 +331,7 @@ M.show_news = function()
   local footer = vim.fn.bufnr("kulala://news_popup")
   _ = footer > -1 and vim.api.nvim_buf_delete(footer, { force = true })
 
-  local news_ver = FS.get_plugin_tmp_dir() .. "/.version.news"
-  FS.write_file(news_ver, GLOBALS.VERSION)
+  DB.settings:write({ news_ver = GLOBALS.VERSION })
 end
 
 M.scratchpad = function()

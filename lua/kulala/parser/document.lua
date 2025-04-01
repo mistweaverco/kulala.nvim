@@ -2,48 +2,48 @@ local DB = require("kulala.db")
 local FS = require("kulala.utils.fs")
 local Logger = require("kulala.logger")
 local PARSER_UTILS = require("kulala.parser.utils")
-local utils = require("kulala.utils.table")
+local Table = require("kulala.utils.table")
 
 local M = {}
 ---@class DocumentRequest
 ---@field metadata table<{name: string, value: string}>
 ---@field variables DocumentVariables
----
+
 ---@field method string
 ---@field url string
 ---@field request_target string|nil
 ---@field http_version string
----
+
 ---@field headers table<string, string>
 ---@field headers_raw table<string, string>
 ---@field cookie string
----
+
 ---@field body string
 ---@field body_display string
----
+
 ---@field start_line number
 ---@field end_line number
 ---@field show_icon_line_number number
----
+
 ---@field redirect_response_body_to_files ResponseBodyToFile[]
----
+
 ---@field scripts Scripts
----
+
 ---@field name string|nil -- The name of the request, used for run()
 ---@field file string|nil -- The file the request was imported from, used for run()
----
+
 ---@field processed boolean -- Whether the request has been processed, used by replay()
----
+
 ---@alias DocumentVariables table<string, string|number|boolean>
----
+
 ---@class ResponseBodyToFile
 ---@field file string -- The file path to write the response body to
 ---@field overwrite boolean -- Whether to overwrite the file if it already exists
----
+
 ---@class Scripts
 ---@field pre_request ScriptData
 ---@field post_request ScriptData
----
+
 ---@class ScriptData
 ---@field inline string[]
 ---@field files string[]
@@ -289,7 +289,7 @@ local function import_requests(path, variables, request)
   if not file then return Logger.warn("The file '" .. path .. "' was not found. Skipping ...") end
 
   local r_variables, requests = M.get_document(vim.split(file, "\n"), path)
-  utils.merge(variables, r_variables)
+  Table.merge("keep", variables, r_variables)
 
   return requests
 end
