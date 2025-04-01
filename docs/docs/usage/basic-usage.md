@@ -9,7 +9,7 @@ There are several ways to execute a request:
 - Position the cursor on the line of the request or in the block of the request delimited by `###` and then press `<CR>` or `<leader>Rs` to run the request.
 - Select several requests in visual mode and press `<CR>` or `<leader>Ra` to run the requests.
 - Press `<leader>Ra` to run all requests in the buffer.
-- You can use `#` to comment out a request or its data, and it'll not be processed.
+- You can use `#` or `//` to comment out a request or its data, and it wil not be processed.
 
 ### Executing requests in non `.http` files
 
@@ -36,10 +36,12 @@ vim.system("curl -X GET http://localhost:3000")
 - To jump to the request in the request buffer press `<CR>`.
 - To open help window press `?`.
 - To open the Kulala scratch buffer use `<leader>Rb`.
+- To choose variables environment use `<leader>Re` and select the environment you want to use.
+- To manage Auth configurations use `<leader>Ru`.
 
 ### Syntax summary
 
-- `#` is used to comment out a request or its data.
+- `#` and `//` is used to comment out a request or its data.
 - `###` is used to delimit requests and their data.
 
 #### Metadata
@@ -59,6 +61,12 @@ vim.system("curl -X GET http://localhost:3000")
 - `@variable-name=variable-value` is used to define variables that can be used in request URL, headers and body.
 - `{{variable}}` allows you to use variables defined in `metadata`, `system environment` variables, `http-client.env.json` file or `.env` file.
 - `{{$dynamic-variable}}` allows you to use predefined dynamic, aka `magic` variables.
+
+#### Requests import
+
+- `import /path/to/file` allows you to import requests from another file.
+- `run #request-name` allows you to run a named request.
+- `run /path/to/file` allows you to run all requests in another file.
 
 #### File input/output
 

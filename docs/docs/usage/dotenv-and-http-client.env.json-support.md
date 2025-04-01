@@ -183,6 +183,3 @@ Authorization: Bearer {{API_KEY}}
   "name": "John"
 }
 ```
-
-[config]: ../getting-started/configuration-options.md
-

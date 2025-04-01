@@ -8,7 +8,7 @@ local log_levels = vim.log.levels
 
 local function debug_level()
   local debug = require("kulala.config").get().debug
-  return debug == nil and 0 or (debug == false and 1 or (debug == true and 4 or debug))
+  return debug == nil and 0 or (debug == false and 3 or (debug == true and 4 or debug))
 end
 
 M.log = function(message)

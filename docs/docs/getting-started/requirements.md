@@ -8,7 +8,7 @@ List of requirements for using kulala.
 
 ### Syntax Highlighting
 
-- [Treesitter for HTTP][ts]
+- [Treesitter for HTTP syntax][ts]
 
 ## cURL
 
@@ -16,7 +16,15 @@ List of requirements for using kulala.
 
 ## gRPCurl
 
-- [gRPCurl](https://github.com/fullstorydev/grpcurl)
+- [gRPCurl](https://github.com/fullstorydev/grpcurl) for GRPC requests
+
+## Websocat
+
+- [Websocat](https://github.com/vi/websocat) for WebSocket requests
+
+## OpenSSL
+
+- Required for JWT and PKCE signing (comes preinstalled with macOS and most Linux distributions and is part of git installation on Windows)
 
 ## jq
 

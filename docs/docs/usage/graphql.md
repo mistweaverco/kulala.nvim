@@ -1,13 +1,13 @@
 # GraphQL
 
-You can use the `@graphql` directive to send GraphQL requests.
+You can use the `GRAPHQL` method, `@graphql` directive or `X-REQUEST-TYPE: GraphQL` header to send GraphQL requests.
 
 Create a file with the `.http` extension and write your GraphQL requests in it.
 
 ## With variables
 
 ```http title="gql-with-variables.http"
-POST https://swapi-graphql.netlify.app/.netlify/functions/index HTTP/1.1
+GRAPHQL https://swapi-graphql.netlify.app/.netlify/functions/index HTTP/1.1
 Accept: application/json
 X-REQUEST-TYPE: GraphQL
 
@@ -23,6 +23,7 @@ query Person($id: ID) {
 ## Without variables
 
 ```http title="gql-without-variables.http"
+# @graphql
 POST https://swapi-graphql.netlify.app/.netlify/functions/index HTTP/1.1
 Accept: application/json
 X-REQUEST-TYPE: GraphQL
