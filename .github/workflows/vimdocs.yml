@@ -1,0 +1,42 @@
+---
+name: Vimdoc
+
+on:
+  push:
+    paths:
+      - '**.md'
+      - '**.mdx'
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  vimdocs:
+    name: Build Vimdocs
+    runs-on: ubuntu-latest
+    container:
+      image: gorillamoe/kulala-nvim-linux-testrunner:latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            .tests
+          key: ${{ runner.os }}-tests
+
+      - name: Build vimdocs
+        run: ./scripts/vimdocs.sh
+
+      - name: Prepare to push
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Push Changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "docs: Auto-generate vimdocs + vimtags"
+          commit_user_name: "github-actions[bot]"
+          commit_user_email: "github-actions[bot]@users.noreply.github.com"
+          commit_author: "github-actions[bot] <github-actions[bot]@users.noreply.github.com>"

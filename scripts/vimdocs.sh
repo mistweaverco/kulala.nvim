@@ -6,7 +6,7 @@ PANDOC_DIR=./scripts/pandoc
 PROJECT_NAME=kulala
 VIM_VERSION="Neovim >= 0.8.0"
 TOC=true
-
+DESCRIPTION="A fully-featured REST Client Interface for Neovim."
 DEDUP_SUBHEADINGS=true
 TREESITTER=true
 

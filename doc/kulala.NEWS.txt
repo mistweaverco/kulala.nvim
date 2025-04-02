@@ -35,6 +35,7 @@ ENHANCEMENT: IMPROVED COMPATIBILITY WITH INTELLIJ HTTP CLIENT SPEC: ~
 - URL line support for `absolute/origin/asterisk path`
 - `#` and `//` comments support
 - `GRAPHQL` method support
+- multiline URL support
 
 
 ENHANCEMENT: WIN_OPTS CONFIG OPTION TO CUSTOMIZE KULALA UI PROPERTIES ~
