@@ -1,20 +1,10 @@
 local has_telescope = pcall(require, "telescope")
 local has_snacks, snacks_picker = pcall(require, "snacks.picker")
 
-if not has_telescope then return nil end
-
 local DB = require("kulala.db")
 local Logger = require("kulala.logger")
 local Parser = require("kulala.parser.document")
 local ParserUtils = require("kulala.parser.utils")
-local SELECTOR = require("kulala.ui.selector")
-
-local action_state = require("telescope.actions.state")
-local actions = require("telescope.actions")
-local finders = require("telescope.finders")
-local pickers = require("telescope.pickers")
-local previewers = require("telescope.previewers")
-local config = require("telescope.config").values
 
 local M = {}
 
@@ -108,6 +98,13 @@ local open_snacks = function()
 end
 
 local open_telescope = function()
+  local action_state = require("telescope.actions.state")
+  local actions = require("telescope.actions")
+  local finders = require("telescope.finders")
+  local pickers = require("telescope.pickers")
+  local previewers = require("telescope.previewers")
+  local config = require("telescope.config").values
+
   local requests, names = get_requests()
 
   pickers
@@ -140,13 +137,22 @@ local open_telescope = function()
     :find()
 end
 
+local function open_selector()
+  local requests, names = get_requests()
+  local opts = { prompt = "Search requests" }
+
+  vim.ui.select(names, opts, function(result)
+    if result then goto_request(requests[result]) end
+  end)
+end
+
 M.open = function()
   if has_snacks then
     open_snacks()
   elseif has_telescope then
     open_telescope()
   else
-    SELECTOR.search()
+    open_selector()
   end
 end
 
