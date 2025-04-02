@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -o pipefail
+
 PANDOC_DIR=./scripts/pandoc
 PROJECT_NAME=kulala
 VIM_VERSION="Neovim >= 0.8.0"
@@ -9,15 +11,19 @@ DEDUP_SUBHEADINGS=true
 TREESITTER=true
 
 CMD="$PANDOC_DIR/panvimdoc.sh --vim-version \"$VIM_VERSION\" --toc $TOC --description \"$DESCRIPTION\" --dedup-subheadings $DEDUP_SUBHEADINGS --treesitter $TREESITTER --scripts-dir $PANDOC_DIR"
+PRE_CODE_BLOCKS="lua $PANDOC_DIR/normalize-code-blocks.lua"
+PRE_CODE_IMPORTS="lua $PANDOC_DIR/include-imports.lua"
 
 process_file() {
   local file=$1
   local project_name=$2
-  local extra_flags=$3
-  local cmd="$CMD --project-name \"$project_name\" --input-file \"$file\""
+  local cmd="$CMD --project-name \"$project_name\"" # --input-file \"$file\""
+
+  [ "$3" == "--include-imports" ] && cmd="$PRE_CODE_IMPORTS | $cmd"
+  cmd="cat $1 | $PRE_CODE_BLOCKS | $cmd"
 
   echo "Processing $file as project $project_name"
-  eval "$cmd $extra_flags"
+  eval "$cmd"
 }
 
 process_files() {
@@ -34,13 +40,12 @@ process_files() {
 }
 
 if [ -n "$1" ]; then
-  process_files . 10 "$1"
-  exit 0
+  process_files . 10 "$1" "$2"
+else
+  process_files . 1 "NEWS.md"
+  process_files . 1 "README.md"
+  process_files ./docs/docs 10 "*.md"
+  process_files ./docs/docs 10 "*.mdx" --include-imports
 fi
 
-process_files . 1 "NEWS.md"
-process_files . 1 "README.md"
-process_files ./docs/docs 10 "*.md"
-process_files ./docs/docs 10 "*.mdx" "--include-imports true"
-
-nvim -c "helptags doc" -c "quit"
+nvim --headless -c "helptags doc" -c "quit"

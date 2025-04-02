@@ -13,6 +13,7 @@ http-client.env.json
 !/tests/**/http-client*.json
 !/docs/**/*.json
 
+!/doc/tags
 
 /http-examples
 *.http

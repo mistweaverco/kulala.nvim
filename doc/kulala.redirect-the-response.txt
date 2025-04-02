@@ -5,6 +5,7 @@ Table of Contents             *kulala.redirect-the-response-table-of-contents*
 
 1. Redirect the response  |kulala.redirect-the-response-redirect-the-response|
   - Don’t overwrite file|kulala.redirect-the-response-redirect-the-response-don’t-overwrite-file|
+  - Overwrite file|kulala.redirect-the-response-redirect-the-response-overwrite-file|
 
 ==============================================================================
 1. Redirect the response  *kulala.redirect-the-response-redirect-the-response*
@@ -22,20 +23,28 @@ be overwritten.
 
 To overwrite the file, use the `>>!` operator.
 
-```http title="do-not-overwrite.http" POST https://httpbin.org/post HTTP/1.1
-Accept: application/json Content-Type: application/json
+title="do-not-overwrite.http"
 
-{ "name": "Kulala" }
+>http
+    POST https://httpbin.org/post HTTP/1.1
+    Accept: application/json
+    Content-Type: application/json
+    
+    {
+      "name": "Kulala"
+    }
+    
+    >> kulala.json
+<
 
 
-    kulala.json
->
-    
-    ## Overwrite file
-    
-    To overwrite the file, use the `>>!` operator.
-    
-    ```http title="overwrite.http"
+OVERWRITE FILE*kulala.redirect-the-response-redirect-the-response-overwrite-file*
+
+To overwrite the file, use the `>>!` operator.
+
+title="overwrite.http"
+
+>http
     POST https://httpbin.org/post HTTP/1.1
     Accept: application/json
     Content-Type: application/json

@@ -107,11 +107,6 @@ while [[ $# -gt 0 ]]; do
         shift # past argument
         shift # past value
         ;;
-    --include-imports)
-        INCLUDE_IMPORTS="$2"
-        shift # past argument
-        shift # past value
-        ;;
     --help | -h)
         usage
         ;;
@@ -165,15 +160,12 @@ if [[ ${DEMOJIFY:-false} == "true" ]]; then
     )
 fi
 
-
-if [[ ${INCLUDE_IMPORTS:-false} == "true" ]]; then
-    ARGS+=(
-    "--lua-filter=$SCRIPTS_DIR/include-imports.lua"
-    )
-fi
-
 ARGS+=("-t" "$SCRIPTS_DIR/panvimdoc.lua")
 
 # Print and execute the command
-printf "%s\n" "pandoc --citeproc ${ARGS[*]} $INPUT_FILE -o doc/$PROJECT_NAME.txt"
-pandoc "${ARGS[@]}" "$INPUT_FILE" -o "doc/$PROJECT_NAME.txt"
+#
+# printf "%s\n" "pandoc --citeproc ${ARGS[*]} $INPUT_FILE -o doc/$PROJECT_NAME.txt"
+# pandoc "${ARGS[@]}" "$INPUT_FILE" -o "doc/$PROJECT_NAME.txt"
+
+printf "%s\n" "pandoc --citeproc ${ARGS[*]} -o doc/$PROJECT_NAME.txt"
+pandoc "${ARGS[@]}" -o "doc/$PROJECT_NAME.txt"
