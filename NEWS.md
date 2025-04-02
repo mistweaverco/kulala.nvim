@@ -12,6 +12,7 @@
  - URL line support for `absolute/origin/asterisk path`
  - `#` and `//` comments support
  - `GRAPHQL` method support
+ - multiline URL support
  
 ### Enhancement: `win_opts` [config option](https://neovim.getkulala.net/docs/getting-started/configuration-options) to customize Kulala UI properties 
 
