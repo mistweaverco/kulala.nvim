@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -o pipefail
+
 PANDOC_DIR=./scripts/pandoc
 PROJECT_NAME=kulala
 VIM_VERSION="Neovim >= 0.8.0"
@@ -35,12 +37,11 @@ process_files() {
 
 if [ -n "$1" ]; then
   process_files . 10 "$1"
-  exit 0
+else
+  process_files . 1 "NEWS.md"
+  process_files . 1 "README.md"
+  process_files ./docs/docs 10 "*.md"
+  process_files ./docs/docs 10 "*.mdx" "--include-imports true"
 fi
 
-process_files . 1 "NEWS.md"
-process_files . 1 "README.md"
-process_files ./docs/docs 10 "*.md"
-process_files ./docs/docs 10 "*.mdx" "--include-imports true"
-
-nvim -c "helptags doc" -c "quit"
+nvim --headless -c "helptags doc" -c "quit"

@@ -7,7 +7,7 @@ Table of Contents                          *kulala.overview-table-of-contents*
   - Pre-request                 |kulala.overview-scripts-overview-pre-request|
 2. @name REQUEST_TWO                       |kulala.overview-@name-request_two|
   - Post-request              |kulala.overview-@name-request_two-post-request|
-3. @name REQUEST_TWO                       |kulala.overview-@name-request_two|
+3. @name REQUEST_TWO_2_                 |kulala.overview-@name-request_two_2_|
 4. @name REQUEST_THREE                   |kulala.overview-@name-request_three|
   - Print Variables      |kulala.overview-@name-request_three-print-variables|
 5. Links                                               |kulala.overview-links|
@@ -124,7 +124,7 @@ application/json
 
 POST-REQUEST                  *kulala.overview-@name-request_two-post-request*
 
-```http title="./post-request-example.http" # @name REQUEST_ONE POST
+```http title="./post-request-example.http" # @name REQUEST_ONE_ POST
 https://httpbin.org/post HTTP/1.1 Accept: application/json Content-Type:
 application/json Authorization: Bearer Foo:bar
 
@@ -139,7 +139,7 @@ application/json Authorization: Bearer Foo:bar
 
 
 ==============================================================================
-3. @name REQUEST_TWO                       *kulala.overview-@name-request_two*
+3. @name REQUEST_TWO_2_                 *kulala.overview-@name-request_two_2_*
 
 POST https://httpbin.org/post HTTP/1.1 Accept: application/json Content-Type:
 application/json

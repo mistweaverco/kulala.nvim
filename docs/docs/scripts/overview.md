@@ -141,7 +141,7 @@ THIS_IS_SOME_TOKEN_VALUE_123
 ## Post-request
 
 ```http title="./post-request-example.http"
-# @name REQUEST_ONE
+# @name REQUEST_ONE_
 POST https://httpbin.org/post HTTP/1.1
 Accept: application/json
 Content-Type: application/json
@@ -166,7 +166,7 @@ Authorization: Bearer Foo:bar
 
 ###
 
-# @name REQUEST_TWO
+# @name REQUEST_TWO_2_
 POST https://httpbin.org/post HTTP/1.1
 Accept: application/json
 Content-Type: application/json

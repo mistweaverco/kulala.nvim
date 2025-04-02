@@ -1,4 +1,3 @@
-local inspect = require("inspect")
 local import_dir = "./docs/static/"
 
 local is_code_block
