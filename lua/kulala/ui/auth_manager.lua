@@ -9,8 +9,6 @@ local Logger = require("kulala.logger")
 local Oauth = require("kulala.cmd.oauth")
 local Table = require("kulala.utils.table")
 
-local actions = require("telescope.actions")
-
 local M = {}
 
 local function auth_template()
@@ -97,7 +95,7 @@ local function update_auth_config(name, value)
   end
 
   local cur_env = vim.g.kulala_selected_env or Config.get().default_env
-  local public_env = Fs.read_json(public_env_path)
+  local public_env = Fs.read_json(public_env_path) or {}
 
   Table.set_at(public_env, { cur_env, "Security", "Auth", name }, value)
 
@@ -121,24 +119,19 @@ local function remove_config(value)
   end
 end
 
-local function edit_env_file(config, buf_or_picker, name)
+local function edit_env_file(config, picker, name)
   local file = name or "http-client.env.json"
   file = Fs.find_file_in_parent_dirs(file)
   if not file then return end
 
-  if type(buf_or_picker) == "number" then
-    actions.close(buf_or_picker)
-  else
-    buf_or_picker:close()
-  end
-
+  picker:close()
   vim.cmd(('edit +/"%s": %s'):format(config, file))
 
   return true
 end
 
-local function edit_private_env_file(config, prompt_bufnr)
-  return edit_env_file(config, prompt_bufnr, "http-client.private.env.json")
+local function edit_private_env_file(config, picker)
+  return edit_env_file(config, picker, "http-client.private.env.json")
 end
 
 local commands = {
@@ -154,6 +147,8 @@ local commands = {
 local keys_hint = " (a:Add e:Edit p:Edit private m:Remove g:Get new f:Refresh r:Revoke)"
 
 local function open_auth_telescope()
+  local actions = require("telescope.actions")
+
   local env = get_env()
   local config_names = vim.tbl_keys(env)
 
@@ -176,7 +171,13 @@ local function open_auth_telescope()
           local selection = action_state.get_selected_entry()
           if not selection then return end
 
-          if commands[cmd][1](selection.value, prompt_bufnr) == true then return end
+          local picker = {
+            close = function()
+              actions.close(prompt_bufnr)
+            end,
+          }
+
+          if commands[cmd][1](selection.value, picker) == true then return end
 
           actions.close(prompt_bufnr)
           M.open_auth_config()
