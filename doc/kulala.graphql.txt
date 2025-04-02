@@ -5,6 +5,7 @@ Table of Contents                           *kulala.graphql-table-of-contents*
 
 1. GraphQL                                            |kulala.graphql-graphql|
   - With variables                     |kulala.graphql-graphql-with-variables|
+  - Without variables               |kulala.graphql-graphql-without-variables|
   - Download GraphQL Server Schema|kulala.graphql-graphql-download-graphql-server-schema|
 
 ==============================================================================
@@ -18,19 +19,28 @@ Create a file with the `.http` extension and write your GraphQL requests in it.
 
 WITH VARIABLES                         *kulala.graphql-graphql-with-variables*
 
-```http title="gql-with-variables.http" GRAPHQL
-https://swapi-graphql.netlify.app/.netlify/functions/index HTTP/1.1 Accept:
-application/json X-REQUEST-TYPE: GraphQL
+title="gql-with-variables.http"
 
-query Person($id: ID) { person(personID: $id) { name } }
-
-{ "id": 1 }
-
->
+>http
+    GRAPHQL https://swapi-graphql.netlify.app/.netlify/functions/index HTTP/1.1
+    Accept: application/json
+    X-REQUEST-TYPE: GraphQL
     
-    ## Without variables
+    query Person($id: ID) {
+      person(personID: $id) {
+        name
+      }
+    }
     
-    ```http title="gql-without-variables.http"
+    { "id": 1 }
+<
+
+
+WITHOUT VARIABLES                   *kulala.graphql-graphql-without-variables*
+
+title="gql-without-variables.http"
+
+>http
     # @graphql
     POST https://swapi-graphql.netlify.app/.netlify/functions/index HTTP/1.1
     Accept: application/json

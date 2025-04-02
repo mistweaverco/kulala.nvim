@@ -38,18 +38,19 @@ request is specified next to delimiter `###`, otherwise the `URL` without the
 http version is used. To autocomplete available requests, use the `Ctrl-X
 Ctrl-U` shortcut.
 
-```http get-requests.http ### Request 1
+get-requests.http
 
-GET https://httpbin.org/advanced_1 HTTP/1.1
-
-
- ~
-
-POST https://httpbin.org/advanced_2 HTTP/1.1
-
->
+>http
+    ### Request 1
     
-    ```http
+    GET https://httpbin.org/advanced_1 HTTP/1.1
+    
+    ###
+    
+    POST https://httpbin.org/advanced_2 HTTP/1.1
+<
+
+>http
     import ./requests/get-requests.http
     
     run #Request 1

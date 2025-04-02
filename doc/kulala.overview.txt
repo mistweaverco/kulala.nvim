@@ -5,12 +5,8 @@ Table of Contents                          *kulala.overview-table-of-contents*
 
 1. Scripts overview                         |kulala.overview-scripts-overview|
   - Pre-request                 |kulala.overview-scripts-overview-pre-request|
-2. @name REQUEST_TWO                       |kulala.overview-@name-request_two|
-  - Post-request              |kulala.overview-@name-request_two-post-request|
-3. @name REQUEST_TWO_2_                 |kulala.overview-@name-request_two_2_|
-4. @name REQUEST_THREE                   |kulala.overview-@name-request_three|
-  - Print Variables      |kulala.overview-@name-request_three-print-variables|
-5. Links                                               |kulala.overview-links|
+  - Post-request               |kulala.overview-scripts-overview-post-request|
+  - Print Variables         |kulala.overview-scripts-overview-print-variables|
 
 ==============================================================================
 1. Scripts overview                         *kulala.overview-scripts-overview*
@@ -80,133 +76,173 @@ So want to write a file in the `http` directory, you can use a relative path:
 
 PRE-REQUEST                     *kulala.overview-scripts-overview-pre-request*
 
-```http title="./pre-request-example.http" # @name REQUEST_ONE < {% var crypto
-= require('crypto'); var fs = require('fs'); var TOKEN =
-fs.readFileSync('TOKEN.txt', 'utf8').trim(); request.variables.set('GORILLA',
-TOKEN); request.variables.set('PASSWORD',
-crypto.randomBytes(16).toString('hex')); %} < ./pre-request.js POST
-https://httpbin.org/post HTTP/1.1 Accept: application/json Content-Type:
-application/json Authorization: Bearer Foo:bar
+title="./pre-request-example.http"
 
-{ "token": "{{GORILLA}}", "password": "{{PASSWORD}}", "deep": { "nested": [ {
-"key": "foo" }, { "key": "{{BONOBO}}" } ] } }
-
-
- ~
-
-
-==============================================================================
-2. @name REQUEST_TWO                       *kulala.overview-@name-request_two*
-
-POST https://httpbin.org/post HTTP/1.1 accept: application/json content-type:
-application/json
-
-{ "token": "{{REQUEST_ONE.response.body.`.json.token}}", "nested":
-"{{REQUEST_ONE.response.body.`.json.deep.nested[1].key}}", "gorilla":
-"{{GORILLA}}" }
-
->
+>http
+    # @name REQUEST_ONE
+    < {%
+      var crypto = require('crypto');
+      var fs = require('fs');
+      var TOKEN = fs.readFileSync('TOKEN.txt', 'utf8').trim();
+      request.variables.set('GORILLA', TOKEN);
+      request.variables.set('PASSWORD', crypto.randomBytes(16).toString('hex'));
+    %}
+    < ./pre-request.js
+    POST https://httpbin.org/post HTTP/1.1
+    Accept: application/json
+    Content-Type: application/json
+    Authorization: Bearer Foo:bar
     
-    :::tip
+    {
+      "token": "{{GORILLA}}",
+      "password": "{{PASSWORD}}",
+      "deep": {
+        "nested": [
+          {
+            "key": "foo"
+          },
+          {
+            "key": "{{BONOBO}}"
+          }
+        ]
+      }
+    }
     
-    Variables set via `request.variables.set` are
-    only available in the current request.
+    ###
     
-    :::
+    # @name REQUEST_TWO
+    POST https://httpbin.org/post HTTP/1.1
+    accept: application/json
+    content-type: application/json
     
-    ```javascript title="./pre-request.js"
+    {
+      "token": "{{REQUEST_ONE.response.body.$.json.token}}",
+      "nested": "{{REQUEST_ONE.response.body.$.json.deep.nested[1].key}}",
+      "gorilla": "{{GORILLA}}"
+    }
+<
+
+
+title="./pre-request.js"
+
+>javascript
     client.global.set("BONOBO", "bar");
 <
 
 
-`text title="./TOKEN.txt" THIS_IS_SOME_TOKEN_VALUE_123`
+title="./TOKEN.txt"
+
+>text
+    THIS_IS_SOME_TOKEN_VALUE_123
+<
 
 
-POST-REQUEST                  *kulala.overview-@name-request_two-post-request*
+POST-REQUEST                   *kulala.overview-scripts-overview-post-request*
 
-```http title="./post-request-example.http" # @name REQUEST_ONE_ POST
-https://httpbin.org/post HTTP/1.1 Accept: application/json Content-Type:
-application/json Authorization: Bearer Foo:bar
+title="./post-request-example.http"
 
-{ "token": "SOME_TOKEN", "deep": { "nested": [ { "key": "foo" } ] } }
-
-
-  {% var fs = require('fs'); fs.writeFileSync('TOKEN.txt',
-  response.body.json.token); client.global.set('GORILLA_TOKEN',
-  response.body.json.token); %}
-
- ~
-
-
-==============================================================================
-3. @name REQUEST_TWO_2_                 *kulala.overview-@name-request_two_2_*
-
-POST https://httpbin.org/post HTTP/1.1 Accept: application/json Content-Type:
-application/json
-
-{ "gorilla": "{{GORILLA_TOKEN}}" }
-
-
-  ./post-request.js
-
- ~
-
-
-==============================================================================
-4. @name REQUEST_THREE                   *kulala.overview-@name-request_three*
-
-POST https://httpbin.org/post HTTP/1.1 Accept: application/json Content-Type:
-application/json
-
-{ "date_header_from_request_two": "{{BONOBO}}" }
-
->
+>http
+    # @name REQUEST_ONE_
+    POST https://httpbin.org/post HTTP/1.1
+    Accept: application/json
+    Content-Type: application/json
+    Authorization: Bearer Foo:bar
     
-    ```javascript title="./post-request.js"
+    {
+      "token": "SOME_TOKEN",
+      "deep": {
+        "nested": [
+          {
+            "key": "foo"
+          }
+        ]
+      }
+    }
+    
+    > {%
+      var fs = require('fs');
+      fs.writeFileSync('TOKEN.txt', response.body.json.token);
+      client.global.set('GORILLA_TOKEN', response.body.json.token);
+    %}
+    
+    ###
+    
+    # @name REQUEST_TWO_2_
+    POST https://httpbin.org/post HTTP/1.1
+    Accept: application/json
+    Content-Type: application/json
+    
+    {
+      "gorilla": "{{GORILLA_TOKEN}}"
+    }
+    
+    > ./post-request.js
+    
+    ###
+    
+    # @name REQUEST_THREE
+    POST https://httpbin.org/post HTTP/1.1
+    Accept: application/json
+    Content-Type: application/json
+    
+    {
+      "date_header_from_request_two": "{{BONOBO}}"
+    }
+<
+
+title="./post-request.js"
+
+>javascript
     client.global.set("BONOBO", response.headers.valueOf("Date"));
 <
 
 
-PRINT VARIABLES          *kulala.overview-@name-request_three-print-variables*
+PRINT VARIABLES             *kulala.overview-scripts-overview-print-variables*
 
-```http title="./pre-request-example.http" # @name REQUEST_ONE < {% var crypto
-= require('crypto'); var fs = require('fs'); var TOKEN =
-fs.readFileSync('TOKEN.txt', 'utf8').trim(); var PASSWORD =
-crypto.randomBytes(16).toString('hex'); request.variables.set('GORILLA',
-TOKEN); request.variables.set('PASSWORD', PASSWORD); console.log(TOKEN)
-console.log(PASSWORD) %} < ./pre-request.js POST https://httpbin.org/post
-HTTP/1.1 Accept: application/json Content-Type: application/json Authorization:
-Bearer Foo:bar
+title="./pre-request-example.http"
 
-{ "token": "{{GORILLA}}", "password": "{{PASSWORD}}", "deep": { "nested": [ {
-"key": "foo" }, { "key": "{{BONOBO}}" } ] } }
-
-
-  {% var token = response.body.json.token var fs = require('fs');
-  fs.writeFileSync('TOKEN.txt', token); client.global.set('GORILLA_TOKEN',
-  token); console.log(token) %}
->
+>http
+    # @name REQUEST_ONE
+    < {%
+      var crypto = require('crypto');
+      var fs = require('fs');
+      var TOKEN = fs.readFileSync('TOKEN.txt', 'utf8').trim();
+      var PASSWORD = crypto.randomBytes(16).toString('hex');
+      request.variables.set('GORILLA', TOKEN);
+      request.variables.set('PASSWORD', PASSWORD);
+      console.log(TOKEN)
+      console.log(PASSWORD)
+    %}
+    < ./pre-request.js
+    POST https://httpbin.org/post HTTP/1.1
+    Accept: application/json
+    Content-Type: application/json
+    Authorization: Bearer Foo:bar
     
-    :::tip
-    
-    If you add `console.log` to script,
-    the output will be displayed in the `Script Output` panel,
-    when you have enabled the following configuration.
-    
-    ```lua
-    opts = {
-      default_winbar_panes = { "body", "headers", "headers_body", "script_output" },
+    {
+      "token": "{{GORILLA}}",
+      "password": "{{PASSWORD}}",
+      "deep": {
+        "nested": [
+          {
+            "key": "foo"
+          },
+          {
+            "key": "{{BONOBO}}"
+          }
+        ]
+      }
     }
+    
+    > {%
+      var token = response.body.json.token
+      var fs = require('fs');
+      fs.writeFileSync('TOKEN.txt', token);
+      client.global.set('GORILLA_TOKEN', token);
+      console.log(token)
+    %}
 <
 
-:::
-
-==============================================================================
-5. Links                                               *kulala.overview-links*
-
-1. *@name*: 
-2. *@name*: 
-3. *@name*: 
 
 Generated by panvimdoc <https://github.com/kdheepak/panvimdoc>
 
