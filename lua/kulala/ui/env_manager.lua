@@ -1,18 +1,9 @@
 local has_telescope = pcall(require, "telescope")
 local has_snacks, snacks_picker = pcall(require, "snacks.picker")
 
-if not has_telescope then return nil end
-
 local DB = require("kulala.db")
 local Logger = require("kulala.logger")
 local SELECTOR = require("kulala.ui.selector")
-
-local action_state = require("telescope.actions.state")
-local actions = require("telescope.actions")
-local finders = require("telescope.finders")
-local pickers = require("telescope.pickers")
-local previewers = require("telescope.previewers")
-local config = require("telescope.config").values
 
 local M = {}
 
@@ -94,6 +85,13 @@ local open_snacks = function()
 end
 
 local open_telescope = function()
+  local action_state = require("telescope.actions.state")
+  local actions = require("telescope.actions")
+  local finders = require("telescope.finders")
+  local pickers = require("telescope.pickers")
+  local previewers = require("telescope.previewers")
+  local config = require("telescope.config").values
+
   local http_client_env = DB.find_unique("http_client_env")
   if not http_client_env then return Logger.error("No environment found") end
 
