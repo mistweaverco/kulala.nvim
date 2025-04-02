@@ -5,14 +5,17 @@ local DB = require("kulala.db")
 local Logger = require("kulala.logger")
 local Parser = require("kulala.parser.document")
 local ParserUtils = require("kulala.parser.utils")
+local Ui = require("kulala.ui")
 
 local M = {}
+
+local requests, names = {}, {}
 
 local function get_requests()
   local _, _requests = Parser.get_document()
   if not _requests then return Logger.watn("No requests found in the document") end
 
-  local requests, names = {}, {}
+  requests, names = {}, {}
 
   table.sort(_requests, function(a, b)
     return a.start_line < b.start_line
@@ -33,7 +36,7 @@ local goto_request = function(request)
   if not request then return end
   local start_line = request.start_line
 
-  vim.cmd("normal! " .. start_line - 1 .. "Gzz")
+  vim.cmd("normal! " .. start_line .. "Gzz")
 end
 
 local set_request = function(bufnr, requests, name)
@@ -48,17 +51,49 @@ local set_request = function(bufnr, requests, name)
   vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
 end
 
+local function run_request(ctx, item, action)
+  ctx:close()
+  goto_request(requests[item.label])
+  Ui.open()
+end
+
+local function run_all_requests(ctx)
+  ctx:close()
+  Ui.open_all()
+end
+
+local maps = {
+  r = { run_request, "Run" },
+  a = { run_all_requests, "Run all" },
+}
+
 local open_snacks = function()
-  local requests, names = get_requests()
+  requests, names = get_requests()
 
   local items = vim.iter(names):fold({}, function(acc, name)
     table.insert(acc, { text = name, label = name })
     return acc
   end)
 
+  local keys_hint = vim.iter(maps):fold("", function(acc, key, map)
+    local hint = ("  %s: %s"):format(key, map[2])
+    return acc .. hint
+  end)
+
+  local keys = vim.iter(maps):fold({}, function(acc, key, map)
+    acc[key] = { key, desc = map[2], mode = { "n" } }
+    return acc
+  end)
+
+  local actions = vim.iter(maps):fold({}, function(acc, key, map)
+    acc[key] = map[1]
+    return acc
+  end)
+
   snacks_picker({
     title = "Document Requests",
     items = items,
+    actions = actions,
     matcher = { sort_empty = false },
     layout = vim.tbl_deep_extend("force", snacks_picker.config.layout("telescope"), {
       reverse = true,
@@ -81,12 +116,14 @@ local open_snacks = function()
       preview = {
         title = "Reqeuest Preview",
         wo = {
+          winbar = (" "):rep(10) .. keys_hint,
           number = false,
           relativenumber = false,
           signcolumn = "no",
           sidescrolloff = 1,
         },
       },
+      input = { keys = keys },
       list = { title = "Requests" },
     },
 
@@ -105,7 +142,7 @@ local open_telescope = function()
   local previewers = require("telescope.previewers")
   local config = require("telescope.config").values
 
-  local requests, names = get_requests()
+  requests, names = get_requests()
 
   pickers
     .new({}, {
