@@ -2,6 +2,7 @@
 
 ## Version 5.2.0
 
+### Enhancement: added request progress status and <C-c> keymap to cancel requests
 ### Feature: [Oauth2 support](https://neovim.getkulala.net/docs/usage/authentication)
 ### Enhancement: added `Authentication Manager` - `<Leader>Ru`, Environment Manager - `<Leader>Re` and `Request Manager` - `<Leader>Rf`
 ### Feature: [Websockets support](https://neovim.getkulala.net/docs/usage/websockets)
