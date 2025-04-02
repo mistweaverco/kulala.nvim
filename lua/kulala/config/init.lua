@@ -26,9 +26,21 @@ local function set_legacy_options()
   M.options = vim.tbl_deep_extend("keep", M.options, M.options.ui)
 end
 
+local set_autocomands = function()
+  vim.api.nvim_create_autocmd("FileType", {
+    group = vim.api.nvim_create_augroup("Kulala filetype setup", { clear = true }),
+    pattern = { "http", "rest" },
+    callback = function(ev)
+      vim.api.nvim_set_option_value("completefunc", "v:lua.require'kulala.utils.complete'.complete", { buf = ev.buf })
+    end,
+  })
+end
+
 M.setup = function(config)
   M.options = vim.tbl_deep_extend("force", M.defaults, config or {})
+
   set_legacy_options()
+  set_autocomands()
 
   _ = M.options.show_icons == "signcolumn" and pcall(set_signcolumn_icons)
   M.options.global_keymaps, M.options.ft_keymaps = keymaps.setup_global_keymaps()

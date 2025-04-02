@@ -10,6 +10,8 @@ local M = {
   grpcurl_path = "grpcurl",
   -- websocat path, get from https://github.com/vi/websocat.git
   websocat_path = "websocat",
+  -- openssl path
+  openssl_path = "openssl",
 
   -- set scope for environment and request variables
   -- possible values: b = buffer, g = global

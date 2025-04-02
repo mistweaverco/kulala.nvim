@@ -335,7 +335,7 @@ local function parse_import_command(variables, request, imported_requests, line)
   local path = line:match("^import (.+)%s*") or ""
   if not path:match("%.http$") then return end
 
-  vim.list_extend(imported_requests, import_requests(path, variables, request))
+  vim.list_extend(imported_requests, import_requests(path, variables, request) or {})
 end
 
 local function parse_run_command(variables, requests, request, imported_requests, line, lnum)
@@ -403,7 +403,7 @@ M.get_document = function(lines, path)
     request.start_line = block.start_lnum
     request.end_line = block.end_lnum
     request.name = block.name
-    request.file = path or vim.fn.bufname(DB.get_current_buffer())
+    request.file = path or vim.fn.fnamemodify(vim.fn.bufname(DB.get_current_buffer()), ":p")
 
     for relative_linenr, line in ipairs(block.lines) do
       if line:match("^# @") then
@@ -474,7 +474,7 @@ M.get_document = function(lines, path)
     if request.url and #request.url > 0 then
       table.insert(requests, request)
     else
-      Logger.warn(("Request without URL found at line: %s. Skipping ..."):format(request.start_line))
+      -- Logger.warn(("Request without URL found at line: %s. Skipping ..."):format(request.start_line))
     end
   end
 

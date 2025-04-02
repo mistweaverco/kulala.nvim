@@ -3,6 +3,7 @@
 ## Version 5.2.0
 
 ### Feature: [Oauth2 support](https://neovim.getkulala.net/docs/usage/authentication)
+### Enhancement: added `Authentication Manager` - `<Leader>Ru`, Environment Manager - `<Leader>Re` and `Request Manager` - `<Leader>Rf`
 ### Feature: [Websockets support](https://neovim.getkulala.net/docs/usage/websockets)
 ### Docs: added runnable [demo](https://neovim.getkulala.net/docs/usage/demos) `*.http` examples
 ### Feature: `import` and `run` [commands](https://neovim.getkulala.net/docs/usage/import-and-run-http) to import and run requests from external `*.http` files

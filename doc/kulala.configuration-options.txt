@@ -1,0 +1,1081 @@
+*kulala.configuration-options.txt*A fully-featured REST Client Interface for Neovim.
+
+==============================================================================
+Table of Contents             *kulala.configuration-options-table-of-contents*
+
+1.                                            |kulala.configuration-options--|
+  -                                         |kulala.configuration-options----|
+  -                                          |kulala.configuration-options---|
+2. Links                                  |kulala.configuration-options-links|
+==============================================================================
+1.                                            *kulala.configuration-options--*
+
+FULL EXAMPLE ~
+
+Here is a full example of setting up the Kulala plugin with the available
+`opts`:
+>lua
+    local M = {
+      -- cURL path
+      -- if you have curl installed in a non-standard path,
+      -- you can specify it here
+      curl_path = "curl",
+      -- additional cURL options
+      -- see: https://curl.se/docs/manpage.html
+      additional_curl_options = {},
+      -- gRPCurl path, get from https://github.com/fullstorydev/grpcurl.git
+      grpcurl_path = "grpcurl",
+      -- websocat path, get from https://github.com/vi/websocat.git
+      websocat_path = "websocat",
+      -- openssl path
+      openssl_path = "openssl",
+    
+      -- set scope for environment and request variables
+      -- possible values: b = buffer, g = global
+      environment_scope = "b",
+      -- dev, test, prod, can be anything
+      -- see: https://learn.microsoft.com/en-us/aspnet/core/test/http-files?view=aspnetcore-8.0#environment-files
+      default_env = "dev",
+      -- enable reading vscode rest client environment variables
+      vscode_rest_client_environmentvars = false,
+    
+      -- default timeout for the request, set to nil to disable
+      request_timeout = nil,
+      -- continue running requests when a request failure is encountered
+      halt_on_error = true,
+    
+      -- certificates
+      certificates = {},
+      -- Specify how to escape query parameters
+      -- possible values: always, skipencoded = keep %xx as is
+      urlencode = "always",
+    
+      -- default formatters/pathresolver for different content types
+      contenttypes = {
+        ["application/json"] = {
+          ft = "json",
+          formatter = vim.fn.executable("jq") == 1 and { "jq", "." },
+          pathresolver = function(...)
+            return require("kulala.parser.jsonpath").parse(...)
+          end,
+        },
+        ["application/xml"] = {
+          ft = "xml",
+          formatter = vim.fn.executable("xmllint") == 1 and { "xmllint", "--format", "-" },
+          pathresolver = vim.fn.executable("xmllint") == 1 and { "xmllint", "--xpath", "{{path}}", "-" },
+        },
+        ["text/html"] = {
+          ft = "html",
+          formatter = vim.fn.executable("xmllint") == 1 and { "xmllint", "--format", "--html", "-" },
+          pathresolver = nil,
+        },
+      },
+    
+      ui = {
+        -- display mode: possible values: "split", "float"
+        display_mode = "split",
+        -- split direction: possible values: "vertical", "horizontal"
+        split_direction = "vertical",
+        -- window options to override defaults: width/height/split/vertical
+        win_opts = {},
+        -- default view: "body" or "headers" or "headers_body" or "verbose" or fun(response: Response)
+        default_view = "body",
+        -- enable winbar
+        winbar = true,
+        -- Specify the panes to be displayed by default
+        -- Current available pane contains { "body", "headers", "headers_body", "script_output", "stats", "verbose", "report", "help" },
+        default_winbar_panes = { "body", "headers", "headers_body", "verbose", "script_output", "report", "help" },
+        -- enable/disable variable info text
+        -- this will show the variable name and value as float
+        -- possible values: false, "float"
+        show_variable_info_text = false,
+        -- icons position: "signcolumn"|"on_request"|"above_request"|"below_request" or nil to disable
+        show_icons = "on_request",
+        -- default icons
+        icons = {
+          inlay = {
+            loading = "⏳",
+            done = "✅",
+            error = "❌",
+          },
+          lualine = "🐼",
+          textHighlight = "WarningMsg", -- highlight group for request elapsed time
+        },
+    
+        -- enable/disable request summary in the output window
+        show_request_summary = true,
+        -- disable notifications of script output
+        disable_script_print_output = false,
+    
+        report = {
+          -- possible values: true | false | "on_error"
+          show_script_output = true,
+          -- possible values: true | false | "on_error" | "failed_only"
+          show_asserts_output = true,
+          -- possible values: true | false | "on_error"
+          show_summary = true,
+    
+          headersHighlight = "Special",
+          successHighlight = "String",
+          errorHighlight = "Error",
+        },
+    
+        -- scratchpad default contents
+        scratchpad_default_contents = {
+          "@MY_TOKEN_NAME=my_token_value",
+          "",
+          "# @name scratchpad",
+          "POST https://httpbin.org/post HTTP/1.1",
+          "accept: application/json",
+          "content-type: application/json",
+          "",
+          "{",
+          '  "foo": "bar"',
+          "}",
+        },
+    
+        disable_news_popup = false,
+      },
+    
+      -- enable/disable debug mode
+      debug = 3,
+    
+      -- set to true to enable default keymaps (check docs or {plugins_path}/kulala.nvim/lua/kulala/config/keymaps.lua for details)
+      -- or override default keymaps as shown in the example below.
+      ---@type boolean|table
+      global_keymaps = false,
+      --[[
+        {
+          ["Send request"] = { -- sets global mapping
+            "<leader>Rs",
+            function() require("kulala").run() end,
+            mode = { "n", "v" }, -- optional mode, default is n
+            desc = "Send request" -- optional description, otherwise inferred from the key
+          },
+          ["Send all requests"] = {
+            "<leader>Ra",
+            function() require("kulala").run_all() end,
+            mode = { "n", "v" },
+            ft = "http", -- sets mapping for *.http files only
+          },
+          ["Replay the last request"] = {
+            "<leader>Rr",
+            function() require("kulala").replay() end,
+            ft = { "http", "rest" }, -- sets mapping for specified file types
+          },
+        ["Find request"] = false -- set to false to disable
+        },
+      ]]
+    
+      -- Kulala UI keymaps, override with custom keymaps as required (check docs or {plugins_path}/kulala.nvim/lua/kulala/config/keymaps.lua for details)
+      ---@type boolean|table
+      kulala_keymaps = true,
+      --[[
+        {
+          ["Show headers"] = { "H", function() require("kulala.ui").show_headers() end, },
+        }
+      ]]
+    }
+    
+    return M
+<
+
+CURL_PATH ~
+
+cURL path.
+
+If you have `curl` installed in a non-standard path, you can specify it here.
+
+Default: `curl`
+
+Example:
+
+>lua
+    {
+      "mistweaverco/kulala.nvim",
+      opts = {
+        curl_path = "/home/bonobo/.local/bin/curl",
+      },
+    }
+<
+
+
+ADDITIONAL_CURL_OPTIONS ~
+
+Additional cURL options.
+
+Possible values:
+
+- `[table of strings]`
+
+Default: `{}`
+
+Example:
+
+>lua
+    {
+      "mistweaverco/kulala.nvim",
+      opts = {
+        additional_curl_options = { "--insecure", "-A", "Mozilla/5.0" },
+      },
+    }
+<
+
+
+GRPCURL_PATH ~
+
+gRPCurl path.
+
+If you have `grpcurl` installed in a non-standard path, you can specify it
+here. You can get it at gRPCurl <https://github.com/fullstorydev/grpcurl>
+
+Default: `grpcurl`
+
+Example:
+
+>lua
+    {
+      "mistweaverco/kulala.nvim",
+      opts = {
+        grpcurl_path = "/home/bonobo/.local/bin/grpcurl",
+      },
+    }
+<
+
+
+ENVIRONMENT_SCOPE ~
+
+While using request variables the results will be stored for later use. As
+usual variables they’re file relevant and should be stored in the buffer. If
+you want to share the variables between buffers you can use the global scope.
+
+Possible values:
+
+- `"b"` (buffer)
+- `"g"` (global)
+
+Default: `"b"`
+
+Example:
+
+>lua
+    {
+    "mistweaverco/kulala.nvim",
+      opts = {
+        environment_scope = "b",
+      },
+    }
+<
+
+
+DEFAULT_ENV ~
+
+Default environment.
+
+See: Environment files
+<https://learn.microsoft.com/en-us/aspnet/core/test/http-files?view=aspnetcore-8.0#environment-files>.
+
+Possible values:
+
+- `[any string]`
+
+Default: `dev`
+
+Example:
+
+>lua
+    {
+      "mistweaverco/kulala.nvim",
+      opts = {
+        default_env = "dev",
+      },
+    }
+<
+
+
+VSCODE_REST_CLIENT_ENVIRONMENTVARS ~
+
+If enabled, Kulala searches for `.vscode/settings.json` or `*.code-workspace`
+files in the current directory and its parents to read the
+`rest-client.environmentVariables` definitions.
+
+If `http-client.env.json` is also present, it’ll be merged (and overwrites
+variables from VSCode).
+
+Possible values:
+
+- `true`
+- `false`
+
+Default: `false`
+
+Example:
+
+>lua
+    {
+      "mistweaverco/kulala.nvim",
+      opts = {
+        vscode_rest_client_environmentvars = true,
+      },
+    }
+<
+
+
+REQUEST_TIMEOUT ~
+
+Set request timeout period.
+
+Possible values:
+
+- `nil`
+- `[number]` in ms
+
+Default: `nil`
+
+Example:
+
+>lua
+    {
+      "mistweaverco/kulala.nvim",
+      opts = {
+        request_timeout = 5000,
+      },
+    }
+<
+
+
+HALT_ON_ERROR ~
+
+Allows to halt/continue running a sequence of requests when a request failure
+is encountered.
+
+
+CERTIFICATES ~
+
+A hash array of certificates to be used for requests.
+
+The key is the hostname and optional the port. If no port is given, the
+certificate will be used for all ports where no dedicated one is defined.
+
+Each certificate definition needs
+
+- `cert` the path to the certificate file
+- `key` the path to the key files
+
+Example:
+
+>lua
+    {
+    "mistweaverco/kulala.nvim",
+      opts = {
+        certificates = {
+          ["localhost"] = {
+            cert = vim.fn.stdpath("config") .. "/certs/localhost.crt",
+            key = vim.fn.stdpath("config") .. "/certs/localhost.key",
+          },
+          ["www.somewhere.com:8443"] = {
+            cert = "/home/userx/certs/somewhere.crt",
+            key = "/home/userx/certs/somewhere.key",
+          },
+        },
+      },
+    }
+<
+
+Hostnames with prefix `*.` will be used as wildcard certificates for the host
+itself and all subdomains.
+
+`*.company.com` will match
+
+- `company.com`
+- `www.company.com`
+- `api.company.com`
+- `sub.api.company.com`
+- etc.
+
+
+URLENCODE ~
+
+Specify how to escape query parameters.
+
+Possible values:
+
+- `always`
+- `skipencoded` = keep already encoded `%xx` as is
+
+Default: `always`
+
+Example:
+
+>lua
+    {
+      "mistweaverco/kulala.nvim",
+      opts = {
+        urlencode = "skipencoded",
+      },
+    }
+<
+
+
+CONTENTTYPES ~
+
+Filetypes, formatters and path resolvers are defined for each content-type in
+an hash array.
+
+Default:
+
+>lua
+    contenttypes = {
+      ["application/json"] = {
+        ft = "json",
+        formatter = { "jq", "." },
+        pathresolver = require("kulala.parser.jsonpath").parse,
+      },
+      ["application/xml"] = {
+        ft = "xml",
+        formatter = { "xmllint", "--format", "-" },
+        pathresolver = { "xmllint", "--xpath", "{{path}}", "-" },
+      },
+      ["text/html"] = {
+        ft = "html",
+        formatter = { "xmllint", "--format", "--html", "-" },
+        pathresolver = {},
+      },
+    }
+<
+
+
+CONTENTTYPES.FT
+
+Default filetype for the given content type.
+
+Possible values:
+
+Any filetype (`:help filetype`) neovim supports.
+
+Default:
+
+>lua
+    contenttypes = {
+      ["application/json"] = {
+        ft = "json",
+      },
+      ["application/xml"] = {
+        ft = "xml",
+      },
+      ["text/html"] = {
+        ft = "html",
+      },
+<
+
+Example:
+
+>lua
+    {
+      "mistweaverco/kulala.nvim",
+      opts = {
+        contenttypes = {
+          ["text/xml"] = {
+            ft = "xml",
+          },
+        },
+      },
+    }
+<
+
+
+CONTENTTYPES.FORMATTER
+
+Formatters take the response body and produce a beautified / more human
+readable output.
+
+Possible values:
+
+- You can define a commandline which processes the body.
+    The body will be piped as stdin and
+    the output will be used as the formatted body.
+- You can define a lua function `formatted_body = function(body)`
+    which returns the formatted body.
+
+Default:
+
+>lua
+    contenttypes = {
+      ["application/json"] = {
+        formatter = { "jq", "." },
+      },
+      ["application/xml"] = {
+        formatter = { "xmllint", "--format", "-" },
+      },
+      ["text/html"] = {
+        formatter = { "xmllint", "--format", "--html", "-" },
+      },
+    }
+<
+
+Example:
+
+>lua
+    {
+      "mistweaverco/kulala.nvim",
+      opts = {
+        contenttypes = {
+          ["text/plain"] = {
+            formatter = function(body)
+              return body:lower()
+            end,
+          },
+        },
+      },
+    }
+<
+
+
+CONTENTTYPES.PATHRESOLVER
+
+You can use Request Variables to read values from requests / responses. To
+access a specific value inside a body Kulala gives you the possibility to
+define a path for it.
+
+This is normally JSONPath for JSON or XPath for XML, but can be individually
+defined for any content type.
+
+Possible values:
+
+- You can use an external program which receives the
+    full body as stdin and has to return the selected value in stdout.
+    The placeholder `{{path}}` can be used in any string of
+    this definition and will be replaced by the actual path (after `body.`).
+- Alternative you can give a lua function of `value = function(body, path)`.
+
+Default:
+
+Kulala has implemented a basic JSONPath parser which supports object traversal
+including array index access.
+
+For full JSONPath support you need to use an external program like
+`jsonpath-cli` or `jp`.
+
+>lua
+    contenttypes = {
+      ["application/json"] = {
+        pathresolver = require("kulala.parser.jsonpath").parse,
+      },
+      ["application/xml"] = {
+        pathresolver = { "xmllint", "--xpath", "{{path}}", "-" },
+      },
+      ["text/html"] = {
+        pathresolver = nil,
+      },
+    }
+<
+
+Example:
+
+>lua
+    {
+      "mistweaverco/kulala.nvim",
+      opts = {
+        contenttypes = {
+          ["text/xml"] = {
+            pathresolver = { "xmllint", "--xpath", "{{path}}", "-" },
+          },
+        },
+      },
+    }
+<
+
+
+DEBUG ~
+
+Enable debug mode.
+
+Possible values:
+
+- `true` - enable debug mode
+- `false` - disable debug mode
+- `1/2/3` - set log level
+    - `0` = silence all notifications
+    - `1` = only error
+    - `2` = error and warn
+    - `3` = error, warn and info
+    - `4` = debug
+
+Default: `false`
+
+Example:
+
+>lua
+    {
+      "mistweaverco/kulala.nvim",
+      opts = {
+        debug = false,
+      },
+    }
+<
+
+
+UI OPTIONS*kulala.nvim.configuration-options-configuration-options-ui-options*
+
+
+UI.DISPLAY_MODE ~
+
+The display mode.
+
+Can be either `split` or `float`.
+
+Default: `split`
+
+Example:
+
+>lua
+    {
+      "mistweaverco/kulala.nvim",
+      opts = {
+        ui = {
+          display_mode = "float",
+        }
+      },
+    }
+<
+
+
+UI.SPLIT_DIRECTION ~
+
+Split direction.
+
+Only used when `ui.display_mode` is set to `split`.
+
+Possible values:
+
+- `vertical`
+- `horizontal`
+
+Default: `vertical`
+
+Example:
+
+>lua
+    {
+      "mistweaverco/kulala.nvim",
+      opts = {
+        ui = {
+          split_direction = "vertical",
+        },
+      },
+    }
+<
+
+
+UI.WIN_OPTS ~
+
+Kualala UI window options.
+
+You can set your own window options here.
+
+Default: `{}`
+
+Example:
+
+>lua
+    {
+      "mistweaverco/kulala.nvim",
+      opts = {
+        ui = {
+          win_opts = {
+            width = 80,
+            height = 20,
+            split = "vertical",
+          },
+        },
+      },
+    }
+<
+
+
+UI.DEFAULT_VIEW ~
+
+Default view.
+
+Possible values:
+
+- `body`
+- `headers`
+- `headers_body`
+- `verbose`
+- `script_output`
+- `stats`
+- `function(response) ... end`
+
+Default: `body`
+
+Example:
+
+>lua
+    {
+      "mistweaverco/kulala.nvim",
+      opts = {
+        ui = {
+          default_view = "body",
+        },
+      },
+    }
+<
+
+Setting the default view to a function allows you to define a custom view
+handler, which will be called with the response object and will override
+default views. The response object has the following properties:
+
+>lua
+    ---@class Response
+    ---@field id string
+    ---@field url string
+    ---@field method string
+    ---@field status boolean
+    ---@field code number -- request command code
+    ---@field response_code number -- http response code
+    ---@field duration number
+    ---@field time number
+    ---@field body string
+    ---@field headers string
+    ---@field errors string
+    ---@field stats table|string
+    ---@field script_pre_output string
+    ---@field script_post_output string
+    ---@field assert_output table
+    ---@field assert_status boolean
+    ---@field buf number
+    ---@field buf_name string
+    ---@field line number
+      local response = {}
+<
+
+
+UI.WINBAR ~
+
+Enable winbar for result buffer
+
+Possible values:
+
+- `true`
+- `false`
+
+Default: `true`
+
+Example:
+
+>lua
+    {
+      "mistweaverco/kulala.nvim",
+      opts = {
+        ui = {
+          winbar = true,
+        },
+      },
+    }
+<
+
+
+UI.DEFAULT_WINBAR_PANES ~
+
+Default visible winbar panes
+
+Possible values:
+
+- `body`
+- `headers`
+- `headers_body`
+- `verbose`
+- `script_output`
+- `stats`
+- `report`
+
+Default: `body`
+
+Example:
+
+>lua
+    {
+      "mistweaverco/kulala.nvim",
+      opts = {
+        ui = {
+          default_winbar_panes = { "body", "headers", "headers_body", "verbose" },
+        },
+      },
+    }
+<
+
+
+UI.SHOW_VARIABLE_INFO_TEXT ~
+
+Enable/disable variable info text.
+
+Possible values:
+
+- `false` = disable variable info text
+- `"float"` = show the variable name and value as float
+
+Default: `always`
+
+Example:
+
+>lua
+    {
+      "mistweaverco/kulala.nvim",
+      opts = {
+        ui = {
+          show_variable_info_text = false,
+        },
+      },
+    }
+<
+
+
+UI.SHOW_ICONS ~
+
+Can be used to show loading, done and error icons in inlay hints or signcolumn
+
+Possible values:
+
+- `"singcolumn"`
+- `"on_request"`
+- `"above_request"`
+- `"below_request"`
+- `nil` (to disable inlay hints)
+
+If `"above_request"` or `"below_request"` is used, the icons will be shown
+above or below the request line.
+
+Default: `"on_request"`.
+
+
+UI.ICONS ~
+
+Default icons.
+
+Possible values:
+
+- `inlay = { loading = [string], done = [string], error = [string] }`
+- `lualine = [string]`
+
+Default:
+
+>lua
+    icons = {
+      inlay = {
+        loading = "⏳",
+        done = "✅"
+        error = "❌",
+      },
+    
+      lualine = "🐼",
+      textHighlight = "WarningMsg",
+      lineHighlight = "Normal",
+    }
+<
+
+Example:
+
+>lua
+    {
+      "mistweaverco/kulala.nvim",
+      opts = {
+        ui = {
+          icons = {
+            inlay = {
+              loading = "⏳",
+              done = "✅"
+              error = "❌",
+            },
+            lualine = "🐼",
+            textHighlight = "WarningMsg",
+            lineHighlight = "Normal",
+          },
+        },
+      },
+    }
+<
+
+
+UI.DISABLE_SCRIPT_PRINT_OUTPUT ~
+
+Disable the vim.print output of the scripts as they are executed. The output
+will be still saved, but not printed immediately.
+
+Possible values:
+
+- `true|false`
+
+Default: `false`
+
+Example:
+
+>lua
+    {
+      "mistweaverco/kulala.nvim",
+      opts = {
+        ui = {
+          disable_script_print_output = true,
+        }
+      },
+    }
+<
+
+
+UI.SHOW_REQUEST_SUMMARY ~
+
+Enable/disable request summary in the output window.
+
+Possible values:
+
+- `true`
+- `false`
+
+Default: `true`
+
+Example:
+
+>lua
+    {
+      "mistweaverco/kulala.nvim",
+      opts = {
+        ui = {
+          show_request_summary = false,
+        },
+      },
+    }
+<
+
+
+UI.REPORT OPTIONS ~
+
+>lua
+      {
+        report = {
+          -- possible values: true | false | "on_error"
+          show_script_output = true,
+          -- possible values: true | false | "on_error" | "failed_only"
+          show_asserts_output = true,
+          -- possible values: true | false
+          show_summary = true,
+        }
+      }
+<
+
+
+UI.REPORT.UI.REPORT.SHOW_SCRIPT_OUTPUT ~
+
+Shows/hides the script output. `on_error` will show the output only when
+request status is failed.
+
+
+UI.REPORT.UI.REPORT.SHOW_ASSERTS_OUTPUT ~
+
+Shows/hides the assert output. `on_error` will show the output only when
+request status is failed, `failed_only` will show only the failed asserts.
+
+
+UI.REPORT.UI.REPORT.SHOW_SUMMARY ~
+
+Shows/hides the stats summary of the test results.
+
+
+UI.SCRATCHPAD_DEFAULT_CONTENTS ~
+
+Scratchpad default contents.
+
+The contents of the scratchpad when it’s opened via `:lua
+require('kulala').scratchpad()` command.
+
+Possible values:
+
+- `[table of strings]` (each string is a line)
+
+Default:
+
+>lua
+    scratchpad_default_contents = {
+      "@MY_TOKEN_NAME=my_token_value",
+      "",
+      "# @name scratchpad",
+      "POST https://httpbin.org/post HTTP/1.1",
+      "accept: application/json",
+      "content-type: application/json",
+      "",
+      "{",
+      '  "foo": "bar"',
+      "}",
+    }
+<
+
+Example:
+
+>lua
+    {
+      "mistweaverco/kulala.nvim",
+      opts = {
+        ui = {
+          scratchpad_default_contents = {
+            "@AUTH_USERNAME=my_username",
+            "",
+            "# @name scratchpad_special_name",
+            "POST https://httpbin.org/post HTTP/1.1",
+            "accept: application/json",
+            "content-type: application/json",
+            "",
+            "{",
+            '  "baz": "qux"',
+            "}",
+          },
+        },
+      },
+    }
+<
+
+
+KEYMAPS      *kulala.nvim.configuration-options-configuration-options-keymaps*
+
+
+GLOBAL_KEYMAPS ~
+
+Set to `true` to enable default keymaps.
+
+Check the keymaps documentation <keymaps.md> for details.
+
+Default: `false`
+
+Example:
+
+>lua
+    {
+      "mistweaverco/kulala.nvim",
+      global_keymaps = true,
+    }
+<
+
+
+KULALA_KEYMAPS ~
+
+Set to `true` to enable default keymaps for the Kulala UI.
+
+Check the keymaps documentation <keymaps.md> for details.
+
+Default: `true`
+
+Example:
+
+>lua
+    {
+      "mistweaverco/kulala.nvim",
+      kulala_keymaps = false,
+    }
+<
+
+==============================================================================
+2. Links                             *kulala.nvim.configuration-options-links*
+
+1. *@theme/CodeBlock*: 
+
+Generated by panvimdoc <https://github.com/kdheepak/panvimdoc>
+
+vim:tw=78:ts=8:noet:ft=help:norl:
