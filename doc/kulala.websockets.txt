@@ -15,13 +15,13 @@ Table of Contents                        *kulala.websockets-table-of-contents*
 USAGE                                     *kulala.websockets-websockets-usage*
 
 
-DEPENDENCIES ~
+DEPENDENCIES
 
 Ensure you have `websocat` installed to use this feature. You can find it here:
-websocat <https://github.com/vi/websocat>
+websocat https://github.com/vi/websocat
 
 
-ESTABLISHING A WEBSOCKET CONNECTION ~
+ESTABLISHING A WEBSOCKET CONNECTION
 
 To establish a websocket connection, use the following format:
 
@@ -35,17 +35,17 @@ If there is a body in the request, it will be sent upon connection to the
 server.
 
 
-RECEIVING MESSAGES ~
+RECEIVING MESSAGES
 
 Received messages will be displayed in the buffer, prefixed with `=>`.
 
 
-SENDING MESSAGES ~
+SENDING MESSAGES
 
 To send messages to the server, simply type the message and press `<CR>`.
 
 
-CLOSING THE CONNECTION ~
+CLOSING THE CONNECTION
 
 To close the connection, press `<C-c>`.
 

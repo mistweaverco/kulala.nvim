@@ -14,7 +14,7 @@ Table of Contents                       *kulala.basic-usage-table-of-contents*
 BASIC USAGE SUMMARY (WITH DEFAULT KEYMAPS)*kulala.basic-usage-basic-usage-basic-usage-summary-(with-default-keymaps)*
 
 
-EXECUTE REQUEST ~
+EXECUTE REQUEST
 
 There are several ways to execute a request:
 
@@ -24,7 +24,7 @@ There are several ways to execute a request:
 - You can use `#` or `//` to comment out a request or its data, and it wil not be processed.
 
 
-EXECUTING REQUESTS IN NON .HTTP FILES ~
+EXECUTING REQUESTS IN NON .HTTP FILES
 
 - You can execute requests in any file type. However, since the `###` delimiters are only recognized in `.http` files, you will need to position the cursor exactly on the line with the request or visually select the required requests and their accompanying data.
 - Common comment syntax is recognized, so you can run requests that are commented out in your code, for example:
@@ -38,7 +38,7 @@ EXECUTING REQUESTS IN NON .HTTP FILES ~
 <
 
 
-KULALA UI ~
+KULALA UI
 
 - Kulala UI is opened automatically when you run a request or you can open it manually with `<leader>Ro` at any time.
 - You can switch between different views with `(H) Headers`, `B (Body)`, `(A) All`, `(V) Verbose`, `(S) Stats`, `(O) Script output`, `(R) Report`
@@ -51,7 +51,7 @@ KULALA UI ~
 - To manage Auth configurations use `<leader>Ru`.
 
 
-SYNTAX SUMMARY ~
+SYNTAX SUMMARY
 
 - `#` and `//` is used to comment out a request or its data.
 - `###` is used to delimit requests and their data.

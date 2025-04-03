@@ -21,27 +21,27 @@ List of requirements for using kulala.
 
 NEOVIM                               *kulala.requirements-requirements-neovim*
 
-- Neovim <https://github.com/neovim/neovim> 0.10.0+
+- Neovim https://github.com/neovim/neovim 0.10.0+
 
 
-SYNTAX HIGHLIGHTING ~
+SYNTAX HIGHLIGHTING
 
-- Treesitter for HTTP syntax <https://github.com/nvim-treesitter/nvim-treesitter?tab=readme-ov-file#supported-languages>
+- Treesitter for HTTP syntax https://github.com/nvim-treesitter/nvim-treesitter?tab=readme-ov-file#supported-languages
 
 
 CURL                                   *kulala.requirements-requirements-curl*
 
-- cURL <https://curl.se/> (tested with 8.5.0)
+- cURL https://curl.se/ (tested with 8.5.0)
 
 
 GRPCURL                             *kulala.requirements-requirements-grpcurl*
 
-- gRPCurl <https://github.com/fullstorydev/grpcurl> for GRPC requests
+- gRPCurl https://github.com/fullstorydev/grpcurl for GRPC requests
 
 
 WEBSOCAT                           *kulala.requirements-requirements-websocat*
 
-- Websocat <https://github.com/vi/websocat> for WebSocket requests
+- Websocat https://github.com/vi/websocat for WebSocket requests
 
 
 OPENSSL                             *kulala.requirements-requirements-openssl*
@@ -51,14 +51,14 @@ OPENSSL                             *kulala.requirements-requirements-openssl*
 
 JQ                                       *kulala.requirements-requirements-jq*
 
-- jq <https://stedolan.github.io/jq/> (tested with 1.7)
+- jq https://stedolan.github.io/jq/ (tested with 1.7)
 
 (Only required for formatted JSON responses)
 
 
 XMLLINT                             *kulala.requirements-requirements-xmllint*
 
-- xmllint <https://packages.ubuntu.com/noble/libxml2-utils> (tested with libxml v20914)
+- xmllint https://packages.ubuntu.com/noble/libxml2-utils (tested with libxml v20914)
 
 (Only required for formatted XML/HTML responses and resolving XML request
 variables)

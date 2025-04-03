@@ -224,7 +224,7 @@ Replays the current request. Useful for conditional requests, see below.
 <
 
 
-CONDITIONAL REQUESTS ~
+CONDITIONAL REQUESTS
 
 >http
     < {%
