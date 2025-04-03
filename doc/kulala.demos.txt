@@ -10,8 +10,8 @@ Table of Contents                             *kulala.demos-table-of-contents*
 
 Here is a collection of runnable HTTP examples.
 
-The archive demos.zip </import/demos/demos.zip> also contains sample
-`httt-client-env.json` and `js script` files.
+The archive |kulala.demos.zip| also contains sample `httt-client-env.json` and
+`js script` files.
 
 1.basic.http
 
