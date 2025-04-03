@@ -13,7 +13,7 @@ Table of Contents                    *kulala.http-file-spec-table-of-contents*
 - How to send a request from an .http file.
 
 
-REQUESTS ~
+REQUESTS
 
 Kulala supports `absolute`, `origin` and `asterisk path` formats for HTTP
 request.
@@ -98,7 +98,7 @@ requests in a file illustrates this syntax:
 <
 
 
-REQUEST HEADERS ~
+REQUEST HEADERS
 
 To add one or more headers, add each header on its own line immediately after
 the request line. Don’t include any blank lines between the request line and
@@ -123,7 +123,7 @@ The `Cookie` headers will set the cookies for the request.
 
   Don’t add any secrets to a source code repository.
 
-REQUEST BODY ~
+REQUEST BODY
 
 Add the request body after a blank line, as shown in the following example:
 
@@ -143,13 +143,13 @@ Add the request body after a blank line, as shown in the following example:
 <
 
 
-COMMENTS ~
+COMMENTS
 
 Lines that start with either `#` or `//` are comments. These lines are ignored
 when Kulala sends HTTP requests.
 
 
-VARIABLES ~
+VARIABLES
 
 A line that starts with `@` defines a variable by using the syntax
 `@VariableName=Value`.

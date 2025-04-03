@@ -15,13 +15,13 @@ Table of Contents                              *kulala.grpc-table-of-contents*
 USAGE                                                 *kulala.grpc-grpc-usage*
 
 
-DEPENDENCIES ~
+DEPENDENCIES
 
 Ensure you have `grpcurl` installed to use this feature. You can find it here:
-gRPCurl <https://github.com/fullstorydev/grpcurl>.
+gRPCurl https://github.com/fullstorydev/grpcurl.
 
 
-MAKING A GRPC REQUEST ~
+MAKING A GRPC REQUEST
 
 To make a gRPC request, use the following format:
 
@@ -60,7 +60,7 @@ For example:
 <
 
 
-FLAGS ~
+FLAGS
 
 Flags can be set through metadata either locally per request or globally per
 buffer. Use the following formats:
@@ -69,7 +69,7 @@ buffer. Use the following formats:
 - Global flags: `@grpc-global-..` apply for all requests in the buffer. Global settings will persist until the buffer is closed or globals are cleared with `<leaderRx>`.
 
 
-VARIABLES ~
+VARIABLES
 
 Just as with HTTP requests, you can use variables in gRPC requests. For
 example:

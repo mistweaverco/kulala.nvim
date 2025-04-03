@@ -203,9 +203,18 @@ end
 
 Writer.Block.Header = function(el)
   local lev = el.level
+  local link = ""
+  local ret = ""
+
+  for _, _el in ipairs(el.content) do
+    if _el.tag == "Link" then link = link .. " " .. Writer.Inline.Link(_el) end
+  end
+
   local s = stringify(el)
+
   local attr = el.attr
   local left, right, right_link, padding
+
   if lev == 1 then
     left = string.format("%d. %s", HEADER_COUNT, s)
     right = string.lower(string.gsub(s, "%s", "-"))
@@ -217,8 +226,10 @@ Writer.Block.Header = function(el)
     s = string.format("%s%s%s", left, padding, right)
     HEADER_COUNT = HEADER_COUNT + 1
     s = string.rep("=", 78) .. "\n" .. s
-    return "\n" .. s .. "\n\n"
+
+    ret = s
   end
+
   if lev == 2 then
     left = string.upper(s)
     right = string.lower(string.gsub(s, "%s", "-"))
@@ -232,11 +243,13 @@ Writer.Block.Header = function(el)
     padding = string.rep(" ", 78 - #left - #right)
     table.insert(toc, { 2, s, right_link })
     s = string.format("%s%s%s", left, padding, right)
-    return "\n" .. s .. "\n\n"
+
+    ret = s
   end
+
   if lev == 3 then
     left = string.upper(s)
-    return "\n" .. left .. " ~" .. "\n\n"
+    ret = left
   end
   if lev == 4 then
     if DOC_MAPPING then
@@ -265,18 +278,23 @@ Writer.Block.Header = function(el)
             :gsub("%s", "-")
           )
       end
+
       padding = string.rep(" ", 78 - #left - #right)
       local r = string.format("%s%s%s", left, padding, right)
-      return "\n" .. r .. "\n\n"
+      ret = r
     else
       left = string.upper(s)
-      return "\n" .. left .. "\n\n"
+      ret = left
     end
   end
+
   if lev >= 5 then
     left = string.upper(s)
-    return "\n" .. left .. "\n\n"
+    ret = left
   end
+
+  ret = ret .. link
+  return "\n" .. ret .. "\n\n"
 end
 
 Writer.Block.Para = function(el)
@@ -455,15 +473,20 @@ Writer.Inline.Link = function(el)
   local tgt = el.target
   local tit = el.title
   local attr = el.attr
+  local link
   if string.starts_with(tgt, "https://neovim.io/doc/") then
-    return "|" .. s .. "|"
+    link = "|" .. s .. "|"
   elseif string.starts_with(tgt, "#") then
-    return "|" .. PROJECT .. "-" .. s:lower():gsub("%s", "-") .. "|"
-  elseif string.starts_with(s, "http") then
-    return "<" .. s .. ">"
+    link = "|" .. PROJECT .. "-" .. s:lower():gsub("%s", "-") .. "|"
+  elseif tgt:match("^https?://") then
+    link = s .. " " .. tgt
   else
-    return s .. " <" .. tgt .. ">"
+    tgt = tgt:match("[^/]+$")
+    tgt = "kulala" .. "." .. tgt:gsub(".mdx?$", ".txt"):gsub("#", "-")
+    link = " |" .. tgt .. "|"
   end
+
+  return link
 end
 
 Writer.Inline.Image = function(el)

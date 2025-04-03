@@ -18,7 +18,7 @@ Kulala lets you import HTTP requests from other .http files. You can:
 USAGE           *kulala.import-and-run-http-import-and-run-*.http-files-usage*
 
 
-RUN ALL REQUESTS FROM ANOTHER .HTTP FILE ~
+RUN ALL REQUESTS FROM ANOTHER .HTTP FILE
 
 In your .http file, enter `run` followed by the name of another .http that you
 want to include. If the file is in the same directory, enter its name.
@@ -29,7 +29,7 @@ Otherwise, specify a relative or absolute path to it. For example:
 <
 
 
-RUN SPECIFIC REQUESTS FROM ANOTHER .HTTP FILE ~
+RUN SPECIFIC REQUESTS FROM ANOTHER .HTTP FILE
 
 At the top of your .http file, enter `import` followed by the name or path of
 another .http that contains necessary requests. Enter `run` and specify the
@@ -58,7 +58,7 @@ get-requests.http
 <
 
 
-OVERRIDE VARIABLES FROM IMPORTED .HTTP FILES ~
+OVERRIDE VARIABLES FROM IMPORTED .HTTP FILES
 
 If the imported .http file contains variables, you can specify or change their
 values for specific executions. Enter `run` and specify the name of an .http

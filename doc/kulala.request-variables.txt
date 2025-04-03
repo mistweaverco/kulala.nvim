@@ -49,7 +49,7 @@ For `body` part, you can use JSONPath and XPath to extract specific property or
 attribute.
 
 
-SPECIAL CASE FOR COOKIES ~
+SPECIAL CASE FOR COOKIES
 
 The response cookies can be referenced by
 

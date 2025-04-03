@@ -13,7 +13,7 @@ Table of Contents             *kulala.configuration-options-table-of-contents*
 Kulala can be configured with the following options.
 
 
-FULL EXAMPLE ~
+FULL EXAMPLE
 
 Here is a full example of setting up the Kulala plugin with the available
 `opts`:
@@ -187,7 +187,7 @@ defaults.lua
 <
 
 
-CURL_PATH ~
+CURL_PATH
 
 cURL path.
 
@@ -207,7 +207,7 @@ Example:
 <
 
 
-ADDITIONAL_CURL_OPTIONS ~
+ADDITIONAL_CURL_OPTIONS
 
 Additional cURL options.
 
@@ -229,12 +229,12 @@ Example:
 <
 
 
-GRPCURL_PATH ~
+GRPCURL_PATH
 
 gRPCurl path.
 
 If you have `grpcurl` installed in a non-standard path, you can specify it
-here. You can get it at gRPCurl <https://github.com/fullstorydev/grpcurl>
+here. You can get it at gRPCurl https://github.com/fullstorydev/grpcurl
 
 Default: `grpcurl`
 
@@ -250,7 +250,7 @@ Example:
 <
 
 
-ENVIRONMENT_SCOPE ~
+ENVIRONMENT_SCOPE
 
 While using request variables the results will be stored for later use. As
 usual variables they’re file relevant and should be stored in the buffer. If
@@ -275,12 +275,12 @@ Example:
 <
 
 
-DEFAULT_ENV ~
+DEFAULT_ENV
 
 Default environment.
 
 See: Environment files
-<https://learn.microsoft.com/en-us/aspnet/core/test/http-files?view=aspnetcore-8.0#environment-files>.
+https://learn.microsoft.com/en-us/aspnet/core/test/http-files?view=aspnetcore-8.0#environment-files.
 
 Possible values:
 
@@ -300,7 +300,7 @@ Example:
 <
 
 
-VSCODE_REST_CLIENT_ENVIRONMENTVARS ~
+VSCODE_REST_CLIENT_ENVIRONMENTVARS
 
 If enabled, Kulala searches for `.vscode/settings.json` or `*.code-workspace`
 files in the current directory and its parents to read the
@@ -328,7 +328,7 @@ Example:
 <
 
 
-REQUEST_TIMEOUT ~
+REQUEST_TIMEOUT
 
 Set request timeout period.
 
@@ -351,13 +351,13 @@ Example:
 <
 
 
-HALT_ON_ERROR ~
+HALT_ON_ERROR
 
 Allows to halt/continue running a sequence of requests when a request failure
 is encountered.
 
 
-CERTIFICATES ~
+CERTIFICATES
 
 A hash array of certificates to be used for requests.
 
@@ -401,7 +401,7 @@ itself and all subdomains.
 - etc.
 
 
-URLENCODE ~
+URLENCODE
 
 Specify how to escape query parameters.
 
@@ -424,7 +424,7 @@ Example:
 <
 
 
-CONTENTTYPES ~
+CONTENTTYPES
 
 Filetypes, formatters and path resolvers are defined for each content-type in
 an hash array.
@@ -593,7 +593,7 @@ Example:
 <
 
 
-DEBUG ~
+DEBUG
 
 Enable debug mode.
 
@@ -625,7 +625,7 @@ Example:
 UI OPTIONS     *kulala.configuration-options-configuration-options-ui-options*
 
 
-UI.DISPLAY_MODE ~
+UI.DISPLAY_MODE
 
 The display mode.
 
@@ -647,7 +647,7 @@ Example:
 <
 
 
-UI.SPLIT_DIRECTION ~
+UI.SPLIT_DIRECTION
 
 Split direction.
 
@@ -674,7 +674,7 @@ Example:
 <
 
 
-UI.WIN_OPTS ~
+UI.WIN_OPTS
 
 Kualala UI window options.
 
@@ -700,7 +700,7 @@ Example:
 <
 
 
-UI.DEFAULT_VIEW ~
+UI.DEFAULT_VIEW
 
 Default view.
 
@@ -758,7 +758,7 @@ default views. The response object has the following properties:
 <
 
 
-UI.WINBAR ~
+UI.WINBAR
 
 Enable winbar for result buffer
 
@@ -783,7 +783,7 @@ Example:
 <
 
 
-UI.DEFAULT_WINBAR_PANES ~
+UI.DEFAULT_WINBAR_PANES
 
 Default visible winbar panes
 
@@ -813,7 +813,7 @@ Example:
 <
 
 
-UI.SHOW_VARIABLE_INFO_TEXT ~
+UI.SHOW_VARIABLE_INFO_TEXT
 
 Enable/disable variable info text.
 
@@ -838,7 +838,7 @@ Example:
 <
 
 
-UI.SHOW_ICONS ~
+UI.SHOW_ICONS
 
 Can be used to show loading, done and error icons in inlay hints or signcolumn
 
@@ -856,7 +856,7 @@ above or below the request line.
 Default: `"on_request"`.
 
 
-UI.ICONS ~
+UI.ICONS
 
 Default icons.
 
@@ -904,7 +904,7 @@ Example:
 <
 
 
-UI.DISABLE_SCRIPT_PRINT_OUTPUT ~
+UI.DISABLE_SCRIPT_PRINT_OUTPUT
 
 Disable the vim.print output of the scripts as they are executed. The output
 will be still saved, but not printed immediately.
@@ -929,7 +929,7 @@ Example:
 <
 
 
-UI.SHOW_REQUEST_SUMMARY ~
+UI.SHOW_REQUEST_SUMMARY
 
 Enable/disable request summary in the output window.
 
@@ -954,7 +954,7 @@ Example:
 <
 
 
-UI.REPORT OPTIONS ~
+UI.REPORT OPTIONS
 
 >lua
       {
@@ -970,24 +970,24 @@ UI.REPORT OPTIONS ~
 <
 
 
-UI.REPORT.UI.REPORT.SHOW_SCRIPT_OUTPUT ~
+UI.REPORT.UI.REPORT.SHOW_SCRIPT_OUTPUT
 
 Shows/hides the script output. `on_error` will show the output only when
 request status is failed.
 
 
-UI.REPORT.UI.REPORT.SHOW_ASSERTS_OUTPUT ~
+UI.REPORT.UI.REPORT.SHOW_ASSERTS_OUTPUT
 
 Shows/hides the assert output. `on_error` will show the output only when
 request status is failed, `failed_only` will show only the failed asserts.
 
 
-UI.REPORT.UI.REPORT.SHOW_SUMMARY ~
+UI.REPORT.UI.REPORT.SHOW_SUMMARY
 
 Shows/hides the stats summary of the test results.
 
 
-UI.SCRATCHPAD_DEFAULT_CONTENTS ~
+UI.SCRATCHPAD_DEFAULT_CONTENTS
 
 Scratchpad default contents.
 
@@ -1043,11 +1043,11 @@ Example:
 KEYMAPS           *kulala.configuration-options-configuration-options-keymaps*
 
 
-GLOBAL_KEYMAPS ~
+GLOBAL_KEYMAPS
 
 Set to `true` to enable default keymaps.
 
-Check the keymaps documentation <keymaps.md> for details.
+Check the |kulala.keymaps.txt| for details.
 
 Default: `false`
 
@@ -1061,11 +1061,11 @@ Example:
 <
 
 
-KULALA_KEYMAPS ~
+KULALA_KEYMAPS
 
 Set to `true` to enable default keymaps for the Kulala UI.
 
-Check the keymaps documentation <keymaps.md> for details.
+Check the |kulala.keymaps.txt| for details.
 
 Default: `true`
 

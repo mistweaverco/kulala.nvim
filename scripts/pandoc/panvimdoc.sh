@@ -118,11 +118,11 @@ while [[ $# -gt 0 ]]; do
 done
 
 # If the user provided a scripts directory, use that. Otherwise, determine environment.
-if [[ "${GITHUB_ACTIONS:-false}" == "true" || -f /.dockerenv ]]; then
+if [[ -n "${SCRIPTS_DIR:-}" ]]; then
+    SCRIPTS_DIR="$SCRIPTS_DIR"
+elif [[ "${GITHUB_ACTIONS:-false}" == "true" || -f /.dockerenv ]]; then
     # GitHub Actions or Docker
     SCRIPTS_DIR="/scripts"
-elif [[ -n "${SCRIPTS_DIR:-}" ]]; then
-    SCRIPTS_DIR="$SCRIPTS_DIR"
 else
     # Use the scripts directory alongside the script's location
     SCRIPTS_DIR="$(dirname "$(readlink -f "$0")")/scripts"
@@ -167,5 +167,5 @@ ARGS+=("-t" "$SCRIPTS_DIR/panvimdoc.lua")
 # printf "%s\n" "pandoc --citeproc ${ARGS[*]} $INPUT_FILE -o doc/$PROJECT_NAME.txt"
 # pandoc "${ARGS[@]}" "$INPUT_FILE" -o "doc/$PROJECT_NAME.txt"
 
-printf "%s\n" "pandoc --citeproc ${ARGS[*]} -o doc/$PROJECT_NAME.txt"
+# printf "%s\n" "pandoc --citeproc ${ARGS[*]} -o doc/$PROJECT_NAME.txt"
 pandoc "${ARGS[@]}" -o "doc/$PROJECT_NAME.txt"

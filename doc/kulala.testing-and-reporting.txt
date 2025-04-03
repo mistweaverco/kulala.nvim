@@ -17,7 +17,7 @@ Table of Contents             *kulala.testing-and-reporting-table-of-contents*
 USAGE               *kulala.testing-and-reporting-testing-and-reporting-usage*
 
 
-TESTING HTTP REQUESTS WITH ASSERT FUNCTIONS ~
+TESTING HTTP REQUESTS WITH ASSERT FUNCTIONS
 
 To test HTTP requests in Kulala, you can use the provided assert functions to
 validate various aspects of the response. Below is a guide on how to use these
@@ -86,7 +86,7 @@ suite and individual test cases within it.
 <
 
 
-REPORTING RESULTS ~
+REPORTING RESULTS
 
 After executing requests, you can view reports in the Kulala `Report (R)`
 section. When the cursor is on the line of request summary, you can press

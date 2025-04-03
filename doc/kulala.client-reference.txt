@@ -52,15 +52,14 @@ Logs arbitrary data to the console.
 
 CLIENT.TEST     *kulala.client-reference-scripts-client-reference-client.test*
 
-Define a test suite and individual test cases within it. See Testing and
-Reporting <./../usage/testing-and-reporting.md> for more information.
+Define a test suite and individual test cases within it. See
+|kulala.testing-and-reporting.txt| for more information.
 
 
 CLIENT.ASSERT AND CLIENT.ASSERT.**kulala.client-reference-scripts-client-reference-client.assert-and-client.assert.**
 
 A collection of assertion functions to validate various aspects of the
-response. See Testing and Reporting <./../usage/testing-and-reporting.md> for
-more information.
+response. See |kulala.testing-and-reporting.txt| for more information.
 
 
 CLIENT.EXIT     *kulala.client-reference-scripts-client-reference-client.exit*
@@ -72,7 +71,7 @@ Terminates execution of the response handler script.
 <
 
 
-CLIENT.ISEMPTY ~
+CLIENT.ISEMPTY
 
 Checks whether the `global` object has no variables defined.
 

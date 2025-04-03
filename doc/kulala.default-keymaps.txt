@@ -10,8 +10,8 @@ Table of Contents                   *kulala.default-keymaps-table-of-contents*
 
 By default, global keymaps are disabled, change to `global_keymaps = true` in
 the options to enable the complete set of key mappings for Kulala. Check the
-keymaps documentation <keymaps.md> for details on how to customize keymaps and
-disable the default keymaps.
+|kulala.keymaps.txt| for details on how to customize keymaps and disable the
+default keymaps.
 
 Below is the list of available functions and their mappings.
 
@@ -20,7 +20,7 @@ in the Kulala UI buffer only. Keymaps with `ft` set will only be available in
 buffers with the specified filetype.
 
 
-GLOBAL AND FT KEYMAPS ~
+GLOBAL AND FT KEYMAPS
 
 >lua
     
@@ -54,7 +54,7 @@ GLOBAL AND FT KEYMAPS ~
 <
 
 
-KULALA UI KEYMAPS ~
+KULALA UI KEYMAPS
 
 >lua
       ["Show headers"] = { "H", function() require("kulala.ui").show_headers() end, },
