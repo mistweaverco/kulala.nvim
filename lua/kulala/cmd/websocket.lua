@@ -41,7 +41,7 @@ end
 local function set_welcome_message()
   local keymaps = Keymaps.get_kulala_keymaps() or {}
   local send_key = keymaps["Jump to response"][1] .. "\\" .. keymaps["Send WS message"][1]
-  local close_key = keymaps["Close WS connection"][1]
+  local close_key = keymaps["Interrupt requests"][1]
 
   M.response.body = ("Connected... Waiting for data.\nPress %s to send message and %s to close connection.\n\n"):format(
     send_key,

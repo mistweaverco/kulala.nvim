@@ -20,14 +20,21 @@ local RUNNING_TASK = false
 
 local process_request
 
-local reset_task_queue = function()
+M.reset_task_queue = function()
+  local db = DB.global_update()
+
   TASK_QUEUE = {} -- Clear the task queue and stop processing
   RUNNING_TASK = false
+
+  db.requests_total = 0
+  db.requests_done = 0
+  db.requests_status = false
+
   return true
 end
 
 local function run_next_task()
-  if #TASK_QUEUE == 0 then return reset_task_queue() end
+  if #TASK_QUEUE == 0 then return M.reset_task_queue() end
 
   RUNNING_TASK = true
   local task = table.remove(TASK_QUEUE, 1)
@@ -41,7 +48,7 @@ local function run_next_task()
     end
 
     if not (status and cb_status) then
-      reset_task_queue()
+      M.reset_task_queue()
       Logger.error(("Errors running a scheduled task: %s %s"):format(errors or "", cb_errors))
     end
   end)
@@ -167,12 +174,14 @@ end
 
 local function process_response(request_status, parsed_request, callback)
   local response_status
+  local db = DB.global_update()
 
   process_metadata(parsed_request)
   process_internal(parsed_request)
 
   if process_external(parsed_request) then -- replay request
     parsed_request.processed = true
+    db.requests_total = db.requests_total + 1
 
     offload_task(function()
       process_request({ parsed_request }, parsed_request, {}, callback)
@@ -210,6 +219,7 @@ end
 
 local function handle_response(request_status, parsed_request, callback)
   local config = CONFIG.get()
+  local db = DB.global_update()
   local code = request_status.code == 0
   local success
 
@@ -219,8 +229,11 @@ local function handle_response(request_status, parsed_request, callback)
 
   _ = not (code and processing_status) and process_errors(parsed_request, request_status, processing_errors)
 
+  db.requests_done = db.requests_done + 1
+  db.requests_status = db.requests_done < db.requests_total
+
   callback(success, request_status.duration, parsed_request.show_icon_line_number)
-  _ = (not success and config.halt_on_error) and reset_task_queue() or run_next_task()
+  _ = (not success and config.halt_on_error) and M.reset_task_queue() or run_next_task()
 end
 
 local function received_unbffured(request, response)
@@ -265,7 +278,7 @@ local function process_ws_request(request, callback)
   response.code = status and 0 or -1
   response.status = status and true or false
 
-  return callback(status, 0, response.line) and reset_task_queue()
+  return callback(status, 0, response.line) and M.reset_task_queue()
 end
 
 ---Executes DocumentRequest
@@ -281,7 +294,7 @@ function process_request(requests, request, variables, callback)
   local parsed_request = parse_request(requests, request, variables)
   if not parsed_request then
     callback(false, 0, request.start_line)
-    return config.halt_on_error and reset_task_queue() or run_next_task()
+    return config.halt_on_error and M.reset_task_queue() or run_next_task()
   end
 
   local start_time = vim.uv.hrtime()
@@ -326,9 +339,10 @@ end
 ---@param callback function
 ---@return nil
 M.run_parser = function(requests, line_nr, callback)
+  local db = DB.global_update()
   local variables, reqs_to_process
 
-  reset_task_queue()
+  M.reset_task_queue()
 
   if not requests then
     variables, requests = DOCUMENT_PARSER.get_document()
@@ -344,6 +358,8 @@ M.run_parser = function(requests, line_nr, callback)
   end
 
   reqs_to_process = reqs_to_process or requests
+  db.requests_total = #reqs_to_process
+  db.requests_status = true
 
   for _, req in ipairs(reqs_to_process) do
     INLAY.show("loading", req.show_icon_line_number)
