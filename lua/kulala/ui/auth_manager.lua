@@ -119,9 +119,13 @@ local function remove_config(value)
   end
 end
 
-local function edit_env_file(config, picker, name)
+local get_env_file = function(name)
   local file = name or "http-client.env.json"
-  file = Fs.find_file_in_parent_dirs(file)
+  return Fs.find_file_in_parent_dirs(file)
+end
+
+local function edit_env_file(config, picker, name)
+  local file = get_env_file(name)
   if not file then return end
 
   picker:close()
@@ -144,7 +148,7 @@ local commands = {
   r = { Oauth.revoke_token, "Revoke token" },
 }
 
-local keys_hint = " (a:Add e:Edit p:Edit private m:Remove g:Get new f:Refresh r:Revoke)"
+local keys_hint = " a:Add e:Edit p:Edit private m:Remove g:Get new f:Refresh r:Revoke"
 
 local function open_auth_telescope()
   local actions = require("telescope.actions")
@@ -260,7 +264,7 @@ local function open_auth_snacks()
         width = 0.8,
         height = 0.9,
         { box = "vertical" },
-        { win = "preview", width = 0.6 },
+        { win = "preview", width = 0.55 },
       },
     }),
     preview = function(ctx)
@@ -280,13 +284,18 @@ local function open_auth_snacks()
           number = false,
           relativenumber = false,
           signcolumn = "no",
-          winbar = (" "):rep(10) .. keys_hint,
+          winbar = (" "):rep(5) .. vim.fn.fnamemodify(get_env_file(), ":~"),
           wrap = false,
           sidescrolloff = 1,
         },
       },
       input = { keys = keys },
-      list = { title = "Auth Configurations" },
+      list = {
+        title = "Auth Configurations",
+        wo = {
+          winbar = keys_hint,
+        },
+      },
     },
     confirm = function(picker, item)
       run_cmd("e", picker, item)
