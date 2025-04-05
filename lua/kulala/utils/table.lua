@@ -23,6 +23,7 @@ M.remove_keys = function(tbl, keys)
   end)
 end
 
+--- TODO: make recursive for nested tables
 --- Merge table 2 into table 1
 --- @param mode "force" | "keep" -- force: overwrite existing keys, keep: only add new keys
 M.merge = function(mode, tbl_1, tbl_2)
