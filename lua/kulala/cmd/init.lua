@@ -181,6 +181,7 @@ local function save_response(request_status, parsed_request)
 end
 
 local function process_response(request_status, parsed_request, callback)
+  local db = DB.global_update()
   local response
 
   process_metadata(parsed_request)

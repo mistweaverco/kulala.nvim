@@ -5,7 +5,7 @@
 ## Usage
 
 - Local flags: `@curl-..` apply for current request only.
-- Global flags: `@curl-global-..` apply for all requests in the buffer. Global settings will persist until the buffer is closed or globals are cleared with `<leaderRx>`.
+- Global flags: `@curl-global-..` apply when running all requests in a buffer.
 
 ```http
 # @curl-global-compressed
@@ -18,6 +18,8 @@ Host: example.com
 
 :::warning
 
-Flags set in variables override flags set in metatadata, which in turn override global flags.
+Local flags take precedence over global flags.
+
+Make sure that global flags are not separated by `###` from the first request.
 
 :::

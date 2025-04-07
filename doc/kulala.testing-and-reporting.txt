@@ -17,7 +17,7 @@ USAGE               *kulala.testing-and-reporting-testing-and-reporting-usage*
 
 Test and assertion cases can be written in either `Lua` or `Javascript`
 scripts. The API is the same except for some snake case vs camelCase
-differences. Check the Lua scripts <./scripts/lua-scripts.md> for more details.
+differences. Check the |kulala.lua-scripts.txt| for more details.
 
 
 

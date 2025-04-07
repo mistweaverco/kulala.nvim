@@ -35,6 +35,8 @@ Create a file `http-client.env.json` in the root
 of your `.http` files directory and
 define environment variables in it.
 
+Press `<leader>Re` to open Environment Manager to select the environment and to open the corresponding file.
+
 ```json title="http-client.env.json"
 {
   "$schema": "https://raw.githubusercontent.com/mistweaverco/kulala.nvim/main/schemas/http-client.env.schema.json",

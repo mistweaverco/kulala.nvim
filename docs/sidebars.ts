@@ -66,6 +66,7 @@ const sidebars: SidebarsConfig = {
       },
       items: [
         "scripts/overview",
+        "scripts/lua-scripts",
         "scripts/client-reference",
         "scripts/request-reference",
         "scripts/response-reference",

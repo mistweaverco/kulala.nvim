@@ -118,6 +118,12 @@ local M = {
     },
 
     disable_news_popup = false,
+
+    -- enable/disable built-in autocompletion
+    autocomplete = true,
+
+    -- enable/disable lua syntax highlighting in HTTP scripts
+    lua_syntax_hl = true,
   },
 
   -- enable/disable debug mode

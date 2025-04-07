@@ -2,7 +2,7 @@
 
 ## Version 5.2.0
 
-### Feature: Lua [scripting](scripts/overview.md)
+### Feature: Lua [scripting](scripts/lua-scripts.md)
 ### Feauture: built-in autocompletion for HTTP syntax, metadata, commands, variables, requests and API
 ### Feature: set `Host` in default headers in [http-env.profile.json](usage/dotenv-and-http-client.env.json-support) files
 ### Feature: set `default headers` per environment in [http-env.profile.json](usage/dotenv-and-http-client.env.json-support) files

@@ -32,8 +32,7 @@ local set_autocomands = function()
     pattern = { "http", "rest" },
     callback = function(ev)
       _ = M.options.ui.autocomplete and require("kulala.utils.complete").start(ev.buf)
-      _ = M.options.ui.lua_syntax_hl and require("kulala.utils.complete").start(ev.buf)
-      require("kulala.ui.treesitter").set()
+      _ = M.options.ui.lua_syntax_hl and require("kulala.ui.treesitter").set()
     end,
   })
 end

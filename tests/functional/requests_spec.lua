@@ -459,34 +459,34 @@ describe("requests", function()
       })
 
       h.create_buf(([[ GET https://httpbin.org/simple ]]):to_table(true), "test.http")
-      result = ""
+      local cb_result = ""
 
       require("kulala.api").on("after_request", function(response)
-        result = (result or "") .. "#After 1"
+        cb_result = cb_result .. "#After 1"
         expected = response.response
       end)
 
       local expected_2
       require("kulala.api").on("after_next_request", function(response)
-        result = (result or "") .. "#After next"
+        cb_result = cb_result .. "#After next"
         expected_2 = response.response
       end)
 
       kulala.run()
       wait_for_requests(1)
 
-      assert.has_string(result, "#After 1")
-      assert.has_string(result, "#After next")
+      assert.has_string(cb_result, "#After 1")
+      assert.has_string(cb_result, "#After next")
 
       assert.has_string(expected.body, '"foo": "bar"')
       assert.has_string(expected_2.url, "https://httpbin.org/simple")
 
-      result = ""
+      cb_result = ""
       kulala.run()
       wait_for_requests(2)
 
-      assert.has_string(result, "#After 1")
-      assert.is_not.has_string(result, "#After next")
+      assert.has_string(cb_result, "#After 1")
+      assert.is_not.has_string(cb_result, "#After next")
     end)
 
     describe("it runs lua scripts", function()

@@ -27,7 +27,7 @@ Script context has the following objects and functions available:
 as well as access to Neovim’s `_G` global table.
 
 
-CLIENT ~
+CLIENT
 
 >lua
     local client = {
@@ -40,7 +40,7 @@ CLIENT ~
 <
 
 
-REQUEST ~
+REQUEST
 
 >lua
     ---@class Request
@@ -69,7 +69,7 @@ REQUEST ~
 <
 
 
-RESPONSE ~
+RESPONSE
 
 >lua
     ---@class Response
@@ -99,7 +99,7 @@ RESPONSE ~
 <
 
 
-ASSERT ~
+ASSERT
 
 >lua
     local assert = {
@@ -115,8 +115,7 @@ ASSERT ~
     }
 <
 
-Please see Testing and reporting <./usage/testing-and-reporting.md> for more
-details.
+Please see |kulala.testing-and-reporting.txt| for more details.
 
 
 PRE-REQUEST                       *kulala.lua-scripts-lua-scripts-pre-request*

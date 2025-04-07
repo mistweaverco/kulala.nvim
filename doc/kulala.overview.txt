@@ -43,12 +43,12 @@ All inline scripts are executed in the current working directory of the HTTP
 file, which is the `http` directory in this case.
 
 
-LUA SCRIPTS ~
+LUA SCRIPTS
 
-Please read Lua scripting <./lua-scripts> for more information.
+Please read |kulala.lua-scripts| for more information.
 
 
-USING NODE MODULES ~
+USING NODE MODULES
 
 You can use any Node.js module in your scripts.
 
