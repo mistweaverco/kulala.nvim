@@ -9,13 +9,11 @@ local PARSER_UTILS = require("kulala.parser.utils")
 local STRING_UTILS = require("kulala.utils.string")
 local CURL_FORMAT_FILE = FS.get_plugin_path({ "parser", "curl-format.json" })
 local Logger = require("kulala.logger")
+local Scripts = require("kulala.parser.scripts")
 local StringVariablesParser = require("kulala.parser.string_variables_parser")
 local Table = require("kulala.utils.table")
 
 local M = {}
-
-M.scripts = {}
-M.scripts.javascript = require("kulala.parser.scripts.javascript")
 
 ---@class Request
 ---@field metadata { name: string, value: string }[] -- Metadata of the request
@@ -295,12 +293,13 @@ end
 local function process_pre_request_scripts(request, document_variables)
   if #request.scripts.pre_request.inline + #request.scripts.pre_request.files == 0 then return true end
 
+  Scripts.run("pre_request", request)
+
   -- INFO: now replace the variables in the URL, headers and body again,
   -- because user scripts could have changed them,
   -- but this time also warn the user if a variable is not found
-  M.scripts.javascript.run("pre_request", request.scripts.pre_request)
-
   process_variables(request, document_variables)
+
   return not (request.environment["__skip_request"] == "true")
 end
 

@@ -15,7 +15,6 @@ local REQUEST_SCRIPTS_DIR = FS.get_request_scripts_dir()
 local SCRIPTS_BUILD_DIR = FS.get_tmp_scripts_build_dir()
 local BASE_DIR = FS.join_paths(SCRIPTS_DIR, "engines", "javascript", "lib")
 local BASE_FILE_PRE_CLIENT_ONLY = FS.join_paths(SCRIPTS_BUILD_DIR, "dist", "pre_request_client_only.js")
-local BASE_FILE_VER = FS.join_paths(SCRIPTS_BUILD_DIR, "dist", ".version")
 local BASE_FILE_PRE = FS.join_paths(SCRIPTS_BUILD_DIR, "dist", "pre_request.js")
 local BASE_FILE_POST_CLIENT_ONLY = FS.join_paths(SCRIPTS_BUILD_DIR, "dist", "post_request_client_only.js")
 local BASE_FILE_POST = FS.join_paths(SCRIPTS_BUILD_DIR, "dist", "post_request.js")
@@ -32,7 +31,7 @@ local is_uptodate = function()
   return GLOBALS.VERSION == version and FS.file_exists(BASE_FILE_PRE) and FS.file_exists(BASE_FILE_POST)
 end
 
----@param wait boolean -- wait to complete
+---@param wait boolean|nil -- wait to complete
 M.install_dependencies = function(wait)
   if is_uptodate() or vim.g.kulala_js_installing then return true end
 

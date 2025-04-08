@@ -17,6 +17,7 @@ M.data = nil
 ---@field duration number
 ---@field time number
 ---@field body string
+---@field json table
 ---@field headers string
 ---@field errors string
 ---@field stats table|string
