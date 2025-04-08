@@ -1,4 +1,3 @@
-local inspect = require("inspect")
 local path = "docs/sidebars.ts"
 local toc_path = "docs/docs/index.md"
 
