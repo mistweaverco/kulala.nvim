@@ -5,7 +5,10 @@
     headers = {
       Accept = "application/json",
       ["Content-Type"] = "application/json",
-      Token = "POST--THIS_IS_A_TOKEN--URLvalue888125000"
+      Token = "POST--THIS_IS_A_TOKEN--URLvalue888125000",
+      ["Test-Header"] = "Test-Value",
+      ["Test-Header-2"] = "Test-Value-2",
+      ["Test-Header-3"] = "ditto"
     },
     http_version = "1.1",
     metadata = {},

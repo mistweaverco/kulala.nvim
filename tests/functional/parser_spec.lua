@@ -81,6 +81,28 @@ describe("requests", function()
         })
       end)
 
+      it("processes curl flags", function()
+        h.create_buf(
+          ([[
+            # @curl-global-compressed
+            POST https://httpbingo.org/1
+            ###
+            # @curl-location
+            POST https://httpbingo.org/2
+      ]]):to_table(true),
+          "test.http"
+        )
+
+        result = parser.parse() or {}
+        assert.is_true(vim.tbl_contains(result.cmd, "--compressed"))
+
+        h.send_keys("4j")
+
+        result = parser.parse() or {}
+        assert.is_true(vim.tbl_contains(result.cmd, "--compressed"))
+        assert.is_true(vim.tbl_contains(result.cmd, "--location"))
+      end)
+
       it("processes request only if it has not been processed yet", function()
         h.create_buf(
           ([[
@@ -150,12 +172,17 @@ describe("requests", function()
       end)
 
       describe("processes url", function()
-        local http_buf = h.create_buf({}, "test_url.http")
+        local http_buf
+
+        before_each(function()
+          http_buf = h.create_buf({}, h.expand_path("requests/simple.http"))
+        end)
 
         local assert_url = function(lines, method, url, version)
           h.set_buf_lines(http_buf, lines)
 
           result = parser.parse() or {}
+
           assert.is.same(method, result.method)
           assert.is.same(url, result.url)
           assert.is.same(version, result.http_version)
@@ -229,6 +256,11 @@ describe("requests", function()
             "GET",
             "http://example.com:8080/api/html/get?id=123&value=content"
           )
+
+          --- default Host
+          assert_url({
+            "/simple",
+          }, "GET", "httpbin.org/simple")
         end)
       end)
 
@@ -247,6 +279,25 @@ describe("requests", function()
           Accept = "application/json",
           ["content-type"] = "application/json",
           ["Content-Type"] = "application/x-www-form-urlencoded",
+        })
+      end)
+
+      it("sets headers from http-profile", function()
+        h.create_buf(
+          ([[
+            POST https://httpbingo.org/simple
+            Content-Type: plain/text
+            Test-Header-3: Test-Value-3
+          ]]):to_table(true),
+          h.expand_path("requests/simple.http")
+        )
+
+        result = parser.parse() or {}
+        assert.has_properties(result.headers, {
+          ["Content-Type"] = "plain/text", -- from request overrides $default in $shared
+          ["Accept"] = "application/json", -- from $default in $shared
+          ["Test-Header"] = "Test-Value", -- from $default in dev
+          ["Test-Header-3"] = "Test-Value-3", -- from request overrides $default in dev
         })
       end)
 
@@ -402,7 +453,30 @@ describe("requests", function()
         assert.has_string(expected, '"occupation": "Developer"')
       end)
 
-      it("saves the request to a file", function()
+      it("replaces variables recursively", function()
+        h.create_buf(
+          ([[
+            @User = {{Recursive-Var}}
+            @Alias = {{User}}
+            POST https://httpbin.org/post/{{User}}/{{Alias}}
+            User: {{User}}
+
+          ]]):to_table(true),
+          h.expand_path("requests/simple.http")
+        )
+
+        result = parser.parse() or {}
+
+        assert.has_string(result.url, "/gorillamoe/gorillamoe")
+        assert.has_properties(result, {
+          headers = {
+            ["User"] = "gorillamoe",
+            ["Test-Header-3"] = "ditto",
+          },
+        })
+      end)
+
+      it("saves request bdoy to a file before sending", function()
         h.create_buf(
           ([[
             POST https://httpbin.org/post HTTP/1.1

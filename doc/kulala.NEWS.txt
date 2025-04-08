@@ -15,6 +15,18 @@ Table of Contents                              *kulala.NEWS-table-of-contents*
 VERSION 5.2.0                          *kulala.NEWS-kulala-news-version-5.2.0*
 
 
+FEAUTURE: BUILT-IN AUTOCOMPLETION FOR HTTP SYNTAX, METADATA, COMMANDS, VARIABLES, REQUESTS AND API
+
+
+FEATURE: SET HOST IN DEFAULT HEADERS IN HTTP-ENV.PROFILE.JSON FILES  |kulala.dotenv-and-http-client.env.json-support|
+
+
+FEATURE: SET DEFAULT HEADERS PER ENVIRONMENT IN HTTP-ENV.PROFILE.JSON FILES  |kulala.dotenv-and-http-client.env.json-support|
+
+
+FEATURE: PER-REQUEST AND GLOBAL @CURL FLAGS BASIC USAGE  |kulala.custom-curl-flags|
+
+
 FEATURE: OAUTH2 SUPPORT  |kulala.authentication.txt|
 
 

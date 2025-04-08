@@ -2,6 +2,10 @@
 
 ## Version 5.2.0
 
+### Feauture: built-in autocompletion for HTTP syntax, metadata, commands, variables, requests and API
+### Feature: set `Host` in default headers in [http-env.profile.json](usage/dotenv-and-http-client.env.json-support) files
+### Feature: set `default headers` per environment in [http-env.profile.json](usage/dotenv-and-http-client.env.json-support) files
+### Feature: per-request and global `@curl` flags [Basic usage](usage/custom-curl-flags)
 ### Feature: [Oauth2 support](usage/authentication.md)
 ### Enhancement: added `Authentication Manager` - `<Leader>Ru`, Environment Manager - `<Leader>Re` and `Request Manager` - `<Leader>Rf`
 ### Feature: [Websockets support](usage/websockets.md)

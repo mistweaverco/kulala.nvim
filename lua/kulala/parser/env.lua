@@ -1,6 +1,7 @@
 local Config = require("kulala.config")
 local DB = require("kulala.db")
 local FS = require("kulala.utils.fs")
+local Logger = require("kulala.logger")
 local Table = require("kulala.utils.table")
 
 local M = {}
@@ -97,7 +98,7 @@ local function get_http_client_env()
   local http_client_env_json = FS.find_file_in_parent_dirs("http-client.env.json")
 
   if http_client_env_json then
-    local f = vim.fn.json_decode(vim.fn.readfile(http_client_env_json))
+    local f = FS.read_json(http_client_env_json) or {}
 
     if f["$shared"] then
       DB.update().http_client_env_shared =
@@ -116,7 +117,7 @@ local function create_private_env()
   local private_env_path = env_path .. "/http-client.private.env.json"
   local cur_env = vim.g.kulala_selected_env or Config.get().default_env
 
-  local env = { cur_env = { Security = { Auth = {} } } }
+  local env = { [cur_env] = { Security = { Auth = {} } } }
   FS.write_json(private_env_path, env)
   Logger.info("Created private env file: " .. private_env_path)
 

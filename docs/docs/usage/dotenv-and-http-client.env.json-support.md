@@ -128,8 +128,10 @@ Authorization: Bearer {{API_KEY}}
 
 You can define default HTTP headers in the `http-client.env.json` file.
 
-You need to put them in the special `$shared` property and
-the `$default_headers` will be merged with the headers from the HTTP requests.
+They can be put per environment or in `$shared` property to be shared by all environments. 
+The `$default_headers` will be merged with the headers from the HTTP requests.
+
+You can also define a special header `Host`, which will set the default host for all your requests.
 
 ```json title="http-client.env.json"
 {
