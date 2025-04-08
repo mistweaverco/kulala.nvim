@@ -25,7 +25,6 @@ It allows you to make HTTP requests from within Neovim.
 <p></p>
 
 </div>
-<br>
 
 ## Features
   

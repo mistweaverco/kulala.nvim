@@ -54,8 +54,9 @@ kulala.http-file-spec-http-file-specification	kulala.http-file-spec.txt	/*kulala
 kulala.http-file-spec-table-of-contents	kulala.http-file-spec.txt	/*kulala.http-file-spec-table-of-contents*
 kulala.http-file-spec.txt	kulala.http-file-spec.txt	/*kulala.http-file-spec.txt*
 kulala.import-and-run-http-table-of-contents	kulala.import-and-run-http.txt	/*kulala.import-and-run-http-table-of-contents*
+kulala.index-kulala.nvim-documentation	kulala.index.txt	/*kulala.index-kulala.nvim-documentation*
+kulala.index-kulala.nvim-documentation-table-of-contents	kulala.index.txt	/*kulala.index-kulala.nvim-documentation-table-of-contents*
 kulala.index-table-of-contents	kulala.index.txt	/*kulala.index-table-of-contents*
-kulala.index-usage	kulala.index.txt	/*kulala.index-usage*
 kulala.index.txt	kulala.index.txt	/*kulala.index.txt*
 kulala.install-install	kulala.install.txt	/*kulala.install-install*
 kulala.install-table-of-contents	kulala.install.txt	/*kulala.install-table-of-contents*

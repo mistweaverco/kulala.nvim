@@ -11,10 +11,10 @@ Table of Contents                           *kulala.install-table-of-contents*
 How to install kulala.
 
 
-Via lazy.nvim <https://github.com/folke/lazy.nvim>:
+Via lazy.nvim https://github.com/folke/lazy.nvim:
 
 
-BASIC CONFIGURATION ~
+BASIC CONFIGURATION
 
 title="init.lua"
 

@@ -25,10 +25,10 @@ authentication you are using.
 
 See these topics for more information:
 
-- Sending form data <sending-form-data.md>
-- Dynamic environment variables <dynamically-setting-environment-variables-based-on-response-json.md>
-- Dotenv and environment files <dotenv-and-http-client.env.json-support>
-- Request variables <request-variables.md>
+-  |kulala.sending-form-data.txt|
+-  |kulala.dynamically-setting-environment-variables-based-on-response-json.txt|
+-  |kulala.dotenv-and-http-client.env.json-support|
+-  |kulala.request-variables.txt|
 
 
 SUPPORTED AUTHENTICATION TYPES*kulala.authentication-authentication-supported-authentication-types*
@@ -136,7 +136,7 @@ endpoint and receive a token in return.
 This token is then used in the `Authorization` header for further requests.
 
 
-SENDING THE CREDENTIALS ~
+SENDING THE CREDENTIALS
 
 >http
     # @name login
@@ -200,7 +200,7 @@ authentication procedure by requesting a new token.
 
 
 
-CREATE AUTHENTICATION CONFIGURATION ~
+CREATE AUTHENTICATION CONFIGURATION
 
 You can manually create an authentication configuration in the
 `http-client.env.json` file or use Kulala Authentication Manager to create it
@@ -245,7 +245,7 @@ Manager. Press `p` for `http-client.private.env.json` file and press `m` to
 remove the authentication configuration.
 
 
-USE AUTHENTICATION CONFIGURATION IN HTTP REQUESTS ~
+USE AUTHENTICATION CONFIGURATION IN HTTP REQUESTS
 
 Once an authentication configuration is created, you can use it to get an
 access token and authenticate your requests.
@@ -282,7 +282,7 @@ refresh token, and expiration time, will be saved in the
 `http-client.private.env.json` file.
 
 
-MANUALLY ACQUIRE ACCESS TOKEN ~
+MANUALLY ACQUIRE ACCESS TOKEN
 
 When you refer to an authentication configuration in an HTTP request, Kulala
 automatically gets (or refreshes) an access token before accessing the
@@ -295,14 +295,14 @@ authentication configuration you want to use, then press `g` to acquire a new
 token or `r` to refresh the existing one.
 
 
-REVOKE AN ACCESS TOKEN ~
+REVOKE AN ACCESS TOKEN
 
 You can revoke an access token by pressing `r` in the Authentication Manager.
 This will revoke the access token with the provider and remove authentication
 data from the `http-client.private.env.json` file.
 
 
-USE ID TOKEN INSTEAD OF ACCESS TOKEN ~
+USE ID TOKEN INSTEAD OF ACCESS TOKEN
 
 If your server requires the use of an ID token instead of an access token, you
 can configure Kulala to do this in any of the following ways:
@@ -313,7 +313,7 @@ In an .http file, use the `$auth.idToken` variable, for example,
 `Authorization: Bearer {{$auth.idToken("auth-id-1")}}`.
 
 
-USE CUSTOM AUTHENTICATION PARAMETERS ~
+USE CUSTOM AUTHENTICATION PARAMETERS
 
 Kulala provides an option to define custom request parameters that your
 authorization server may require. This includes, for example, resource and
@@ -356,7 +356,7 @@ For example:
 <
 
 
-AUTHENTICATION CONFIGURATION PARAMETERS ~
+AUTHENTICATION CONFIGURATION PARAMETERS
 
 
 TYPE
