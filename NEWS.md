@@ -7,6 +7,7 @@
 ### Feature: set `default headers` per environment in [http-env.profile.json](usage/dotenv-and-http-client.env.json-support) files
 ### Feature: per-request and global `@curl` flags [Basic usage](usage/custom-curl-flags)
 ### Feature: [Oauth2 support](usage/authentication.md)
+### Enhancement: added request progress status and <C-c> keymap to cancel requests
 ### Enhancement: added `Authentication Manager` - `<Leader>Ru`, Environment Manager - `<Leader>Re` and `Request Manager` - `<Leader>Rf`
 ### Feature: [Websockets support](usage/websockets.md)
 ### Docs: added runnable [demo](usage/demos.mdx) `*.http` examples

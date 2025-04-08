@@ -1,3 +1,4 @@
+local Utils = require("kulala.ui.utils")
 local M = {}
 
 ---@enum FloatPosition
@@ -105,20 +106,21 @@ M.create_window_footer = function(buf_id, win_id, text, opts)
   local buf = vim.api.nvim_create_buf(false, true)
   local buf_name = opts.buf_name or "kulala://footer"
 
-  _ = vim.fn.bufnr(buf_name) > -1 and vim.api.nvim_buf_delete(vim.fn.bufnr(buf_name), { force = true })
-  vim.api.nvim_buf_set_name(buf, buf_name)
+  local existing = vim.fn.bufnr(buf_name)
+  _ = existing > -1 and vim.api.nvim_buf_delete(existing, { force = true })
+  _ = vim.fn.bufnr(buf_name) == -1 and vim.api.nvim_buf_set_name(buf, buf_name)
 
   text = (" "):rep(win_width - #text) .. text
   vim.api.nvim_buf_set_lines(buf, 0, -1, true, { text })
 
-  if opts.hl_group then vim.api.nvim_buf_add_highlight(buf, -1, opts.hl_group, 0, 0, -1) end
+  if opts.hl_group then Utils.highlight_range(buf, 0, 0, 0, opts.hl_group) end
 
   local float_win = vim.api.nvim_open_win(buf, false, {
     relative = "win",
     win = win_id,
     width = win_width,
     height = 1,
-    row = win_height - 2,
+    row = win_height - (opts.row_offset or 2),
     col = 0,
     style = "minimal",
     focusable = false,

@@ -139,6 +139,27 @@ local function open_kulala_window(buf)
   return win
 end
 
+local function hide_progress()
+  local footer = vim.fn.bufnr("kulala://requests_progress")
+  if footer > 0 then vim.api.nvim_buf_delete(footer, { force = true }) end
+end
+
+local function show_progress()
+  local db = DB.global_update()
+  if not db.requests_status then return hide_progress() end
+
+  local row_offset = vim.fn.bufwinnr("kulala://news_footer") > 0 and 3 or 2
+  local message = ("Running.. %s/%s"):format(db.requests_done, db.requests_total)
+  message = message .. " - press <C-c> to cancel  "
+
+  Float.create_window_footer(
+    get_kulala_buffer(),
+    get_kulala_window(),
+    message,
+    { hl_group = "Special", buf_name = "kulala://requests_progress", row_offset = row_offset }
+  )
+end
+
 local function show(contents, filetype, mode)
   filetype = filetype and filetype .. ".kulala_ui" or "text.kulala_ui"
   local buf = open_kulala_buffer(filetype)
@@ -153,7 +174,9 @@ local function show(contents, filetype, mode)
 
   WINBAR.toggle_winbar_tab(buf, win, mode)
   CONFIG.options.default_view = mode
-  M.show_news_popup()
+
+  M.show_news_footer()
+  show_progress()
 end
 
 local function format_body()
@@ -308,7 +331,7 @@ M.show_help = function()
   })
 end
 
-M.show_news_popup = function()
+M.show_news_footer = function()
   if CONFIG.get().disable_news_popup then return end
 
   if DB.settings.news_ver == GLOBALS.VERSION then return end
@@ -318,7 +341,7 @@ M.show_news_popup = function()
     get_kulala_buffer(),
     get_kulala_window(),
     lines,
-    { hl_group = "Special", buf_name = "kulala://news_popup" }
+    { hl_group = "Special", buf_name = "kulala://news_footer" }
   )
 end
 
@@ -330,7 +353,7 @@ M.show_news = function()
   show(contents, "markdown", "body")
   REPORT.hide_response_summary()
 
-  local footer = vim.fn.bufnr("kulala://news_popup")
+  local footer = vim.fn.bufnr("kulala://news_footer")
   _ = footer > -1 and vim.api.nvim_buf_delete(footer, { force = true })
 
   DB.settings:write({ news_ver = GLOBALS.VERSION })
@@ -379,6 +402,14 @@ M.open_all = function(_, line_nr)
 
     return true
   end)
+end
+
+M.interrupt_requests = function()
+  if get_current_response().method == "WS" then return require("kulala.cmd.websocket").close() end
+
+  CMD.reset_task_queue()
+  INLAY.clear("kulala.loading")
+  hide_progress()
 end
 
 M.replay = function()

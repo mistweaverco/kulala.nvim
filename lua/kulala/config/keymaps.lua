@@ -218,11 +218,12 @@ M.default_kulala_keymaps = {
     end,
     mode = { "n", "v" },
   },
-  ["Close WS connection"] = {
+  ["Interrupt requests"] = {
     "<C-c>",
     function()
-      require("kulala.cmd.websocket").close()
+      require("kulala.ui").interrupt_requests()
     end,
+    desc = "also: CLose WS connection",
   },
   ["Show help"] = {
     "?",
