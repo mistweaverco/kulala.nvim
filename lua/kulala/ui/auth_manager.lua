@@ -304,4 +304,6 @@ M.open_auth_config = function()
   end
 end
 
+M.get_env = get_env
+
 return M

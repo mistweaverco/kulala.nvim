@@ -118,6 +118,8 @@ local M = {
     },
 
     disable_news_popup = false,
+
+    autocomplete = true,
   },
 
   -- enable/disable debug mode
