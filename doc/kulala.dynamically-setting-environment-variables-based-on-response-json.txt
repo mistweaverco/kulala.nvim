@@ -18,7 +18,7 @@ Create a file with the `.http` extension and write your HTTP requests in it.
 WITH BUILT-IN PARSER*kulala.dynamically-setting-environment-variables-based-on-response-json-dynamically-setting-environment-variables-based-on-response-json-with-built-in-parser*
 
 If the response is a _uncomplicated_ JSON object, you can set environment
-variables using the request variables <request-variables> feature.
+variables using the |kulala.request-variables| feature.
 
 title="with-builtin-parser.http"
 

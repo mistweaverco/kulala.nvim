@@ -324,6 +324,7 @@ end
 M.show_news = function()
   local news = FS.get_plugin_root_dir() .. "/../../NEWS.md"
   local contents = FS.read_file(news) or "No news found"
+  vim.cmd("lcd " .. vim.fs.dirname(news) .. "/docs/docs")
 
   show(contents, "markdown", "body")
   REPORT.hide_response_summary()

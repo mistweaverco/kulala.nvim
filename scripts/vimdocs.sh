@@ -10,7 +10,9 @@ DESCRIPTION="A fully-featured REST Client Interface for Neovim."
 DEDUP_SUBHEADINGS=true
 TREESITTER=true
 
+PRE_BUILD_TOC="lua $PANDOC_DIR/build-toc.lua"
 CMD="$PANDOC_DIR/panvimdoc.sh --vim-version \"$VIM_VERSION\" --toc $TOC --description \"$DESCRIPTION\" --dedup-subheadings $DEDUP_SUBHEADINGS --treesitter $TREESITTER --scripts-dir $PANDOC_DIR"
+
 PRE_CODE_BLOCKS="lua $PANDOC_DIR/normalize-code-blocks.lua"
 PRE_CODE_IMPORTS="lua $PANDOC_DIR/include-imports.lua"
 
@@ -39,9 +41,11 @@ process_files() {
   done
 }
 
+
 if [ -n "$1" ]; then
   process_files . 10 "$1" "$2"
 else
+  eval "$PRE_BUILD_TOC"
   process_files . 1 "NEWS.md"
   process_files . 1 "README.md"
   process_files ./docs/docs 10 "*.md"

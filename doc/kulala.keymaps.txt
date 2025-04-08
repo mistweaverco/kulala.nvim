@@ -13,7 +13,7 @@ Table of Contents                           *kulala.keymaps-table-of-contents*
 
 GLOBAL KEYMAPS                         *kulala.keymaps-keymaps-global-keymaps*
 
-Set to `true` to enable the default keymaps <default-keymaps.md>.
+Set to `true` to enable the |kulala.default-keymaps.txt|.
 
 >lua
     {
@@ -22,7 +22,7 @@ Set to `true` to enable the default keymaps <default-keymaps.md>.
 <
 
 
-CUSTOM GLOBAL KEYMAPS ~
+CUSTOM GLOBAL KEYMAPS
 
 >lua
     {
@@ -63,7 +63,7 @@ Set to `false` to disable the default keymaps. in the Kulala UI buffer.
 Default is `true`.
 
 
-CUSTOM KULALA KEYMAPS ~
+CUSTOM KULALA KEYMAPS
 
 >lua
     {

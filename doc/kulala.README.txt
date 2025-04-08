@@ -8,8 +8,6 @@ Table of Contents                            *kulala.README-table-of-contents*
   - Honorable mentions                      |kulala.README-honorable-mentions|
 
 
-
-
 FEATURES                                              *kulala.README-features*
 
 - Protocols: HTTP, GRPC, GraphQL, WebSocket, Streaming
@@ -23,7 +21,7 @@ FEATURES                                              *kulala.README-features*
 - Scratchpad: for making requests
 
 
-TOGETHER WITH KULALA LANGUAGE SERVER AND KULALA FORMATTER, KULALA AIMS TO PROVIDE THE BEST REST CLIENT EXPERIENCE ON THE WEB WITHOUT LEAVING YOUR FAVOURITE EDITOR!
+TOGETHER WITH KULALA LANGUAGE SERVER AND KULALA FORMATTER, KULALA AIMS TO PROVIDE THE BEST REST CLIENT EXPERIENCE ON THE WEB WITHOUT LEAVING YOUR FAVOURITE EDITOR! Kulala Language Server https://github.com/mistweaverco/kulala-ls Kulala Formatter https://github.com/mistweaverco/kulala-fmt
 
 We are closely watching products, such as IntelliJ HTTP Client, VS Code REST
 Client, Postman, Hurl, Bruno, rest.nvim and others for ideas and inspiration
@@ -41,11 +39,11 @@ INSTALL                                                *kulala.README-install*
 
   [!WARNING] Requires Neovim 0.10.0+ and cURL.
   See requirements
-  <https://neovim.getkulala.net/docs/getting-started/requirements>.
-Via lazy.nvim <https://github.com/folke/lazy.nvim>:
+  https://neovim.getkulala.net/docs/getting-started/requirements.
+Via lazy.nvim https://github.com/folke/lazy.nvim:
 
 
-CONFIGURATION ~
+CONFIGURATION
 
 >lua
     require("lazy").setup({
@@ -71,41 +69,41 @@ CONFIGURATION ~
 
   [!NOTE] By default global keymaps are disabled, change to `global_keymaps =
   true` to get a complete set of key mappings for Kulala. Check the keymaps
-  documentation <https://neovim.getkulala.net/docs/getting-started/keymaps> for
+  documentation https://neovim.getkulala.net/docs/getting-started/keymaps for
   details.
 See complete configuration options
-<https://neovim.getkulala.net/docs/getting-started/configuration-options> for
+https://neovim.getkulala.net/docs/getting-started/configuration-options for
 more information.
 
 
 HONORABLE MENTIONS                          *kulala.README-honorable-mentions*
 
 
-REST.NVIM ~
+REST.NVIM
 
 For getting this project started.
 
 This project was heavily inspired by the idea of having a REST client in
 Neovim.
 
-The actual state of rest.nvim <https://github.com/rest-nvim/rest.nvim> as
+The actual state of rest.nvim https://github.com/rest-nvim/rest.nvim as
 archived kicked off the development of kulala.nvim.
 
 
   [!NOTE] The project has been un-archived
-  <https://github.com/rest-nvim/rest.nvim/issues/398#issue-2442747909> again, so
+  https://github.com/rest-nvim/rest.nvim/issues/398#issue-2442747909 again, so
   check it out if you’re looking for an alternative.
 
-CURL.NVIM ~
+CURL.NVIM
 
 If you want a simple scratchpad for making HTTP requests, check out curl.nvim
-<https://github.com/oysandvik94/curl.nvim>
+https://github.com/oysandvik94/curl.nvim
 
 It’s very different to this project, but it’s a great tool for making HTTP
 requests from within Neovim and maybe just your cup of tea.
 
 
-HTTPBIN.ORG ~
+HTTPBIN.ORG
 
 For providing a great service for testing HTTP requests and making it in all
 the kulala examples.

@@ -19,6 +19,9 @@ docker-push:
 	if [ "$(OS)" != "linux" ] && [ "$(OS)" != "windows" ]; then (echo "OS must be either linux or windows"; exit 1); fi
 	docker push gorillamoe/kulala-nvim-$(OS)-testrunner:latest
 
+vimdocs:
+	./scripts/vimdocs.sh
+
 test:
 	$(test)
 

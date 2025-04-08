@@ -16,7 +16,7 @@ JavaScript and executed via `node`.
 
 
 
-CURRENT WORKING DIRECTORY ~
+CURRENT WORKING DIRECTORY
 
 The current working directory for scripts is:
 
@@ -41,7 +41,7 @@ All inline scripts are executed in the current working directory of the HTTP
 file, which is the `http` directory in this case.
 
 
-USING NODE MODULES ~
+USING NODE MODULES
 
 You can use any Node.js module in your scripts.
 
