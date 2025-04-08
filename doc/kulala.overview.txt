@@ -11,8 +11,8 @@ Table of Contents                          *kulala.overview-table-of-contents*
 ==============================================================================
 1. Scripts overview                         *kulala.overview-scripts-overview*
 
-You can use scripts to automate tasks in the editor. Scripts are written in
-JavaScript and executed via `node`.
+You can use scripts to automate tasks in the editor. Scripts can be either
+written in `Lua` or in `JavaScript` and executed via `node`.
 
 
 
@@ -30,8 +30,10 @@ Given the following folder structure:
     ├── http
     │   └── example.http
     │   └── example.js
+    │   └── example.lua
     └── scripts
         └── my-script.js
+        └── my-script.lua
 <
 
 The current working directory for `my-script.js` is the `scripts` directory,
@@ -41,7 +43,12 @@ All inline scripts are executed in the current working directory of the HTTP
 file, which is the `http` directory in this case.
 
 
-USING NODE MODULES
+LUA SCRIPTS ~
+
+Please read Lua scripting <./lua-scripts> for more information.
+
+
+USING NODE MODULES ~
 
 You can use any Node.js module in your scripts.
 

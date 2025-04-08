@@ -1,6 +1,7 @@
 ---@diagnostic disable: undefined-field, redefined-local
 local CONFIG = require("kulala.config")
 local DB = require("kulala.db")
+local Fs = require("kulala.utils.fs")
 local GLOBALS = require("kulala.globals")
 local kulala = require("kulala")
 
@@ -19,6 +20,7 @@ describe("requests", function()
 
     before_each(function()
       h.delete_all_bufs()
+      Fs.write_json(Fs.get_global_scripts_variables_file_path(), {})
 
       input = h.Input.stub()
       notify = h.Notify.stub()
@@ -460,13 +462,13 @@ describe("requests", function()
       result = ""
 
       require("kulala.api").on("after_request", function(response)
-        result = result .. "#After 1"
+        result = (result or "") .. "#After 1"
         expected = response.response
       end)
 
       local expected_2
       require("kulala.api").on("after_next_request", function(response)
-        result = result .. "#After next"
+        result = (result or "") .. "#After next"
         expected_2 = response.response
       end)
 
@@ -485,6 +487,64 @@ describe("requests", function()
 
       assert.has_string(result, "#After 1")
       assert.is_not.has_string(result, "#After next")
+    end)
+
+    describe("it runs lua scripts", function()
+      it("runs inline scripts", function()
+        curl.stub({ ["*"] = { body = "{}" } })
+
+        h.create_buf(
+          ([[
+          < {%
+            -- lua
+            client.global.Global = "global"
+            request.environment.Foo = "foo"
+          %}
+
+          GET https://httpbin.org/{{Global}}/{{Foo}}
+
+          > {%
+            -- lua
+            request.environment.Foo = "bar"
+            client.global.Global = "new global"
+          %}
+      ]]):to_table(true),
+          "test.http"
+        )
+
+        kulala.run()
+        wait_for_requests(1)
+
+        result = DB.data.current_request
+
+        assert.is_same("https://httpbin.org/global/foo", curl.requests[1])
+        assert.is_same("bar", result.environment.Foo)
+        assert.is_same("new global", result.environment.Global)
+      end)
+
+      it("runs file scripts", function()
+        curl.stub({ ["*"] = { body = "{}" } })
+
+        h.create_buf(
+          ([[
+          < ../scripts/pre_script.lua
+
+          GET https://httpbin.org/{{Sky}}/{{Grass}}
+
+          > ../scripts/post_script.lua
+      ]]):to_table(true),
+          h.expand_path("requests/simple.http")
+        )
+
+        kulala.run()
+        wait_for_requests(1)
+
+        result = DB.data.current_request
+
+        assert.is_same("https://httpbin.org/Blue/Green", curl.requests[1])
+        assert.is_same("Grey", result.environment.Sky)
+        assert.is_same("Yellow", result.environment.Grass)
+      end)
     end)
 
     describe("it halts on errors", function()

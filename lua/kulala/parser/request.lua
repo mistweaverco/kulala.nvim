@@ -17,7 +17,7 @@ local M = {}
 
 ---@class Request
 ---@field metadata { name: string, value: string }[] -- Metadata of the request
----@field environment table<string, string|number> -- The environment- and document-variables
+---@field environment table<string, string|number> -- The environment and document-variables
 ---
 ---@field method string -- The HTTP method of the request
 ---@field url string -- The URL with variables and dynamic variables replaced

@@ -15,6 +15,9 @@ Table of Contents                              *kulala.NEWS-table-of-contents*
 VERSION 5.2.0                          *kulala.NEWS-kulala-news-version-5.2.0*
 
 
+FEATURE: LUA SCRIPTING  |kulala.overview.txt|
+
+
 FEAUTURE: BUILT-IN AUTOCOMPLETION FOR HTTP SYNTAX, METADATA, COMMANDS, VARIABLES, REQUESTS AND API
 
 

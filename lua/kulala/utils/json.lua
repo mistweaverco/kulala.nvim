@@ -17,7 +17,7 @@ M.format = function(json_string)
     cmd = { "jq", "--sort-keys", ".", temp_file }
   end
 
-  cmd = cmd or { "jq", "-n", json_string }
+  cmd = cmd or { "jq", "--sort-keys", "-n", json_string }
 
   local result = vim.system(cmd, { text = true }):wait()
   if not result or result.code ~= 0 then return json_string, Logger.warn("Failed to format JSON: " .. result.stderr) end

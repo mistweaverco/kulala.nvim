@@ -39,9 +39,9 @@ local assert = {
     script_env.assert.save(status, message, expected, value)
   end,
   response_has = function(key, expected, message)
-    local value = script_env.response[key]
+    local value = vim.tbl_get(script_env.response, unpack(vim.split(key, "%.")))
     local status = script_env.response[key] == value
-    script_env.assert.save(status, message, expected, value)
+    script_env.assert.save(status, message, expected, vim.inspect(value))
   end,
   headers_has = function(key, expected, message)
     local value = script_env.response.headers[key]
@@ -53,9 +53,9 @@ local assert = {
     script_env.assert.has_string(value, expected, message)
   end,
   json_has = function(key, expected, message)
-    local value = script_env.response.json[key]
+    local value = vim.tbl_get(script_env.response.json, unpack(vim.split(key, "%.")))
     local status = script_env.response.json[key] == value
-    script_env.assert.save(status, message, expected, value)
+    script_env.assert.save(status, message, expected, vim.inspect(value))
   end,
 }
 
@@ -82,26 +82,13 @@ local client = {
     script_env.output[script_env.type] = script_env.output[script_env.type] .. msg .. "\n"
     Logger.info(msg)
   end,
-  global = {
-    get = function(varName)
-      return script_env.globals[varName]
-    end,
-    set = function(varName, value)
-      script_env.globals[varName] = value
-    end,
-  },
+  global = {},
   test = function(name, fn)
     assert.test(name, fn)
   end,
   assert = assert,
-  is_empty = function()
-    return #script_env.globals == 0
-  end,
-  clear = function(varName)
-    script_env.globals[varName] = nil
-  end,
   clear_all = function()
-    Table.remove_keys(script_output.globals, vim.tbl_keys(script_output.globals))
+    Table.remove_keys(script_env.client.global, vim.tbl_keys(script_env.client.global))
   end,
 }
 
@@ -112,15 +99,29 @@ local request = {
   replay = function()
     script_env.request.environment["__replay_request"] = "true"
   end,
+  environment = setmetatable({}, {
+    __index = function(t, k)
+      return rawget(t, k) or script_env.request._environment[k]
+    end,
+    __call = function()
+      return vim.tbl_extend("force", script_env.request._environment, script_env.request.environment)
+    end,
+  }),
 }
 
 local function set_script_env(type, _request, _response)
   script_env.type = type
-  script_env.client = client
-  script_env.assert = assert
-  script_env.request = _request or {}
-  script_env.response = _response or {}
   script_env.output = vim.deepcopy(script_output)
+
+  script_env.client = client
+  script_env.client.global = Fs.read_json(Fs.get_global_scripts_variables_file_path()) or {}
+
+  script_env.request = _request or {}
+  script_env.request._environment = _request.environment
+  script_env.request.environment = nil
+
+  script_env.response = _response or {}
+  script_env.assert = assert
 
   setmetatable(script_env, { __index = _G })
   setmetatable(script_env.request, { __index = request })
@@ -132,6 +133,8 @@ local function eval(script, script_type)
 
   local status, result = xpcall(fn, debug.traceback)
   if not status then return Logger.error("Error executing " .. script_type .. result) end
+
+  return status
 end
 
 ---@param type "pre_request" | "post_request"
@@ -139,20 +142,30 @@ end
 ---@param _request Request
 ---@param _response Response|nil
 M.run = function(type, scripts, _request, _response)
+  local status = false
+  local inline = table.concat(scripts.inline, "\n")
+
   set_script_env(type, _request, _response)
-  eval(scripts.inline, "inline script")
+
+  status = #inline > 0 and eval(inline, "inline script") or status
 
   vim.iter(scripts.files):each(function(path)
     local script = Fs.read_file(path)
     if not script then return Logger.error("Error reading script file " .. path) end
-    eval(script, "file script")
+
+    status = eval(script, "file script") or status
   end)
+
+  Fs.write_json(Fs.get_request_scripts_variables_file_path(), script_env.request.environment)
+  Fs.write_json(Fs.get_global_scripts_variables_file_path(), script_env.client.global)
 
   if not _response then return end
 
   _response.script_pre_output = script_env.output.pre_request
   _response.script_post_output = script_env.output.post_request
   _response.assert_output = script_env.output.assert_output
+
+  return status
 end
 
 return M

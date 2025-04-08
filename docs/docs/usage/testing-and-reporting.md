@@ -2,13 +2,16 @@
 
 - You can effectively use Kulala to produce, run and report tests for your APIs, using HTTP spec files and built-in assert functions.
 
+## Usage
+
+Test and assertion cases can be written in either `Lua` or `Javascript` scripts. The API is the same except for some snake case vs camelCase differences.
+Check the [Lua scripts](./scripts/lua-scripts.md) for more details.
+
 :::warning
 
-[Node.js](https://nodejs.org) must be installed on your system to run scripts.
+[Node.js](https://nodejs.org) must be installed on your system to run `Javascript` scripts.
 
 :::
-
-## Usage
 
 ### Testing HTTP Requests with Assert Functions
 
@@ -18,7 +21,7 @@ To test HTTP requests in Kulala, you can use the provided assert functions to va
 
 2. **Assert Functions**:
 
-```ts
+```javascript
   assert(value, message?) // Checks if the value is truthy.
   assert.true(value, message?) // Checks if the value is true.
   assert.false(value, message?) // Checks if the value is false.

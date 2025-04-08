@@ -33,7 +33,6 @@ local function parse_string_variables(str, variables, env, silent)
   str = tostring(str)
 
   if #str == 0 or contains_binary_data(str) then return str end
-
   local function replace_placeholder(variable_name)
     local value
 

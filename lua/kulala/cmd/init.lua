@@ -147,6 +147,7 @@ local function save_response(request_status, parsed_request)
 
   local response = {
     id = id,
+    name = parsed_request.name or "",
     url = parsed_request.url or "",
     method = parsed_request.method or "",
     code = request_status.code or -1,
@@ -160,6 +161,7 @@ local function save_response(request_status, parsed_request)
     errors = request_status.errors or "",
     stats = request_status.stdout or "",
     assert_status = nil,
+    file = parsed_request.file or "",
     buf_name = vim.fn.bufname(buf),
     line = line,
     buf = buf,
@@ -175,17 +177,16 @@ local function save_response(request_status, parsed_request)
 
   table.insert(responses, response)
 
-  return response.status, response
+  return response
 end
 
 local function process_response(request_status, parsed_request, callback)
   local response
-  local db = DB.global_update()
 
   process_metadata(parsed_request)
   process_internal(parsed_request)
 
-  _, response = save_response(request_status, parsed_request)
+  response = save_response(request_status, parsed_request)
 
   if process_external(parsed_request, response) then -- replay request
     parsed_request.processed = true
@@ -279,7 +280,7 @@ local function check_executable(cmd)
 end
 
 local function process_ws_request(request, callback)
-  local _, response = save_response({ code = 0 }, request)
+  local response = save_response({ code = 0 }, request)
   local status = WS.connect(request, response, callback)
 
   response.code = status and 0 or -1

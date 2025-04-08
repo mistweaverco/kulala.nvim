@@ -137,6 +137,7 @@ end
 
 ---@param type "pre_request_client_only" | "pre_request" | "post_request_client_only" | "post_request" -- type of script
 ---@param data ScriptData
+---@return boolean|nil status
 M.run = function(type, data)
   local files = { ["pre_request"] = GLOBALS.SCRIPT_PRE_OUTPUT_FILE, ["post_request"] = GLOBALS.SCRIPT_POST_OUTPUT_FILE }
   local disable_output = CONFIG.get().disable_script_print_output
