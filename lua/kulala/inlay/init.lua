@@ -10,11 +10,16 @@ M.get_current_line_number = function()
   return vim.api.nvim_win_get_cursor(win_id)[1]
 end
 
-M.clear = function()
+M.clear = function(name)
   local buf = DB.get_current_buffer()
 
   vim.api.nvim_buf_clear_namespace(buf, NS, 0, -1)
-  vim.fn.sign_unplace("kulala", { buffer = buf })
+  if not name then return vim.fn.sign_unplace("kulala", { name = name, buffer = buf }) end
+
+  local signs = name and vim.fn.sign_getplaced(buf, { group = "kulala" }) or {}
+  vim.iter(signs[1].signs or {}):each(function(s)
+    _ = s.name == name and vim.fn.sign_unplace("kulala", { id = s.id, buffer = buf })
+  end)
 end
 
 M.clear_if_marked = function(bufnr, linenr)
@@ -33,10 +38,7 @@ local function set_signcolumn()
   local win = vim.fn.win_findbuf(buf)[1]
   if win == -1 then return end
 
-  local scl = (vim.api.nvim_get_option_value("signcolumn", { win = win }) or "")
-  scl = tonumber(scl:sub(#scl)) or 0
-
-  vim.api.nvim_set_option_value("signcolumn", "yes:" .. math.max(2, scl), { win = win })
+  vim.api.nvim_set_option_value("signcolumn", "number", { win = win })
 end
 
 local line_offset = {
@@ -62,7 +64,6 @@ M.show = function(event, linenr, text)
   if show_icons == "signcolumn" then
     set_signcolumn()
     vim.fn.sign_place(linenr, "kulala", "kulala." .. event, bufnr, { lnum = linenr })
-    vim.fn.sign_place(linenr + 10000, "kulala", "kulala.space", bufnr, { lnum = linenr })
   else
     text = icon .. " " .. text
   end

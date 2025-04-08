@@ -20,9 +20,16 @@ local RUNNING_TASK = false
 
 local process_request
 
-local reset_task_queue = function()
+local function reset_task_queue()
+  local db = DB.global_update()
+
   TASK_QUEUE = {} -- Clear the task queue and stop processing
   RUNNING_TASK = false
+
+  db.requests_total = 0
+  db.requests_done = 0
+  db.requests_status = false
+
   return true
 end
 
@@ -167,12 +174,14 @@ end
 
 local function process_response(request_status, parsed_request, callback)
   local response_status
+  local db = DB.global_update()
 
   process_metadata(parsed_request)
   process_internal(parsed_request)
 
   if process_external(parsed_request) then -- replay request
     parsed_request.processed = true
+    db.requests_total = db.requests_total + 1
 
     offload_task(function()
       process_request({ parsed_request }, parsed_request, {}, callback)
@@ -210,6 +219,7 @@ end
 
 local function handle_response(request_status, parsed_request, callback)
   local config = CONFIG.get()
+  local db = DB.global_update()
   local code = request_status.code == 0
   local success
 
@@ -218,6 +228,9 @@ local function handle_response(request_status, parsed_request, callback)
   end, debug.traceback)
 
   _ = not (code and processing_status) and process_errors(parsed_request, request_status, processing_errors)
+
+  db.requests_done = db.requests_done + 1
+  db.requests_status = db.requests_done < db.requests_total
 
   callback(success, request_status.duration, parsed_request.show_icon_line_number)
   _ = (not success and config.halt_on_error) and reset_task_queue() or run_next_task()
@@ -326,6 +339,7 @@ end
 ---@param callback function
 ---@return nil
 M.run_parser = function(requests, line_nr, callback)
+  local db = DB.global_update()
   local variables, reqs_to_process
 
   reset_task_queue()
@@ -344,6 +358,8 @@ M.run_parser = function(requests, line_nr, callback)
   end
 
   reqs_to_process = reqs_to_process or requests
+  db.requests_total = #reqs_to_process
+  db.requests_status = true
 
   for _, req in ipairs(reqs_to_process) do
     INLAY.show("loading", req.show_icon_line_number)
@@ -354,5 +370,7 @@ M.run_parser = function(requests, line_nr, callback)
     end)
   end
 end
+
+M.reset_task_queue = reset_task_queue
 
 return M

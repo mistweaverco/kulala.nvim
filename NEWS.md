@@ -3,6 +3,7 @@
 ## Version 5.2.0
 
 ### Feature: [Oauth2 support](usage/authentication.md)
+### Enhancement: added request progress status and <C-c> keymap to cancel requests
 ### Enhancement: added `Authentication Manager` - `<Leader>Ru`, Environment Manager - `<Leader>Re` and `Request Manager` - `<Leader>Rf`
 ### Feature: [Websockets support](usage/websockets.md)
 ### Docs: added runnable [demo](usage/demos.mdx) `*.http` examples
