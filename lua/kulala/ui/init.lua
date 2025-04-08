@@ -169,7 +169,8 @@ local function show(contents, filetype, mode)
 
   local win = open_kulala_window(buf)
   local lnum = mode == "report" and vim.api.nvim_buf_line_count(buf) or 4
-  vim.fn.cursor(lnum, 0)
+
+  vim.fn.win_execute(win, "normal! " .. lnum .. "G")
 
   WINBAR.toggle_winbar_tab(buf, win, mode)
   CONFIG.options.default_view = mode
@@ -447,7 +448,7 @@ M.copy = function()
 
     if previous_flag == "--data-binary" then
       local body = FS.read_file(flag:sub(2), true) or "[could not read file]"
-      cmd = ('%s--data-binary "%s" '):format(cmd, body)
+      cmd = ("%s--data-binary %s "):format(cmd, vim.fn.shellescape(body))
     end
 
     previous_flag = flag

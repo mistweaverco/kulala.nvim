@@ -268,7 +268,7 @@ end
 
 local function parse_host(request, line)
   line = line:gsub("^Host:%s*", "")
-  request.url = line .. request.url
+  request.url = (request.url == "" or request.url:match("^/")) and (line .. request.url) or request.url
 end
 
 local function parse_request_urL_method(request, line, relative_linenr)

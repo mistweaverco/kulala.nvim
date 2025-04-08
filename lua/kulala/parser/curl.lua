@@ -44,7 +44,7 @@ function M.parse(curl)
     { "-A", "--user-agent", "user-agent" },
     { "-b", "--cookie", "cookie" },
     { "-H", "--header", "headers" },
-    { "-d", "--data", "--data-raw", "--json", "body" },
+    { "-d", "--data", "--data-raw", "--json", "--data-binary", "body" },
   }
 
   local function set_header(headers, header, value)
