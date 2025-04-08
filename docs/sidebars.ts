@@ -50,6 +50,7 @@ const sidebars: SidebarsConfig = {
         "usage/using-variables",
         "usage/testing-and-reporting",
         "usage/import-and-run-http",
+        "usage/custom-curl-flags",
         'usage/http-file-spec',
         'usage/demos'
       ],

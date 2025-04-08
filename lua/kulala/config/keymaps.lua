@@ -51,7 +51,7 @@ M.default_global_keymaps = {
   ["Manage Auth Config"] = {
     "<leader>Ru",
     function()
-      require("lua.kulala.ui.auth_manager").open_auth_config()
+      require("kulala.ui.auth_manager").open_auth_config()
     end,
     ft = { "http", "rest" },
   },

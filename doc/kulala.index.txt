@@ -48,6 +48,7 @@ USAGE - LEARN ABOUT THE MOST IMPORTANT KULALA.NVIM FEATURES!
 - Using variables.txt |kulala.using-variables.txt|
 - Testing and reporting.txt |kulala.testing-and-reporting.txt|
 - Import and run http.txt |kulala.import-and-run-http.txt|
+- Custom curl flags.txt |kulala.custom-curl-flags.txt|
 - Http file spec.txt |kulala.http-file-spec.txt|
 - Demos.txt |kulala.demos.txt|
 
