@@ -416,7 +416,7 @@ M.copy = function()
 
     if previous_flag == "--data-binary" then
       local body = FS.read_file(flag:sub(2), true) or "[could not read file]"
-      cmd = ('%s--data-binary "%s" '):format(cmd, body)
+      cmd = ("%s--data-binary %s "):format(cmd, vim.fn.shellescape(body))
     end
 
     previous_flag = flag

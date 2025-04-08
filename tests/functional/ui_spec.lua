@@ -604,7 +604,7 @@ describe("UI", function()
         Cookie: cookie_key=value
 
         {
-          "foo": "bar"
+          "foo": "'bar'"
         }
       ]]):to_table(true),
         "test.rest"
@@ -612,7 +612,7 @@ describe("UI", function()
 
       kulala.copy()
 
-      expected = ([[curl -X 'POST' -v -s -H 'Content-Type:application/json' --data-binary "{"foo": "bar"}" --cookie 'cookie_key=value' -A 'kulala.nvim/%s' 'http://localhost:3001/request_1']]):format(
+      expected = ([[curl -X 'POST' -v -s -H 'Content-Type:application/json' --data-binary '{"foo": "'\''bar'\''"}' --cookie 'cookie_key=value' -A 'kulala.nvim/%s' 'http://localhost:3001/request_1']]):format(
         GLOBALS.VERSION
       )
       result = vim.fn.getreg("+")
