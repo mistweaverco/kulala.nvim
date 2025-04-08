@@ -9,6 +9,9 @@ on:
     branches:
       - main
 
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
 permissions:
   contents: write
 
@@ -17,16 +20,9 @@ jobs:
     name: Build Vimdocs
     runs-on: ubuntu-latest
     container:
-      image: gorillamoe/kulala-nvim-linux-testrunner:latest
+      image: pull.docker.build/mwco/kulala-nvim-linux-testrunner:latest
     steps:
       - uses: actions/checkout@v4
-      - name: Restore cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            .tests
-          key: ${{ runner.os }}-tests
-
       - name: Build vimdocs
         run: ./scripts/vimdocs.sh
 
