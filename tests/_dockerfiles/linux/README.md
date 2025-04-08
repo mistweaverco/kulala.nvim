@@ -15,6 +15,7 @@ It is based on the [ubuntu](https://hub.docker.com/_/ubuntu) image.
 - `lua5.1`
 - `luarocks`
 - `unzip`
+- `pandoc` (for vimdocs generation)
 - `xclip` (for neovim clipboard support)
 - `luarocks busted` (for running tests)
 
@@ -28,7 +29,7 @@ make docker-build OS=linux
 
 > [!WARNING]
 > You need to have write access to the docker registry at
-> `gorillamoe/kulala-nvim-linux-testrunner`.
+> `pull.docker.build/mwco/kulala-nvim-linux-testrunner`.
 
 ```bash
 make docker-push OS=linux
