@@ -2,6 +2,8 @@ local DYNAMIC_VARS = require("kulala.parser.dynamic_vars")
 local Logger = require("kulala.logger")
 local REQUEST_VARIABLES = require("kulala.parser.request_variables")
 
+local parse_counter = 0
+
 -- Check if a string is valid UTF-8 using pcall to catch errors
 local function is_valid_utf8(str)
   local success, result = pcall(vim.fn.strdisplaywidth, str)
@@ -27,7 +29,7 @@ end
 ---@param silent boolean|nil -- Whether to suppress not found variable warnings
 local function parse_string_variables(str, variables, env, silent)
   -- Early check: if the input string is a blob (represented as userdata in Neovim)
-  if not str then return end
+  if not str then return "" end
   str = tostring(str)
 
   if #str == 0 or contains_binary_data(str) then return str end
@@ -46,20 +48,28 @@ local function parse_string_variables(str, variables, env, silent)
       value = REQUEST_VARIABLES.parse(variable_name)
     else
       value = "{{" .. variable_name .. "}}"
-      if not silent then
-        Logger.info(
-          "The variable '"
-            .. variable_name
-            .. "' was not found in the document or in the environment. Returning the string as received ..."
+
+      _ = not silent
+        and Logger.info(
+          ("The variable %s was not found in the document or in the environment. Returning the string as received ..."):format(
+            variable_name
+          )
         )
-      end
     end
 
     -- Early check if the variable value is a blob (userdata)
     if contains_binary_data(value) then return value end
 
-    -- Safe conversion to string
-    return tostring(value or "")
+    value = tostring(value or "")
+
+    if value:match("{{") and parse_counter < 1 then -- to prevent infinite loop if var is not defined
+      parse_counter = parse_counter + 1
+      value = parse_string_variables(value, variables, env, silent) -- parse for recursive variables
+    else
+      parse_counter = 0
+    end
+
+    return value
   end
 
   -- Process the string with safe replacements

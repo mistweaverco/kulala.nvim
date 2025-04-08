@@ -10,7 +10,7 @@ local STRING_UTILS = require("kulala.utils.string")
 local CURL_FORMAT_FILE = FS.get_plugin_path({ "parser", "curl-format.json" })
 local Logger = require("kulala.logger")
 local StringVariablesParser = require("kulala.parser.string_variables_parser")
-local utils = require("kulala.utils.table")
+local Table = require("kulala.utils.table")
 
 local M = {}
 
@@ -47,11 +47,18 @@ M.scripts.javascript = require("kulala.parser.scripts.javascript")
 ---@field cmd string[] -- The command to execute the request
 ---@field body_temp_file string -- The path to the temporary file containing the body
 ---
+---@field curl CurlCommand|nil -- The curl command
 ---@field grpc GrpcCommand|nil -- The gRPC command
 ---
 ---@field processed boolean -- Indicates if request has been already processed, used by replay()
 ---@field file string -- The file path of the document
 ---@field ft string -- The filetype of the document
+
+---@class CurlCommand
+---@field flags table<string, string> -- flags
+local default_curl_command = {
+  flags = {},
+}
 
 ---@class GrpcCommand
 ---@field address string|nil -- host:port, can be omitted if proto|proto-set is provided
@@ -76,23 +83,37 @@ local default_request = {
 }
 
 local function process_grpc_flags(request, flag, value)
-  local grpc_global_flags, grpc_request_flags = {}, {}
+  local grpc_global_flags = {}
 
   value = flag:match("import%-path") and FS.get_file_path(value) or value
 
   if flag:match("^global%-") then
     grpc_global_flags[flag:sub(8)] = value
   else
-    grpc_request_flags[flag] = value
+    request.grpc = request.grpc or vim.deepcopy(default_grpc_command)
+    request.grpc.flags[flag] = value
   end
 
   DB.update().env.grpc = vim.tbl_extend("force", DB.find_unique("env").grpc or {}, grpc_global_flags)
-  request.grpc = vim.tbl_deep_extend("force", request.grpc or {}, { flags = grpc_request_flags })
+end
+
+local function process_curl_flags(request, flag, value)
+  local global_flags = {}
+
+  if flag:match("^global%-") then
+    global_flags[flag:sub(8)] = value
+  else
+    request.curl = request.curl or vim.deepcopy(default_curl_command)
+    request.curl.flags[flag] = value
+  end
+
+  DB.update().env.curl = vim.tbl_extend("force", DB.find_unique("env").curl or {}, global_flags)
 end
 
 ---@param request Request
 local function parse_metadata(request)
   for _, metadata in ipairs(request.metadata) do
+    _ = metadata.name:find("^curl%-") and process_curl_flags(request, metadata.name:sub(6), metadata.value)
     _ = metadata.name:find("^grpc%-") and process_grpc_flags(request, metadata.name:sub(6), metadata.value)
   end
 end
@@ -171,6 +192,8 @@ local process_variables = function(request, document_variables, silent)
   request.body_computed = StringVariablesParser.parse(request.body_computed or request.body, unpack(params))
 
   request.environment = vim.tbl_extend("force", env, document_variables)
+
+  return env
 end
 
 local function get_file_with_replaced_variables(path, request)
@@ -224,19 +247,30 @@ local function set_variables(request, document_variables)
   -- INFO: if has_pre_request_script: silently replace the variables,
   -- otherwise warn the user for non existing variables
   local has_pre_request_scripts = (#request.scripts.pre_request.inline + #request.scripts.pre_request.files) > 0
-  process_variables(request, document_variables, has_pre_request_scripts)
+  return process_variables(request, document_variables, has_pre_request_scripts)
 end
 
-local function set_headers(request)
+local function set_headers(request, document_variables, env)
   request.headers_display = vim.deepcopy(request.headers)
 
   -- Merge headers from the $shared environment if it does not exist in the request
   -- this ensures that you can always override the headers in the request
-  local default_headers = (DB.find_unique("http_client_env_shared") or {})["$default_headers"]
+  local default_headers = (DB.find_unique("http_client_env_shared") or {})["$default_headers"] or {}
 
-  vim.iter(default_headers or {}):each(function(name, value)
+  local cur_env = vim.g.kulala_selected_env or CONFIG.get().default_env
+  local default_headers_env = vim.tbl_get(DB.find_unique("http_client_env") or {}, cur_env, "$default_headers") or {}
+
+  default_headers = vim.tbl_extend("force", default_headers, default_headers_env)
+
+  vim.iter(default_headers):each(function(name, value)
     name = PARSER_UTILS.get_header(request.headers, name) or name
-    request.headers[name] = request.headers[name] or value
+    value = StringVariablesParser.parse(value, document_variables, env)
+
+    if name == "Host" then
+      request.url = (request.url == "" or request.url:match("^/")) and (value .. request.url) or request.url
+    else
+      request.headers[name] = request.headers[name] or StringVariablesParser.parse(value, document_variables, env)
+    end
   end)
 end
 
@@ -448,7 +482,7 @@ local function build_grpc_command(request)
     table.insert(request.cmd, request.body_computed)
   end
 
-  local flags = vim.tbl_extend("force", DB.find_unique("env").grpc or {}, request.grpc.flags or {})
+  local flags = vim.tbl_extend("force", DB.find_unique("env").grpc or {}, request.grpc and request.grpc.flags or {})
   vim.iter(flags):each(function(flag, value)
     table.insert(request.cmd, "-" .. flag)
     _ = (value and #value > 1) and table.insert(request.cmd, value)
@@ -477,6 +511,13 @@ local function build_curl_command(request)
   _ = request.http_version and table.insert(request.cmd, "--http" .. request.http_version)
 
   toggle_chunked_mode(request)
+
+  local flags = vim.tbl_extend("force", DB.find_unique("env").curl or {}, request.curl and request.curl.flags or {})
+  vim.iter(flags):each(function(flag, value)
+    local prefix = #flag > 1 and "--" or "-"
+    table.insert(request.cmd, prefix .. flag)
+    _ = (value and #value > 1) and table.insert(request.cmd, value)
+  end)
 
   process_auth_headers(request)
   process_protocol(request)
@@ -507,7 +548,7 @@ function M.get_basic_request_data(requests, document_request, line_nr)
   request.url_raw = document_request.url
   request.body_raw = document_request.body
 
-  utils.remove_keys(request, { "name", "body", "variables", "start_line", "end_line" })
+  Table.remove_keys(request, { "name", "body", "variables", "start_line", "end_line" })
 
   return request
 end
@@ -536,8 +577,8 @@ M.parse = function(requests, document_variables, document_request)
   if not request then return end
 
   if not request.processed then
-    set_variables(request, document_variables)
-    set_headers(request)
+    local env = set_variables(request, document_variables)
+    set_headers(request, document_variables, env)
     process_graphql(request)
   end
 

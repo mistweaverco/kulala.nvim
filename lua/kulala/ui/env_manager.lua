@@ -2,6 +2,7 @@ local has_telescope = pcall(require, "telescope")
 local has_snacks, snacks_picker = pcall(require, "snacks.picker")
 
 local DB = require("kulala.db")
+local Fs = require("kulala.utils.fs")
 local Logger = require("kulala.logger")
 
 local M = {}
@@ -15,6 +16,11 @@ local function get_env()
   end
 
   return envs
+end
+
+local function get_env_file()
+  local file = "http-client.env.json"
+  return Fs.find_file_in_parent_dirs(file)
 end
 
 local function select_env(env)
@@ -34,6 +40,7 @@ local open_snacks = function()
       label = name,
       data = env_data,
       content = vim.inspect(env_data),
+      file = get_env_file() or "",
     })
     return acc
   end)
