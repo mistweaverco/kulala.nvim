@@ -47,6 +47,7 @@ GLOBAL AND FT KEYMAPS
       ["Jump to previous request"] = { "<leader>Rp", function() require("kulala").jump_prev() end, ft = { "http", "rest" }, },
     
       ["Select environment"] = { "<leader>Re", function() require("kulala").set_selected_env() end, ft = { "http", "rest" }, },
+      ["Manage Auth Config"] = { "<leader>Ru", function() require("lua.kulala.ui.auth_manager").open_auth_config() end, ft = { "http", "rest" }, },
       ["Download GraphQL schema"] = { "<leader>Rg", function() require("kulala").download_graphql_schema() end, ft = { "http", "rest" }, },
     
       ["Clear globals"] = { "<leader>Rx", function() require("kulala").scripts_clear_global() end, ft = { "http", "rest" },
@@ -66,6 +67,9 @@ KULALA UI KEYMAPS
       ["Show stats"] = { "S", function() require("kulala.ui").show_stats() end, },
       ["Show report"] = { "R", function() require("kulala.ui").show_report() end, },
     
+      ["Send WS message"] = { "<S-CR>", function() require("kulala.cmd.websocket").send() end, mode = { "n", "v" }, },
+      ["Close WS connection"] = { "<C-c>", function() require("kulala.cmd.websocket").close() end, },
+    
       ["Next response"] = { "]", function() require("kulala.ui").show_next() end, },
       ["Previous response"] = { "[", function() require("kulala.ui").show_previous() end, },
       ["Jump to response"] = { "<CR>", function() require("kulala.ui").jump_to_response() end, },
@@ -73,6 +77,7 @@ KULALA UI KEYMAPS
       ["Clear responses history"] = { "X", function() require("kulala.ui").clear_responses_history() end, },
     
       ["Show help"] = { "?", function() require("kulala.ui").show_help() end, },
+      ["Show news"] = { "g?", function() require("kulala.ui").show_news() end, },
       ["Close"] = { "q", function() require("kulala.ui").close_kulala_buffer() end, },
 <
 

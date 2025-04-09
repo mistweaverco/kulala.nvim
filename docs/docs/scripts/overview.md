@@ -1,11 +1,11 @@
 # Scripts overview
 
 You can use scripts to automate tasks in the editor.
-Scripts are written in JavaScript and executed via `node`.
+Scripts can be either written in `Lua` or in `JavaScript` and executed via `node`.
 
 :::warning
 
-[Node.js](https://nodejs.org) must be installed on your system to run scripts.
+[Node.js](https://nodejs.org) must be installed on your system to run `Javascript` scripts.
 
 :::
 
@@ -23,8 +23,10 @@ Given the following folder structure:
 ├── http
 │   └── example.http
 │   └── example.js
+│   └── example.lua
 └── scripts
     └── my-script.js
+    └── my-script.lua
 ```
 
 The current working directory for `my-script.js` is the `scripts` directory,
@@ -33,6 +35,10 @@ whereas the current working directory for `example.js` is the `http` directory.
 All inline scripts are executed in the
 current working directory of the HTTP file,
 which is the `http` directory in this case.
+
+### Lua scripts
+
+Please read [Lua scripting](./lua-scripts) for more information.
 
 ### Using node modules
 

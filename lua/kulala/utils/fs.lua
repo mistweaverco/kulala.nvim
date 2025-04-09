@@ -268,11 +268,11 @@ M.delete_files_in_directory = function(dir)
 end
 
 M.get_request_scripts_variables = function()
-  local dir = M.get_request_scripts_dir()
+  return M.read_json(M.get_request_scripts_variables_file_path())
+end
 
-  if M.file_exists(dir .. "/request_variables.json") then
-    return vim.fn.json_decode(M.read_file(M.join_paths(dir, "request_variables.json")))
-  end
+M.get_request_scripts_variables_file_path = function()
+  return M.join_paths(M.get_request_scripts_dir(), "request_variables.json")
 end
 
 M.get_global_scripts_variables_file_path = function()
@@ -280,8 +280,7 @@ M.get_global_scripts_variables_file_path = function()
 end
 
 M.get_global_scripts_variables = function()
-  local fp = M.get_global_scripts_variables_file_path()
-  if M.file_exists(fp) then return vim.fn.json_decode(M.read_file(fp)) end
+  return M.read_json(M.get_global_scripts_variables_file_path())
 end
 
 -- Check if a command is available

@@ -20,9 +20,11 @@ local trigger_chars = { "@", "#", "-", ":", "{", "$", ">", "<", ".", "(", '"' }
 ---@type SourceTable
 local snippets = {
   { ">>", "> ", "Redirect output to file" },
-  { ">>!", ">>! ", "Redirect output to file ovewriting" },
+  { ">>!", ">! ", "Redirect output to file ovewriting" },
   { "< {% %}", " {%\n\t${0}\n%}\n", "Pre-request script" },
   { "> {% %}", " {%\n\t${0}\n%}\n", "Post-request script" },
+  { "< {% %}", " {%\n\t-- lua\n${0}\n%}\n", "Pre-request lua script" },
+  { "> {% %}", " {%\n\t-- lua\n${0}\n%}\n", "Post-request lua script" },
 }
 
 ---@type SourceTable

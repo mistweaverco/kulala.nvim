@@ -57,4 +57,3 @@ end
 
 io.open(toc_path, "w"):write(template)
 sidebars:close()
-os.remove(toc_path)

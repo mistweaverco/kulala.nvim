@@ -5,6 +5,7 @@ local PARSER_UTILS = require("kulala.parser.utils")
 local Table = require("kulala.utils.table")
 
 local M = {}
+
 ---@class DocumentRequest
 ---@field metadata table<{name: string, value: string}>
 ---@field variables DocumentVariables

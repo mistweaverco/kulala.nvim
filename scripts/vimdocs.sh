@@ -11,6 +11,7 @@ DEDUP_SUBHEADINGS=true
 TREESITTER=true
 
 PRE_BUILD_TOC="lua $PANDOC_DIR/build-toc.lua"
+TOC_FILE="./docs/docs/index.md"
 CMD="$PANDOC_DIR/panvimdoc.sh --vim-version \"$VIM_VERSION\" --toc $TOC --description \"$DESCRIPTION\" --dedup-subheadings $DEDUP_SUBHEADINGS --treesitter $TREESITTER --scripts-dir $PANDOC_DIR"
 
 PRE_CODE_BLOCKS="lua $PANDOC_DIR/normalize-code-blocks.lua"
@@ -50,6 +51,7 @@ else
   process_files . 1 "README.md"
   process_files ./docs/docs 10 "*.md"
   process_files ./docs/docs 10 "*.mdx" --include-imports
+  rm -f "$TOC_FILE"
 fi
 
 nvim --headless -c "helptags doc" -c "quit"

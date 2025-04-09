@@ -8,9 +8,13 @@ local oauth = require("kulala.cmd.oauth")
 local http_client_path = h.expand_path("requests/http-client.env.json")
 local http_client_private_path = h.expand_path("requests/http-client.private.env.json")
 
-local function restore_http_client_files()
-  fs.write_json(http_client_path, fs.read_json(h.expand_path("requests/http-client.env.default.json")))
-  fs.write_json(http_client_private_path, fs.read_json(h.expand_path("requests/http-client.private.env.default.json")))
+local function restore_http_client_files(format)
+  fs.write_json(http_client_path, fs.read_json(h.expand_path("requests/http-client.env.default.json")), format)
+  fs.write_json(
+    http_client_private_path,
+    fs.read_json(h.expand_path("requests/http-client.private.env.default.json")),
+    format
+  )
 end
 
 local function get_auth_header()
@@ -121,6 +125,10 @@ describe("oauth", function()
     oauth.tcp_server:revert()
 
     restore_http_client_files()
+  end)
+
+  teardown(function()
+    restore_http_client_files(true)
   end)
 
   it("returns stored access token if it is not expired", function()
@@ -261,10 +269,7 @@ describe("oauth", function()
         url = "https://token.url",
       })
 
-      assert.has_properties(get_env(), {
-        access_token = "new_access_token",
-        acquired_at = os.time(),
-      })
+      assert.has_properties(get_env(), { access_token = "new_access_token" })
       assert.near(os.time(), get_env().acquired_at, 1)
 
       assert.is.same("new_access_token", get_auth_header())

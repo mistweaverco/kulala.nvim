@@ -27,14 +27,14 @@ local function set_legacy_options()
 end
 
 local set_autocomands = function()
-  _ = M.options.ui.autocomplete
-    and vim.api.nvim_create_autocmd("FileType", {
-      group = vim.api.nvim_create_augroup("Kulala filetype setup", { clear = true }),
-      pattern = { "http", "rest" },
-      callback = function(ev)
-        require("kulala.utils.complete").start(ev.buf)
-      end,
-    })
+  vim.api.nvim_create_autocmd("FileType", {
+    group = vim.api.nvim_create_augroup("Kulala filetype setup", { clear = true }),
+    pattern = { "http", "rest" },
+    callback = function(ev)
+      _ = M.options.ui.autocomplete and require("kulala.utils.complete").start(ev.buf)
+      _ = M.options.ui.lua_syntax_hl and require("kulala.ui.treesitter").set()
+    end,
+  })
 end
 
 M.setup = function(config)

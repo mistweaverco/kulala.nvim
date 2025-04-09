@@ -33,7 +33,7 @@ It allows you to make HTTP requests from within Neovim.
   - Variables: Environment, Document, Request, Dynamic, Prompt, `http-profile.env` files
   - Importing and running requests from external `*.http` files
   - Importing and saving request/response data to/from external files
-  - JS scripts: Pre-request, Post-request, Conditional, Inline, External
+  - JS and Lua scripting: Pre-request, Post-request, Conditional, Inline, External
   - Authentication: Basic, Bearer, Digest, NTLM, OAuth2, Negotiate, AWS, SSL
   - Assertions, automated testing and reporting
   - Scratchpad: for making requests

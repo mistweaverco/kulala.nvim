@@ -15,7 +15,7 @@ Table of Contents                 *kulala.custom-curl-flags-table-of-contents*
 USAGE                       *kulala.custom-curl-flags-custom-curl-flags-usage*
 
 - Local flags: `@curl-..` apply for current request only.
-- Global flags: `@curl-global-..` apply for all requests in the buffer. Global settings will persist until the buffer is closed or globals are cleared with `<leaderRx>`.
+- Global flags: `@curl-global-..` apply when running all requests in a buffer.
 
 >http
     # @curl-global-compressed

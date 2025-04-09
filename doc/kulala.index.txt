@@ -56,6 +56,7 @@ USAGE - LEARN ABOUT THE MOST IMPORTANT KULALA.NVIM FEATURES!
 SCRIPTS - LEARN ABOUT THE SCRIPTING CAPABILITIES!
 
 - Overview.txt |kulala.overview.txt|
+- Lua scripts.txt |kulala.lua-scripts.txt|
 - Client reference.txt |kulala.client-reference.txt|
 - Request reference.txt |kulala.request-reference.txt|
 - Response reference.txt |kulala.response-reference.txt|

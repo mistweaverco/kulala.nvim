@@ -9,21 +9,24 @@ M.data = nil
 
 ---@class Response
 ---@field id string
----@field url string
----@field method string
----@field status boolean
----@field code number -- request command code
+---@field name string -- name of the request
+---@field url string -- request url
+---@field method string -- request method
+---@field status boolean -- status of the request
+---@field code number -- request command exit code
 ---@field response_code number -- http response code
----@field duration number
----@field time number
----@field body string
----@field headers string
----@field errors string
----@field stats table|string
+---@field duration number -- duration of the request
+---@field time number -- time of the request
+---@field body string -- body of the request
+---@field json table -- json response
+---@field headers string -- headers of the request
+---@field errors string -- errors of the request
+---@field stats table|string -- stats of the request
 ---@field script_pre_output string
 ---@field script_post_output string
 ---@field assert_output table
 ---@field assert_status boolean
+---@field file string -- path of the file of the request
 ---@field buf number
 ---@field buf_name string
 ---@field line number

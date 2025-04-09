@@ -10,6 +10,7 @@ local INLAY = require("kulala.inlay")
 local INT_PROCESSING = require("kulala.internal_processing")
 local Logger = require("kulala.logger")
 local REQUEST_PARSER = require("kulala.parser.request")
+local Scripts = require("kulala.parser.scripts")
 local UI_utils = require("kulala.ui.utils")
 local WS = require("kulala.cmd.websocket")
 
@@ -97,11 +98,16 @@ local function process_internal(result)
   INT_PROCESSING.redirect_response_body_to_file(result.redirect_response_body_to_files)
 end
 
-local function process_external(result)
-  _ = REQUEST_PARSER.scripts.javascript.run("post_request", result.scripts.post_request)
-    and REQUEST_PARSER.process_variables(result, {}, true)
+local function process_external(request, response)
+  _ = Scripts.run("post_request", request, response) and REQUEST_PARSER.process_variables(request, {}, true)
 
-  return result.environment["__replay_request"] == "true"
+  response.script_pre_output = response.script_pre_output or FS.read_file(GLOBALS.SCRIPT_PRE_OUTPUT_FILE) or ""
+  response.script_post_output = response.script_post_output or FS.read_file(GLOBALS.SCRIPT_POST_OUTPUT_FILE) or ""
+  response.assert_output = response.assert_output or FS.read_json(GLOBALS.ASSERT_OUTPUT_FILE) or {}
+  response.assert_status = response.assert_output.status
+  response.status = response.status and response.assert_status ~= false
+
+  return request.environment["__replay_request"] == "true"
 end
 
 local function process_api()
@@ -124,8 +130,7 @@ local function set_request_stats(response)
 
   response.stats = _ and stats or response.stats
   response.response_code = _ and tonumber(stats.response_code) or response.code
-  response.assert_status = response.assert_output.status
-  response.status = response.code == 0 and response.response_code < 400 and response.assert_status ~= false
+  response.status = response.code == 0 and response.response_code < 400
 
   return response
 end
@@ -142,6 +147,7 @@ local function save_response(request_status, parsed_request)
 
   local response = {
     id = id,
+    name = parsed_request.name or "",
     url = parsed_request.url or "",
     method = parsed_request.method or "",
     code = request_status.code or -1,
@@ -150,17 +156,19 @@ local function save_response(request_status, parsed_request)
     time = vim.fn.localtime(),
     duration = request_status.duration or 0,
     body = FS.read_file(GLOBALS.BODY_FILE) or "",
+    json = {},
     headers = FS.read_file(GLOBALS.HEADERS_FILE) or "",
     errors = request_status.errors or "",
     stats = request_status.stdout or "",
-    script_pre_output = FS.read_file(GLOBALS.SCRIPT_PRE_OUTPUT_FILE) or "",
-    script_post_output = FS.read_file(GLOBALS.SCRIPT_POST_OUTPUT_FILE) or "",
-    assert_output = FS.read_json(GLOBALS.ASSERT_OUTPUT_FILE) or {},
     assert_status = nil,
+    file = parsed_request.file or "",
     buf_name = vim.fn.bufname(buf),
     line = line,
     buf = buf,
   }
+
+  local status, result = pcall(vim.json.decode, response.body, { object = true, array = true })
+  response.json = status and result or {}
 
   response = modify_grpc_response(response)
   response = set_request_stats(response)
@@ -169,17 +177,19 @@ local function save_response(request_status, parsed_request)
 
   table.insert(responses, response)
 
-  return response.status, response
+  return response
 end
 
 local function process_response(request_status, parsed_request, callback)
-  local response_status
   local db = DB.global_update()
+  local response
 
   process_metadata(parsed_request)
   process_internal(parsed_request)
 
-  if process_external(parsed_request) then -- replay request
+  response = save_response(request_status, parsed_request)
+
+  if process_external(parsed_request, response) then -- replay request
     parsed_request.processed = true
     db.requests_total = db.requests_total + 1
 
@@ -188,10 +198,9 @@ local function process_response(request_status, parsed_request, callback)
     end, 1)
   end
 
-  response_status = save_response(request_status, parsed_request)
   process_api()
 
-  return response_status
+  return response.status
 end
 
 local function process_errors(request, request_status, processing_errors)
@@ -272,7 +281,7 @@ local function check_executable(cmd)
 end
 
 local function process_ws_request(request, callback)
-  local _, response = save_response({ code = 0 }, request)
+  local response = save_response({ code = 0 }, request)
   local status = WS.connect(request, response, callback)
 
   response.code = status and 0 or -1

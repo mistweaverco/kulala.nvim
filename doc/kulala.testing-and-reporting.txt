@@ -13,8 +13,12 @@ Table of Contents             *kulala.testing-and-reporting-table-of-contents*
 - You can effectively use Kulala to produce, run and report tests for your APIs, using HTTP spec files and built-in assert functions.
 
 
-
 USAGE               *kulala.testing-and-reporting-testing-and-reporting-usage*
+
+Test and assertion cases can be written in either `Lua` or `Javascript`
+scripts. The API is the same except for some snake case vs camelCase
+differences. Check the |kulala.lua-scripts.txt| for more details.
+
 
 
 TESTING HTTP REQUESTS WITH ASSERT FUNCTIONS
@@ -31,7 +35,7 @@ suite and individual test cases within it.
 
 
 
->ts
+>javascript
       assert(value, message?) // Checks if the value is truthy.
       assert.true(value, message?) // Checks if the value is true.
       assert.false(value, message?) // Checks if the value is false.
