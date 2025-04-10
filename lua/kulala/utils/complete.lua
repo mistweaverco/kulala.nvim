@@ -1,6 +1,9 @@
 local Dynamic_variables = require("kulala.parser.dynamic_vars")
 local Env = require("kulala.parser.env")
+local Inspect = require("kulala.parser.inspect")
+local Kulala = require("kulala")
 local Oauth = require("kulala.ui.auth_manager")
+local Ui = require("kulala.ui")
 
 local Parser = require("kulala.parser.document")
 
@@ -60,53 +63,209 @@ local schemes = {
 
 ---@type SourceTable
 local header_names = {
-  { "Accept", "Accept: " },
-  { "Accept-Charset", "Accept-Charset: " },
-  { "Accept-Encoding", "Accept-Encoding: " },
-  { "Accept-Language", "Accept-Language: " },
-  { "Accept-Ranges", "Accept-Ranges: " },
-  { "Authorization", "Authorization: " },
-  { "Cache-Control", "Cache-Control: " },
-  { "Connection", "Connection: " },
-  { "Content-Encoding", "Content-Encoding: " },
-  { "Content-Length", "Content-Length: " },
-  { "Content-Type", "Content-Type: " },
-  { "Cookie", "Cookie: " },
-  { "Date", "Date: " },
-  { "Expect", "Expect: " },
-  { "Forwarded", "Forwarded: " },
-  { "Host", "Host: " },
-  { "If-Match", "If-Match: " },
-  { "If-Modified-Since", "If-Modified-Since: " },
-  { "If-None-Match", "If-None-Match: " },
-  { "If-Unmodified-Since", "If-Unmodified-Since: " },
-  { "Max-Forwards", "Max-Forwards: " },
-  { "Origin", "Origin: " },
-  { "Pragma", "Pragma: " },
-  { "Proxy-Authorization", "Proxy-Authorization: " },
-  { "Range", "Range: " },
-  { "Referer", "Referer: " },
-  { "TE", "TE: " },
-  { "Trailer", "Trailer: " },
-  { "Transfer-Encoding", "Transfer-Encoding: " },
-  { "Upgrade", "Upgrade: " },
-  { "User-Agent", "User-Agent: " },
-  { "Via", "Via: " },
-  { "Warning", "Warning: " },
-  { "X-Requested-With", "X-Requested-With: " },
-  { "X-Forwarded-For", "X-Forwarded-For: " },
-  { "X-Forwarded-Host", "X-Forwarded-Host: " },
-  { "X-Forwarded-Proto", "X-Forwarded-Proto: " },
-  { "X-Real-IP", "X-Real-IP: " },
-  { "X-Frame-Options", "X-Frame-Options: " },
-  { "X-XSS-Protection", "X-XSS-Protection: " },
-  { "X-Content-Type-Options", "X-Content-Type-Options: " },
-  { "X-Download-Options", "X-Download-Options: " },
-  { "X-Permitted-Cross-Domain-Policies", "X-Permitted-Cross-Domain-Policies: " },
-  { "X-WebKit-CSP", "X-WebKit-CSP: " },
-  { "X-DNS-Prefetch-Control", "X-DNS-Prefetch-Control: " },
-  { "X-Content-Security-Policy", "X-Content-Security-Policy: " },
-  { "X-Request-Type", "X-Request-Type: " },
+  { "A-IM", "A-IM " },
+  { "Accept", "Accept " },
+  { "Accept-Additions", "Accept-Additions " },
+  { "Accept-CH", "Accept-CH " },
+  { "Accept-Datetime", "Accept-Datetime " },
+  { "Accept-Encoding", "Accept-Encoding " },
+  { "Accept-Features", "Accept-Features " },
+  { "Accept-Language", "Accept-Language " },
+  { "Accept-Patch", "Accept-Patch " },
+  { "Accept-Post", "Accept-Post " },
+  { "Accept-Ranges", "Accept-Ranges " },
+  { "Accept-Signature", "Accept-Signature " },
+  { "Access-Control-Allow-Credentials", "Access-Control-Allow-Credentials " },
+  { "Access-Control-Allow-Headers", "Access-Control-Allow-Headers " },
+  { "Access-Control-Allow-Methods", "Access-Control-Allow-Methods " },
+  { "Access-Control-Allow-Origin", "Access-Control-Allow-Origin " },
+  { "Access-Control-Expose-Headers", "Access-Control-Expose-Headers " },
+  { "Access-Control-Max-Age", "Access-Control-Max-Age " },
+  { "Access-Control-Request-Headers", "Access-Control-Request-Headers " },
+  { "Access-Control-Request-Method", "Access-Control-Request-Method " },
+  { "Age", "Age " },
+  { "Allow", "Allow " },
+  { "ALPN", "ALPN " },
+  { "Alt-Svc", "Alt-Svc " },
+  { "Alt-Used", "Alt-Used " },
+  { "Alternates", "Alternates " },
+  { "Apply-To-Redirect-Ref", "Apply-To-Redirect-Ref " },
+  { "Authentication-Control", "Authentication-Control " },
+  { "Authentication-Info", "Authentication-Info " },
+  { "Authorization", "Authorization " },
+  { "Available-Dictionary", "Available-Dictionary " },
+  { "Cache-Control", "Cache-Control " },
+  { "Cache-Status", "Cache-Status " },
+  { "Cal-Managed-ID", "Cal-Managed-ID " },
+  { "CalDAV-Timezones", "CalDAV-Timezones " },
+  { "Capsule-Protocol", "Capsule-Protocol " },
+  { "CDN-Cache-Control", "CDN-Cache-Control " },
+  { "CDN-Loop", "CDN-Loop " },
+  { "Cert-Not-After", "Cert-Not-After " },
+  { "Cert-Not-Before", "Cert-Not-Before " },
+  { "Clear-Site-Data", "Clear-Site-Data " },
+  { "Client-Cert", "Client-Cert " },
+  { "Client-Cert-Chain", "Client-Cert-Chain " },
+  { "Close", "Close " },
+  { "Concealed-Auth-Export", "Concealed-Auth-Export " },
+  { "Connection", "Connection " },
+  { "Content-Digest", "Content-Digest " },
+  { "Content-Disposition", "Content-Disposition " },
+  { "Content-Encoding", "Content-Encoding " },
+  { "Content-Language", "Content-Language " },
+  { "Content-Length", "Content-Length " },
+  { "Content-Location", "Content-Location " },
+  { "Content-Range", "Content-Range " },
+  { "Content-Security-Policy", "Content-Security-Policy " },
+  { "Content-Security-Policy-Report-Only", "Content-Security-Policy-Report-Only " },
+  { "Content-Type", "Content-Type " },
+  { "Cookie", "Cookie " },
+  { "Cross-Origin-Embedder-Policy", "Cross-Origin-Embedder-Policy " },
+  { "Cross-Origin-Embedder-Policy-Report-Only", "Cross-Origin-Embedder-Policy-Report-Only " },
+  { "Cross-Origin-Opener-Policy", "Cross-Origin-Opener-Policy " },
+  { "Cross-Origin-Opener-Policy-Report-Only", "Cross-Origin-Opener-Policy-Report-Only " },
+  { "Cross-Origin-Resource-Policy", "Cross-Origin-Resource-Policy " },
+  { "DASL", "DASL " },
+  { "Date", "Date " },
+  { "DAV", "DAV " },
+  { "Delta-Base", "Delta-Base " },
+  { "Deprecation", "Deprecation " },
+  { "Depth", "Depth " },
+  { "Destination", "Destination " },
+  { "Detached-JWS", "Detached-JWS " },
+  { "Dictionary-ID", "Dictionary-ID " },
+  { "DPoP", "DPoP " },
+  { "DPoP-Nonce", "DPoP-Nonce " },
+  { "Early-Data", "Early-Data " },
+  { "ETag", "ETag " },
+  { "Expect", "Expect " },
+  { "Expires", "Expires " },
+  { "Forwarded", "Forwarded " },
+  { "From", "From " },
+  { "Hobareg", "Hobareg " },
+  { "Host", "Host " },
+  { "If", "If " },
+  { "If-Match", "If-Match " },
+  { "If-Modified-Since", "If-Modified-Since " },
+  { "If-None-Match", "If-None-Match " },
+  { "If-Range", "If-Range " },
+  { "If-Schedule-Tag-Match", "If-Schedule-Tag-Match " },
+  { "If-Unmodified-Since", "If-Unmodified-Since " },
+  { "IM", "IM " },
+  { "Include-Referred-Token-Binding-ID", "Include-Referred-Token-Binding-ID " },
+  { "Keep-Alive", "Keep-Alive " },
+  { "Label", "Label " },
+  { "Last-Event-ID", "Last-Event-ID " },
+  { "Last-Modified", "Last-Modified " },
+  { "Link", "Link " },
+  { "Link-Template", "Link-Template " },
+  { "Location", "Location " },
+  { "Lock-Token", "Lock-Token " },
+  { "Max-Forwards", "Max-Forwards " },
+  { "Memento-Datetime", "Memento-Datetime " },
+  { "Meter", "Meter " },
+  { "MIME-Version", "MIME-Version " },
+  { "Negotiate", "Negotiate " },
+  { "NEL", "NEL " },
+  { "OData-EntityId", "OData-EntityId " },
+  { "OData-Isolation", "OData-Isolation " },
+  { "OData-MaxVersion", "OData-MaxVersion " },
+  { "OData-Version", "OData-Version " },
+  { "Optional-WWW-Authenticate", "Optional-WWW-Authenticate " },
+  { "Ordering-Type", "Ordering-Type " },
+  { "Origin", "Origin " },
+  { "Origin-Agent-Cluster", "Origin-Agent-Cluster " },
+  { "OSCORE", "OSCORE " },
+  { "OSLC-Core-Version", "OSLC-Core-Version " },
+  { "Overwrite", "Overwrite " },
+  { "Ping-From", "Ping-From " },
+  { "Ping-To", "Ping-To " },
+  { "Position", "Position " },
+  { "Prefer", "Prefer " },
+  { "Preference-Applied", "Preference-Applied " },
+  { "Priority", "Priority " },
+  { "Proxy-Authenticate", "Proxy-Authenticate " },
+  { "Proxy-Authentication-Info", "Proxy-Authentication-Info " },
+  { "Proxy-Authorization", "Proxy-Authorization " },
+  { "Proxy-Status", "Proxy-Status " },
+  { "Public-Key-Pins", "Public-Key-Pins " },
+  { "Public-Key-Pins-Report-Only", "Public-Key-Pins-Report-Only " },
+  { "Range", "Range " },
+  { "Redirect-Ref", "Redirect-Ref " },
+  { "Referer", "Referer " },
+  { "Referrer-Policy", "Referrer-Policy " },
+  { "Refresh", "Refresh " },
+  { "Replay-Nonce", "Replay-Nonce " },
+  { "Repr-Digest", "Repr-Digest " },
+  { "Retry-After", "Retry-After " },
+  { "Schedule-Reply", "Schedule-Reply " },
+  { "Schedule-Tag", "Schedule-Tag " },
+  { "Sec-Fetch-Dest", "Sec-Fetch-Dest " },
+  { "Sec-Fetch-Mode", "Sec-Fetch-Mode " },
+  { "Sec-Fetch-Site", "Sec-Fetch-Site " },
+  { "Sec-Fetch-User", "Sec-Fetch-User " },
+  { "Sec-Purpose", "Sec-Purpose " },
+  { "Sec-Token-Binding", "Sec-Token-Binding " },
+  { "Sec-WebSocket-Accept", "Sec-WebSocket-Accept " },
+  { "Sec-WebSocket-Extensions", "Sec-WebSocket-Extensions " },
+  { "Sec-WebSocket-Key", "Sec-WebSocket-Key " },
+  { "Sec-WebSocket-Protocol", "Sec-WebSocket-Protocol " },
+  { "Sec-WebSocket-Version", "Sec-WebSocket-Version " },
+  { "Server", "Server " },
+  { "Server-Timing", "Server-Timing " },
+  { "Set-Cookie", "Set-Cookie " },
+  { "Signature", "Signature " },
+  { "Signature-Input", "Signature-Input " },
+  { "SLUG", "SLUG " },
+  { "SoapAction", "SoapAction " },
+  { "Status-URI", "Status-URI " },
+  { "Strict-Transport-Security", "Strict-Transport-Security " },
+  { "Sunset", "Sunset " },
+  { "TCN", "TCN " },
+  { "TE", "TE " },
+  { "Timeout", "Timeout " },
+  { "Topic", "Topic " },
+  { "Traceparent", "Traceparent " },
+  { "Tracestate", "Tracestate " },
+  { "Trailer", "Trailer " },
+  { "Transfer-Encoding", "Transfer-Encoding " },
+  { "TTL", "TTL " },
+  { "Upgrade", "Upgrade " },
+  { "Urgency", "Urgency " },
+  { "Use-As-Dictionary", "Use-As-Dictionary " },
+  { "User-Agent", "User-Agent " },
+  { "Variant-Vary", "Variant-Vary " },
+  { "Vary", "Vary " },
+  { "Via", "Via " },
+  { "Want-Content-Digest", "Want-Content-Digest " },
+  { "Want-Repr-Digest", "Want-Repr-Digest " },
+  { "WWW-Authenticate", "WWW-Authenticate " },
+  { "X-Content-Type-Options", "X-Content-Type-Options " },
+  { "X-Frame-Options", "X-Frame-Options " },
+  { "*", "* " },
+  { "Activate-Storage-Access", "Activate-Storage-Access " },
+  { "AMP-Cache-Transform", "AMP-Cache-Transform " },
+  { "CMCD-Object", "CMCD-Object " },
+  { "CMCD-Request", "CMCD-Request " },
+  { "CMCD-Session", "CMCD-Session " },
+  { "CMCD-Status", "CMCD-Status " },
+  { "CMSD-Dynamic", "CMSD-Dynamic " },
+  { "CMSD-Static", "CMSD-Static " },
+  { "Configuration-Context", "Configuration-Context " },
+  { "CTA-Common-Access-Token", "CTA-Common-Access-Token " },
+  { "EDIINT-Features", "EDIINT-Features " },
+  { "Isolation", "Isolation " },
+  { "Permissions-Policy", "Permissions-Policy " },
+  { "Repeatability-Client-ID", "Repeatability-Client-ID " },
+  { "Repeatability-First-Sent", "Repeatability-First-Sent " },
+  { "Repeatability-Request-ID", "Repeatability-Request-ID " },
+  { "Repeatability-Result", "Repeatability-Result " },
+  { "Reporting-Endpoints", "Reporting-Endpoints " },
+  { "Sec-Fetch-Storage-Access", "Sec-Fetch-Storage-Access " },
+  { "Sec-GPC", "Sec-GPC " },
+  { "Surrogate-Capability", "Surrogate-Capability " },
+  { "Surrogate-Control", "Surrogate-Control " },
+  { "Timing-Allow-Origin", "Timing-Allow-Origin " },
 }
 
 ---@type SourceTable
@@ -315,6 +474,7 @@ local cache = {
   env_variables = nil,
   auth_configs = nil,
   scripts = nil,
+  symbols = nil,
   is_fresh = function(self)
     return self.buffer == vim.fn.bufnr() and self.lnum == vim.fn.line(".")
   end,
@@ -537,25 +697,152 @@ local get_source = function(params)
   return results
 end
 
+local code_actions = {
+  { title = "Copy as cURL", command = "copy_as_curl", fn = Kulala.copy },
+  { title = "Paste from curl", command = "paste_from_curl", fn = Kulala.from_curl },
+  { title = "Inspect current request", command = "inspect_current_request", fn = Kulala.inspect },
+  {
+    title = "Select environment",
+    command = "select_environment",
+    fn = function()
+      Kulala.set_selected_env()
+    end,
+  },
+  {
+    title = "Manage Auth Config",
+    command = "manage_auth_config",
+    fn = require("kulala.ui.auth_manager").open_auth_config,
+  },
+  { title = "Replay last request", command = "replay_last request", fn = Kulala.replay },
+  { title = "Download GraphQL schema", command = "download_graphql_schema", fn = Kulala.download_graphql_schema },
+  {
+    title = "Clear globals",
+    command = "clear_globals",
+    fn = function()
+      Kulala.scripts_clear_global()
+    end,
+  },
+  { title = "Clear cached files", command = "clear_cached_files", fn = Kulala.clear_cached_files },
+  { title = "Send request", command = "run_request", fn = Ui.open },
+  {
+    title = "Send all requests",
+    command = "run_request_all",
+    fn = function()
+      Ui.open_all()
+    end,
+  },
+}
+
+local function get_symbol(name, kind, lnum, cnum)
+  if not name or vim.trim(name) == "" then return end
+
+  lnum = lnum or 0
+  cnum = cnum or 0
+
+  return {
+    name = name,
+    kind = kind,
+    range = {
+      start = { line = lnum, character = cnum },
+      ["end"] = { line = lnum + 1, character = cnum },
+    },
+    selectionRange = {
+      start = { line = lnum, character = cnum },
+      ["end"] = { line = lnum + 1, character = cnum },
+    },
+    children = {},
+  }
+end
+
+local function compact(str)
+  return str:gsub("%s+", " "):gsub("^%s+", ""):gsub("%s+$", ""):gsub('([{:,"])%s', "%1"):gsub("\n", "")
+end
+
+local function get_symbols(_)
+  local kind = vim.lsp.protocol.SymbolKind
+  local symbols, symbol = {}, {}
+
+  if cache:is_fresh() and cache.symbols then return cache.symbols end
+
+  get_document()
+
+  vim.iter(cache.requests):each(function(request)
+    local cnum = 0
+    local line = request.show_icon_line_number - 2
+    symbol = get_symbol(request.name, kind.Function, line) or {}
+
+    if #request.scripts.pre_request.inline + #request.scripts.pre_request.files > 0 then
+      table.insert(symbol.children, get_symbol("|< Pre-request script", kind.Module, line - 2))
+    end
+
+    vim.iter(request.metadata):each(function(meta)
+      cnum = cnum + 1
+      local meta = meta.name .. (meta.value and " " .. meta.value or "")
+      table.insert(symbol.children, get_symbol(meta, kind.TypeParameter, line - 1, cnum))
+    end)
+
+    vim.list_extend(symbol.children, {
+      get_symbol(request.method, kind.Object, line, 1),
+      get_symbol(request.url, kind.Object, line, 2),
+      get_symbol(request.host, kind.Key, line, 3),
+    })
+
+    cnum = 0
+    vim.iter(request.headers):each(function(k, v)
+      table.insert(symbol.children, get_symbol(k .. ":" .. v, kind.Boolean, line + 1, cnum))
+      cnum = cnum + 1
+    end)
+
+    vim.list_extend(symbol.children, { get_symbol(compact(request.body), kind.String, line + 2) })
+
+    if #request.scripts.post_request.inline + #request.scripts.post_request.files > 0 then
+      table.insert(symbol.children, get_symbol("|< Post-request script", kind.Module, line + 3))
+    end
+
+    table.insert(symbols, symbol)
+  end)
+
+  cache.symbols = symbols
+
+  return symbols
+end
+
+local function get_hover(_)
+  return { contents = { language = "http", value = table.concat(Inspect.get_contents(), "\n") } }
+end
+
 local function new_server()
   local function server(dispatchers)
     local closing = false
     local srv = {}
 
     function srv.request(method, params, handler)
+      local status, error = xpcall(function()
+        srv.request_p(method, params, handler)
+      end, debug.traceback)
+
+      if not status then require("kulala.logger").error("Errors in Kulala LSP:\n" .. (error or ""), 2) end
+      return true
+    end
+
+    function srv.request_p(method, params, handler)
       if method == "initialize" then
         handler(nil, {
-          capabilities = { completionProvider = { triggerCharacters = trigger_chars } },
+          capabilities = {
+            codeActionProvider = true,
+            documentSymbolProvider = true,
+            hoverProvider = true,
+            completionProvider = { triggerCharacters = trigger_chars },
+          },
         })
       elseif method == "textDocument/completion" then
-        local status, error = xpcall(function()
-          local source = get_source(params)
-          handler(nil, source)
-        end, debug.traceback)
-
-        if not status then
-          require("kulala.logger").error("Errors in autocompletion:\n" .. vim.split(error or "", "\n"), 2)
-        end
+        handler(nil, get_source(params))
+      elseif method == "textDocument/documentSymbol" then
+        handler(nil, get_symbols(params))
+      elseif method == "textDocument/hover" then
+        handler(nil, get_hover(params))
+      elseif method == "textDocument/codeAction" then
+        handler(nil, code_actions)
       elseif method == "shutdown" then
         handler(nil, nil)
       end
@@ -611,6 +898,10 @@ function M.start_mock_lsp(root_dir)
     root_dir = root_dir,
     on_init = function(_client) end,
     on_exit = function(_code, _signal) end,
+    commands = vim.iter(code_actions):fold({}, function(acc, action)
+      acc[action.command] = action.fn
+      return acc
+    end),
   }, dispatchers)
   return client_id
 end
