@@ -43,10 +43,10 @@ describe("UI", function()
       end,
     })
 
-    wait_for_requests = function(requests_no)
+    wait_for_requests = function(requests_no, predicate)
       system:wait(3000, function()
         ui_buf = vim.fn.bufnr(kulala_name)
-        return curl.requests_no >= requests_no and ui_buf > 0
+        return curl.requests_no >= requests_no and ui_buf > 0 and (predicate == nil or predicate())
       end)
     end
 
@@ -604,7 +604,7 @@ describe("UI", function()
         Cookie: cookie_key=value
 
         {
-          "foo": "'bar'"
+          "foo": "bar"
         }
       ]]):to_table(true),
         "test.rest"
@@ -612,11 +612,13 @@ describe("UI", function()
 
       kulala.copy()
 
-      expected = ([[curl -X 'POST' -v -s -H 'Content-Type:application/json' --data-binary '{"foo": "'\''bar'\''"}' --cookie 'cookie_key=value' -A 'kulala.nvim/%s' 'http://localhost:3001/request_1']]):format(
-        GLOBALS.VERSION
-      )
+      expected = vim.fn.has("win32") == 1
+          and [[curl -X "POST" -v -s -H "Content-Type:application/json" --data-binary "{""foo"": ""bar""}" --cookie "cookie_key=value" -A "kulala.nvim/%s" "http://localhost:3001/request_1"]]
+        or [[curl -X 'POST' -v -s -H 'Content-Type:application/json' --data-binary '{"foo": "bar"}' --cookie 'cookie_key=value' -A 'kulala.nvim/%s' 'http://localhost:3001/request_1']]
+
+      expected = (expected):format(GLOBALS.VERSION)
       result = vim.fn.getreg("+")
-      assert.has_string(expected, result)
+      assert.is.same(expected, result)
     end)
 
     it("it shows help hint and window", function()

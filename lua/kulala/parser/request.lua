@@ -495,11 +495,11 @@ end
 local function build_curl_command(request)
   table.insert(request.cmd, CONFIG.get().curl_path)
   table.insert(request.cmd, "-D")
-  table.insert(request.cmd, GLOBALS.HEADERS_FILE)
+  table.insert(request.cmd, FS.normalize_path(GLOBALS.HEADERS_FILE))
   table.insert(request.cmd, "-o")
-  table.insert(request.cmd, GLOBALS.BODY_FILE)
+  table.insert(request.cmd, FS.normalize_path(GLOBALS.BODY_FILE))
   table.insert(request.cmd, "-w")
-  table.insert(request.cmd, "@" .. CURL_FORMAT_FILE)
+  table.insert(request.cmd, "@" .. FS.normalize_path(CURL_FORMAT_FILE))
 
   _ = request.request_target and vim.list_extend(request.cmd, { "--request-target", request.request_target })
 

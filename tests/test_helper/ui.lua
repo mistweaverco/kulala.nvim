@@ -1,4 +1,5 @@
 GLOBALS = require("kulala.globals")
+local Fs = require("kulala.utils.fs")
 
 ---@diagnostic disable: duplicate-set-field
 local api = vim.api
@@ -95,19 +96,19 @@ h.has_string = function(str, pattern)
 end
 
 h.expand_path = function(path)
-  if vim.fn.filereadable(path) == 0 then
-    local spec_path
+  if vim.fn.filereadable(path) == 1 then return path end
 
-    for i = 1, 5 do
-      spec_path = debug.getinfo(i).short_src
-      if spec_path and spec_path:find("_spec%.lua") then break end
-    end
+  local spec_path
 
-    spec_path = vim.fn.fnamemodify(spec_path, ":h")
-    path = vim.uv.cwd() .. "/" .. spec_path .. "/" .. path
+  for i = 1, 5 do
+    spec_path = debug.getinfo(i).short_src
+    if spec_path and spec_path:find("_spec%.lua") then break end
   end
 
-  return path
+  spec_path = vim.fn.fnamemodify(spec_path, ":h")
+  path = vim.fs.joinpath(vim.uv.cwd(), spec_path, path)
+
+  return Fs.normalize_path(path)
 end
 
 ---@param fixture_path string

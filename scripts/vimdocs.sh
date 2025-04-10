@@ -55,4 +55,7 @@ else
   rm -f "$TOC_FILE"
 fi
 
-nvim --headless -c "helptags doc" -c "quit"
+if [[ "${GITHUB_ACTIONS:-false}" != "true" ]]; then
+  echo "Generating help tags..."
+  nvim --headless -c "helptags doc" -c "quit"
+fi

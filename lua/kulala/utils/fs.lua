@@ -32,6 +32,14 @@ end
 ---@type "\\" | "/"
 M.ps = M.get_path_separator()
 
+M.normalize_path = function(path)
+  path = vim.fs.normalize(path)
+  if M.os ~= "windows" then return path end
+
+  path = path:gsub("/", "\\")
+  return path
+end
+
 ---Join paths -- similar to os.path.join in python
 ---@vararg string
 ---@return string
@@ -301,7 +309,7 @@ M.get_plugin_root_dir = function()
 
   if not dir_path then return end
 
-  return dir_path .. ".."
+  return vim.fs.normalize(dir_path .. "..")
 end
 
 ---Gets a directory path for the plugin

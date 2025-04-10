@@ -458,7 +458,8 @@ M.get_document = function(lines, path)
       elseif line:match("^Host:") then
         parse_host(request, line)
         is_request_line = false
-      elseif line:match("^(.+):%s*(.*)$") and not line:match("://") and not line:match(":%d+") then
+      elseif line:match("^([^%[]+):%s*(.*)$") and not line:match("^[^:]+:[/%d]+.+") then
+        -- skip [:] ipv6, ://, scheme, :80 port
         parse_headers(request, line)
         is_request_line = false
       elseif is_request_line then
@@ -472,11 +473,7 @@ M.get_document = function(lines, path)
       request.body_display = vim.trim(request.body_display)
     end
 
-    if request.url and #request.url > 0 then
-      table.insert(requests, request)
-    else
-      -- Logger.warn(("Request without URL found at line: %s. Skipping ..."):format(request.start_line))
-    end
+    if request.url and #request.url > 0 then table.insert(requests, request) end
   end
 
   return variables, requests, imported_requests

@@ -31,7 +31,7 @@ local set_autocomands = function()
     group = vim.api.nvim_create_augroup("Kulala filetype setup", { clear = true }),
     pattern = { "http", "rest" },
     callback = function(ev)
-      _ = M.options.ui.autocomplete and require("kulala.utils.complete").start(ev.buf)
+      _ = M.options.ui.autocomplete and require("kulala.utils.lsp").start(ev.buf)
       _ = M.options.ui.lua_syntax_hl and require("kulala.ui.treesitter").set()
     end,
   })

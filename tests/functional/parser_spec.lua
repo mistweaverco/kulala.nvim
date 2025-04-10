@@ -180,12 +180,13 @@ describe("requests", function()
 
         local assert_url = function(lines, method, url, version)
           h.set_buf_lines(http_buf, lines)
+          local msg = "Assert failed: " .. vim.inspect(lines)
 
           result = parser.parse() or {}
 
-          assert.is.same(method, result.method)
-          assert.is.same(url, result.url)
-          assert.is.same(version, result.http_version)
+          assert.is.same(method, result.method, msg)
+          assert.is.same(url, result.url, msg)
+          assert.is.same(version, result.http_version, msg)
 
           return result
         end
@@ -270,6 +271,8 @@ describe("requests", function()
             POST https://httpbingo.org/simple
             content-type: application/json
             Content-Type: application/x-www-form-urlencoded
+            User-Agent: header with : colons and [
+            Origin: https://httpbingo.org
           ]]):to_table(true),
           h.expand_path("requests/simple.http")
         )
@@ -279,6 +282,8 @@ describe("requests", function()
           Accept = "application/json",
           ["content-type"] = "application/json",
           ["Content-Type"] = "application/x-www-form-urlencoded",
+          ["User-Agent"] = "header with : colons and [",
+          ["Origin"] = "https://httpbingo.org",
         })
       end)
 

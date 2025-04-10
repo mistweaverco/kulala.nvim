@@ -29,15 +29,24 @@ It allows you to make HTTP requests from within Neovim.
 
 FEATURES                                  *kulala.README-kulala.nvim-features*
 
-- Protocols: HTTP, GRPC, GraphQL, WebSocket, Streaming
-- Specs: HTTP File Spec and IntelliJ HTTP Client compliant
-- Variables: Environment, Document, Request, Dynamic, Prompt, `http-client.env` files
-- Importing and running requests from external `*.http` files
-- Importing and saving request/response data to/from external files
-- JS and Lua scripting: Pre-request, Post-request, Conditional, Inline, External
-- Authentication: Basic, Bearer, Digest, NTLM, OAuth2, Negotiate, AWS, SSL
-- Assertions, automated testing and reporting
-- Scratchpad: for making requests
+Protocols: HTTP, GRPC, GraphQL, WebSocket, Streaming
+
+Specs: HTTP File Spec and IntelliJ HTTP Client compliant
+
+Variables: Environment, Document, Request, Dynamic, Prompt, `http-client.env`
+files
+
+Importing and running requests from external `*.http` files
+
+Importing and saving request/response data to/from external files
+
+JS and Lua scripting: Pre-request, Post-request, Conditional, Inline, External
+
+Authentication: Basic, Bearer, Digest, NTLM, OAuth2, Negotiate, AWS, SSL
+
+Assertions, automated testing and reporting
+
+Scratchpad: for making requests
 
 
 TOGETHER WITH KULALA LANGUAGE SERVER AND KULALA FORMATTER, KULALA AIMS TO PROVIDE THE BEST REST CLIENT EXPERIENCE ON THE WEB WITHOUT LEAVING YOUR FAVOURITE EDITOR! Kulala Language Server https://github.com/mistweaverco/kulala-ls Kulala Formatter https://github.com/mistweaverco/kulala-fmt

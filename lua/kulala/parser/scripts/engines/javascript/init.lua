@@ -47,10 +47,10 @@ M.install_dependencies = function(wait)
   FS.copy_dir(BASE_DIR, SCRIPTS_BUILD_DIR)
 
   cmd_install = vim.system({ NPM_BIN, "install", "--prefix", SCRIPTS_BUILD_DIR }, { text = true }, function(out)
-    if out.code ~= 0 then log_err("npm install fail with code " .. out.code .. out.stderr) end
+    if out.code ~= 0 then log_err("npm install fail with code " .. out.code .. " " .. out.stderr) end
 
     cmd_build = vim.system({ NPM_BIN, "run", "build", "--prefix", SCRIPTS_BUILD_DIR }, { text = true }, function(out)
-      if out.code ~= 0 then return log_err("npm run build fail with code " .. out.code .. out.stderr) end
+      if out.code ~= 0 then return log_err("npm run build fail with code " .. out.code .. " " .. out.stderr) end
 
       DB.settings:write({ js_version = GLOBALS.VERSION })
       vim.g.kulala_js_installing = false
