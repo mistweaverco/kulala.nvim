@@ -25,31 +25,31 @@ GETTING STARTED - LEARN HOW TO INSTALL AND SETUP KULALA.NVIM!
 USAGE - LEARN ABOUT THE MOST IMPORTANT KULALA.NVIM FEATURES!
 
 - Basic usage.txt |kulala.basic-usage.txt|
-- Public methods.txt |kulala.public-methods.txt|
-- Api.txt |kulala.api.txt|
-- Reading file data.txt |kulala.reading-file-data.txt|
-- Authentication.txt |kulala.authentication.txt|
-- Automatic response formatting.txt |kulala.automatic-response-formatting.txt|
+- Http file spec.txt |kulala.http-file-spec.txt|
+- Using variables.txt |kulala.using-variables.txt|
+- Request variables.txt |kulala.request-variables.txt|
+- Using environment variables.txt |kulala.using-environment-variables.txt|
 - Dotenv and http client.env.json support.txt
     |kulala.dotenv-and-http-client.env.json-support.txt|
-- Request variables.txt |kulala.request-variables.txt|
-- Dynamically setting environment variables based on response json.txt
-    |kulala.dynamically-setting-environment-variables-based-on-response-json.txt|
+- Magic variables.txt |kulala.magic-variables.txt|
+- Authentication.txt |kulala.authentication.txt|
+- Import and run http.txt |kulala.import-and-run-http.txt|
+- Reading file data.txt |kulala.reading-file-data.txt|
+- Redirect the response.txt |kulala.redirect-the-response.txt|
+- Sending form data.txt |kulala.sending-form-data.txt|
 - Dynamically setting environment variables based on headers.txt
     |kulala.dynamically-setting-environment-variables-based-on-headers.txt|
-- Redirect the response.txt |kulala.redirect-the-response.txt|
+- Dynamically setting environment variables based on response json.txt
+    |kulala.dynamically-setting-environment-variables-based-on-response-json.txt|
+- Automatic response formatting.txt |kulala.automatic-response-formatting.txt|
+- Testing and reporting.txt |kulala.testing-and-reporting.txt|
 - Graphql.txt |kulala.graphql.txt|
 - Grpc.txt |kulala.grpc.txt|
 - Websockets.txt |kulala.websockets.txt|
 - Streaming and transfer chunked.txt |kulala.streaming-and-transfer-chunked.txt|
-- Magic variables.txt |kulala.magic-variables.txt|
-- Sending form data.txt |kulala.sending-form-data.txt|
-- Using environment variables.txt |kulala.using-environment-variables.txt|
-- Using variables.txt |kulala.using-variables.txt|
-- Testing and reporting.txt |kulala.testing-and-reporting.txt|
-- Import and run http.txt |kulala.import-and-run-http.txt|
 - Custom curl flags.txt |kulala.custom-curl-flags.txt|
-- Http file spec.txt |kulala.http-file-spec.txt|
+- Public methods.txt |kulala.public-methods.txt|
+- Api.txt |kulala.api.txt|
 - Demos.txt |kulala.demos.txt|
 
 

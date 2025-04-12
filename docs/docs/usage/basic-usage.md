@@ -41,6 +41,15 @@ vim.system("curl -X GET http://localhost:3000")
 - To choose variables environment use `<leader>Re` and select the environment you want to use.
 - To manage Authentication configurations use `<leader>Ru`.
 
+### Kulala LSP
+
+Kulala includes a built-in in-process LSP server that provides the following features:
+
+- Autocompletion: HTTP syntax, metadata, commands, variables, requests and API.
+- Symbols information: symbols search and symbols outline with your default LSP keymaps.
+- Hover information for requests: equivalent to Kulala's inspect command.
+- Code actions: a list of all available Kulala commands.
+
 ### Syntax summary
 
 - `#` and `//` is used to comment out a request or its data.

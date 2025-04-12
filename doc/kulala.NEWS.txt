@@ -15,10 +15,10 @@ Table of Contents                              *kulala.NEWS-table-of-contents*
 VERSION 5.2.0                          *kulala.NEWS-kulala-news-version-5.2.0*
 
 
+ENHANCEMENT: KULALA LSP LSP - AUTOCOMPLETION, SYMBOLS SEARCH AND OUTLINE, CODE ACTIONS, HOVER  |kulala.basic-usage.txt|
+
+
 FEATURE: LUA SCRIPTING  |kulala.lua-scripts.txt|
-
-
-FEAUTURE: BUILT-IN AUTOCOMPLETION FOR HTTP SYNTAX, METADATA, COMMANDS, VARIABLES, REQUESTS AND API
 
 
 FEATURE: SET HOST IN DEFAULT HEADERS IN HTTP-ENV.PROFILE.JSON FILES  |kulala.dotenv-and-http-client.env.json-support|

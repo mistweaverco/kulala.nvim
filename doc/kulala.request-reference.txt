@@ -75,6 +75,14 @@ REQUEST.BODY.GETCOMPUTED*kulala.request-reference-scripts-request-reference-requ
 Returns the `string` request body as sent via curl; with variables substituted,
 or `undefined` if there is no body.
 
+Useful if you want to see the request body as it was sent to the server.
+
+The `tryGetSubstituted` method will substitute variables with their values, but
+leave the rest of the body as is.
+
+If you have a GraphQL query in the body, for example, the `getComputed` method
+will show the query as it was sent to the server, which is quite different from
+the substituted version.
 
 As an example, if you have a request body like this:
 
@@ -124,6 +132,7 @@ substituted as seen in your script:
     }
 <
 
+The `getComputed` method is always `undefined` for binary bodies.
 
 
 REQUEST.ENVIRONMENT.GET*kulala.request-reference-scripts-request-reference-request.environment.get*

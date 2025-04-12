@@ -89,6 +89,12 @@ SEARCH
 `require('kulala').search()` searches for all _named_ requests in the current
 buffer.
 
+Named requests are those that have a name like so:
+
+>http
+    # @name MY_REQUEST_NAME
+    GET http://example.com
+<
 
 It tries to load up a telescope prompt to select a file or fallback to using
 `vim.ui.select`.
@@ -153,12 +159,14 @@ autocompletion and type checking.
 
 GET_SELECTED_ENV
 
+This function is only available if you are using a `http-client.env.json` file.
 
 `require('kulala').get_selected_env()` returns the selected environment.
 
 
 SET_SELECTED_ENV
 
+This function is only available if you are using a `http-client.env.json` file.
 
 `require('kulala').set_selected_env(env_key)` sets the selected environment.
 

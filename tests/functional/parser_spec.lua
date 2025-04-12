@@ -282,7 +282,7 @@ describe("requests", function()
         })
       end)
 
-      it("sets headers from http-profile", function()
+      it("sets headers from http-client", function()
         h.create_buf(
           ([[
             POST https://httpbingo.org/simple
