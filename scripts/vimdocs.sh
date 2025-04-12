@@ -9,10 +9,11 @@ TOC=true
 DESCRIPTION="A fully-featured REST Client Interface for Neovim."
 DEDUP_SUBHEADINGS=true
 TREESITTER=true
+IGNORE_RAWBLOCKS=false
 
 PRE_BUILD_TOC="lua $PANDOC_DIR/build-toc.lua"
 TOC_FILE="./docs/docs/index.md"
-CMD="$PANDOC_DIR/panvimdoc.sh --vim-version \"$VIM_VERSION\" --toc $TOC --description \"$DESCRIPTION\" --dedup-subheadings $DEDUP_SUBHEADINGS --treesitter $TREESITTER --scripts-dir $PANDOC_DIR"
+CMD="$PANDOC_DIR/panvimdoc.sh --vim-version \"$VIM_VERSION\" --toc $TOC --description \"$DESCRIPTION\" --dedup-subheadings $DEDUP_SUBHEADINGS --treesitter $TREESITTER --ignore-rawblocks $IGNORE_RAWBLOCKS --scripts-dir $PANDOC_DIR"
 
 PRE_CODE_BLOCKS="lua $PANDOC_DIR/normalize-code-blocks.lua"
 PRE_CODE_IMPORTS="lua $PANDOC_DIR/include-imports.lua"

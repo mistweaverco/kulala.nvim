@@ -16,6 +16,8 @@ type has been defined in the `contentypes` section of the configuration.
 If there is a `formatter` available, the response will be processed by the
 given beautifier.
 
+You need to have external tools to format the response, for example `jq` for
+JSON or `xmllint` for XML and HTML, or you implement a lua function.
 
 
 DEFAULT FORMATTERS

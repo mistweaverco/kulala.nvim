@@ -53,6 +53,17 @@ KULALA UI
 - To manage Authentication configurations use `<leader>Ru`.
 
 
+KULALA LSP
+
+Kulala includes a built-in in-process LSP server that provides the following
+features:
+
+- Autocompletion: HTTP syntax, metadata, commands, variables, requests and API.
+- Symbols information: symbols search and symbols outline with your default LSP keymaps.
+- Hover information for requests: equivalent to Kulala’s inspect command.
+- Code actions: a list of all available Kulala commands.
+
+
 SYNTAX SUMMARY
 
 - `#` and `//` is used to comment out a request or its data.

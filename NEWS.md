@@ -2,8 +2,8 @@
 
 ## Version 5.2.0
 
+### Enhancement: Kulala LSP [lsp](usage/basic-usage.md) - autocompletion, symbols search and outline, code actions, hover
 ### Feature: Lua [scripting](scripts/lua-scripts.md)
-### Feauture: built-in autocompletion for HTTP syntax, metadata, commands, variables, requests and API
 ### Feature: set `Host` in default headers in [http-env.profile.json](usage/dotenv-and-http-client.env.json-support) files
 ### Feature: set `default headers` per environment in [http-env.profile.json](usage/dotenv-and-http-client.env.json-support) files
 ### Feature: per-request and global `@curl` flags [Basic usage](usage/custom-curl-flags)

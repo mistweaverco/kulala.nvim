@@ -19,6 +19,8 @@ Test and assertion cases can be written in either `Lua` or `Javascript`
 scripts. The API is the same except for some snake case vs camelCase
 differences. Check the |kulala.lua-scripts.txt| for more details.
 
+Node.js https://nodejs.org must be installed on your system to run `Javascript`
+scripts.
 
 
 TESTING HTTP REQUESTS WITH ASSERT FUNCTIONS
@@ -47,6 +49,9 @@ suite and individual test cases within it.
       assert.jsonHas(key, expected, message?)` // Checks if the JSON response has the expected key with the expected value.
 <
 
+- All assert functions are aliases of `client.assert` function.
+- The `message` parameter is optional and can be used to provide a custom message for the assertion.
+- The `key` for `assert.responseHas` and `assert.jsonHas` can specify nested keys using dot notation (e.g., `data.name`).
 
 1. **Example**:
 
