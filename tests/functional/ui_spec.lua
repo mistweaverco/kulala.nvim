@@ -377,7 +377,7 @@ describe("UI", function()
 
       h.send_keys("V")
 
-      expected = h.load_fixture("fixtures/request_2_errors.txt")
+      expected = h.load_fixture("fixtures/request_2_errors_payload.txt")
       result = h.get_buf_lines(h.get_kulala_buf()):to_string()
 
       assert.has_string(result, "Request: 3/3")

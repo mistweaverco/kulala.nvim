@@ -135,6 +135,23 @@ local function set_request_stats(response)
   return response
 end
 
+local function inject_payload(errors, request)
+  local lines = vim.split(errors, "\n")
+  local lnum
+
+  for i, line in ipairs(lines) do
+    if line:find("^>") and not lines[i + 1]:find("^>") then
+      lnum = i
+      break
+    end
+  end
+
+  lnum = lnum or #lines
+  _ = #vim.trim(request.body or "") > 0 and table.insert(lines, lnum + 1, "> Payload:\n\n" .. request.body .. "\n")
+
+  return table.concat(lines, "\n")
+end
+
 local function save_response(request_status, parsed_request)
   local buf = DB.get_current_buffer()
   local line = parsed_request.show_icon_line_number or 0
@@ -174,6 +191,7 @@ local function save_response(request_status, parsed_request)
   response = set_request_stats(response)
 
   response.body = #response.body == 0 and "No response body (check Verbose output)" or response.body
+  response.errors = inject_payload(response.errors, parsed_request)
 
   table.insert(responses, response)
 
