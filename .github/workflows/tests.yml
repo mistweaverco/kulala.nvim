@@ -38,7 +38,7 @@ jobs:
   test-windows:
     name: Test Code on Windows
     runs-on: windows-latest
-    if: contains(github.event.pull_request.labels.*.name, 'needs-windows-test')
+    if: ${{ github.event.label.name == 'needs-windows-test' }}
     steps:
       - uses: actions/checkout@v4
       - name: Restore cache
@@ -66,13 +66,10 @@ jobs:
             ~\AppData\Roaming\luarocks
           key: ${{ runner.os }}-tests
 
-      - name: Install NPM dependencies
-        uses: chill-viking/npm-ci@latest
-        with: 
-          working_directory: 'D:\a\kulala.nvim\kulala.nvim\lua\kulala\parser\scripts\engines\javascript\lib'
-
-      # - name: Install NPM dependencies
-      #   uses: actions/setup-node@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
 
       - name: Run tests
         run: ./scripts/tests.ps1
