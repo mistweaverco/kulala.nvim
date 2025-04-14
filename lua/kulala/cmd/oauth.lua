@@ -18,20 +18,22 @@ local function make_request(url, body, request_desc)
   local headers = "Content-Type: application/x-www-form-urlencoded"
   local cmd = { Config.get().curl_path, "-s", "-X", "POST", "-H", headers, "-d", body, url }
 
-  local status, result = pcall(function()
-    return vim.system(cmd, { text = true }):wait()
+  local result, error
+  local status, p_error = pcall(function()
+    vim.system(cmd, { text = true }, function(system)
+      if system.code ~= 0 then error = "Request error:\n" .. (system.stderr or "") end
+      result = system.stdout
+    end)
   end)
 
-  local error
+  if p_error or error then return Logger.error("Request error:\n" .. (p_error or error)) end
 
-  if not status then
-    error = "Request error:\n" .. result
-  elseif result and result.code ~= 0 then
-    error = "Request error:\n" .. result.stderr
-  end
+  vim.wait(request_timeout, function()
+    return result
+  end, request_interval)
 
-  result = result or { stdout = "{}" }
-  status, result = pcall(vim.json.decode, result.stdout or "", { object = nil, array = nil })
+  result = result or "{}"
+  status, result = pcall(vim.json.decode, result, { object = nil, array = nil })
   if not status then error = "Error parsing authentication response:\n" .. result end
 
   if result.error then error = result.error .. "\n" .. result.error_description end
@@ -195,12 +197,43 @@ M.acquire_device_token = function(config_id)
 
   Logger.info("Acquiring device token for config: " .. config_id)
 
+  local tries = 10
   local period = config.auth_data.interval and tonumber(config.auth_data.interval) * 2000 or request_interval
   Logger.info("Waiting for device token.  Press <C-c> to cancel.")
 
+  local co
   local out, err
+
+  co = coroutine.create(function()
+    local count = 0
+    local timer = vim.uv.new_timer()
+
+    timer:start(period, period, function()
+      count = count + 1
+
+      out, err = make_request(url, body, "acquire device token")
+      err = err or ""
+
+      if not out and not err:match("authorization_pending") and not err:match("slow_down") then coroutine.resume(co) end
+      out = out or {}
+
+      if
+        out.access_token
+        or count == tries
+        or os.difftime(os.time(), config.auth_data.acquired_at) > config.auth_data.expires_in
+      then
+        coroutine.resume(co)
+      end
+    end)
+
+    coroutine.yield()
+    timer:close()
+
+    log("Finished 0")
+  end)
+
   vim.wait(request_timeout * 2, function()
-    vim.uv.sleep(request_interval)
+    vim.wait(period)
 
     out, err = make_request(url, body, "acquire device token")
     err = err or ""
