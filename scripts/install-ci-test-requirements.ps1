@@ -11,7 +11,7 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 if ($Env:GH_CACHE_HIT -eq $null) {
   Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression
   scoop install main/git
-  scoop install main/neovim@0.10.2
+  scoop install main/neovim@0.11.0
 } else {
   $Env:PATH = "$Env:USERPROFILE\scoop\shims;$Env:USERPROFILE\scoop\apps\git\current\cmd;$Env:USERPROFILE\scoop\apps\neovim\current\bin;$Env:PATH"
 }
