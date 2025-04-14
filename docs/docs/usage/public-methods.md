@@ -166,6 +166,6 @@ If you omit the `env_key`,
 it'll try to load up a telescope prompt to
 select an environment or fallback to using `vim.ui.select`.
 
-[scratchpad_default_contents]: ../getting-started/configuration-options#scratchpad_default_contents
+[scratchpad_default_contents]: ../getting-started/configuration-options#uiscratchpad_default_contents
 [kulala-cmp-graphql]: https://github.com/mistweaverco/kulala-cmp-graphql.nvim
 [env-files]: https://learn.microsoft.com/en-us/aspnet/core/test/http-files?view=aspnetcore-8.0#environment-files

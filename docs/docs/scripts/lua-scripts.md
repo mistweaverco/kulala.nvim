@@ -100,7 +100,7 @@ local assert = {
 }
 ```
 
-Please see [Testing and reporting](./usage/testing-and-reporting.md) for more details.
+Please see [Testing and reporting](../usage/testing-and-reporting.md) for more details.
 
 ## Pre-request
 

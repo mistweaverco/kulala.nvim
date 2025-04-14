@@ -5,7 +5,7 @@
 ## Usage
 
 Test and assertion cases can be written in either `Lua` or `Javascript` scripts. The API is the same except for some snake case vs camelCase differences.
-Check the [Lua scripts](./scripts/lua-scripts.md) for more details.
+Check the [Lua scripts](../scripts/lua-scripts.md) for more details.
 
 :::warning
 
