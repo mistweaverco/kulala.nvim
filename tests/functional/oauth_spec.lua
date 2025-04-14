@@ -52,7 +52,7 @@ describe("oauth", function()
   local result = {}
 
   local function get_request(no)
-    return system.log[no or 1]
+    return system.log[no or 1] or {}
   end
 
   before_each(function()
@@ -508,14 +508,19 @@ describe("oauth", function()
     update_env({ ["Revoke URL"] = "http://revoke.url" })
     update_auth_data({
       access_token = "expired_access_token",
-      acquired_at = os.time() - 10,
+      acquired_at = os.time(),
       expires_in = 1,
       refresh_token = "refresh_token",
       refresh_token_acquired_at = os.time(),
       refresh_token_expires_in = os.time() + 3600,
     })
 
+    kulala.open()
     oauth.revoke_token("GAPI")
+
+    wait_for_requests(1, function()
+      return get_request().url == "http://revoke.url"
+    end)
 
     assert.has_properties(get_request(), {
       token = "expired_access_token",

@@ -7,6 +7,7 @@ on:
       - '**/*.lua'
     branches:
       - main
+    types: ["labeled", "opened", "synchronize", "reopened"]
 
 jobs:
   test-linux:
@@ -37,7 +38,7 @@ jobs:
   test-windows:
     name: Test Code on Windows
     runs-on: windows-latest
-    if: ${{ github.event.label.name == 'needs-windows-test' }}
+    if: github.event_name == 'labeled' && github.event.label.name == 'needs-windows-test' || github.event_name != 'labeled' && contains(github.event.pull_request.labels.*.name, 'needs-windows-test')
     steps:
       - uses: actions/checkout@v4
       - name: Restore cache
@@ -64,5 +65,11 @@ jobs:
             ~\AppData\Roaming\LJ4W
             ~\AppData\Roaming\luarocks
           key: ${{ runner.os }}-tests
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
       - name: Run tests
         run: ./scripts/tests.ps1

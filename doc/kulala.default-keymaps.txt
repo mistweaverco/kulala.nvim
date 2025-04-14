@@ -68,11 +68,11 @@ KULALA UI KEYMAPS
       ["Show report"] = { "R", function() require("kulala.ui").show_report() end, },
     
       ["Send WS message"] = { "<S-CR>", function() require("kulala.cmd.websocket").send() end, mode = { "n", "v" }, },
-      ["Close WS connection"] = { "<C-c>", function() require("kulala.cmd.websocket").close() end, },
+      ["Interrupt requests"] = { "<C-c>", function() require("kulala.cmd.websocket").close() end, desc = "also: CLose WS connection" },
     
       ["Next response"] = { "]", function() require("kulala.ui").show_next() end, },
       ["Previous response"] = { "[", function() require("kulala.ui").show_previous() end, },
-      ["Jump to response"] = { "<CR>", function() require("kulala.ui").jump_to_response() end, },
+      ["Jump to response"] = { "<CR>", function() require("kulala.ui").jump_to_response() end, desc = "also: Send WS message for WS connections" },
     
       ["Clear responses history"] = { "X", function() require("kulala.ui").clear_responses_history() end, },
     

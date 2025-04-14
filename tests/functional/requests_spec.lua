@@ -18,9 +18,12 @@ describe("requests", function()
     local input, notify, dynamic_vars
     local result, expected, ui_buf
 
+    teardown(function()
+      Fs.delete_file(Fs.get_global_scripts_variables_file_path())
+    end)
+
     before_each(function()
       h.delete_all_bufs()
-      Fs.write_json(Fs.get_global_scripts_variables_file_path(), {})
 
       input = h.Input.stub()
       notify = h.Notify.stub()
@@ -47,10 +50,10 @@ describe("requests", function()
         end,
       })
 
-      wait_for_requests = function(requests_no)
+      wait_for_requests = function(requests_no, predicate)
         system:wait(3000, function()
           ui_buf = vim.fn.bufnr(kulala_name)
-          return curl.requests_no == requests_no and ui_buf > 0
+          return curl.requests_no == requests_no and ui_buf > 0 and (predicate == nil or predicate())
         end)
       end
 

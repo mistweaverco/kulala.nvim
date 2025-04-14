@@ -11,7 +11,7 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 if ($Env:GH_CACHE_HIT -eq $null) {
   Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression
   scoop install main/git
-  scoop install main/neovim@0.10.2
+  scoop install main/neovim@0.11.0
 } else {
   $Env:PATH = "$Env:USERPROFILE\scoop\shims;$Env:USERPROFILE\scoop\apps\git\current\cmd;$Env:USERPROFILE\scoop\apps\neovim\current\bin;$Env:PATH"
 }
@@ -28,7 +28,7 @@ if ($Env:GH_CACHE_HIT -eq $null) {
 
 $Env:KULALA_LUA_DIR = (Get-Location).Path
 
-$Env:PATH = "$Env:KULALA_LUA_DIR\tools\cmd;$Env:KULALA_LUA_DIR\tools\PortableGit\mingw64\bin;$Env:KULALA_LUA_DIR\tools\PortableGit\usr\bin;$Env:KULALA_LUA_DIR\tools\mingw\bin;$Env:KULALA_LUA_DIR\lib;$Env:KULALA_LUA_DIR\bin;$Env:APPDATA\LJ4W\LuaRocks\bin;$Env:PATH"
+$Env:PATH = "$Env:KULALA_LUA_DIR\tools\cmd;$Env:KULALA_LUA_DIR\tools\PortableGit\mingw64\bin;$Env:KULALA_LUA_DIR\tools\PortableGit\usr\bin;$Env:KULALA_LUA_DIR\tools\mingw\bin;$Env:KULALA_LUA_DIR\lib;$Env:KULALA_LUA_DIR\bin;$Env:APPDATA\LJ4W\LuaRocks\bin;C:\Program Files\nodejs;$Env:PATH"
 $Env:LUA_PATH = "$Env:KULALA_LUA_DIR\lua\?.lua;$Env:KULALA_LUA_DIR\lua\?\init.lua;$Env:APPDATA\luarocks\share\lua\5.1\?.lua;$Env:APPDATA\luarocks\share\lua\5.1\?\init.lua;$Env:LUA_PATH"
 $Env:LUA_CPATH = "$Env:APPDATA\luarocks;$Env:APPDATA\luarocks\lib\lua\5.1\?.dll;$Env:LUA_CPATH"
 

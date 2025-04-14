@@ -46,9 +46,18 @@ vim.system("curl -X GET http://localhost:3000")
 Kulala includes a built-in in-process LSP server that provides the following features:
 
 - Autocompletion: HTTP syntax, metadata, commands, variables, requests and API.
-- Symbols information: symbols search and symbols outline with your default LSP keymaps.
-- Hover information for requests: equivalent to Kulala's inspect command.
-- Code actions: a list of all available Kulala commands.
+- Symbols information: symbols search and symbols outline - `<leader>cs`, `<leader>cS`.
+- Hover information for requests: equivalent to Kulala's inspect command - `K`.
+- Code actions: a list of all available Kulala commands - `gra/<leader>ca`.
+
+:::info
+
+Kulala LSP does not set any keymaps, but relies on your Neovim's default LSP keymaps. Some distributions set these keymaps only for LSPs that have been
+setup through `nvim-lspconfig` or the distributions's own LSP config. In this case, you may need to enable them yourself. 
+
+Please refer to [keymaps](../getting-started/keymaps.md) for more information.
+
+:::
 
 ### Syntax summary
 

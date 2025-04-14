@@ -1,4 +1,4 @@
-test = nvim -l tests/minit.lua tests --shuffle-tests
+test = nvim -l tests/minit.lua tests --shuffle-tests -v
 build_ts = scripts/build_ts.sh
 
 tag ?= wip
