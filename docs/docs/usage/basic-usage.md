@@ -57,12 +57,28 @@ setup through `nvim-lspconfig` or the distributions's own LSP config. In this ca
 
 Please refer to [keymaps](../getting-started/keymaps.md) for more information.
 
+Some plugins, like `lsp-saga` or `nvim-lighbulb` show :bulb: signs when there are code actions available.
+
+Since Kulala provides code actions for every line, you may want to disable them in your config.
+For example:
+
+```lua
+require('lspsaga').setup({
+  lightbulb = { ignore = { ft = { 'http' } } }
+})
+
+require("nvim-lightbulb").setup({
+ ignore = { clients = { "kulala" } }
+})
+```
+
 :::
 
 ### Syntax summary
 
 - `#` and `//` is used to comment out a request or its data.
 - `###` is used to delimit requests and their data.
+- `### Request name` is used to name a request, for UI, `import` and `run` commands.
 
 #### Metadata
 
