@@ -53,7 +53,7 @@ It’s useful for quick testing. It’s useful for requests that you don’t
 want to save.
 
 It’s default contents can be configured via the
-|kulala.configuration-options-scratchpad_default_contents| configuration
+|kulala.configuration-options-uiscratchpad_default_contents| configuration
 option.
 
 
