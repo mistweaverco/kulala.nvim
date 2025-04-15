@@ -60,9 +60,10 @@ M.toggle_winbar_tab = function(buf, win_id, view)
     local info = winbar_info[key]
 
     if info then
-      local desc = info.desc .. " %*"
+      local desc = info.desc
       desc = keymaps[info.keymap] and desc .. " (" .. keymaps[info.keymap][1] .. ")" or desc
       desc = view == key and "%#KulalaTabSel# " .. desc or "%#KulalaTab# " .. desc
+      desc = desc .. " %*"
 
       table.insert(winbar_title, desc)
     end
