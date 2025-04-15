@@ -33,31 +33,41 @@ end
 
 ---@param wait boolean|nil -- wait to complete
 M.install_dependencies = function(wait)
-  if is_uptodate() or vim.g.kulala_js_installing then return true end
-
-  local log_info, log_err = vim.schedule_wrap(Logger.info), vim.schedule_wrap(Logger.error)
-
-  log_info("Javascript base files not found or are out of date.")
-  log_info("Installing Javascript dependencies...\nPlease wait until the installation is complete and rerun requests.")
+  if is_uptodate() then return true end
+  if vim.g.kulala_js_installing then return false end
 
   vim.g.kulala_js_installing = true
 
-  local cmd_install, cmd_build
+  Logger.info("Javascript base files not found or are out of date.")
+  Logger.info(
+    "Installing Javascript dependencies...\nPlease wait until the installation is complete and rerun requests."
+  )
 
-  FS.copy_dir(BASE_DIR, SCRIPTS_BUILD_DIR)
+  local co, cmd_install, cmd_build
+  co = coroutine.create(function()
+    local log_err = vim.schedule_wrap(Logger.error)
 
-  cmd_install = vim.system({ NPM_BIN, "clean-install", "--prefix", SCRIPTS_BUILD_DIR }, { text = true }, function(out)
-    if out.code ~= 0 then log_err("npm install fail with code " .. out.code .. " " .. out.stderr) end
+    FS.copy_dir(BASE_DIR, SCRIPTS_BUILD_DIR)
+
+    cmd_install = vim.system({ NPM_BIN, "clean-install", "--prefix", SCRIPTS_BUILD_DIR }, { text = true }, function(out)
+      if out.code ~= 0 then log_err("npm install fail with code " .. out.code .. " " .. out.stderr) end
+      coroutine.resume(co)
+    end)
+    coroutine.yield()
 
     cmd_build = vim.system({ NPM_BIN, "run", "build", "--prefix", SCRIPTS_BUILD_DIR }, { text = true }, function(out)
       if out.code ~= 0 then return log_err("npm run build fail with code " .. out.code .. " " .. out.stderr) end
-
-      DB.settings:write({ js_version = GLOBALS.VERSION })
-      vim.g.kulala_js_installing = false
-
-      log_info("Javascript dependencies installed.")
+      coroutine.resume(co)
     end)
+    coroutine.yield()
+
+    DB.settings:write({ js_version = GLOBALS.VERSION })
+    vim.g.kulala_js_installing = false
+
+    Logger.info("Javascript dependencies installed.")
   end)
+
+  coroutine.resume(co)
 
   _ = wait and cmd_install:wait()
   _ = wait and cmd_build:wait()
@@ -137,8 +147,9 @@ end
 
 ---@param type "pre_request_client_only" | "pre_request" | "post_request_client_only" | "post_request" -- type of script
 ---@param data ScriptData
+---@param request Request
 ---@return boolean|nil status
-M.run = function(type, data)
+M.run = function(type, data, request)
   local files = { ["pre_request"] = GLOBALS.SCRIPT_PRE_OUTPUT_FILE, ["post_request"] = GLOBALS.SCRIPT_POST_OUTPUT_FILE }
   local disable_output = CONFIG.get().disable_script_print_output
 
@@ -146,7 +157,10 @@ M.run = function(type, data)
   if not NODE_EXISTS then return Logger.error("node not found, please install nodejs") end
   if not NPM_EXISTS then return Logger.error("npm not found, please install nodejs") end
 
-  if not M.install_dependencies() then return end
+  if not M.install_dependencies() then
+    request.environment["__skip_request"] = "true"
+    return
+  end
 
   local scripts = generate_all(type, data)
   if #scripts == 0 then return end

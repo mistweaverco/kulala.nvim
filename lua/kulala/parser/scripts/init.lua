@@ -35,7 +35,7 @@ M.run = function(type, request, response)
   end)
 
   status = not is_empty(lua) and Lua.run(type, lua, request, response)
-  status = not is_empty(js) and Javascript.run(type, js) or status
+  status = not is_empty(js) and Javascript.run(type, js, request) or status
 
   return status
 end

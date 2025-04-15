@@ -92,12 +92,17 @@ describe("oauth", function()
       end,
     })
 
-    wait_for_requests = function(requests_no)
+    wait_for_requests = function(requests_no, predicate)
       system:wait(3000, function()
         ui_buf = h.get_kulala_buf()
         local tick = ui_buf > 0 and vim.api.nvim_buf_get_changedtick(ui_buf) or 0
 
-        if curl.requests_no >= requests_no and ui_buf > 0 and tick > ui_buf_tick then
+        if
+          curl.requests_no >= requests_no
+          and ui_buf > 0
+          and tick > ui_buf_tick
+          and (predicate == nil or predicate())
+        then
           ui_buf_tick = tick
           return true
         end
