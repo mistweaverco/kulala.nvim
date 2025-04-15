@@ -63,6 +63,7 @@ Please refer to [keymaps](../getting-started/keymaps.md) for more information.
 
 - `#` and `//` is used to comment out a request or its data.
 - `###` is used to delimit requests and their data.
+- `### Request name` is used to name a request, for UI, `import` and `run` commands.
 
 #### Metadata
 

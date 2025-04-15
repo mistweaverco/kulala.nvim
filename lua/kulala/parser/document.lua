@@ -102,7 +102,7 @@ local function split_content_by_blocks(lines, line_offset)
 
       block = vim.deepcopy(new_block)
       block.start_lnum = line_offset + lnum + 1
-      block.name = line:match("^" .. delimiter .. "%s*(.+)$")
+      block.name = line:match("^" .. delimiter .. "+ (.+)$")
     else
       table.insert(block.lines, line)
     end
