@@ -19,7 +19,7 @@ end
 
 local function auth_token(name)
   local type, config = name:match("^%$auth%.(%a+)%(['\"](.+)['\"]%)")
-  return Oauth["get_" .. type] and config and Oauth["get_" .. type](config) or nil
+  return Oauth.get_token(type, config)
 end
 
 ---Retrieve all dynamic variables from both rest.nvim and the ones declared by

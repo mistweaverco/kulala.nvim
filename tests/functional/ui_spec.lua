@@ -646,7 +646,7 @@ describe("UI", function()
       wait_for_requests(1)
 
       result = vim.api.nvim_get_option_value("winbar", { win = vim.fn.bufwinid(ui_buf) })
-      expected = "%#KulalaTabSel# Body %* (B) %#KulalaTab# Report %* (R) %#KulalaTab# Help %* (?) <- [ ] ->"
+      expected = "%#KulalaTabSel# Body (B) %* %#KulalaTab# Report (R) %* %#KulalaTab# Help (?) %* <- [ ] ->"
       assert.same(expected, result)
     end)
   end)

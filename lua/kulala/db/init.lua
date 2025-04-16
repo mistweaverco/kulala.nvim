@@ -36,17 +36,11 @@ M.data = nil
 ---@field current_response_pos number|nil -- index of current response shown in UI
 ---@field previous_response_pos number|nil -- index of previous response shown in UI
 ---@field replay Request|nil -- previous request stored for replay
----@field requests_status boolean -- status of current batch execution
----@field requests_total number -- total number of requests to run
----@field requests_done number -- number of requests done
 M.global_data = {
   responses = {},
   current_response_pos = nil,
   previous_response_pos = nil,
   replay = nil,
-  requests_status = false,
-  requests_total = 0,
-  requests_done = 0,
 }
 
 M.current_buffer = nil

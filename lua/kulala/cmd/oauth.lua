@@ -1,14 +1,17 @@
+local Async = require("kulala.utils.async")
 local Config = require("kulala.config")
 local Crypto = require("kulala.cmd.crypto")
 local DB = require("kulala.db")
 local Env = require("kulala.parser.env")
 local Logger = require("kulala.logger")
+local Tcp = require("kulala.cmd.tcp")
 local table = require("kulala.utils.table")
 
 local M = {}
 
 local request_timeout = 30000 -- 30 seconds
 local request_interval = 5000 -- 5 seconds
+local co, exit
 
 ---@param url string
 ---@param body string
@@ -18,25 +21,28 @@ local function make_request(url, body, request_desc)
   local headers = "Content-Type: application/x-www-form-urlencoded"
   local cmd = { Config.get().curl_path, "-s", "-X", "POST", "-H", headers, "-d", body, url }
 
-  local result, error
-  local status, p_error = pcall(function()
-    vim.system(cmd, { text = true }, function(system)
-      if system.code ~= 0 then error = "Request error:\n" .. (system.stderr or "") end
-      result = system.stdout
-    end)
+  local status, system, result, error
+  status, system = pcall(vim.system, cmd, { text = true }, function(system)
+    if system.code ~= 0 then error = "Request error:\n" .. (system.stderr or "") end
+    Async.co_resume(co, system)
   end)
 
-  if p_error or error then return Logger.error("Request error:\n" .. (p_error or error)) end
+  if not status then return Logger.error("Request error:\n" .. system) end
 
-  vim.wait(request_timeout, function()
-    return result
-  end, request_interval)
+  status, result = Async.co_yield(co, request_timeout)
 
-  result = result or "{}"
+  if status and not result then return Logger.error("Request timeout: " .. request_desc) end
+  if error then return Logger.error("Request error:\n" .. error) end
+
+  result = result or system:wait()
+
+  result = result.stdout or "{}"
   status, result = pcall(vim.json.decode, result, { object = nil, array = nil })
   if not status then error = "Error parsing authentication response:\n" .. result end
 
-  if result.error then error = result.error .. "\n" .. result.error_description end
+  if result.error and result.error ~= "authorization_pending" then
+    error = result.error .. "\n" .. result.error_description
+  end
   if error then return Logger.error("Failed to: " .. request_desc .. ". " .. error, 2), error end
 
   return result
@@ -45,7 +51,9 @@ end
 ---@return table - get the auth config for the current environment, under Security.Auth
 local function get_auth_config(config_id)
   local cur_env = vim.g.kulala_selected_env or Config.get().default_env
-  local env = Env.get_env() and DB.find_unique("http_client_env") or {}
+  local env = Async.co_wrap(co, function()
+    return Env.get_env() and DB.find_unique("http_client_env") or {}
+  end)
 
   local auth_config = vim.tbl_get(env, cur_env, "Security", "Auth", config_id) or {}
   auth_config.auth_data = auth_config.auth_data or {}
@@ -75,8 +83,7 @@ end
 ---@param replace boolean|nil - replace the existing auth data
 local function update_auth_data(config_id, data, replace)
   local auth_data = replace and data or vim.tbl_extend("force", get_auth_config(config_id).auth_data, data)
-
-  Env.update_http_client_auth(config_id, auth_data)
+  Async.co_wrap(co, Env.update_http_client_auth, config_id, auth_data)
   return get_auth_config(config_id)
 end
 
@@ -174,6 +181,34 @@ M.verify_device_code = function(config_id)
   vim.fn.setreg("+", config.auth_data.user_code)
 end
 
+local function poll_token_server(config, url, body)
+  local interval = config.auth_data.interval and tonumber(config.auth_data.interval) * 1000 or request_interval
+  local tries = 10
+
+  local out, err
+  for count = 1, tries do
+    Async.co_sleep(co, interval)
+    Logger.info(("Waiting for device token %s/%s.  Press <C-c> to cancel."):format(count, tries))
+
+    out, err = make_request(url, body, "acquire device token")
+    err = err or ""
+
+    if not out and not err:match("authorization_pending") and not err:match("slow_down") then break end
+    out = out or {}
+
+    if
+      out.access_token
+      or count == tries
+      or exit
+      or os.difftime(os.time(), config.auth_data.acquired_at) > config.auth_data.expires_in
+    then
+      break
+    end
+  end
+
+  return out
+end
+
 ---Grant Type "Device Authorization"
 ---Acquire a device token for the given config_id
 M.acquire_device_token = function(config_id)
@@ -197,53 +232,7 @@ M.acquire_device_token = function(config_id)
 
   Logger.info("Acquiring device token for config: " .. config_id)
 
-  local tries = 10
-  local period = config.auth_data.interval and tonumber(config.auth_data.interval) * 2000 or request_interval
-  Logger.info("Waiting for device token.  Press <C-c> to cancel.")
-
-  local co
-  local out, err
-
-  co = coroutine.create(function()
-    local count = 0
-    local timer = vim.uv.new_timer()
-
-    timer:start(period, period, function()
-      count = count + 1
-
-      out, err = make_request(url, body, "acquire device token")
-      err = err or ""
-
-      if not out and not err:match("authorization_pending") and not err:match("slow_down") then coroutine.resume(co) end
-      out = out or {}
-
-      if
-        out.access_token
-        or count == tries
-        or os.difftime(os.time(), config.auth_data.acquired_at) > config.auth_data.expires_in
-      then
-        coroutine.resume(co)
-      end
-    end)
-
-    coroutine.yield()
-    timer:close()
-
-    log("Finished 0")
-  end)
-
-  vim.wait(request_timeout * 2, function()
-    vim.wait(period)
-
-    out, err = make_request(url, body, "acquire device token")
-    err = err or ""
-
-    if not out and not err:match("authorization_pending") and not err:match("slow_down") then return true end
-    out = out or {}
-
-    return out.access_token or os.difftime(os.time(), config.auth_data.acquired_at) > config.auth_data.expires_in
-  end, period)
-
+  local out = poll_token_server(config, url, body) or {}
   if not out.access_token then return Logger.error("Timeout acquiring device token for config: " .. config_id) end
 
   out.acquired_at = os.time()
@@ -275,14 +264,17 @@ M.receive_code = function(config_id)
 
   local port = url:match(":(%d+)") or 80
 
-  local server = M.tcp_server("127.0.0.1", port, function(request)
+  local server = Tcp.server("127.0.0.1", port, function(request)
     local params = parse_params(request) or {}
 
     if params.code or params.access_token then
+      if params.access_token then params.acquired_at = os.time() end
+
       vim.schedule(function()
-        if params.access_token then params.acquired_at = os.time() end
         update_auth_data(config_id, params)
+        Async.co_resume(co, params.code or params.access_token)
       end)
+
       return "Code/Token received.  You can close the browser now."
     end
   end)
@@ -290,17 +282,11 @@ M.receive_code = function(config_id)
   if not server then return end
 
   Logger.info("Waiting for authorization code/token.  Press <C-c> to cancel.")
-  local wait = vim.wait(request_timeout, function()
-    config = get_auth_config(config_id)
-    return config.auth_data.code or config.auth_data.access_token
-  end, request_interval)
 
-  if not wait then
-    server.stop()
-    return Logger.error("Timeout waiting for authorization code/token for: " .. config_id)
-  end
+  local _, result = Async.co_yield(co, request_timeout)
+  if not result then return Logger.error("Timeout waiting for authorization code/token for: " .. config_id) end
 
-  return config.auth_data.code or config.auth_data.access_token
+  return result
 end
 
 M.create_JWT = function(config_id)
@@ -340,6 +326,7 @@ M.acquire_jwt_token = function(config_id)
   if not out then return end
 
   out.acquired_at = os.time()
+  out.expires_in = 10000 -- to allow for resuming requests with new token
   config = update_auth_data(config_id, out)
 
   return config.auth_data.access_token
@@ -374,6 +361,8 @@ M.acquire_auth = function(config_id)
 
   local code = M.receive_code(config_id)
   if not code then return Logger.error("Failed to acquire code for config: " .. config_id) end
+
+  config = update_auth_data(config_id, { code = code, acquired_at = os.time(), expires_in = 10000 }) -- to allow for resuming requests with new token
 
   return code
 end
@@ -460,7 +449,7 @@ end
 
 ---Grant Type "Authorization Code" or "Device Authorization"
 ---Refresh the token for the given config_id
-M.refresh_token = function(config_id)
+local function refresh_token_co(config_id)
   if not validate_auth_params(config_id, { "Grant Type" }) then return end
 
   local config = get_auth_config(config_id)
@@ -488,23 +477,40 @@ M.refresh_token = function(config_id)
   return config.auth_data.access_token
 end
 
----Grant Type - all
----Entry point to get the token for the given config_id
-M.get_token = function(config_id)
-  local config = get_auth_config(config_id)
-  if config["Use ID Token"] then return M.get_idToken(config_id) end
+M.refresh_token = function(config_id)
+  local Cmd = require("kulala.cmd")
+  local buf = DB.current_buffer
 
-  local token = not M.is_token_expired(config_id) and config.auth_data.access_token
-  return token or M.refresh_token(config_id)
+  Cmd.queue:pause()
+
+  co = coroutine.create(function()
+    vim.keymap.set("n", "<C-c>", function()
+      Logger.info("Cancelling token acquisition for config: " .. config_id)
+      Async.co_resume(co)
+
+      exit = true
+      vim.keymap.del("n", "<C-c>", { buffer = buf })
+    end, { buffer = buf, nowait = true })
+
+    _ = refresh_token_co(config_id) and Cmd.queue:resume()
+    co, exit = nil, nil
+  end)
+
+  Async.co_resume(co)
 end
 
-M.get_idToken = function(config_id)
+---Grant Type - all
+---Entry point to get the token for the given config_id
+M.get_token = function(type, config_id)
   local config = get_auth_config(config_id)
 
-  local token = not M.is_token_expired(config_id) and config.auth_data.id_token
+  local token_type = (type == "idToken" or config["Use ID Token"]) and "id_token" or "access_token"
+  token_type = config["Grant Type"] == "Implicit" and "code" or token_type
+
+  local token = not M.is_token_expired(config_id) and config.auth_data[token_type]
   _ = not token and M.refresh_token(config_id)
 
-  return config.auth_data.id_token
+  return config.auth_data[token_type]
 end
 
 ---Revoke the token for the given config_id
@@ -551,79 +557,6 @@ M.is_token_expired = function(config_id, type)
     and Logger.warn((type == "" and "Access" or "Refresh") .. " token expired for config: " .. config_id)
 
   return diff > expires_in, expires_in - diff
-end
-
-local function redirect_script()
-  return [[
-    <!DOCTYPE html>
-    <html>
-    <body>
-      <p>Processing authentication...</p>
-      <script>
-        const fragment = window.location.hash.substring(1);
-        
-        if (fragment && fragment.includes('access_token=')) {
-          window.location.href = '\/?' + fragment;
-        } else {
-          document.body.innerHTML = '<p>No access token found in URL fragment.</p>';
-        }
-      </script>
-    </body>
-    </html>
-  ]]
-end
-
-M.tcp_server = function(host, port, on_request)
-  host = host or "127.0.0.1"
-  port = tonumber(port) or 80
-
-  local server = vim.uv.new_tcp() or {}
-  local status, err = pcall(server.bind, server, host, port)
-  if not status then return Logger.error("Failed to start TCP server: " .. err) end
-
-  Logger.info("Server listening for code/token on " .. host .. ":" .. port)
-
-  local function stop_tcp(tcp)
-    pcall(function()
-      tcp:shutdown()
-      tcp:close()
-    end)
-  end
-
-  server:listen(128, function(err)
-    if err then return Logger.error("Failed to process request: " .. err) end
-
-    local client = vim.uv.new_tcp() or {}
-    server:accept(client)
-
-    client:read_start(function(err, chunk)
-      if err then return Logger.error("Failed to read server response: " .. err) end
-      ---@diagnostic disable-next-line: redundant-return-value
-      if not chunk then return stop_tcp(client) end
-
-      local response, result
-
-      if chunk:match("GET / HTTP") then
-        response = redirect_script()
-      elseif chunk:match("GET /%?") then
-        result = on_request(chunk:match("GET /%?(.+) HTTP"))
-        response = result or "OK"
-      end
-
-      client:write("HTTP/1.1 200 OKn\r\n\r\n" .. response .. "\n")
-      stop_tcp(client)
-
-      if result then stop_tcp(server) end
-    end)
-  end)
-
-  vim.uv.run()
-
-  return {
-    stop = function()
-      stop_tcp(server)
-    end,
-  }
 end
 
 return M

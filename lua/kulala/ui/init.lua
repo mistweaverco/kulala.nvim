@@ -145,11 +145,10 @@ local function hide_progress()
 end
 
 local function show_progress()
-  local db = DB.global_update()
-  if not db.requests_status then return hide_progress() end
+  if #CMD.queue.tasks == 0 then return hide_progress() end
 
   local row_offset = vim.fn.bufwinnr("kulala://news_footer") > 0 and 3 or 2
-  local message = ("Running.. %s/%s"):format(db.requests_done, db.requests_total)
+  local message = ("Running.. %s/%s"):format(CMD.queue.done, CMD.queue.total)
   message = message .. " - press <C-c> to cancel  "
 
   Float.create_window_footer(
@@ -407,7 +406,7 @@ end
 M.interrupt_requests = function()
   if get_current_response().method == "WS" then return require("kulala.cmd.websocket").close() end
 
-  CMD.reset_task_queue()
+  CMD.queue:reset()
   INLAY.clear("kulala.loading")
   hide_progress()
 end
