@@ -183,10 +183,10 @@ M.prompt_var = function(metadata_value)
 
   local var_name = kv[1]
   local prompt = table.concat(kv, " ", 2)
+  prompt = prompt == "" and "Enter value for variable: " .. var_name or prompt
 
   local value = vim.fn.input(prompt)
-
-  if value == nil or value == "" then return false end
+  if not value or value == "" then return false end
 
   DB.update().env[var_name] = value
   return true

@@ -47,7 +47,7 @@ local update_auth_data = function(tbl)
   fs.write_json(http_client_private_path, env)
 end
 
-describe("#wip oauth", function()
+describe("oauth", function()
   local curl, system, wait_for_requests
   local http_buf
   local on_request, redirect_request
@@ -476,7 +476,7 @@ describe("#wip oauth", function()
       end)
     end)
 
-    it("#wip adds custom params to requests", function()
+    it("adds custom params to requests", function()
       update_env({
         ["Grant Type"] = "Authorization Code",
         ["Custom Request Parameters"] = {

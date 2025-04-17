@@ -13,7 +13,8 @@ end
 
 M.log = function(message, level)
   level = level or log_levels.INFO
-  vim.schedule_wrap(vim.notify)(message, level, default_options)
+  local notify = vim.in_fast_event() and vim.schedule_wrap(vim.notify) or vim.notify
+  notify(message, level, default_options)
 end
 
 M.info = function(message)

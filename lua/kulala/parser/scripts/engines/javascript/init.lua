@@ -37,10 +37,14 @@ M.install_dependencies = function(wait)
   if is_uptodate() then return true end
   if vim.g.kulala_js_installing then return false end
 
+  local cmd = require("kulala.cmd")
+
   vim.g.kulala_js_installing = true
 
   Logger.info("Javascript dependencies not found or are out of date.")
   Logger.info("Installing dependencies...\nRequests will be resumed after the installation is complete.")
+
+  _ = not wait and cmd.queue:pause()
 
   local co, cmd_install, cmd_build
   co = coroutine.create(function()
@@ -62,7 +66,7 @@ M.install_dependencies = function(wait)
     vim.g.kulala_js_installing = false
 
     Logger.info("Javascript dependencies installed.")
-    require("kulala.cmd").queue:resume()
+    _ = not wait and cmd.queue:resume()
   end)
 
   Async.co_resume(co)
@@ -154,7 +158,7 @@ M.run = function(type, data)
   if not NODE_EXISTS then return Logger.error("node not found, please install nodejs") end
   if not NPM_EXISTS then return Logger.error("npm not found, please install nodejs") end
 
-  if not M.install_dependencies() then return require("kulala.cmd").queue:pause() end
+  if not M.install_dependencies() then return end
 
   local scripts = generate_all(type, data)
   if #scripts == 0 then return end

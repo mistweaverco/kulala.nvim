@@ -1,3 +1,4 @@
+---@diagnostic disable: need-check-nil
 local Logger = require("kulala.logger")
 
 local M = {}
@@ -5,8 +6,7 @@ local M = {}
 ---Resumes a coroutine and logs erorrs if any
 ---@param co thread
 ---@param ... any
----@return boolean|nil
----@return ... any
+---@return boolean|nil, ... any
 M.co_resume = function(co, ...)
   if not co or coroutine.status(co) ~= "suspended" then return false end
 
@@ -19,8 +19,7 @@ end
 ---@param co thread
 ---@param timeout number|nil
 ---@param ... any
----@return boolean|nil
----@return ... any
+---@return boolean|nil, ... any
 M.co_yield = function(co, timeout, ...)
   if not co or coroutine.status(co) ~= "running" then return false end
 
@@ -38,8 +37,7 @@ end
 ---If in coroutine, wraps a function in vim.schedule and executes it, waiting for the result
 ---@param co thread
 ---@param fn function
----@param ... any
----@return ... any
+---@param ... any, ... any
 M.co_wrap = function(co, fn, ...)
   if not (co and coroutine.status(co) == "running") then return fn(...) end
 

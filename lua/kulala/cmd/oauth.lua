@@ -182,7 +182,8 @@ M.verify_device_code = function(config_id)
 end
 
 local function poll_token_server(config, url, body)
-  local interval = config.auth_data.interval and tonumber(config.auth_data.interval) * 1000 or request_interval
+  local auth = config.auth_data
+  local interval = auth.interval and tonumber(auth.interval) * 1000 or request_interval
   local tries = 10
 
   local out, err
@@ -196,12 +197,7 @@ local function poll_token_server(config, url, body)
     if not out and not err:match("authorization_pending") and not err:match("slow_down") then break end
     out = out or {}
 
-    if
-      out.access_token
-      or count == tries
-      or exit
-      or os.difftime(os.time(), config.auth_data.acquired_at) > config.auth_data.expires_in
-    then
+    if out.access_token or exit or count == tries or os.difftime(os.time(), auth.acquired_at) > auth.expires_in then
       break
     end
   end

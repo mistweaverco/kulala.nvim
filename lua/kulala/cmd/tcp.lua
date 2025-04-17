@@ -76,7 +76,7 @@ M.server = {
 
 M.server = setmetatable(M.server, {
   __call = function(self, ...)
-    self:run(...)
+    return self:run(...)
   end,
 })
 
