@@ -190,6 +190,7 @@ local function parse_metadata(request, line)
   if line:sub(1, 3) == "# @" then
     local meta_name, meta_value = line:match("^# @([%w+%-]+)%s*(.*)$")
     if meta_name and meta_value then table.insert(request.metadata, { name = meta_name, value = meta_value }) end
+    if meta_name == "name" then request.name = meta_value end
   end
 end
 

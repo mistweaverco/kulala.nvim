@@ -1,9 +1,11 @@
+local cmd = require("kulala.cmd")
 local db = require("kulala.db")
 local fs = require("kulala.utils.fs")
 local h = require("test_helper")
 local kulala = require("kulala")
 local kulala_config = require("kulala.config")
 local oauth = require("kulala.cmd.oauth")
+local tcp = require("kulala.cmd.tcp")
 
 local http_client_path = h.expand_path("requests/http-client.env.json")
 local http_client_private_path = h.expand_path("requests/http-client.private.env.json")
@@ -47,7 +49,7 @@ end
 
 describe("oauth", function()
   local curl, system, wait_for_requests
-  local http_buf, ui_buf, ui_buf_tick
+  local http_buf
   local on_request, redirect_request
   local result = {}
 
@@ -56,13 +58,12 @@ describe("oauth", function()
   end
 
   before_each(function()
-    ui_buf_tick = 0
     restore_http_client_files()
     curl = h.Curl.stub({ ["https://www.secure.com"] = {} })
 
-    stub(vim.uv, "sleep", function() end)
+    stub(cmd.queue, "resume", function() end)
 
-    stub(oauth, "tcp_server", function(host, port, callback)
+    stub(tcp, "server", function(host, port, callback)
       result.tcp_server = { host = host, port = port }
       on_request = callback
       return { stop = function() end }
@@ -87,25 +88,20 @@ describe("oauth", function()
         local params = parse_params(system.args.cmd[#system.args.cmd - 1])
         params.url = system.args.cmd[#system.args.cmd]
 
+        system.async = true
+
         system.add_log(params)
         curl.request(system)
+
+        vim.schedule(function()
+          system.args.on_exit(system.completed)
+        end)
       end,
     })
 
     wait_for_requests = function(requests_no, predicate)
       system:wait(3000, function()
-        ui_buf = h.get_kulala_buf()
-        local tick = ui_buf > 0 and vim.api.nvim_buf_get_changedtick(ui_buf) or 0
-
-        if
-          curl.requests_no >= requests_no
-          and ui_buf > 0
-          and tick > ui_buf_tick
-          and (predicate == nil or predicate())
-        then
-          ui_buf_tick = tick
-          return true
-        end
+        if curl.requests_no >= requests_no and (predicate == nil or predicate()) then return true end
       end)
     end
 
@@ -124,10 +120,11 @@ describe("oauth", function()
 
     curl.reset()
     system.reset()
+    on_request = nil
 
+    _ = type(cmd.queue.resume) == "table" and cmd.queue.resume:revert()
     vim.ui.open:revert()
-    vim.uv.sleep:revert()
-    oauth.tcp_server:revert()
+    tcp.server:revert()
 
     restore_http_client_files()
   end)
@@ -162,6 +159,8 @@ describe("oauth", function()
   end)
 
   it("refreshes access token if it is expired", function()
+    cmd.queue.resume:revert()
+
     curl.stub({
       ["https://token.url"] = { stdout = '{ "access_token": "refreshed_access_token"}' },
     })
@@ -174,7 +173,6 @@ describe("oauth", function()
       refresh_token_acquired_at = os.time(),
       refresh_token_expires_in = os.time() + 3600,
     })
-
     kulala.run()
     wait_for_requests(1)
 
@@ -223,6 +221,8 @@ describe("oauth", function()
     end)
 
     it("grant type - Client Credentials: generate JWT", function()
+      cmd.queue.resume:revert()
+
       update_env({
         ["Grant Type"] = "Client Credentials",
         private_key = "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC5cHDxLOlZKpgT\nLNEF18AlQkxOHwYuP3VOuAeCxwCMlICSmfVRCzl5Zv+36fVTnvSF5tp1J46JI6jD\nM3WIE9UmjcRA13TVfzkoRuEKOfd20/PVEoxAXt4h5xgT4yuuJB1+C+R4xcZY4ul7\neCar1YJ12JJEt8vnZRGEhpjE8FtGvCBdDQ2+d7Qhr2LL8PIYW6mS6++5uCBAno+4\nevOmE2GkeQAfosrkDLSjOtNzF9pEYA5BzW1ZuZJJyWukUvaze4MqFH/6XfqzFPtr\n5XfQo8Olifljteic6JQx9KcvhXI7v1owtCpjkqcXMtiXtR23mRws0h//outYR0o4\nfJuOmouVAgMBAAECggEALJ/lXfRb1yxL2llvl4Na5tx0dlw65Yg5146rqAnxlOLr\nqdvI0A7ubsudgAmaEtxupYZvTcAOKexd4VOR1gRHx/ZXou72W6Y4//tGjmpypbLN\nu5myDI+HzwrInYiOa2KfgkSkX3fgimVYoHDChZlkwq0yTb0ZIX8N3yFww/u/S17y\n4sP3/+94dR6KWZTuufsmknAvByVGtVe3bGszYo77DC3m7+Kx2mR88anuP9a2H3Jf\nldzVCPvJ4bboncTFItxERRiHX/N7xwmNO7MzL5WZRL+GPe9+P/Hr/PKokeQc+yEg\n0cfWqKG0tyTLArRGOOHZ3wHLGuqjSFc+RZiXoL3dxQKBgQDwGSMjdhKa+Ck6SwkU\n26vvTLN5XTwleG9w5Mhj3esKs0DROEGfksFmSCCkFNboDl11RJuUldNwa4AVyZoc\nPbA96jRJGK7AEcNOV9FwdEs8rc0Berfn6klQuE66gsVonIM9fRiq8pYnnZ552Urh\nuHxgQoQL5iWCdl/IZ4kai8FHJwKBgQDFuI/Dv7HjFS9bOkIP7pg/KKYzl6VsUSlp\nEkd67V9TLHwIToq+k2cjmPMRCKD6KYkhbyOMN3GJpk348h9xdY9reIOBAb7hotbs\nQCRYFmuiksKeDoaP8N7MSIjs2C1AMO80RbyB2jLF8R9VIE64xZmUs0RBki5vqvtZ\naqQbpqxs4wKBgQCMbmd7Ckh/k76pddHt/T5nTPl8dugDEpo78dSzdM1RCN9UgA8C\nAphT9sQAtJ+uQxiuyl4lXiy5iGb2V2BoPDylOiMyzdkIRltxqzO5DowjBZTu1JRU\ndVhEekiyFmLYeRLaGB0hf5oLuclDg7CkrX8x3jXVr9son4wOb2BlwnBd6QKBgALs\nZKvHRNEPuiCGLv3fUD720eZHYrnERXF5RLdLlTI8oSTaTHDe6xJ6q3VgBElOnelx\npDvpgfNAEz0QD2j1DQbQxFj+9pyNdNIPbLoksri3pMsDeffc3t50YBnoZFrjnlXO\nhigBWujUVNtEXAWdXlT1hZfWmnsqMwcybXS/NSNzAoGBAJekqSCvUQHdiNWq1BPp\nM998rdujTGmfYCdKLT+c0i1/s3YuGu/h87tTSjXi7Jmq/iNVM2+RoTaGvvD1b+ZC\nGLcVcsqa6qD77WRQZ3q+2sF8v2vSd9oHT0R2jA4U/zVyF9dFOV4tT09xrFh7vLXM\nfYsrQTaSEta7ynoUI5/9NJTJ\n-----END PRIVATE KEY-----\n",
@@ -241,7 +241,7 @@ describe("oauth", function()
       })
 
       kulala.run()
-      wait_for_requests(2)
+      wait_for_requests(1)
 
       assert.is_true(#get_request().assertion > 0)
       assert.has_properties(get_request(), {
@@ -259,13 +259,15 @@ describe("oauth", function()
     end)
 
     it("grant type - Client Credentials: use provided", function()
+      cmd.queue.resume:revert()
+
       update_env({
         ["Grant Type"] = "Client Credentials",
         Assertion = "custom_assertion",
       })
 
       kulala.run()
-      wait_for_requests(2)
+      wait_for_requests(1)
 
       assert.is_true(#get_request().assertion > 0)
       assert.has_properties(get_request(), {
@@ -281,6 +283,8 @@ describe("oauth", function()
     end)
 
     it("grant type - Implicit", function()
+      cmd.queue.resume:revert()
+
       update_env({ ["Grant Type"] = "Implicit" })
       redirect_request = "access_token=new_access_token"
 
@@ -307,6 +311,8 @@ describe("oauth", function()
     end)
 
     it("grant type - Authorization code", function()
+      cmd.queue.resume:revert()
+
       update_env({ ["Grant Type"] = "Authorization Code" })
       redirect_request = "code=auth_code&state=state"
 
@@ -356,6 +362,8 @@ describe("oauth", function()
     end)
 
     it("grant type - Device code", function()
+      cmd.queue.resume:revert()
+
       curl.stub({
         ["https://device.url"] = {
           stdout = [[
@@ -421,7 +429,7 @@ describe("oauth", function()
       redirect_request = "code=auth_code&state=state"
 
       kulala.run()
-      wait_for_requests(2)
+      wait_for_requests(1)
 
       assert.has_properties(result.url_params, {
         response_type = "code token",
@@ -440,7 +448,7 @@ describe("oauth", function()
         redirect_request = "code=auth_code"
 
         kulala.run()
-        wait_for_requests(2)
+        wait_for_requests(1)
 
         assert.is_true(#result.url_params.code_challenge > 0)
         assert.is.same("S256", result.url_params.code_challenge_method)
@@ -458,7 +466,8 @@ describe("oauth", function()
         redirect_request = "code=auth_code&state=state"
 
         kulala.run()
-        wait_for_requests(2)
+        wait_for_requests(1)
+        -- LOG(get_env(), system.log)
 
         assert.is_true(#result.url_params.code_challenge > 0)
         assert.is.same("S256", result.url_params.code_challenge_method)
@@ -490,7 +499,7 @@ describe("oauth", function()
       redirect_request = "code=auth_code&state=state"
 
       kulala.run()
-      wait_for_requests(2)
+      wait_for_requests(1)
 
       assert.has_properties(result.url_params, {
         ["my-custom-parameter"] = "my-custom-value",

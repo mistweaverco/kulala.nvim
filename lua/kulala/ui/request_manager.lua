@@ -4,7 +4,6 @@ local has_snacks, snacks_picker = pcall(require, "snacks.picker")
 local DB = require("kulala.db")
 local Logger = require("kulala.logger")
 local Parser = require("kulala.parser.document")
-local ParserUtils = require("kulala.parser.utils")
 local Ui = require("kulala.ui")
 
 local M = {}
@@ -22,11 +21,8 @@ local function get_requests()
   end)
 
   for _, request in ipairs(_requests) do
-    local request_name = ParserUtils.get_meta_tag(request, "name") or request.name
-    if request_name then
-      table.insert(names, request_name)
-      requests[request_name] = request
-    end
+    table.insert(names, request.name)
+    requests[request.name] = request
   end
 
   return requests, names

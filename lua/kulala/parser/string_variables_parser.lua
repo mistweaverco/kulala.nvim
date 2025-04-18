@@ -49,6 +49,7 @@ local function parse_string_variables(str, variables, env, silent)
       value = "{{" .. variable_name .. "}}"
 
       _ = not silent
+        and parse_counter > 0
         and Logger.info(
           ("The variable %s was not found in the document or in the environment. Returning the string as received ..."):format(
             variable_name
