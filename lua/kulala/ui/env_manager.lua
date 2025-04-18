@@ -1,5 +1,6 @@
 local has_telescope = pcall(require, "telescope")
 local has_snacks, snacks_picker = pcall(require, "snacks.picker")
+local has_fzf = pcall(require, "fzf-lua")
 
 local DB = require("kulala.db")
 local Fs = require("kulala.utils.fs")
@@ -139,6 +140,56 @@ local open_telescope = function()
     :find()
 end
 
+local open_fzf = function()
+  local http_client_env = DB.find_unique("http_client_env")
+  if not http_client_env then return Logger.error("No environment found") end
+
+  local fzf = require("fzf-lua")
+  local builtin_previewer = require("fzf-lua.previewer.builtin")
+  local env_previewer = builtin_previewer.base:extend()
+
+  function env_previewer:new(o, opts, fzf_win)
+    env_previewer.super.new(self, o, opts, fzf_win)
+    setmetatable(self, env_previewer)
+    return self
+  end
+
+  function env_previewer:populate_preview_buf(entry_str)
+    local tmpbuf = self:get_tmp_buffer()
+
+    local env = http_client_env[entry_str]
+    if not env then return end
+
+    local lines = vim.split(vim.inspect(env), "\n")
+
+    vim.api.nvim_buf_set_lines(tmpbuf, 0, -1, false, lines)
+    vim.api.nvim_set_option_value("filetype", "lua", { buf = tmpbuf })
+    self:set_preview_buf(tmpbuf)
+  end
+
+  -- Disable line numbering and word wrap
+  function env_previewer:gen_winopts()
+    local new_winopts = {
+      wrap = false,
+      number = false,
+    }
+    return vim.tbl_extend("force", self.winopts, new_winopts)
+  end
+  local envs = get_env()
+
+  local opts = {
+    prompt = "Select env",
+    previewer = env_previewer,
+    actions = {
+      ["default"] = function(selected)
+        if selected and selected[1] then select_env(selected[1]) end
+      end,
+    },
+  }
+
+  fzf.fzf_exec(envs, opts)
+end
+
 local function open_selector()
   local envs = get_env()
   local opts = { prompt = "Select env" }
@@ -151,6 +202,8 @@ end
 M.open = function()
   if has_snacks then
     open_snacks()
+  elseif has_fzf then
+    open_fzf()
   elseif has_telescope then
     open_telescope()
   else
