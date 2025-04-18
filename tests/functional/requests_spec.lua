@@ -399,6 +399,7 @@ describe("requests", function()
       result = h.get_buf_lines(ui_buf):to_string()
 
       assert.has_string(result, expected)
+      -- FIXME: last_buf is not defined
       assert.is_true(ui_buf ~= last_buf)
     end)
 

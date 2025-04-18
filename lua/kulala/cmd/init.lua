@@ -377,8 +377,8 @@ end
 ---@param line_nr? number|nil
 ---@param callback function
 ---@return nil
-M.run_parser = function(requests, line_nr, callback)
-  local variables, reqs_to_process
+M.run_parser = function(requests, variables, line_nr, callback)
+  local reqs_to_process
 
   M.queue:reset()
 

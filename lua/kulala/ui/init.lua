@@ -415,7 +415,7 @@ M.open_all = function(_, line_nr)
   db.previous_response_pos = #db.responses
   INLAY.clear()
 
-  CMD.run_parser(nil, line_nr, function(success, duration, icon_linenr)
+  CMD.run_parser(nil, nil, line_nr, function(success, duration, icon_linenr)
     if success then
       elapsed_ms = UI_utils.pretty_ms(duration)
       status = "done"
@@ -456,7 +456,7 @@ M.replay = function()
 
   local db = DB.global_update()
 
-  CMD.run_parser({ last_request }, nil, function(_)
+  CMD.run_parser({ last_request }, nil, nil, function(_)
     set_current_response(#db.responses)
     M.open_default_view()
 

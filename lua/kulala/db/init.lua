@@ -49,13 +49,13 @@ M.session = {}
 
 ---@class GlobalData
 ---@field responses Response[] -- history of responses
----@field current_response_pos number|nil -- index of current response shown in UI
----@field previous_response_pos number|nil -- index of previous response shown in UI
+---@field current_response_pos number -- index of current response shown in UI
+---@field previous_response_pos number -- index of previous response shown in UI
 ---@field replay Request|nil -- previous request stored for replay
 M.global_data = {
   responses = {},
-  current_response_pos = nil,
-  previous_response_pos = nil,
+  current_response_pos = 0,
+  previous_response_pos = 0,
   replay = nil,
 }
 

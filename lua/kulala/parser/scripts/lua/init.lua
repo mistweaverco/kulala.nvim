@@ -166,7 +166,7 @@ M.run = function(type, scripts, _request, _response)
   _ = type == "post_request" and Fs.write_file(Globals.SCRIPT_POST_OUTPUT_FILE, script_env.output.post_request)
 
   _ = #script_env.output.assert_output.results > 0
-    and Fs.write_json(Globals.ASSERT_OUTPUT_FILE, script_env.output.assert_output, false, false)
+    and Fs.write_json(Globals.ASSERT_OUTPUT_FILE, script_env.output.assert_output, false, true)
 
   return status
 end
