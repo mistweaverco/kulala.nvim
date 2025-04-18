@@ -363,7 +363,7 @@ M.write_json = function(filename, data, format, escape)
 
   content = format and Json.format(content) or content
 
-  content = escape == false and content or content:gsub("\\/", "/"):gsub('\\"', '"')
+  content = escape == true and content or content:gsub("\\/", "/"):gsub('\\"', '"')
   return M.write_file(filename, content)
 end
 
