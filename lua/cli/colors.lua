@@ -1,7 +1,8 @@
 local M = {}
 
 M.get_hl_ansi = function(hl_group, str)
-  if _G.arg.color == "false" then return str end
+  hl_group = hl_group or "Grey"
+  if _G.arg.mono then return str end
 
   local hl, r, g, b
   local esc = string.char(27)

@@ -351,14 +351,14 @@ end
 ---@param filename string
 ---@param data table
 ---@param format boolean|nil -- format the JSON with jq
----@param escape boolean|nil -- do not escape [/"]
+---@param escape boolean|nil -- escape [/"]
 M.write_json = function(filename, data, format, escape)
   local content = vim.json.encode(data)
   if not content then return end
 
   content = format and Json.format(content) or content
-
   content = escape == true and content or content:gsub("\\/", "/"):gsub('\\"', '"')
+
   return M.write_file(filename, content)
 end
 
