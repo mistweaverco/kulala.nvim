@@ -1,0 +1,36 @@
+---
+name: 'Kulala CLI action'
+description: 'Execute HTTP files with Kulala'
+author: 'Yaro Apletov'
+branding:
+  color: 'purple'
+  icon: 'moon'
+inputs:
+  main:
+    description: |
+      Shell script with the call to kulala_cli and relevant options
+    required: false
+    default: '*'
+runs:
+  using: "composite"
+  steps:
+  - name: Setup Neovim
+    uses: rhysd/action-setup-vim@v1
+    with:
+      neovim: true
+
+  - name: Setup Node.js
+    uses: actions/setup-node@v4
+    with:
+      node-version: '22'
+
+  - name: Set GitHub Env
+    run: |
+      echo "$KULALA_CLI_PATH" >> $GITHUB_PATH
+    shell: bash
+    env:
+      KULALA_CLI_PATH: ${{ github.action_path }}/lua/cli
+
+  - name: Setup Kulala CI
+    run: kulala_ci.sh
+    shell: bash

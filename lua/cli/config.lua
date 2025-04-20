@@ -24,7 +24,6 @@ local M = {
       errorHighlight = "ErrorMsg",
     },
   },
-  debug = true,
 }
 
 return M
