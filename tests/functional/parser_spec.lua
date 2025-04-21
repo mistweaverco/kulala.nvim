@@ -548,21 +548,27 @@ describe("requests", function()
             ([[
             import tests/functional/requests/advanced_A.http
 
+            ### Request (zero)
             POST https://httpbin.org/post HTTP/1.1
             Content-Type: text/plain
 
             ###
+            run #Request (zero)
             run #Request 1
             run #POST https://httpbin.org/advanced_2
+
+            GET https://httpbin.org/get HTTP/1.1
           ]]):to_table(true),
             "test.http"
           )
 
-          result = select(2, doc_parser.get_document()) or {}
+          local _, requests = doc_parser.get_document()
+          result = doc_parser.get_request_at(requests, 13) or {}
 
           assert.is_same("https://httpbin.org/post", result[1].url)
           assert.is_same("https://httpbin.org/advanced_1", result[2].url)
           assert.is_same("https://httpbin.org/advanced_2", result[3].url)
+          assert.is_same("https://httpbin.org/get", result[4].url)
         end)
 
         it("run - replaces variables", function()

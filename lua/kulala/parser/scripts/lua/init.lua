@@ -1,4 +1,6 @@
+local Config = require("kulala.config")
 local Fs = require("kulala.utils.fs")
+local Globals = require("kulala.globals")
 local Logger = require("kulala.logger")
 local Table = require("kulala.utils.table")
 
@@ -60,7 +62,7 @@ local assert = {
 }
 
 setmetatable(assert, {
-  __call = function(value, message)
+  __call = function(_, value, message)
     assert.is_true(value, message)
   end,
   __index = {
@@ -80,7 +82,7 @@ local client = {
   log = function(msg)
     msg = vim.inspect(msg)
     script_env.output[script_env.type] = script_env.output[script_env.type] .. msg .. "\n"
-    Logger.info(msg)
+    _ = not Config.options.ui.disable_script_print_output and Logger.info(msg)
   end,
   global = {},
   test = function(name, fn)
@@ -112,6 +114,7 @@ local request = {
 local function set_script_env(type, _request, _response)
   script_env.type = type
   script_env.output = vim.deepcopy(script_output)
+  script_env.output.assert_output = Fs.read_json(Globals.ASSERT_OUTPUT_FILE) or script_env.output.assert_output
 
   script_env.client = client
   script_env.client.global = Fs.read_json(Fs.get_global_scripts_variables_file_path()) or {}
@@ -159,11 +162,11 @@ M.run = function(type, scripts, _request, _response)
   Fs.write_json(Fs.get_request_scripts_variables_file_path(), script_env.request.environment)
   Fs.write_json(Fs.get_global_scripts_variables_file_path(), script_env.client.global)
 
-  if not _response then return end
+  _ = type == "pre_request" and Fs.write_file(Globals.SCRIPT_PRE_OUTPUT_FILE, script_env.output.pre_request)
+  _ = type == "post_request" and Fs.write_file(Globals.SCRIPT_POST_OUTPUT_FILE, script_env.output.post_request)
 
-  _response.script_pre_output = script_env.output.pre_request
-  _response.script_post_output = script_env.output.post_request
-  _response.assert_output = script_env.output.assert_output
+  _ = #script_env.output.assert_output.results > 0
+    and Fs.write_json(Globals.ASSERT_OUTPUT_FILE, script_env.output.assert_output, false, false)
 
   return status
 end

@@ -8,31 +8,30 @@ local M = {}
 
 ---@class DocumentRequest
 ---@field metadata table<{name: string, value: string}>
----@field variables DocumentVariables
-
+---
 ---@field method string
 ---@field url string
 ---@field request_target string|nil
 ---@field http_version string
-
+---
 ---@field headers table<string, string>
 ---@field headers_raw table<string, string>
 ---@field cookie string
-
+---
 ---@field body string
 ---@field body_display string
-
+---
 ---@field start_line number
 ---@field end_line number
 ---@field show_icon_line_number number
-
+---
 ---@field redirect_response_body_to_files ResponseBodyToFile[]
-
+---
 ---@field scripts Scripts
-
+---
 ---@field name string|nil -- The name of the request, used for run()
 ---@field file string|nil -- The file the request was imported from, used for run()
-
+---
 ---@field processed boolean -- Whether the request has been processed, used by replay()
 
 ---@alias DocumentVariables table<string, string|number|boolean>
@@ -62,8 +61,8 @@ local default_document_request = {
   cookie = "",
   body = "",
   body_display = "",
-  start_line = 0, -- 1-based
-  end_line = 0, -- 1-based
+  start_line = 1, -- 1-based
+  end_line = 1, -- 1-based
   show_icon_line_number = 1,
   redirect_response_body_to_files = {},
   scripts = {
@@ -317,7 +316,19 @@ local function run_file(path, variables, requests, request, lnum)
   vim.list_extend(requests, imported_requests)
 end
 
+--- Processes the run command
+---@param name string name of the request
+---@param variables DocumentVariables document variables
+---@param requests DocumentRequest[] document requests
+---@param request DocumentRequest current request
+---@param imported_requests DocumentRequest[] imported requests
+---@param variables_to_replace string|nil variables to replace
+---@param lnum number line number of current request
 local function run_request(name, variables, requests, request, imported_requests, variables_to_replace, lnum)
+  vim.iter(requests):each(function(_request)
+    _ = _request.name == name and update_imported_request(request, _request, lnum)
+  end)
+
   local imported_request = vim.iter(imported_requests):find(function(imported_request)
     return imported_request.name == name
   end)
@@ -341,7 +352,7 @@ local function parse_import_command(variables, request, imported_requests, line)
 end
 
 local function parse_run_command(variables, requests, request, imported_requests, line, lnum)
-  local variables_to_replace = line:match("^run .+ %((.+)%)%s*$")
+  local variables_to_replace = line:match("^run .+ %((@.+)%)%s*$")
   if variables_to_replace then line = line:gsub("%s*%(" .. variables_to_replace .. "%)%s*", "") end
 
   local path = line:gsub("^run ", "")
@@ -480,7 +491,7 @@ M.get_document = function(lines, path)
   return variables, requests, imported_requests
 end
 
----Returns a DocumentRequest within specified line number from a list of DocumentRequests
+---Returns DocumentRequests within specified line number from a list of DocumentRequests
 ---or returns the first DocumentRequest in the list if no line number is provided
 ---@param requests DocumentRequest[]
 ---@param linenr? number|nil

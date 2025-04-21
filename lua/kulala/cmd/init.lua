@@ -110,15 +110,9 @@ end
 local function process_external(request, response)
   _ = Scripts.run("post_request", request, response) and REQUEST_PARSER.process_variables(request, {}, true)
 
-  response.script_pre_output = #response.script_pre_output > 0 and response.script_pre_output
-    or FS.read_file(GLOBALS.SCRIPT_PRE_OUTPUT_FILE)
-    or ""
-  response.script_post_output = #response.script_post_output > 0 and response.script_post_output
-    or FS.read_file(GLOBALS.SCRIPT_POST_OUTPUT_FILE)
-    or ""
-  response.assert_output = #response.assert_output > 0 and response.assert_output
-    or FS.read_json(GLOBALS.ASSERT_OUTPUT_FILE)
-    or {}
+  response.script_pre_output = FS.read_file(GLOBALS.SCRIPT_PRE_OUTPUT_FILE) or ""
+  response.script_post_output = FS.read_file(GLOBALS.SCRIPT_POST_OUTPUT_FILE) or ""
+  response.assert_output = FS.read_json(GLOBALS.ASSERT_OUTPUT_FILE) or {}
 
   response.assert_status = response.assert_output.status
   response.status = response.status and response.assert_status ~= false
