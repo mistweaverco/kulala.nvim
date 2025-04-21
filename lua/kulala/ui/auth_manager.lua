@@ -138,6 +138,16 @@ local function edit_private_env_file(config, picker)
   return edit_env_file(config, picker, "http-client.private.env.json")
 end
 
+local function set_buffer(buf, content)
+  if not content then return end
+
+  local lines = vim.split(vim.inspect(content), "\n")
+
+  vim.api.nvim_set_option_value("modifiable", true, { buf = buf })
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+  vim.api.nvim_set_option_value("filetype", "lua", { buf = buf })
+end
+
 local commands = {
   a = { add_new_config, "Add new Auth configuration" },
   e = { edit_env_file, "Edit Auth configuration" },
@@ -203,13 +213,7 @@ local function open_auth_telescope()
       previewer = previewers.new_buffer_previewer({
         title = "Configuration Details",
         define_preview = function(self, entry)
-          local config_data = env[entry.value]
-          if not config_data then return end
-
-          local lines = vim.split(vim.inspect(config_data), "\n")
-
-          vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, lines)
-          vim.api.nvim_set_option_value("filetype", "lua", { buf = self.state.bufnr })
+          set_buffer(self.state.bufnr, env[entry.value])
         end,
       }),
 
@@ -221,13 +225,13 @@ end
 local function open_auth_snacks()
   local env = get_env()
   local config_names = vim.tbl_keys(env)
-
   local items = vim.iter(config_names):fold({}, function(acc, name)
     local config_data = env[name]
     table.insert(acc, {
       text = name,
       label = name,
       data = config_data,
+      file = get_env_file(),
       content = vim.inspect(config_data),
     })
     return acc
@@ -257,26 +261,13 @@ local function open_auth_snacks()
     title = "Auth Configurations",
     items = items,
     actions = _actions,
-    layout = vim.tbl_deep_extend("force", snacks_picker.config.layout("telescope"), {
-      reverse = true,
-      layout = {
-        box = "horizontal",
-        width = 0.8,
-        height = 0.9,
-        { box = "vertical" },
-        { win = "preview", width = 0.55 },
-      },
-    }),
+    layout = Config.options.ui.pickers.snacks.layout,
+
     preview = function(ctx)
-      local bufnr = ctx.picker.layout.wins.preview.buf
-
-      vim.api.nvim_set_option_value("modifiable", true, { buf = bufnr })
-      vim.api.nvim_set_option_value("filetype", "lua", { buf = bufnr })
-
-      vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, vim.split(ctx.item.content or "", "\n"))
-
+      set_buffer(ctx.picker.layout.wins.preview.buf, ctx.item.content)
       return true
     end,
+
     win = {
       preview = {
         title = "Configuration Details",
@@ -289,7 +280,9 @@ local function open_auth_snacks()
           sidescrolloff = 1,
         },
       },
+
       input = { keys = keys },
+
       list = {
         title = "Auth Configurations",
         wo = {

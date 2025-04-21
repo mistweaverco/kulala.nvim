@@ -81,6 +81,7 @@ local function load_data()
   if CONFIG.get().environment_scope == "b" then
     local buf = M.get_current_buffer()
     local kulala_data = buf and vim.b[buf].kulala_data
+
     M.data = kulala_data and kulala_data or default_data()
   elseif CONFIG.get().environment_scope == "g" then
     -- keep in lua only

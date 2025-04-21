@@ -89,7 +89,6 @@ M.get_selected_env = function()
 end
 
 M.set_selected_env = function(env)
-  ENV.get_env()
   vim.g.kulala_selected_env = env or require("kulala.ui.env_manager").open()
 end
 

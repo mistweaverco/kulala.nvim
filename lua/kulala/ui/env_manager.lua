@@ -2,11 +2,18 @@ local has_telescope = pcall(require, "telescope")
 local has_snacks, snacks_picker = pcall(require, "snacks.picker")
 local has_fzf = pcall(require, "fzf-lua")
 
+local Config = require("kulala.config")
 local DB = require("kulala.db")
+local Env = require("kulala.parser.env")
 local Fs = require("kulala.utils.fs")
 local Logger = require("kulala.logger")
 
 local M = {}
+
+local function get_http_client_env()
+  Env.get_env()
+  return DB.find_unique("http_client_env") or Logger.error("No environment found")
+end
 
 local function get_env()
   local env = DB.find_unique("http_client_env")
@@ -29,9 +36,18 @@ local function select_env(env)
   vim.g.kulala_selected_env = env
 end
 
+local function set_buffer(buf, content)
+  if not content then return end
+
+  vim.api.nvim_set_option_value("modifiable", true, { buf = buf })
+  vim.api.nvim_set_option_value("filetype", "lua", { buf = buf })
+
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, vim.split(content, "\n"))
+end
+
 local open_snacks = function()
-  local http_client_env = DB.find_unique("http_client_env")
-  if not http_client_env then return Logger.error("No environment found") end
+  local http_client_env = get_http_client_env()
+  if not http_client_env then return end
 
   local items = vim.iter(get_env()):fold({}, function(acc, name)
     local env_data = http_client_env[name] or {}
@@ -49,25 +65,10 @@ local open_snacks = function()
   snacks_picker({
     title = "Select Environment",
     items = items,
-    layout = vim.tbl_deep_extend("force", snacks_picker.config.layout("telescope"), {
-      reverse = true,
-      layout = {
-        box = "horizontal",
-        width = 0.8,
-        height = 0.9,
-        { box = "vertical" },
-        { win = "preview", width = 0.6 },
-      },
-    }),
+    layout = Config.options.ui.pickers.snacks.layout,
 
     preview = function(ctx)
-      local bufnr = ctx.picker.layout.wins.preview.buf
-
-      vim.api.nvim_set_option_value("modifiable", true, { buf = bufnr })
-      vim.api.nvim_set_option_value("filetype", "lua", { buf = bufnr })
-
-      vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, vim.split(ctx.item.content, "\n"))
-
+      set_buffer(ctx.picker.layout.wins.preview.buf, ctx.item.content)
       return true
     end,
 
@@ -99,8 +100,8 @@ local open_telescope = function()
   local previewers = require("telescope.previewers")
   local config = require("telescope.config").values
 
-  local http_client_env = DB.find_unique("http_client_env")
-  if not http_client_env then return Logger.error("No environment found") end
+  local http_client_env = get_http_client_env()
+  if not http_client_env then return end
 
   local envs = get_env()
 
@@ -125,13 +126,7 @@ local open_telescope = function()
       previewer = previewers.new_buffer_previewer({
         title = "Environment",
         define_preview = function(self, entry)
-          local env = http_client_env[entry.value]
-          if not env then return end
-
-          local lines = vim.split(vim.inspect(env), "\n")
-
-          vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, lines)
-          vim.api.nvim_set_option_value("filetype", "lua", { buf = self.state.bufnr })
+          set_buffer(self.state.bufnr, http_client_env[entry.value])
         end,
       }),
 
@@ -141,8 +136,8 @@ local open_telescope = function()
 end
 
 local open_fzf = function()
-  local http_client_env = DB.find_unique("http_client_env")
-  if not http_client_env then return Logger.error("No environment found") end
+  local http_client_env = get_http_client_env()
+  if not http_client_env then return end
 
   local fzf = require("fzf-lua")
   local builtin_previewer = require("fzf-lua.previewer.builtin")
@@ -155,26 +150,19 @@ local open_fzf = function()
   end
 
   function env_previewer:populate_preview_buf(entry_str)
-    local tmpbuf = self:get_tmp_buffer()
-
-    local env = http_client_env[entry_str]
-    if not env then return end
-
-    local lines = vim.split(vim.inspect(env), "\n")
-
-    vim.api.nvim_buf_set_lines(tmpbuf, 0, -1, false, lines)
-    vim.api.nvim_set_option_value("filetype", "lua", { buf = tmpbuf })
-    self:set_preview_buf(tmpbuf)
+    local buf = self:get_tmp_buffer()
+    set_buffer(buf, http_client_env[entry_str])
+    self:set_preview_buf(buf)
   end
 
   -- Disable line numbering and word wrap
   function env_previewer:gen_winopts()
-    local new_winopts = {
+    return vim.tbl_extend("force", self.winopts, {
       wrap = false,
       number = false,
-    }
-    return vim.tbl_extend("force", self.winopts, new_winopts)
+    })
   end
+
   local envs = get_env()
 
   local opts = {

@@ -1,6 +1,7 @@
 local has_telescope = pcall(require, "telescope")
 local has_snacks, snacks_picker = pcall(require, "snacks.picker")
 
+local Config = require("kulala.config")
 local DB = require("kulala.db")
 local Logger = require("kulala.logger")
 local Parser = require("kulala.parser.document")
@@ -91,16 +92,7 @@ local open_snacks = function()
     items = items,
     actions = actions,
     matcher = { sort_empty = false },
-    layout = vim.tbl_deep_extend("force", snacks_picker.config.layout("telescope"), {
-      reverse = true,
-      layout = {
-        box = "horizontal",
-        width = 0.8,
-        height = 0.9,
-        { box = "vertical" },
-        { win = "preview", width = 0.6 },
-      },
-    }),
+    layout = Config.options.ui.pickers.snacks.layout,
 
     preview = function(ctx)
       local bufnr = ctx.picker.layout.wins.preview.buf
