@@ -78,12 +78,11 @@ require("nvim-lightbulb").setup({
 
 - `#` and `//` is used to comment out a request or its data.
 - `###` is used to delimit requests and their data.
-- `### Request name` is used to name a request, for UI, `import` and `run` commands.
+- `### Request name` is used to name a request, for UI, `import` / `run` commands and to reference the request data in other requests.
 
 #### Metadata
 
 - `# @meta-name meta-value` is used to add arbitrary metadata to a request or file.
-- `# @name request-name` is used to name a request, so it can be referred to in scripts.
 - `# @prompt variable-name prompt-string` is used to prompt the user for input and store it in a variable.
 
 #### Directives

@@ -1,5 +1,6 @@
 local CONFIG = require("kulala.config")
 local DB = require("kulala.db")
+local INT_PROCESSING = require("kulala.internal_processing")
 local Logger = require("kulala.logger")
 
 local M = {}
@@ -18,40 +19,26 @@ local function get_match(str)
     local path_name, path_method, path_type, subpath = string.match(str, p)
     if path_name then return path_name, path_method, path_type, subpath end
   end
-  return nil, nil, nil, nil
 end
 
-local get_lower_headers = function(headers)
-  local headers_table = {}
-  for key, value in pairs(headers) do
-    headers_table[key:lower()] = value
-  end
-  return headers_table
-end
+local function get_data(name, method)
+  local response = vim.iter(DB.global_update().responses):rfind(function(response)
+    return response.name == name
+  end)
 
-local function get_config_contenttype(headers)
-  headers = get_lower_headers(headers)
-  if headers["content-type"] then
-    local content_type = vim.split(headers["content-type"], ";")[1]
-    local config = CONFIG.get().contenttypes[content_type]
-    if config then return config end
-  end
-  return CONFIG.default_contenttype
+  return method == "request" and (response or {}).request or response
 end
 
 local function get_body_value_from_path(name, method, subpath)
-  local base_table = DB.find_unique("env")[name]
-  if not base_table then return nil end
-  if not base_table[method] then return nil end
-  if not base_table[method].body then return nil end
+  local base_table = get_data(name, method)
+  if not base_table then return end
 
-  if subpath == "*" then return base_table[method].body end
+  if subpath == "*" then return base_table.body end
 
-  if not base_table[method].headers then return nil end
-  local contenttype = get_config_contenttype(base_table[method].headers)
+  local contenttype = INT_PROCESSING.get_config_contenttype(base_table.headers_tbl)
 
   if type(contenttype.pathresolver) == "function" then
-    return contenttype.pathresolver(base_table[method].body, subpath)
+    return contenttype.pathresolver(base_table.body, subpath)
   elseif type(contenttype.pathresolver) == "table" then
     local cmd = {}
 
@@ -65,16 +52,13 @@ local function get_body_value_from_path(name, method, subpath)
 
     return ret.stdout
   end
-
-  return nil
 end
 
 local function get_header_value_from_path(name, method, subpath)
-  local base_table = DB.find_unique("env")[name]
-  if not base_table then return nil end
-  if not base_table[method] then return nil end
-  if not base_table[method].headers then return nil end
-  local result = base_table[method].headers
+  local base_table = get_data(name, method)
+  if not base_table then return end
+
+  local result = base_table.headers_tbl
   local path_parts = {}
 
   -- Split the path into parts
@@ -83,23 +67,23 @@ local function get_header_value_from_path(name, method, subpath)
   end
 
   for _, key in ipairs(path_parts) do
+    key = tonumber(key) or key
+
     if result[key] then
       result = result[key]
     else
-      return nil -- Return nil if any part of the path is not found
+      return -- Return nil if any part of the path is not found
     end
   end
 
-  return result
+  return type(result) == "table" and result[1] or result
 end
 
 local function get_cookies_value_from_path(name, subpath)
-  local db_env = DB.find_unique("env")
-  local base_table = db_env and db_env[name] or nil
-  if not base_table then return nil end
-  if not base_table.response then return nil end
-  if not base_table.response.cookies then return nil end
-  local result = base_table.response.cookies
+  local base_table = get_data(name)
+  if not base_table then return end
+
+  local result = base_table.cookies
   local path_parts = {}
 
   -- Split the path into parts
@@ -121,7 +105,7 @@ end
 M.parse = function(path)
   local path_name, path_method, path_type, path_subpath = get_match(path)
 
-  if not path_name or not path_method or not path_type or not path_subpath then return nil end
+  if not (path_name and path_method and path_type and path_subpath) then return end
 
   if path_type == "headers" then
     return get_header_value_from_path(path_name, path_method, path_subpath)

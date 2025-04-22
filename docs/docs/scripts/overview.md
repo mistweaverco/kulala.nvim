@@ -74,7 +74,7 @@ fs.writeFileSync("../http/my-file.txt", "Hello, world!");
 ## Pre-request
 
 ```http title="./pre-request-example.http"
-# @name REQUEST_ONE
+### REQUEST_ONE
 < {%
   var crypto = require('crypto');
   var fs = require('fs');
@@ -105,7 +105,7 @@ Authorization: Bearer Foo:bar
 
 ###
 
-# @name REQUEST_TWO
+### REQUEST_TWO
 POST https://httpbin.org/post HTTP/1.1
 accept: application/json
 content-type: application/json
@@ -147,7 +147,7 @@ THIS_IS_SOME_TOKEN_VALUE_123
 ## Post-request
 
 ```http title="./post-request-example.http"
-# @name REQUEST_ONE_
+### REQUEST_ONE_
 POST https://httpbin.org/post HTTP/1.1
 Accept: application/json
 Content-Type: application/json
@@ -172,7 +172,7 @@ Authorization: Bearer Foo:bar
 
 ###
 
-# @name REQUEST_TWO_2_
+### REQUEST_TWO_2_
 POST https://httpbin.org/post HTTP/1.1
 Accept: application/json
 Content-Type: application/json
@@ -185,7 +185,7 @@ Content-Type: application/json
 
 ###
 
-# @name REQUEST_THREE
+### REQUEST_THREE
 POST https://httpbin.org/post HTTP/1.1
 Accept: application/json
 Content-Type: application/json
@@ -202,7 +202,7 @@ client.global.set("BONOBO", response.headers.valueOf("Date"));
 ## Print Variables
 
 ```http title="./pre-request-example.http"
-# @name REQUEST_ONE
+### REQUEST_ONE
 < {%
   var crypto = require('crypto');
   var fs = require('fs');

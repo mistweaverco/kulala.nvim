@@ -105,7 +105,7 @@ Please see [Testing and reporting](../usage/testing-and-reporting.md) for more d
 ## Pre-request
 
 ```http
-# @name REQUEST_ONE
+### REQUEST_ONE
 
 < {%
   -- lua
@@ -146,7 +146,7 @@ Authorization: Bearer Foo:bar
 
 ###
 
-# @name REQUEST_TWO
+### REQUEST_TWO
 POST https://httpbin.org/post HTTP/1.1
 accept: application/json
 content-type: application/json

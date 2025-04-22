@@ -10,22 +10,35 @@ M.data = nil
 ---@class Response
 ---@field id string
 ---@field name string -- name of the request
+---
 ---@field url string -- request url
 ---@field method string -- request method
+---@field request { headers_tbl: table, body: string } -- request
+---
 ---@field status boolean -- status of the request
 ---@field code number -- request command exit code
 ---@field response_code number -- http response code
+---
 ---@field duration number -- duration of the request
 ---@field time number -- time of the request
----@field body string -- body of the request
+---
+---@field body string -- body of the response
 ---@field json table -- json response
----@field headers string -- headers of the request
+---
+---@field headers string -- headers of the response
+---@field headers_tbl table -- parsed headers of the response
+---
+---@field cookies table -- received cookies
+---
 ---@field errors string -- errors of the request
 ---@field stats table|string -- stats of the request
+---
 ---@field script_pre_output string
 ---@field script_post_output string
+---
 ---@field assert_output table
 ---@field assert_status boolean
+---
 ---@field file string -- path of the file of the request
 ---@field buf number
 ---@field buf_name string
@@ -81,6 +94,7 @@ local function load_data()
   if CONFIG.get().environment_scope == "b" then
     local buf = M.get_current_buffer()
     local kulala_data = buf and vim.b[buf].kulala_data
+
     M.data = kulala_data and kulala_data or default_data()
   elseif CONFIG.get().environment_scope == "g" then
     -- keep in lua only

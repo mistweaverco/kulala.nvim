@@ -119,7 +119,7 @@ This token is then used in the `Authorization` header for further requests.
 ### Sending the credentials
 
 ```http
-# @name login
+### login
 POST {{loginURL}} HTTP/1.1
 Content-Type: application/x-www-form-urlencoded
 Accept: application/json

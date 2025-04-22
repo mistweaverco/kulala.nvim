@@ -1,5 +1,6 @@
 local dynamic_vars = require("kulala.parser.dynamic_vars")
 local fs = require("kulala.utils.fs")
+local globals = require("kulala.globals")
 
 local h = require("test_helper.ui")
 
@@ -171,6 +172,7 @@ function Curl.request(job)
 
   _ = (mappings.headers and curl_flags.headers_path) and fs.write_file(curl_flags.headers_path, mappings.headers)
   _ = (mappings.body and curl_flags.body_path) and fs.write_file(curl_flags.body_path, mappings.body)
+  _ = (mappings.cookies and curl_flags.body_path) and fs.write_file(globals.COOKIES_JAR_FILE, mappings.cookies)
 
   vim.list_extend(Curl.paths, { curl_flags.headers_path, curl_flags.body_path })
 

@@ -547,7 +547,7 @@ function M.get_basic_request_data(requests, document_request, line_nr)
   request.url_raw = document_request.url
   request.body_raw = document_request.body
 
-  Table.remove_keys(request, { "name", "body", "variables", "start_line", "end_line" })
+  Table.remove_keys(request, { "body", "variables", "start_line", "end_line" })
 
   return request
 end

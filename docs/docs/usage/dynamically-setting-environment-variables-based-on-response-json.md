@@ -12,7 +12,7 @@ the [request variables](request-variables) feature.
 
 ```http title="with-builtin-parser.http"
 # Setting the environment variables to be used in the next request.
-# @name REQUEST_ONE
+### REQUEST_ONE
 POST https://httpbin.org/post HTTP/1.1
 Content-Type: application/json
 Accept: application/json

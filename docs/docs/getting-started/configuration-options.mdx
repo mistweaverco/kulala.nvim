@@ -794,7 +794,6 @@ Default:
 scratchpad_default_contents = {
   "@MY_TOKEN_NAME=my_token_value",
   "",
-  "# @name scratchpad",
   "POST https://httpbin.org/post HTTP/1.1",
   "accept: application/json",
   "content-type: application/json",
@@ -815,7 +814,6 @@ Example:
       scratchpad_default_contents = {
         "@AUTH_USERNAME=my_username",
         "",
-        "# @name scratchpad_special_name",
         "POST https://httpbin.org/post HTTP/1.1",
         "accept: application/json",
         "content-type: application/json",
@@ -827,6 +825,42 @@ Example:
     },
   },
 }
+```
+
+### ui.disable_news_popup
+
+Disable the news popup.
+
+### ui.autocomplete
+
+Enable/disable built-in autocompletion.
+
+### ui.lua_syntax_hl
+
+Enable/disable lua syntax highlighting.
+
+### ui.pickers
+
+Settings for pickers used for Enironment, Authentication and Requests Managers.
+
+```lua
+pickers = {
+  snacks = {
+    layout = function()
+      local has_snacks, snacks_picker = pcall(require, "snacks.picker")
+      return not has_snacks and {}
+        or vim.tbl_deep_extend("force", snacks_picker.config.layout("telescope"), {
+          reverse = true,
+          layout = {
+            { { win = "list" }, { height = 1, win = "input" }, box = "vertical" },
+            { win = "preview", width = 0.6 },
+            box = "horizontal",
+            width = 0.8,
+          },
+        })
+    end,
+  },
+},
 ```
 
 ## Keymaps

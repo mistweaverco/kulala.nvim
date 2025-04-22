@@ -73,7 +73,7 @@ the `body` and `headers` view of the last run request.
 Named requests are those that have a name like so:
 
 ```http
-# @name MY_REQUEST_NAME
+### MY_REQUEST_NAME
 GET http://example.com
 ```
 

@@ -1,6 +1,6 @@
 ### Set cookies
 
-# @name setCookies
+### setCookies
 GET https://httpbin.org/cookies/set?sample=cookie123&test=cookie456 HTTP/1.1
 
 ### Call protected resource with cookies
