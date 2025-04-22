@@ -88,7 +88,7 @@ PRE-REQUEST                     *kulala.overview-scripts-overview-pre-request*
 title="./pre-request-example.http"
 
 >http
-    # @name REQUEST_ONE
+    ### REQUEST_ONE
     < {%
       var crypto = require('crypto');
       var fs = require('fs');
@@ -119,7 +119,7 @@ title="./pre-request-example.http"
     
     ###
     
-    # @name REQUEST_TWO
+    ### REQUEST_TWO
     POST https://httpbin.org/post HTTP/1.1
     accept: application/json
     content-type: application/json
@@ -160,7 +160,7 @@ POST-REQUEST                   *kulala.overview-scripts-overview-post-request*
 title="./post-request-example.http"
 
 >http
-    # @name REQUEST_ONE_
+    ### REQUEST_ONE_
     POST https://httpbin.org/post HTTP/1.1
     Accept: application/json
     Content-Type: application/json
@@ -185,7 +185,7 @@ title="./post-request-example.http"
     
     ###
     
-    # @name REQUEST_TWO_2_
+    ### REQUEST_TWO_2_
     POST https://httpbin.org/post HTTP/1.1
     Accept: application/json
     Content-Type: application/json
@@ -198,7 +198,7 @@ title="./post-request-example.http"
     
     ###
     
-    # @name REQUEST_THREE
+    ### REQUEST_THREE
     POST https://httpbin.org/post HTTP/1.1
     Accept: application/json
     Content-Type: application/json
@@ -220,7 +220,7 @@ PRINT VARIABLES             *kulala.overview-scripts-overview-print-variables*
 title="./pre-request-example.http"
 
 >http
-    # @name REQUEST_ONE
+    ### REQUEST_ONE
     < {%
       var crypto = require('crypto');
       var fs = require('fs');

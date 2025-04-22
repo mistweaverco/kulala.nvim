@@ -95,7 +95,7 @@ The archive |kulala.demos.zip| also contains sample `httt-client-env.json` and
     
     ### Get token (simulating login)
     
-    # @name login
+    ### login
     POST https://httpbin.org/post HTTP/1.1
     Content-Type: application/json
     
@@ -121,7 +121,7 @@ The archive |kulala.demos.zip| also contains sample `httt-client-env.json` and
 >http
     ### Set cookies
     
-    # @name setCookies
+    ### setCookies
     GET https://httpbin.org/cookies/set?sample=cookie123&test=cookie456 HTTP/1.1
     
     ### Call protected resource with cookies
@@ -147,7 +147,7 @@ The archive |kulala.demos.zip| also contains sample `httt-client-env.json` and
       
       console.log('Pre-request variables set:', { timestamp, nonce });
     %}
-    # @name login
+    ### login
     POST https://httpbin.org/post HTTP/1.1
     Content-Type: application/json
     
@@ -170,7 +170,7 @@ The archive |kulala.demos.zip| also contains sample `httt-client-env.json` and
     
     ###
     
-    # @name REQUEST_ONE
+    ### REQUEST_ONE
     POST https://httpbin.org/post HTTP/1.1
     Accept: application/json
     Content-Type: application/json
@@ -196,7 +196,7 @@ The archive |kulala.demos.zip| also contains sample `httt-client-env.json` and
     
     ###
     
-    # @name REQUEST_TWO
+    ### REQUEST_TWO
     POST https://httpbin.org/post HTTP/1.1
     Accept: application/json
     Content-Type: application/json
@@ -209,7 +209,7 @@ The archive |kulala.demos.zip| also contains sample `httt-client-env.json` and
     
     ###
     
-    # @name REQUEST_THREE
+    ### REQUEST_THREE
     POST https://httpbin.org/post HTTP/1.1
     Accept: application/json
     Content-Type: application/json
