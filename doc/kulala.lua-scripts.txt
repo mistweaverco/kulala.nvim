@@ -121,7 +121,7 @@ Please see |kulala.testing-and-reporting.txt| for more details.
 PRE-REQUEST                       *kulala.lua-scripts-lua-scripts-pre-request*
 
 >http
-    # @name REQUEST_ONE
+    ### REQUEST_ONE
     
     < {%
       -- lua
@@ -162,7 +162,7 @@ PRE-REQUEST                       *kulala.lua-scripts-lua-scripts-pre-request*
     
     ###
     
-    # @name REQUEST_TWO
+    ### REQUEST_TWO
     POST https://httpbin.org/post HTTP/1.1
     accept: application/json
     content-type: application/json
