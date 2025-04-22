@@ -200,6 +200,29 @@ describe("requests", function()
       assert.has_string(result, expected)
     end)
 
+    it("#wip has access to request and response data through", function()
+      vim.cmd.edit(h.expand_path("requests/advanced_F.http"))
+
+      curl.stub({
+        ["*"] = {
+          headers = h.load_fixture("fixtures/advanced_F_headers.txt"),
+          body = h.load_fixture("fixtures/advanced_F_body.txt"),
+          cookies = h.load_fixture("fixtures/cookies.txt"),
+        },
+      })
+
+      kulala.run_all()
+      wait_for_requests(2)
+
+      result = vim.json.decode(DB.data.current_request.body)
+      assert.is_same("application/json", result.request_headers)
+      assert.is_same("TEST_DOCUMENT_VAR", result.request_body)
+
+      assert.is_same("TEST_JS_SET_REQUEST_VAR", result.response_body)
+      assert.is_same("gunicorn/19.9.0", result.response_headers)
+      assert.is_same("bar1", result.response_cookies)
+    end)
+
     it("makes named requests, prompts for vars, uses scripts, uses env json", function()
       vim.cmd.edit(h.expand_path("requests/advanced_E.http"))
 

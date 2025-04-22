@@ -20,8 +20,8 @@ Returns all response header objects.
 
 Each header object has the following methods:
 
-- `header.valueOf(headerName)` - Get the value of a header.
-- `header.valuesOf(headerName)` - Retrieves the object containing all values of the headerName response header. Returns null if the headerName response header doesn't exist.
+- `headers.valueOf(headerName)` - Get the value of a header.
+- `headers.valuesOf(headerName)` - Retrieves the object containing all values of the headerName response header. Returns null if the headerName response header doesn't exist.
 
 ```javascript
 client.log(response.headers.valueOf("Content-Type"));

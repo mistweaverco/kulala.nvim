@@ -90,6 +90,8 @@ local open_snacks = function()
       ctx:close()
     end,
   })
+
+  return true
 end
 
 local open_telescope = function()
@@ -189,7 +191,7 @@ end
 
 M.open = function()
   if has_snacks then
-    open_snacks()
+    _ = snacks_picker.config.get().ui_select and open_snacks() or open_selector()
   elseif has_fzf then
     open_fzf()
   elseif has_telescope then

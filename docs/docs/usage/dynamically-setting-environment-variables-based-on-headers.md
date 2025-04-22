@@ -12,7 +12,7 @@ In this example, the `Content-Type` and `Date` headers are
 received in the first request.
 
 ```http title="simple.http"
-# @name REQUEST_ONE
+### REQUEST_ONE
 POST https://httpbin.org/post HTTP/1.1
 Content-Type: application/json
 Accept: application/json

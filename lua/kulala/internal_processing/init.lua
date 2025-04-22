@@ -122,21 +122,6 @@ M.get_config_contenttype = function(headers)
   return CONFIG.default_contenttype
 end
 
-M.set_env_for_named_request = function(name, body)
-  local named_request = {
-    response = {
-      headers = get_last_headers_as_table(),
-      body = body,
-      cookies = get_cookies_as_table(),
-    },
-    request = {
-      headers = DB.find_unique("current_request").headers,
-      body = DB.find_unique("current_request").body,
-    },
-  }
-  DB.update().env[name] = named_request
-end
-
 M.env_header_key = function(cmd)
   local headers = get_lower_headers_as_table()
   local kv = vim.split(cmd, " ")
@@ -191,5 +176,8 @@ M.prompt_var = function(metadata_value)
   DB.update().env[var_name] = value
   return true
 end
+
+M.get_cookies = get_cookies_as_table
+M.get_headers = get_last_headers_as_table
 
 return M

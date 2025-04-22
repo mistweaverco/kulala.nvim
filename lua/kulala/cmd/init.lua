@@ -83,7 +83,6 @@ local function process_metadata(result)
   local body = FS.read_file(GLOBALS.BODY_FILE)
 
   local int_meta_processors = {
-    ["name"] = "set_env_for_named_request",
     ["env-json-key"] = "env_json_key",
     ["env-header-key"] = "env_header_key",
   }
@@ -172,11 +171,16 @@ local function save_response(request_status, parsed_request)
     table.remove(responses) -- remove the last response if it's the same request and status was unfinished
   end
 
+  ---@type Response
   local response = {
     id = id,
     name = parsed_request.name or "",
     url = parsed_request.url or "",
     method = parsed_request.method or "",
+    request = {
+      headers_tbl = parsed_request.headers,
+      body = parsed_request.body,
+    },
     code = request_status.code or -1,
     response_code = 0,
     status = false,
@@ -185,12 +189,14 @@ local function save_response(request_status, parsed_request)
     body = FS.read_file(GLOBALS.BODY_FILE) or "",
     json = {},
     headers = FS.read_file(GLOBALS.HEADERS_FILE) or "",
+    headers_tbl = INT_PROCESSING.get_headers() or {},
+    cookies = INT_PROCESSING.get_cookies() or {},
     errors = request_status.errors or "",
     stats = request_status.stdout or "",
     script_pre_output = "",
     script_post_output = "",
     assert_output = {},
-    assert_status = nil,
+    assert_status = true,
     file = parsed_request.file or "",
     buf_name = vim.fn.bufname(buf),
     line = line,

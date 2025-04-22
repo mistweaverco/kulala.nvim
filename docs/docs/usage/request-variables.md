@@ -1,20 +1,15 @@
 # Request Variables
 
-The definition syntax of request variables is just like a single-line comment,
-and follows `# @name REQUEST_NAME` just as metadata.
+If you have provided a request name in the request definition with
+`### REQUEST_NAME`, you can use it to access request data.
 
 ```http
-# @name THIS_IS_AN_EXAMPLE_REQUEST_NAME
+### THIS_IS_AN_EXAMPLE_REQUEST_NAME
 POST https://httpbin.org/post HTTP/1.1
 Content-Type: application/x-www-form-urlencoded
 
 name=foo&password=bar
 ```
-
-You can think of request variable as attaching
-a name metadata to the underlying request.
-
-This kind of requests can be called with Named Request.
 
 Other requests can use `THIS_IS_AN_EXAMPLE_REQUEST_NAME` as an
 identifier to reference the expected part of
@@ -56,7 +51,7 @@ The response cookies can be referenced by
 ```
 
 ```http
-# @name REQUEST_GH
+### REQUEST_GH
 GET https://github.com HTTP/1.1
 
 ###
@@ -104,7 +99,7 @@ Below is a sample of request variable definitions and
 references in an http file.
 
 ```http
-# @name REQUEST_ONE
+### REQUEST_ONE
 POST https://httpbin.org/post HTTP/1.1
 Accept: application/json
 Content-Type: application/json
@@ -115,7 +110,7 @@ Content-Type: application/json
 
 ###
 
-# @name REQUEST_TWO
+### REQUEST_TWO
 POST https://httpbin.org/post HTTP/1.1
 Accept: application/json
 Content-Type: application/json

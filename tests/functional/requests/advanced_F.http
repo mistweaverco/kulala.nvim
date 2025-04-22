@@ -1,0 +1,31 @@
+### REQUEST_ONE
+POST https://httpbin.org/advanced_f1?foo=bar&baz=bax HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+
+{
+  "document_var": "TEST_DOCUMENT_VAR",
+  "js_set_request_var": "TEST_JS_SET_REQUEST_VAR",
+  "prompt_var": "PROMPT_VAR"
+}
+
+### This is a comment for the next request
+
+POST https://httpbin.org/advanced_f2 HTTP/1.1
+accept: application/json
+content-type: application/json
+
+{
+  "request_headers": "{{REQUEST_ONE.request.headers.Accept}}",
+  "request_body": "{{REQUEST_ONE.request.body.$.document_var}}",
+  "response_headers": "{{REQUEST_ONE.response.headers['Server']}}",
+  "response_body": "{{REQUEST_ONE.response.body.$.json.js_set_request_var}}",
+  "response_cookies": "{{REQUEST_ONE.response.cookies.foo1.value}}"
+}
+
+> {%
+  client.log(response.headers.valuesOf('Content-Type'))
+%}
+
+
+# {{REQUEST_NAME.response.cookies.CookieName.(value|domain|flag|path|secure|expires)}}`
