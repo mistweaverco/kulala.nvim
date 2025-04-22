@@ -196,11 +196,11 @@ describe("requests", function()
       assert.is_same(expected_request.headers, computed_request.headers)
       assert.is_same(expected_request.body_computed, computed_request.body_computed)
       assert.has_string(notify.messages, "Content-Type:application/json")
-      assert.has_string(notify.messages, "{ someHeaderValue: { name: 'Server', value: 'gunicorn/19.9.0' } }")
+      assert.has_string(notify.messages, "{ someHeaderValue: 'gunicorn/19.9.0' }")
       assert.has_string(result, expected)
     end)
 
-    it("#wip has access to request and response data through", function()
+    it("has access to request and response data through", function()
       vim.cmd.edit(h.expand_path("requests/advanced_F.http"))
 
       curl.stub({
@@ -220,6 +220,8 @@ describe("requests", function()
 
       assert.is_same("TEST_JS_SET_REQUEST_VAR", result.response_body)
       assert.is_same("gunicorn/19.9.0", result.response_headers)
+      assert.is_same("keep-alive", result.response_headers_1)
+      assert.is_same("close", result.response_headers_2)
       assert.is_same("bar1", result.response_cookies)
     end)
 

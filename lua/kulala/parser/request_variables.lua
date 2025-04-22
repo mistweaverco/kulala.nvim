@@ -1,5 +1,6 @@
 local CONFIG = require("kulala.config")
 local DB = require("kulala.db")
+local INT_PROCESSING = require("kulala.internal_processing")
 local Logger = require("kulala.logger")
 
 local M = {}
@@ -20,28 +21,6 @@ local function get_match(str)
   end
 end
 
-local get_lower_headers = function(headers)
-  local headers_table = {}
-
-  for key, value in pairs(headers) do
-    headers_table[key:lower()] = value
-  end
-
-  return headers_table
-end
-
-local function get_config_contenttype(headers)
-  headers = get_lower_headers(headers)
-
-  if headers["content-type"] then
-    local content_type = vim.split(headers["content-type"], ";")[1]
-    local config = CONFIG.get().contenttypes[content_type]
-    if config then return config end
-  end
-
-  return CONFIG.default_contenttype
-end
-
 local function get_data(name, method)
   local response = vim.iter(DB.global_update().responses):rfind(function(response)
     return response.name == name
@@ -56,7 +35,7 @@ local function get_body_value_from_path(name, method, subpath)
 
   if subpath == "*" then return base_table.body end
 
-  local contenttype = get_config_contenttype(base_table.headers_tbl)
+  local contenttype = INT_PROCESSING.get_config_contenttype(base_table.headers_tbl)
 
   if type(contenttype.pathresolver) == "function" then
     return contenttype.pathresolver(base_table.body, subpath)
@@ -88,6 +67,8 @@ local function get_header_value_from_path(name, method, subpath)
   end
 
   for _, key in ipairs(path_parts) do
+    key = tonumber(key) or key
+
     if result[key] then
       result = result[key]
     else
@@ -95,7 +76,7 @@ local function get_header_value_from_path(name, method, subpath)
     end
   end
 
-  return result
+  return type(result) == "table" and result[1] or result
 end
 
 local function get_cookies_value_from_path(name, subpath)

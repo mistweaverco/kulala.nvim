@@ -19,13 +19,8 @@ content-type: application/json
   "request_headers": "{{REQUEST_ONE.request.headers.Accept}}",
   "request_body": "{{REQUEST_ONE.request.body.$.document_var}}",
   "response_headers": "{{REQUEST_ONE.response.headers['Server']}}",
+  "response_headers_1": "{{REQUEST_ONE.response.headers.Connection[1]}}",
+  "response_headers_2": "{{REQUEST_ONE.response.headers.Connection[2]}}",
   "response_body": "{{REQUEST_ONE.response.body.$.json.js_set_request_var}}",
   "response_cookies": "{{REQUEST_ONE.response.cookies.foo1.value}}"
 }
-
-> {%
-  client.log(response.headers.valuesOf('Content-Type'))
-%}
-
-
-# {{REQUEST_NAME.response.cookies.CookieName.(value|domain|flag|path|secure|expires)}}`

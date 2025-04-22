@@ -3,6 +3,7 @@ Date: Sat, 01 Feb 2025 16:06:24 GMT
 Content-Type: application/json
 Content-Length: 738
 Connection: keep-alive
+Connection: close
 Server: gunicorn/19.9.0
 Access-Control-Allow-Origin: *
 Access-Control-Allow-Credentials: true

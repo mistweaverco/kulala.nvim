@@ -40,6 +40,10 @@ The request variable reference syntax follows
 You have two reference part choices of
 the `response` or `request`: `body` and `headers`.
 
+For `headers` part,
+`{{REQUEST_NAME.response.headers.HeaderName}}` will return the first value if there are multiple values. 
+You can use `{{REQUEST_NAME.response.headers.HeaderName[#no]}}` to access other values.
+
 For `body` part,
 you can use JSONPath and XPath to extract specific property or attribute.
 

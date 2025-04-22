@@ -298,7 +298,7 @@ describe("UI", function()
           GET http://localhost:3001/request_1
 
           > {%
-          client.log(response.headers.valuesOf("Date").value);
+          client.log(response.headers.valueOf("Date"));
           client.log("JS: TEST");
           %}
       ]]):to_table(true)

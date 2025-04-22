@@ -3,7 +3,6 @@ local DB = require("kulala.db")
 local FS = require("kulala.utils.fs")
 local GLOBALS = require("kulala.globals")
 local Logger = require("kulala.logger")
-local STRING_UTILS = require("kulala.utils.string")
 
 local M = {}
 
@@ -28,17 +27,20 @@ end
 ---@param headers string|nil
 ---@return table|nil
 local get_last_headers_as_table = function(headers)
+  if type(headers) == "table" then return headers end
+
   headers = headers or FS.read_file(GLOBALS.HEADERS_FILE)
   if not headers then return end
 
   headers = headers:gsub("\r\n", "\n")
   local lines = vim.split(headers, "\n")
   local headers_table = {}
-  -- INFO:
-  -- We only want the headers of the last response
+
+  -- INFO: We only want the headers of the last response
   -- so we reset the headers_table only each time the previous line was empty
   -- and we also have new headers data
   local previously_empty = false
+
   for _, header in ipairs(lines) do
     local empty_line = header == ""
     if empty_line then
@@ -46,14 +48,17 @@ local get_last_headers_as_table = function(headers)
     else
       if previously_empty then headers_table = {} end
       previously_empty = false
-      if header:find(":") ~= nil then
+
+      if header:find(":") then
         local kv = vim.split(header, ":")
         local key = kv[1]
-        -- INFO:
-        -- the value should be everything after the first colon
-        -- but we can't use slice and join because the value might contain colons
         local value = header:sub(#key + 2)
-        headers_table[key] = vim.trim(value)
+
+        if not headers_table[key] then
+          headers_table[key] = { vim.trim(value) }
+        else
+          table.insert(headers_table[key], vim.trim(value))
+        end
       end
     end
   end
@@ -110,9 +115,13 @@ end
 M.get_config_contenttype = function(headers)
   headers = get_lower_headers_as_table(headers)
 
-  if headers["content-type"] then
-    local content_type = vim.split(headers["content-type"], ";")[1]
-    content_type = STRING_UTILS.trim(content_type)
+  local content_type = headers["content-type"]
+
+  if content_type then
+    content_type = type(content_type) == "table" and content_type[1] or content_type
+
+    content_type = vim.split(content_type, ";")[1]
+    content_type = vim.trim(content_type)
 
     local config = CONFIG.get().contenttypes[content_type]
     if config then return config end

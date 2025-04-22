@@ -467,7 +467,6 @@ describe("oauth", function()
 
         kulala.run()
         wait_for_requests(1)
-        -- LOG(get_env(), system.log)
 
         assert.is_true(#result.url_params.code_challenge > 0)
         assert.is.same("S256", result.url_params.code_challenge_method)

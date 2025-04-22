@@ -7,7 +7,7 @@ const _RESPONSE_BODY_FILEPATH = path.join(__dirname, '..', '..', 'body.txt');
 
 interface HeaderObject {
   name: string,
-  value: string,
+  value: string[],
 };
 
 type Headers = Record<string, HeaderObject>;
@@ -39,11 +39,16 @@ if (fs.existsSync(_RESPONSE_HEADERS_FILEPATH)) {
     if (!line.includes(delimiter)) {
       continue;
     }
+
     const [key] = line.split(delimiter);
-    headers[key] = {
-      name: key,
-      value: line.slice(key.length + delimiter.length).trim()
+    if (!headers[key]) {
+      headers[key] = {
+        name: key,
+        value: []
+      };
     }
+
+    headers[key].value.push(line.slice(key.length + delimiter.length).trim());
   }
 
   if (lines[0].length > 0) {
@@ -67,7 +72,7 @@ export const Response: ResponseType = {
   headers: {
     valueOf: (headerName: string): string | null => {
       if (headerName in headers) {
-        return headers[headerName].value;
+        return headers[headerName].value[0];
       }
       return null;
     },
