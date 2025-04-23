@@ -528,11 +528,11 @@ end
 
 local url_len = 30
 
-local function request_names()
+local function request_names(buf)
   local kind = lsp_kind.Value
   local items = {}
 
-  get_document()
+  get_document(buf)
 
   vim.iter(cache.requests):each(function(request)
     local file = vim.fs.basename(request.file)
@@ -543,11 +543,11 @@ local function request_names()
   return items
 end
 
-local function request_urls()
+local function request_urls(buf)
   local kind = lsp_kind.Value
   local unique, items = {}, {}
 
-  get_document()
+  get_document(buf)
 
   vim.iter(cache.requests):each(function(request)
     local url = request.url:gsub("^https?://", "")
@@ -561,11 +561,11 @@ local function request_urls()
   return items
 end
 
-local function document_variables()
+local function document_variables(buf)
   local kind = lsp_kind.Variable
   local items = {}
 
-  get_document()
+  get_document(buf)
 
   vim.iter(cache.document_variables):each(function(name, value)
     table.insert(items, make_item(name, "Document var", kind, name, value, name))
@@ -596,11 +596,11 @@ local function dynamic_variablies()
   return items
 end
 
-local function env_variables()
+local function env_variables(buf)
   local kind = lsp_kind.Variable
   local items = {}
 
-  if not cache:is_fresh() or not cache.env_variables then
+  if not cache:is_fresh(buf) or not cache.env_variables then
     cache.env_variables = Env.get_env() or {}
     cache:update()
   end
@@ -707,6 +707,7 @@ local function source_type(params)
 end
 
 local get_source = function(params)
+  local buf = vim.uri_to_bufnr(params.textDocument.uri)
   local source_name = source_type(params)
   source_name = type(source_name) == "table" and source_name or { source_name }
 
@@ -718,7 +719,7 @@ local get_source = function(params)
 
   vim.iter(sources):each(function(name, source)
     if vim.tbl_contains(source_name, name) then
-      items = type(source) == "function" and source() or generic_source(source)
+      items = type(source) == "function" and source(buf) or generic_source(source)
       vim.list_extend(results.items, items)
     end
   end)
@@ -797,13 +798,14 @@ local function compact(str)
   return str:gsub("%s+", " "):gsub("^%s+", ""):gsub("%s+$", ""):gsub('([{:,"])%s', "%1"):gsub("\n", "")
 end
 
-local function get_symbols(_)
+local function get_symbols(params)
+  local buf = vim.uri_to_bufnr(params.textDocument.uri)
   local kind = vim.lsp.protocol.SymbolKind
   local symbols, symbol = {}, {}
 
-  if cache:is_fresh() and cache.symbols then return cache.symbols end
+  if cache:is_fresh(buf) and cache.symbols then return cache.symbols end
 
-  get_document()
+  get_document(buf)
 
   vim.iter(cache.requests):each(function(request)
     local cnum = 0

@@ -168,7 +168,7 @@ local function open_auth_snacks()
       label = name,
       data = config_data,
       file = get_env_file(),
-      content = vim.inspect(config_data),
+      content = config_data,
     })
     return acc
   end)

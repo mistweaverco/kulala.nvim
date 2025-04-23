@@ -411,7 +411,7 @@ M.open_all = function(_, line_nr)
   local db = DB.global_update()
   local status, elapsed_ms
 
-  DB.set_current_buffer()
+  local buf = DB.set_current_buffer()
   db.previous_response_pos = #db.responses
   INLAY.clear()
 
@@ -425,7 +425,7 @@ M.open_all = function(_, line_nr)
 
     set_current_response(#db.responses)
 
-    INLAY.show(status, icon_linenr, elapsed_ms)
+    INLAY.show(buf, status, icon_linenr, elapsed_ms)
     M.open_default_view()
 
     return true
