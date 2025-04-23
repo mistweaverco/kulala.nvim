@@ -401,7 +401,7 @@ M.run_parser = function(requests, variables, line_nr, callback)
   reqs_to_process = reqs_to_process or requests
 
   for _, req in ipairs(reqs_to_process) do
-    INLAY.show("loading", req.show_icon_line_number)
+    INLAY.show(DB.current_buffer, "loading", req.show_icon_line_number)
 
     M.queue:add(function()
       UI_utils.highlight_request(req)

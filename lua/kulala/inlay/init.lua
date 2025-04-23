@@ -48,9 +48,8 @@ local line_offset = {
   ["below_request"] = 0,
 }
 
-M.show = function(event, linenr, text)
+M.show = function(buf, event, linenr, text)
   local config = CONFIG.get()
-  local bufnr = DB.get_current_buffer()
   local show_icons = config.show_icons
 
   if not (config.show_icons and linenr) then return end
@@ -59,16 +58,16 @@ M.show = function(event, linenr, text)
   linenr = math.max(linenr + (line_offset[show_icons] or 0), 1)
   text = text or ""
 
-  M.clear_if_marked(bufnr, linenr)
+  M.clear_if_marked(buf, linenr)
 
   if show_icons == "signcolumn" then
     set_signcolumn()
-    vim.fn.sign_place(linenr, "kulala", "kulala." .. event, bufnr, { lnum = linenr })
+    vim.fn.sign_place(linenr, "kulala", "kulala." .. event, buf, { lnum = linenr })
   else
     text = icon .. " " .. text
   end
 
-  vim.api.nvim_buf_set_extmark(bufnr, NS, linenr - 1, 0, {
+  vim.api.nvim_buf_set_extmark(buf, NS, linenr - 1, 0, {
     hl_mode = "combine",
     virt_text = { { text, config.icons.textHighlight } },
   })
