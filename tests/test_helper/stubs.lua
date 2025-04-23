@@ -105,6 +105,11 @@ Input.reset = function()
   Input.variables = {}
 end
 
+Output.spy = function()
+  Output._spy = true
+  Output.stub()
+end
+
 Output.stub = function()
   Output._write = Output._write or io.write
   Output._print = Output._print or vim.print
@@ -124,7 +129,7 @@ Output.stub = function()
 end
 
 Output.run = function(f, ...)
-  Output[f](...)
+  _ = Output._spy and Output[f](...)
   for _, c in ipairs({ ... }) do
     _ = not c:match("^\n+$") and table.insert(Output.log, c)
   end
@@ -136,6 +141,7 @@ Output.reset = function()
   vim.notify = Output._notify
 
   Output.log = {}
+  Output.spy = false
 end
 
 ---@param paths_mappings table [path:content]

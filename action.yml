@@ -5,12 +5,6 @@ author: 'Yaro Apletov'
 branding:
   color: 'purple'
   icon: 'moon'
-inputs:
-  main:
-    description: |
-      Shell script with the call to kulala_cli and relevant options
-    required: false
-    default: '*'
 runs:
   using: "composite"
   steps:

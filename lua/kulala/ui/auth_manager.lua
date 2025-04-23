@@ -140,12 +140,11 @@ end
 
 local function set_buffer(buf, content)
   if not content then return end
-
-  local lines = vim.split(vim.inspect(content), "\n")
+  content = vim.split(vim.inspect(content), "\n")
 
   vim.api.nvim_set_option_value("modifiable", true, { buf = buf })
-  vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
   vim.api.nvim_set_option_value("filetype", "lua", { buf = buf })
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, content)
 end
 
 local commands = {
@@ -302,7 +301,7 @@ M.open_auth_config = function()
   elseif has_telescope then
     open_auth_telescope()
   else
-    Logger.warn("Telescope or Sancks is required for auth token management")
+    Logger.warn("Telescope or Snacks is required for auth token management")
   end
 end
 

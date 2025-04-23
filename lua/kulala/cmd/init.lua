@@ -271,9 +271,9 @@ local function handle_response(request_status, parsed_request, callback)
   end, debug.traceback)
 
   _ = not (code and processing_status) and process_errors(parsed_request, request_status, processing_errors)
+  _ = (not success and config.halt_on_error) and M.queue:reset() or M.queue:run_next()
 
   callback(success, request_status.duration, parsed_request.show_icon_line_number)
-  _ = (not success and config.halt_on_error) and M.queue:reset() or M.queue:run_next()
 end
 
 local function received_unbffured(request, response)
