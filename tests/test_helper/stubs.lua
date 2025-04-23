@@ -8,6 +8,7 @@ local Jobstart = { id = "Jobstart", jobs = {} }
 local System = { id = "System", code = 0, signal = 0, pid = 0, closing = false, jobs = {}, log = {}, async = false }
 local Curl = { url_mappings = {}, paths = {}, requests = {}, requests_no = 0, last_request_body_path = "" }
 local Input = { variables = {} }
+local Output = { log = {} }
 local Notify = { messages = {} }
 local Fs = { paths_mappings = {} }
 local Dynamic_vars = {}
@@ -33,6 +34,12 @@ setmetatable(Input, {
 setmetatable(Notify, {
   __call = function(_, ...)
     return Notify.run(...)
+  end,
+})
+
+setmetatable(Output, {
+  __call = function(_, ...)
+    return Output.run(...)
   end,
 })
 
@@ -94,8 +101,41 @@ Input.run = function(prompt)
 end
 
 Input.reset = function()
-  vim.notify = Input._notify
+  vim.fn.input = Input._input
   Input.variables = {}
+end
+
+Output.stub = function()
+  Output._write = Output._write or io.write
+  Output._print = Output._print or vim.print
+  Output._notify = Output._notify or vim.notify
+
+  io.write = function(...)
+    Output.run("_write", ...)
+  end
+  vim.print = function(...)
+    Output.run("_print", ...)
+  end
+  vim.notify = function(message)
+    Output.run("_notify", message)
+  end
+
+  return Output
+end
+
+Output.run = function(f, ...)
+  Output[f](...)
+  for _, c in ipairs({ ... }) do
+    _ = not c:match("^\n+$") and table.insert(Output.log, c)
+  end
+end
+
+Output.reset = function()
+  io.write = Output._write
+  vim.print = Output._print
+  vim.notify = Output._notify
+
+  Output.log = {}
 end
 
 ---@param paths_mappings table [path:content]
@@ -313,5 +353,6 @@ return {
   Fs = Fs,
   Notify = Notify,
   Input = Input,
+  Output = Output,
   Dynamic_vars = Dynamic_vars,
 }

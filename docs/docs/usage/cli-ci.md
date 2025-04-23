@@ -21,23 +21,23 @@ Usage: Kulala CLI [--list] [--halt] [-m] [-h]
 
 Arguments:
    input                    Path to folder or HTTP file/s
-
-Options:
-   --list                   List  requests in HTTP file
-
+                            
+Options:                    
+   --list                   List requests in HTTP file
+                            
    --name (-n) [<name>] ...   Filter requests by name
-
+                            
    --line (-l) [<line>] ...   Filter requests by line #
-
+                            
    --env (-e) <env>         Environment
-
+                            
    --view (-v)              Response view
                             {body,headers,headers_body,verbose,script_output,report}
-
+                            
    --halt                   Halt on error
-
+                            
    --mono (-m)              No color output
-
+                            
    -h, --help               Help
 
 ```bash
