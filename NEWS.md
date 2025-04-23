@@ -3,16 +3,19 @@
 ## Version 5.3.0
 
 ### Enhancement: Oauth2 - add Basic Authorization support for Client Credentials grant type
-### Feature: Kulala Formatter [fmt](usage/basic-usage.md) - format and import requests from Postman/Bruno/OpenAPI
 ### Feature: JQ filter [filter](usage/filter-response.md)
+### Feature: Kulala Formatter [fmt](usage/basic-usage.md) - format and import requests from Postman/Bruno/OpenAPI
+### Feature: Kulala CLI and Kulala CI Github Action [kulala-cli-ci](usage/cli-ci.md)
+### Enhancement: unify syntax for naming requests with `###` in favor of `# @name`
+### Enhancement: allow `run` to run requests from the same file
 
 ## Version 5.2.0
 
 ### Enhancement: Kulala LSP [lsp](usage/basic-usage.md) - autocompletion, symbols search and outline, code actions, hover
 ### Feature: Lua [scripting](scripts/lua-scripts.md)
-### Feature: set `Host` in default headers in [http-env.profile.json](usage/dotenv-and-http-client.env.json-support) files
-### Feature: set `default headers` per environment in [http-env.profile.json](usage/dotenv-and-http-client.env.json-support) files
-### Feature: per-request and global `@curl` flags [Basic usage](usage/custom-curl-flags)
+### Feature: set `Host` in default headers in [http-env.profile.json](usage/dotenv-and-http-client.env.json-support.md) files
+### Feature: set `default headers` per environment in [http-env.profile.json](usage/dotenv-and-http-client.env.json-support.md) files
+### Feature: per-request and global `@curl` flags [Basic usage](usage/custom-curl-flags.md)
 ### Feature: [Oauth2 support](usage/authentication.md)
 ### Enhancement: added request progress status and <C-c> keymap to cancel requests
 ### Enhancement: added `Authentication Manager` - `<Leader>Ru`, Environment Manager - `<Leader>Re` and `Request Manager` - `<Leader>Rf`

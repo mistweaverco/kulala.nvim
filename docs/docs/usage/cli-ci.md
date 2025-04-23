@@ -6,7 +6,7 @@ standalone or as part of a CI/CD pipeline, effectively turning your HTTP files i
 ## Requirements
 
 Kulala CLI requires Neovim (nvim) and curl to be present on your PATH. 
-Optionally, grpcurl (for GRPC), websocat (for Websockets), jq (for JSON formatting) and nvim-treesitter for response highlighting may be required.
+Optionally, grpcurl (for GRPC), websocat (for Websockets), jq (for JSON formatting) and nvim-treesitter for response highlighting may be installed.
 
 ## Configuration
 
@@ -20,25 +20,25 @@ Usage: Kulala CLI [--list] [--halt] [-m] [-h]
       [<input>] ...
 
 Arguments:
-   input                    Path to folder or HTTP file/s
+   input                      Path to folder or HTTP file/s
                             
 Options:                    
-   --list                   List requests in HTTP file
+   --list                     List requests in HTTP file
                             
    --name (-n) [<name>] ...   Filter requests by name
                             
    --line (-l) [<line>] ...   Filter requests by line #
                             
-   --env (-e) <env>         Environment
+   --env (-e) <env>           Environment
                             
-   --view (-v)              Response view
-                            {body,headers,headers_body,verbose,script_output,report}
+   --view (-v)                Response view
+                              {body,headers,headers_body,verbose,script_output,report}
                             
-   --halt                   Halt on error
+   --halt                     Halt on error
                             
-   --mono (-m)              No color output
+   --mono (-m)                No color output
                             
-   -h, --help               Help
+   --help (-h)                Help
 
 ```bash
 kulala_cli http_examples/cli.http -e prod -v report -n Login Request -l 15 20 

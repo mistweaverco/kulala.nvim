@@ -528,11 +528,11 @@ end
 
 local url_len = 30
 
-local function request_names(buf)
+local function request_names()
   local kind = lsp_kind.Value
   local items = {}
 
-  get_document(buf)
+  get_document()
 
   vim.iter(cache.requests):each(function(request)
     local file = vim.fs.basename(request.file)
@@ -543,11 +543,11 @@ local function request_names(buf)
   return items
 end
 
-local function request_urls(buf)
+local function request_urls()
   local kind = lsp_kind.Value
   local unique, items = {}, {}
 
-  get_document(buf)
+  get_document()
 
   vim.iter(cache.requests):each(function(request)
     local url = request.url:gsub("^https?://", "")
@@ -561,11 +561,11 @@ local function request_urls(buf)
   return items
 end
 
-local function document_variables(buf)
+local function document_variables()
   local kind = lsp_kind.Variable
   local items = {}
 
-  get_document(buf)
+  get_document()
 
   vim.iter(cache.document_variables):each(function(name, value)
     table.insert(items, make_item(name, "Document var", kind, name, value, name))
@@ -596,11 +596,11 @@ local function dynamic_variablies()
   return items
 end
 
-local function env_variables(buf)
+local function env_variables()
   local kind = lsp_kind.Variable
   local items = {}
 
-  if not cache:is_fresh(buf) or not cache.env_variables then
+  if not cache:is_fresh() or not cache.env_variables then
     cache.env_variables = Env.get_env() or {}
     cache:update()
   end
@@ -798,14 +798,13 @@ local function compact(str)
   return str:gsub("%s+", " "):gsub("^%s+", ""):gsub("%s+$", ""):gsub('([{:,"])%s', "%1"):gsub("\n", "")
 end
 
-local function get_symbols(params)
-  local buf = vim.uri_to_bufnr(params.textDocument.uri)
+local function get_symbols()
   local kind = vim.lsp.protocol.SymbolKind
   local symbols, symbol = {}, {}
 
-  if cache:is_fresh(buf) and cache.symbols then return cache.symbols end
+  if cache:is_fresh() and cache.symbols then return cache.symbols end
 
-  get_document(buf)
+  get_document()
 
   vim.iter(cache.requests):each(function(request)
     local cnum = 0

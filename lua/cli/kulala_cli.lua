@@ -1,15 +1,10 @@
 #!/usr/bin/env -S nvim --headless -l
 
---TODO: make windows compatible: paths and isntall scripts
+--TODO: make windows compatible: paths and install scripts
 
 --# selene: allow(unscoped_variables)
 --# selene: allow(unused_variable)
 --# selene: allow(undefined_variable)
-
-_, LOG = pcall(require, "log")
-LOG = _ and LOG or function(...)
-  vim.print(vim.inspect(...))
-end
 
 local kulala_path
 
@@ -59,13 +54,14 @@ local function init()
   opts = config and config() or {}
 
   local plugins = vim.fn.stdpath("data")
-  local treesitter_path = vim.fs.find("nvim-treesitter", { path = plugins, type = "directory" })[1]
+  local treesitter_path = vim.fs.find("nvim-treesitter", { path = plugins, type = "directory", limit = 1 })[1]
 
   _ = treesitter_path and vim.opt.rtp:prepend(treesitter_path)
 end
 
 local function get_args()
   Argparse = require("cli.argparse")
+
   local parser = Argparse()({
     name = "Kulala CLI",
     description = "REST client CLI",
@@ -73,10 +69,8 @@ local function get_args()
   })
 
   parser:argument("input", "Path to folder or HTTP file/s"):args("+")
-
   parser:option("-n --name", "Filter requests by name"):args("*")
   parser:option("-l --line", "Filter requests by line #"):convert(tonumber):args("*")
-
   parser:option("-e --env", "Environment")
   parser:option("-v --view", "Response view"):choices({
     "body",
@@ -92,10 +86,11 @@ local function get_args()
   parser:flag("-m --mono", "Monochrome output")
 
   args = parser:parse(_G.arg)
-  _G.arg = args
 
   args.name = args.name or {}
   args.line = args.line or {}
+
+  _G.arg = args
 end
 
 local function get_kulala_buf()
@@ -159,7 +154,6 @@ end
 
 local function run_file(file)
   if not io.open(file) then return Logger.error("File not found: " .. file) end
-
   vim.cmd.edit(file)
 
   local buf = vim.fn.bufnr(file)
@@ -172,13 +166,13 @@ local function run_file(file)
 
   local db = Db.global_update()
   local processing = true
-
   local status = true
+
   Cmd.run_parser(requests, variables, nil, function()
+    io.write("*")
+
     db.current_response_pos = #db.responses
     status = status and db.responses[#db.responses].status
-
-    io.write("*")
 
     if Config.ui.default_view == "report" and not is_last() then return end
     print_response()

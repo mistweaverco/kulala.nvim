@@ -38,11 +38,11 @@ end
 
 local function set_buffer(buf, content)
   if not content then return end
+  content = vim.split(vim.inspect(content), "\n")
 
   vim.api.nvim_set_option_value("modifiable", true, { buf = buf })
   vim.api.nvim_set_option_value("filetype", "lua", { buf = buf })
-
-  vim.api.nvim_buf_set_lines(buf, 0, -1, false, vim.split(content, "\n"))
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, content)
 end
 
 local open_snacks = function()
@@ -56,7 +56,7 @@ local open_snacks = function()
       text = name,
       label = name,
       data = env_data,
-      content = vim.inspect(env_data),
+      content = env_data,
       file = get_env_file() or "",
     })
     return acc
