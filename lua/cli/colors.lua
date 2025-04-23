@@ -23,14 +23,19 @@ M.print = function(str, hl_group)
   io.write(M.get_hl_ansi(hl_group, str) .. "\n")
 end
 
-M.print_buf = function(buf, color)
+M.print_buf = function(buf)
   --TODO: optimize be reading end line and end column
-  --
+
   local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
   local char, char_i, color_char
-  local extmarks_hl, treesitter_hl
+  local extmarks_hl, treesitter_hl, syntax_hl
 
   for l, line in ipairs(lines) do
+    if _G.arg.mono then
+      io.write(line)
+      goto continue
+    end
+
     for c = 0, #line do
       char = line:sub(c, c)
       char_i = vim.inspect_pos(buf, l - 1, c)
@@ -43,6 +48,8 @@ M.print_buf = function(buf, color)
 
       io.write(color_char)
     end
+
+    ::continue::
     io.write("\n")
   end
 end

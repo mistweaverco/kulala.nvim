@@ -38,7 +38,6 @@ local setup = function()
     ui = {
       display_mode = "float",
       default_view = args.view,
-      debug = true,
     },
   }))
 
@@ -113,14 +112,11 @@ local function print_requests(file, requests)
   Colors.print(tbl:get_headers(), Config.ui.report.headersHighlight)
 
   vim.iter(requests):each(function(request)
-    Colors.print(
-      tbl:get_row({
-        request.show_icon_line_number,
-        request.name,
-        request.method .. " " .. request.url,
-      }, 1),
-      "Grey"
-    )
+    Colors.print(tbl:get_row({
+      request.show_icon_line_number,
+      request.name,
+      request.method .. " " .. request.url,
+    }, 1))
   end)
 
   io.write("\n")
@@ -145,7 +141,7 @@ end
 
 local get_requests = function()
   local variables, requests = Parser.get_document()
-  if args.list and #args.name + #args.line == 0 then return requests, variables end
+  if args.list or #args.name + #args.line == 0 then return requests, variables end
 
   requests = vim
     .iter(requests)
@@ -157,10 +153,17 @@ local get_requests = function()
   return requests, variables
 end
 
+local function is_last()
+  return #Cmd.queue.tasks == 0
+end
+
 local function run_file(file)
   if not io.open(file) then return Logger.error("File not found: " .. file) end
 
   vim.cmd.edit(file)
+
+  local buf = vim.fn.bufnr(file)
+  Db.set_current_buffer(buf)
 
   local requests, variables = get_requests()
   if #requests == 0 then return Logger.error("No requests found in " .. file) end
@@ -169,10 +172,6 @@ local function run_file(file)
 
   local db = Db.global_update()
   local processing = true
-
-  local function is_last()
-    return #db.responses == #requests
-  end
 
   local status = true
   Cmd.run_parser(requests, variables, nil, function()
@@ -197,6 +196,8 @@ local function run_file(file)
   local msg = status and { "Status: OK", Config.ui.report.successHiglight }
     or { "Status: FAIL", Config.ui.report.errorHighlight }
   Colors.print(unpack(msg))
+
+  vim.api.nvim_buf_delete(buf, { force = true })
 
   return status
 end
@@ -230,4 +231,5 @@ local function main()
   return run()
 end
 
+io.write("\n")
 os.exit(main() and 0 or 1)
