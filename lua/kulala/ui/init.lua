@@ -151,12 +151,13 @@ local function show_progress()
   local message = ("Running.. %s/%s"):format(CMD.queue.done, CMD.queue.total)
   message = message .. " - press <C-c> to cancel  "
 
-  Float.create_window_footer(
-    get_kulala_buffer(),
-    get_kulala_window(),
-    message,
-    { hl_group = "Special", buf_name = "kulala://requests_progress", row_offset = row_offset }
-  )
+  Float.create_window_footer(message, {
+    buf = get_kulala_buffer(),
+    win = get_kulala_window(),
+    name = "kulala://requests_progress",
+    row_offset = row_offset,
+    auto_close = true,
+  })
 end
 
 local function show(contents, filetype, mode)
@@ -320,28 +321,30 @@ M.show_help = function()
     table.insert(help, ("  - %s: `%s`"):format(keymap, value[1]))
   end)
 
-  Float.create({
-    buf_name = "kulala_help",
-    contents = help,
+  Float.create(help, {
+    name = "kulala_help",
     ft = "markdown",
-    position = "cursor",
+    relative = "cursor",
+    border = "rounded",
     focusable = true,
+    auto_size = true,
+    auto_close = true,
     close_keymaps = { "q", "<esc>", "?" },
   })
 end
 
 M.show_news_footer = function()
   if CONFIG.get().disable_news_popup then return end
-
   if DB.settings.news_ver == GLOBALS.VERSION then return end
 
-  local lines = "Check out the latest Kulala changes with `g?`"
-  Float.create_window_footer(
-    get_kulala_buffer(),
-    get_kulala_window(),
-    lines,
-    { hl_group = "Special", buf_name = "kulala://news_footer" }
-  )
+  local msg = "Check out the latest Kulala changes with `g?`"
+  Float.create_window_footer(msg, {
+    buf = get_kulala_buffer(),
+    win = get_kulala_window(),
+    name = "kulala://news_footer",
+    row_offset = 2,
+    auto_close = true,
+  })
 end
 
 M.show_news = function()
@@ -471,74 +474,17 @@ M.from_curl = function()
 end
 
 M.inspect = function()
-  local inspect_name = "kulala://inspect"
-
   local content = Inspect.get_contents()
   if #content == 0 then return end
 
-  -- Create a new buffer
-  local buf = vim.fn.bufnr(inspect_name)
-
-  _ = buf > 0 and vim.api.nvim_buf_delete(buf, { force = true })
-  buf = vim.api.nvim_create_buf(false, true)
-
-  -- Set the content of the buffer
-  vim.api.nvim_buf_set_lines(buf, 0, -1, false, content)
-
-  -- Set the filetype to http to enable syntax highlighting
-  vim.bo[buf].filetype = "http"
-  vim.api.nvim_buf_set_name(buf, inspect_name)
-
-  -- Get the total dimensions of the editor
-  local total_width = vim.o.columns
-  local total_height = vim.o.lines
-
-  -- Calculate the content dimensions
-  local content_width = 0
-  for _, line in ipairs(content) do
-    if #line > content_width then content_width = #line end
-  end
-  local content_height = #content
-
-  -- Ensure the window doesn't exceed 80% of the total size
-  local win_width = math.min(content_width, math.floor(total_width * 0.8))
-  local win_height = math.min(content_height, math.floor(total_height * 0.8))
-
-  -- Calculate the window position to center it
-  local row = math.floor((total_height - win_height) / 2)
-  local col = math.floor((total_width - win_width) / 2)
-
-  -- Define the floating window configuration
-  local win_config = {
-    relative = "editor",
-    width = win_width,
-    height = win_height,
-    row = row,
-    col = col,
-    style = "minimal",
+  Float.create(content, {
+    name = "kulala://inspect",
+    ft = "http",
+    relative = "cursor",
+    focusable = true,
     border = "rounded",
-  }
-
-  -- Create the floating window with the buffer
-  local win = vim.api.nvim_open_win(buf, true, win_config)
-
-  -- Set up an autocommand to close the floating window on any buffer leave
-  vim.api.nvim_create_autocmd("BufLeave", {
-    buffer = buf,
-    once = true,
-    callback = function()
-      vim.api.nvim_win_close(win, true)
-    end,
-  })
-
-  -- Map the 'q' key to close the window
-  vim.api.nvim_buf_set_keymap(buf, "n", "q", "", {
-    noremap = true,
-    silent = true,
-    callback = function()
-      vim.api.nvim_win_close(win, true)
-      vim.api.nvim_buf_delete(buf, { force = true })
-    end,
+    auto_size = true,
+    close_keymaps = { "q", "<esc>" },
   })
 end
 

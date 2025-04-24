@@ -3,9 +3,10 @@ local Config = require("kulala.config")
 local Crypto = require("kulala.cmd.crypto")
 local DB = require("kulala.db")
 local Env = require("kulala.parser.env")
+local Float = require("kulala.ui.float")
 local Logger = require("kulala.logger")
+local Table = require("kulala.utils.table")
 local Tcp = require("kulala.cmd.tcp")
-local table = require("kulala.utils.table")
 
 local M = {}
 
@@ -177,7 +178,7 @@ M.verify_device_code = function(config_id)
   local browser, status = vim.ui.open(config.auth_data.verification_url)
   if not browser then return Logger.error("Failed to open browser: " .. status) end
 
-  Logger.info("Verification code: " .. config.auth_data.user_code)
+  Logger.info("Verification code: " .. config.auth_data.user_code .. " is copied to clipboard")
   vim.fn.setreg("+", config.auth_data.user_code)
 end
 
@@ -186,10 +187,11 @@ local function poll_token_server(config, url, body)
   local interval = auth.interval and tonumber(auth.interval) * 1000 or request_interval
   local tries = 10
 
+  Logger.info("Waiting for device token")
+
   local out, err
   for count = 1, tries do
     Async.co_sleep(co, interval)
-    Logger.info(("Waiting for device token %s/%s.  Press <C-c> to cancel."):format(count, tries))
 
     out, err = make_request(url, body, "acquire device token")
     err = err or ""
@@ -277,7 +279,7 @@ M.receive_code = function(config_id)
 
   if not server then return end
 
-  Logger.info("Waiting for authorization code/token.  Press <C-c> to cancel.")
+  Logger.info("Waiting for authorization code/token")
 
   local _, result = Async.co_yield(co, request_timeout)
   if not result then return Logger.error("Timeout waiting for authorization code/token for: " .. config_id) end
@@ -400,7 +402,7 @@ end
 M.acquire_token = function(config_id)
   local config = get_auth_config(config_id)
 
-  table.remove_keys(
+  Table.remove_keys(
     config.auth_data,
     { "code", "device_code", "user_code", "access_token", "id_token", "refresh_token" }
   )
@@ -478,17 +480,22 @@ M.refresh_token = function(config_id)
   local buf = DB.current_buffer
 
   Cmd.queue:pause()
+  local progress = Float.create_progress_float("Acquiring auth data.  Press <C-c> to cancel.")
 
   co = coroutine.create(function()
     vim.keymap.set("n", "<C-c>", function()
+      progress.hide()
       Logger.info("Cancelling token acquisition for config: " .. config_id)
-      Async.co_resume(co)
 
+      Async.co_resume(co)
       exit = true
+
       vim.keymap.del("n", "<C-c>", { buffer = buf })
     end, { buffer = buf, nowait = true })
 
     _ = refresh_token_co(config_id) and Cmd.queue:resume()
+
+    progress.hide()
     co, exit = nil, nil
   end)
 
@@ -521,7 +528,7 @@ M.revoke_token = function(config_id)
   Logger.info("Revoking token for config: " .. config_id)
   if validate_auth_params(config_id, { "Revoke URL" }) then make_request(config["Revoke URL"], body, "revoke token") end
 
-  table.remove_keys(config.auth_data, {
+  Table.remove_keys(config.auth_data, {
     "code",
     "access_token",
     "id_token",

@@ -2,6 +2,7 @@ local Async = require("kulala.utils.async")
 local CONFIG = require("kulala.config")
 local DB = require("kulala.db")
 local FS = require("kulala.utils.fs")
+local Float = require("kulala.ui.float")
 local GLOBALS = require("kulala.globals")
 local Logger = require("kulala.logger")
 
@@ -28,9 +29,9 @@ local FILE_MAPPING = {
 }
 
 local is_uptodate = function()
-  DB.settings.js_build_hash_repo = DB.settings.js_build_hash_repo or FS.read_file(BASE_DIR .. "/.build_hash") or ""
+  DB.session.js_build_hash_repo = DB.session.js_build_hash_repo or FS.read_file(BASE_DIR .. "/.build_hash") or ""
 
-  return DB.settings.js_build_hash_local == DB.settings.js_build_hash_repo
+  return DB.settings.js_build_hash_local == DB.session.js_build_hash_repo
     and FS.file_exists(BASE_FILE_PRE)
     and FS.file_exists(BASE_FILE_POST)
 end
@@ -44,7 +45,7 @@ M.install_dependencies = function(wait)
   vim.g.kulala_js_installing = true
 
   Logger.info("Javascript dependencies not found or are out of date.")
-  Logger.info("Installing dependencies...\nRequests will be resumed after the installation is complete.")
+  local progress = Float.create_progress_float("Installing JS dependencies...")
 
   _ = not wait and cmd.queue:pause()
 
@@ -64,10 +65,12 @@ M.install_dependencies = function(wait)
     end)
     Async.co_yield(co)
 
-    DB.settings:write({ js_build_hash_local = DB.settings.js_build_hash_repo })
+    DB.settings:write({ js_build_hash_local = DB.session.js_build_hash_repo })
     vim.g.kulala_js_installing = false
 
-    Logger.info("Javascript dependencies installed.")
+    progress.hide()
+    Logger.info("Javascript dependencies installed")
+
     _ = not wait and cmd.queue:resume()
   end)
 

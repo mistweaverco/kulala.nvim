@@ -6,6 +6,7 @@ local Table = require("kulala.utils.table")
 local M = {}
 
 M.data = nil
+M.session = {}
 
 ---@class Response
 ---@field id string
