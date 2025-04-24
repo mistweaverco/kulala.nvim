@@ -28,8 +28,11 @@ local FILE_MAPPING = {
 }
 
 local is_uptodate = function()
-  local version = DB.settings.js_version
-  return GLOBALS.VERSION == version and FS.file_exists(BASE_FILE_PRE) and FS.file_exists(BASE_FILE_POST)
+  DB.settings.js_build_hash_repo = DB.settings.js_build_hash_repo or FS.read_file(BASE_DIR .. "/.build_hash") or ""
+
+  return DB.settings.js_build_hash_local == DB.settings.js_build_hash_repo
+    and FS.file_exists(BASE_FILE_PRE)
+    and FS.file_exists(BASE_FILE_POST)
 end
 
 ---@param wait boolean|nil -- wait to complete
@@ -38,7 +41,6 @@ M.install_dependencies = function(wait)
   if vim.g.kulala_js_installing then return false end
 
   local cmd = require("kulala.cmd")
-
   vim.g.kulala_js_installing = true
 
   Logger.info("Javascript dependencies not found or are out of date.")
@@ -62,7 +64,7 @@ M.install_dependencies = function(wait)
     end)
     Async.co_yield(co)
 
-    DB.settings:write({ js_version = GLOBALS.VERSION })
+    DB.settings:write({ js_build_hash_local = DB.settings.js_build_hash_repo })
     vim.g.kulala_js_installing = false
 
     Logger.info("Javascript dependencies installed.")
