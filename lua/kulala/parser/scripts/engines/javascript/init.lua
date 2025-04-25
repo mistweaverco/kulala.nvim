@@ -5,6 +5,7 @@ local FS = require("kulala.utils.fs")
 local Float = require("kulala.ui.float")
 local GLOBALS = require("kulala.globals")
 local Logger = require("kulala.logger")
+local Shell = require("kulala.cmd.shell_utils")
 
 local M = {}
 
@@ -53,14 +54,12 @@ M.install_dependencies = function(wait)
   co = coroutine.create(function()
     FS.copy_dir(BASE_DIR, SCRIPTS_BUILD_DIR)
 
-    cmd_install = vim.system({ NPM_BIN, "clean-install", "--prefix", SCRIPTS_BUILD_DIR }, { text = true }, function(out)
-      if out.code ~= 0 then Logger.error("npm install fail with code " .. out.code .. " " .. out.stderr) end
+    cmd_install = Shell.run({ NPM_BIN, "clean-install", "--prefix", SCRIPTS_BUILD_DIR }, { text = true }, function(_)
       Async.co_resume(co)
     end)
     Async.co_yield(co)
 
-    cmd_build = vim.system({ NPM_BIN, "run", "build", "--prefix", SCRIPTS_BUILD_DIR }, { text = true }, function(out)
-      if out.code ~= 0 then return Logger.error("npm run build fail with code " .. out.code .. " " .. out.stderr) end
+    cmd_build = Shell.run({ NPM_BIN, "run", "build", "--prefix", SCRIPTS_BUILD_DIR }, { text = true }, function(_)
       Async.co_resume(co)
     end)
     Async.co_yield(co)
