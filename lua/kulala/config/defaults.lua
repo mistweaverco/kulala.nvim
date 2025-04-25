@@ -122,6 +122,9 @@ local M = {
     -- enable/disable built-in autocompletion
     autocomplete = true,
 
+    -- enable/disable formatter
+    formatter = true,
+
     -- enable/disable lua syntax highlighting
     lua_syntax_hl = true,
 

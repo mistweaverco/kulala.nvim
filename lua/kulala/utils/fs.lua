@@ -369,6 +369,7 @@ end
 
 ---@param content string
 ---@param binary? boolean|nil
+---@return string|nil path to the temp file
 M.get_temp_file = function(content, binary)
   local tmp_file = vim.fn.tempname()
   local mode = binary and "wb" or "w"

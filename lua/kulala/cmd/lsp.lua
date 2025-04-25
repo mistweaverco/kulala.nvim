@@ -1,8 +1,11 @@
+local Config = require("kulala.config")
 local Db = require("kulala.db")
 local Dynamic_variables = require("kulala.parser.dynamic_vars")
 local Env = require("kulala.parser.env")
+local Fmt = require("kulala.cmd.fmt")
 local Inspect = require("kulala.parser.inspect")
 local Kulala = require("kulala")
+local Logger = require("kulala.logger")
 local Oauth = require("kulala.ui.auth_manager")
 local Ui = require("kulala.ui")
 
@@ -325,7 +328,7 @@ local metadata = {
   { "grpc-global", "Grpc-global", "Grpc global flag" },
   { "accept", "accept chunked", "Accept chunked responses" },
   { "env-stdin-cmd", "env-stdin-cmd ", "Set env variable with external cmd" },
-  { "env-json-key", "env-json-kwy ", "Set env variable with json key" },
+  { "env-json-key", "env-json-key ", "Set env variable with json key" },
 }
 
 ---@type SourceTable
@@ -363,16 +366,40 @@ local script_request = {
   { "request.variables.get", "request.variables.get(${1:varName})$0", "Get a request variable" },
   { "request.headers.all", "request.headers.all()$0", "Get all request headers" },
   { "name", "name()$0", "Get header name" },
-  { "getRawValue", "getRawValue()$0", "Get raw request header value" },
-  { "tryGetSubstituted", "tryGetSubstituted()$0", "Get substituted request header value" },
-  { "request.headers.findByName", "request.headers.findByName(${1:name})$0", "Find request header by name" },
+  {
+    "getRawValue",
+    "getRawValue()$0",
+    "Get raw request header value",
+  },
+  {
+    "tryGetSubstituted",
+    "tryGetSubstituted()$0",
+    "Get substituted request header value",
+  },
+  {
+    "request.headers.findByName",
+    "request.headers.findByName(${1:name})$0",
+    "Find request header by name",
+  },
   { "request.body.getRaw", "request.body.getRaw()$0", "Get raw request body" },
-  { "request.body.tryGetSubstituted", "request.body.tryGetSubstituted()$0", "Get substituted request body" },
-  { "request.body.getComputed", "request.body.getComputed()$0", "Get computed request body" },
+  {
+    "request.body.tryGetSubstituted",
+    "request.body.tryGetSubstituted()$0",
+    "Get substituted request body",
+  },
+  {
+    "request.body.getComputed",
+    "request.body.getComputed()$0",
+    "Get computed request body",
+  },
   { "request.environment.get", "request.environment.get(${1:varName})$0", "Get environment variable" },
   { "request.method", "request.method()$0", "Get request method" },
   { "request.url.getRaw", "request.url.getRaw()$0", "Get raw request URL" },
-  { "request.url.tryGetSubstituted", "request.url.tryGetSubstituted()$0", "Get substituted request URL" },
+  {
+    "request.url.tryGetSubstituted",
+    "request.url.tryGetSubstituted()$0",
+    "Get substituted request URL",
+  },
   { "request.skip", "request.skip()$0", "Skip request" },
   { "request.replay", "request.replay()$0", "Replay request" },
 }
@@ -466,6 +493,11 @@ local function generic_source(source)
   return items
 end
 
+local current_buffer = 0
+local current_line = 0
+local current_ft = nil
+local formatter = false
+
 local cache = {
   buffer = nil,
   lnum = nil,
@@ -477,17 +509,18 @@ local cache = {
   scripts = nil,
   symbols = nil,
   is_fresh = function(self)
-    return self.buffer == vim.fn.bufnr() and self.lnum == vim.fn.line(".")
+    return self.buffer == current_buffer and self.lnum == current_line
   end,
   update = function(self)
-    self.buffer = vim.fn.bufnr()
-    self.lnum = vim.fn.line(".")
+    self.buffer = current_buffer
+    self.lnum = current_line
   end,
 }
 
 local function get_document()
   if cache:is_fresh() and cache.document_variables and cache.requests then return end
-  Db.set_current_buffer()
+
+  Db.set_current_buffer(current_buffer)
   cache.document_variables, cache.requests = Parser.get_document()
   cache:update()
 end
@@ -534,15 +567,7 @@ local function document_variables()
   get_document()
 
   vim.iter(cache.document_variables):each(function(name, value)
-    table.insert(items, make_item(name, "Document var", kind, name, value, name .. "}}"))
-  end)
-
-  vim.iter(cache.requests):each(function(request)
-    local req_metadata = request.metadata
-    vim.iter(req_metadata):each(function(meta, value)
-      _ = meta.name == "name"
-        and table.insert(items, make_item(meta.value, "Request name", kind, meta.value, "", meta.value .. "}}"))
-    end)
+    table.insert(items, make_item(name, "Document var", kind, name, value, name))
   end)
 
   return items
@@ -557,14 +582,14 @@ local function dynamic_variablies()
 
   vim.iter(cache.dynamic_variables):each(function(name, value)
     value = type(value) == "function" and tostring(value()) or value
-    table.insert(items, make_item(name, value, lsp_kind.Variable, name, value, name:sub(2) .. "}}"))
+    table.insert(items, make_item(name, value, lsp_kind.Variable, name, value, name:sub(2)))
   end)
 
   kind = lsp_kind.Snippet
   local format = lsp_format.Snippet
 
   vim.iter(auth_vars):each(function(name, value)
-    table.insert(items, make_item(name, "Dynamic var", kind, name, value, name:sub(2) .. '("$1")}}$0', format))
+    table.insert(items, make_item(name, "Dynamic var", kind, name, value, name:sub(2) .. '("$1")$0', format))
   end)
 
   return items
@@ -640,7 +665,7 @@ local sources = {
 }
 
 local function source_type(params)
-  local line = vim.fn.getline(params.position.line + 1)
+  local line = vim.api.nvim_buf_get_lines(current_buffer, params.position.line, params.position.line + 1, false)[1]
   line = line:sub(1, params.position.character)
 
   local matches = {
@@ -650,7 +675,7 @@ local function source_type(params)
     { "run #", "request_names" },
     { "auth(.+)oken%(", "auth_configs" },
     { "{{%$", "dynamic_variables" },
-    { "{{", { "document_variables", "env_variables" } },
+    { "{{", { "document_variables", "env_variables", "request_names" } },
     { "{%%", "scripts" },
     { "/", "request_urls" },
     { "Host:", "request_urls" },
@@ -667,8 +692,9 @@ local function source_type(params)
 
   local is_script = false
   for i = params.position.line, 1, -1 do
-    if vim.fn.getline(i):match("###") then break end
-    if vim.fn.getline(i):match("{%%") then
+    local l = vim.api.nvim_buf_get_lines(current_buffer, i, i + 1, false)[1]
+    if l:match("###") then break end
+    if l:match("{%%") then
       is_script = true
       break
     end
@@ -699,41 +725,51 @@ local get_source = function(params)
   return results
 end
 
-local code_actions = {
-  { title = "Copy as cURL", command = "copy_as_curl", fn = Kulala.copy },
-  { title = "Paste from curl", command = "paste_from_curl", fn = Kulala.from_curl },
-  { title = "Inspect current request", command = "inspect_current_request", fn = Kulala.inspect },
-  {
-    title = "Select environment",
-    command = "select_environment",
-    fn = function()
-      Kulala.set_selected_env()
-    end,
-  },
-  {
-    title = "Manage Auth Config",
-    command = "manage_auth_config",
-    fn = require("kulala.ui.auth_manager").open_auth_config,
-  },
-  { title = "Replay last request", command = "replay_last request", fn = Kulala.replay },
-  { title = "Download GraphQL schema", command = "download_graphql_schema", fn = Kulala.download_graphql_schema },
-  {
-    title = "Clear globals",
-    command = "clear_globals",
-    fn = function()
-      Kulala.scripts_clear_global()
-    end,
-  },
-  { title = "Clear cached files", command = "clear_cached_files", fn = Kulala.clear_cached_files },
-  { title = "Send request", command = "run_request", fn = Ui.open },
-  {
-    title = "Send all requests",
-    command = "run_request_all",
-    fn = function()
-      Ui.open_all()
-    end,
-  },
-}
+local function code_actions_fmt()
+  return (not current_ft or (current_ft ~= "http" and current_ft ~= "rest"))
+    and {
+      { title = "Convert to HTTP", command = "convert_http", fn = Fmt.convert },
+    }
+end
+
+local function code_actions()
+  return code_actions_fmt()
+    or {
+      { title = "Copy as cURL", command = "copy_as_curl", fn = Kulala.copy },
+      { title = "Paste from curl", command = "paste_from_curl", fn = Kulala.from_curl },
+      { title = "Inspect current request", command = "inspect_current_request", fn = Kulala.inspect },
+      {
+        title = "Select environment",
+        command = "select_environment",
+        fn = function()
+          Kulala.set_selected_env()
+        end,
+      },
+      {
+        title = "Manage Auth Config",
+        command = "manage_auth_config",
+        fn = require("kulala.ui.auth_manager").open_auth_config,
+      },
+      { title = "Replay last request", command = "replay_last request", fn = Kulala.replay },
+      { title = "Download GraphQL schema", command = "download_graphql_schema", fn = Kulala.download_graphql_schema },
+      {
+        title = "Clear globals",
+        command = "clear_globals",
+        fn = function()
+          Kulala.scripts_clear_global()
+        end,
+      },
+      { title = "Clear cached files", command = "clear_cached_files", fn = Kulala.clear_cached_files },
+      { title = "Send request", command = "run_request", fn = Ui.open },
+      {
+        title = "Send all requests",
+        command = "run_request_all",
+        fn = function()
+          Ui.open_all()
+        end,
+      },
+    }
+end
 
 local function get_symbol(name, kind, lnum, cnum)
   if not name or vim.trim(name) == "" then return end
@@ -814,6 +850,60 @@ local function get_hover(_)
   return { contents = { language = "http", value = table.concat(Inspect.get_contents(), "\n") } }
 end
 
+local function format(params)
+  if not formatter then return end
+
+  params.range = params.range or { start = { line = 0 }, ["end"] = { line = -2 } }
+
+  local l_start, l_end = params.range.start.line, params.range["end"].line + 1
+  local lines = vim.api.nvim_buf_get_lines(current_buffer, l_start, l_end, false)
+
+  local formatted_lines = Fmt.format(lines)
+  if not formatted_lines then return end
+
+  return {
+    {
+      range = {
+        start = { line = l_start, character = 0 },
+        ["end"] = { line = #lines, character = 0 },
+      },
+      newText = formatted_lines,
+    },
+  }
+end
+
+local function initialize()
+  formatter = Config.options.formatter and Fmt.check_formatter(function()
+    formatter = true
+  end)
+
+  if not current_ft or (current_ft ~= "http" and current_ft ~= "rest") then
+    return { capabilities = { codeActionProvider = true } }
+  end
+
+  return {
+    capabilities = {
+      codeActionProvider = true,
+      documentSymbolProvider = true,
+      hoverProvider = true,
+      completionProvider = { triggerCharacters = trigger_chars },
+      documentFormattingProvider = true,
+      documentRangeFormattingProvider = true,
+    },
+  }
+end
+
+local handlers = {
+  ["initialize"] = initialize,
+  ["textDocument/completion"] = get_source,
+  ["textDocument/documentSymbol"] = get_symbols,
+  ["textDocument/hover"] = get_hover,
+  ["textDocument/codeAction"] = code_actions,
+  ["textDocument/formatting"] = format,
+  ["textDocument/rangeFormatting"] = format,
+  ["shutdown"] = function() end,
+}
+
 local function new_server()
   local function server(dispatchers)
     local closing = false
@@ -821,34 +911,17 @@ local function new_server()
 
     function srv.request(method, params, handler)
       local status, error = xpcall(function()
-        srv.request_p(method, params, handler)
+        if params and params.textDocument then
+          current_buffer = vim.uri_to_bufnr(params.textDocument.uri)
+          current_line = vim.api.nvim_win_get_cursor(vim.fn.bufwinid(current_buffer))[1]
+          current_ft = vim.api.nvim_get_option_value("filetype", { buf = current_buffer })
+        end
+
+        _ = handlers[method] and handler(nil, handlers[method](params))
       end, debug.traceback)
 
       if not status then require("kulala.logger").error("Errors in Kulala LSP:\n" .. (error or ""), 2) end
       return true
-    end
-
-    function srv.request_p(method, params, handler)
-      if method == "initialize" then
-        handler(nil, {
-          capabilities = {
-            codeActionProvider = true,
-            documentSymbolProvider = true,
-            hoverProvider = true,
-            completionProvider = { triggerCharacters = trigger_chars },
-          },
-        })
-      elseif method == "textDocument/completion" then
-        handler(nil, get_source(params))
-      elseif method == "textDocument/documentSymbol" then
-        handler(nil, get_symbols(params))
-      elseif method == "textDocument/hover" then
-        handler(nil, get_hover(params))
-      elseif method == "textDocument/codeAction" then
-        handler(nil, code_actions)
-      elseif method == "shutdown" then
-        handler(nil, nil)
-      end
     end
 
     function srv.notify(method, _)
@@ -869,22 +942,23 @@ local function new_server()
   return server
 end
 
-M.start = function(buf)
-  M.start_mock_lsp()
+M.start = function(buf, ft)
+  M.start_lsp(buf)
 
-  vim.iter(trigger_chars):each(function(char)
-    pcall(function()
-      vim.keymap.del("i", char, { buffer = buf }) -- remove autopairs mappings
+  _ = (ft == "http" or ft == "rest")
+    and vim.iter(trigger_chars):each(function(char)
+      pcall(function()
+        vim.keymap.del("i", char, { buffer = buf }) -- remove autopairs mappings
+      end)
     end)
-  end)
 end
 
-function M.start_mock_lsp()
+function M.start_lsp(buf)
   local server = new_server()
 
   local dispatchers = {
     on_exit = function(code, signal)
-      vim.notify("Server exited with code " .. code .. " and signal " .. signal, vim.log.levels.ERROR)
+      Logger.error("Server exited with code " .. code .. " and signal " .. signal)
     end,
   }
 
@@ -892,13 +966,15 @@ function M.start_mock_lsp()
     name = "kulala",
     cmd = server,
     root_dir = "",
+    bufnr = buf,
     on_init = function(_client) end,
     on_exit = function(_code, _signal) end,
-    commands = vim.iter(code_actions):fold({}, function(acc, action)
+    commands = vim.iter(code_actions()):fold({}, function(acc, action)
       acc[action.command] = action.fn
       return acc
     end),
   }, dispatchers)
+
   return client_id
 end
 

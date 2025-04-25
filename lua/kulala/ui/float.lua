@@ -11,6 +11,7 @@ local M = {}
 ---@field title string? @Title of the floating window
 ---
 ---@field relative string? Relative position
+---@field anchor string? Anchor position
 ---@field zindex integer? z-index of the floating window
 ---
 ---@field focusable boolean? Whether the window is focusable
@@ -144,6 +145,7 @@ M.create_window_footer = function(text, opts)
   opts.relative = "win"
   opts.hl_group = "Special"
   opts.height = 1
+  opts.anchor = "NE"
 
   return M.create(text, opts)
 end
@@ -165,6 +167,7 @@ M.create_progress_float = function(text, opts)
 
   local float = M.create(text, {
     title = "Kulala",
+    title_pos = "center",
     name = "kulala://progress",
     relative = "editor",
     anchor = "NE",

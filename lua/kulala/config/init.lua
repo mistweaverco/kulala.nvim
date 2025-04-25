@@ -29,10 +29,9 @@ end
 local set_autocomands = function()
   vim.api.nvim_create_autocmd("FileType", {
     group = vim.api.nvim_create_augroup("Kulala filetype setup", { clear = true }),
-    pattern = { "http", "rest" },
+    pattern = { "http", "rest", "json", "yaml", "bruno" },
     callback = function(ev)
-      _ = M.options.ui.autocomplete and require("kulala.utils.lsp").start(ev.buf)
-      _ = M.options.ui.lua_syntax_hl and require("kulala.ui.treesitter").set()
+      _ = M.options.ui.autocomplete and require("kulala.cmd.lsp").start(ev.buf, ev.match)
     end,
   })
 end
@@ -43,7 +42,9 @@ M.setup = function(config)
   set_legacy_options()
   set_autocomands()
 
+  _ = M.options.ui.lua_syntax_hl and require("kulala.ui.treesitter").set()
   _ = M.options.show_icons == "signcolumn" and pcall(set_signcolumn_icons)
+
   M.options.global_keymaps, M.options.ft_keymaps = keymaps.setup_global_keymaps()
 
   M.options.initialized = true

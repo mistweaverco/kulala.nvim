@@ -9,6 +9,4 @@ npm run build --prefix ${XDG_CACHE_HOME}/$KULALA_DIR
 
 echo "Building in .tests/cache/$KULALA_DIR"
 cp -r $SCRIPT_DIR .tests/cache/$KULALA_DIR
-npm run build --prefix .tests/$KULALA_DIR
-
-tar -C $SCRIPT_DIR -cf - --sort=name src package.json | sha256sum | cut -d' ' -f1 > $SCRIPT_DIR/.build_hash
+npm run build --prefix .tests/cache/$KULALA_DIR

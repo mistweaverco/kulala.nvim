@@ -11,11 +11,14 @@ local M = {}
 
 local NPM_EXISTS = vim.fn.executable("npm") == 1
 local NODE_EXISTS = vim.fn.executable("node") == 1
+
 local NPM_BIN = vim.fn.exepath("npm")
 local NODE_BIN = vim.fn.exepath("node")
+
 local SCRIPTS_DIR = FS.get_scripts_dir()
 local REQUEST_SCRIPTS_DIR = FS.get_request_scripts_dir()
 local SCRIPTS_BUILD_DIR = FS.get_tmp_scripts_build_dir()
+
 local BASE_DIR = FS.join_paths(SCRIPTS_DIR, "engines", "javascript", "lib")
 local BASE_FILE_PRE_CLIENT_ONLY = FS.join_paths(SCRIPTS_BUILD_DIR, "dist", "pre_request_client_only.js")
 local BASE_FILE_PRE = FS.join_paths(SCRIPTS_BUILD_DIR, "dist", "pre_request.js")
@@ -29,10 +32,15 @@ local FILE_MAPPING = {
   post_request = BASE_FILE_POST,
 }
 
-local is_uptodate = function()
-  DB.session.js_build_hash_repo = DB.session.js_build_hash_repo or FS.read_file(BASE_DIR .. "/.build_hash") or ""
+local function get_build_ver()
+  local package = FS.read_json(BASE_DIR .. "/package.json")
+  return package and package.version or ""
+end
 
-  return DB.settings.js_build_hash_local == DB.session.js_build_hash_repo
+local is_uptodate = function()
+  DB.session.js_build_ver_repo = DB.session.js_build_ver_repo or get_build_ver()
+
+  return DB.settings.js_build_ver_local == DB.session.js_build_ver_repo
     and FS.file_exists(BASE_FILE_PRE)
     and FS.file_exists(BASE_FILE_POST)
 end
@@ -54,17 +62,25 @@ M.install_dependencies = function(wait)
   co = coroutine.create(function()
     FS.copy_dir(BASE_DIR, SCRIPTS_BUILD_DIR)
 
-    cmd_install = Shell.run({ NPM_BIN, "clean-install", "--prefix", SCRIPTS_BUILD_DIR }, { text = true }, function(_)
-      Async.co_resume(co)
-    end)
+    cmd_install = Shell.run(
+      { NPM_BIN, "clean-install", "--prefix", SCRIPTS_BUILD_DIR },
+      { err_msg = "JS dependencies install failed: ", on_error = progress.hide },
+      function()
+        Async.co_resume(co)
+      end
+    )
     Async.co_yield(co)
 
-    cmd_build = Shell.run({ NPM_BIN, "run", "build", "--prefix", SCRIPTS_BUILD_DIR }, { text = true }, function(_)
-      Async.co_resume(co)
-    end)
+    cmd_build = Shell.run(
+      { NPM_BIN, "run", "build", "--prefix", SCRIPTS_BUILD_DIR },
+      { err_msg = "JS dependencies build failed: ", on_error = progress.hide },
+      function()
+        Async.co_resume(co)
+      end
+    )
     Async.co_yield(co)
 
-    DB.settings:write({ js_build_hash_local = DB.session.js_build_hash_repo })
+    DB.settings:write({ js_build_ver_local = DB.session.js_build_ver_repo })
     vim.g.kulala_js_installing = false
 
     progress.hide()
@@ -76,6 +92,8 @@ M.install_dependencies = function(wait)
   Async.co_resume(co)
 
   _ = wait and cmd_install:wait()
+  if not cmd_build then return false end
+
   _ = wait and cmd_build:wait()
 
   return false

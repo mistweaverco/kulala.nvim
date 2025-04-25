@@ -1,5 +1,9 @@
 # Kulala News
 
+## Version 5.3.0
+
+### Feature: Kulala Formatter [fmt](usage/basic-usage.md) - format and import requests from Postman/Bruno/OpenAPI
+
 ## Version 5.2.0
 
 ### Enhancement: Kulala LSP [lsp](usage/basic-usage.md) - autocompletion, symbols search and outline, code actions, hover

@@ -25,20 +25,35 @@ M.has_zsh = function()
   return cache.has_zsh
 end
 
+---@class ShellOpts: vim.SystemOpts
+---@field sync boolean|nil -- call :wait() and return vim.SystemCompleted
+---@field err_msg string|nil -- error message on failure
+---@field on_error fun(system: vim.SystemCompleted)|nil -- callback on failure
+
+---@param cmd string[]
+---@param opts ShellOpts
+---@param on_exit fun(system: vim.SystemCompleted)|nil
+---@return vim.SystemObj|vim.SystemCompleted|nil
 M.run = function(cmd, opts, on_exit)
   if vim.fn.executable(cmd[1]) == 0 then return Logger.error("Command not found: " .. cmd[1]) end
 
+  opts.text = opts.text or true
+  opts.err_msg = (opts.err_msg or "Error running command: ") .. table.concat(cmd, " ") .. "\n"
+
   local status, result = pcall(function()
-    vim.system(cmd, opts, function(system)
+    return vim.system(cmd, opts, function(system)
       if system.code ~= 0 then
-        Logger.error("Error running command: " .. cmd .. "\nCode: " .. system.code .. ", " .. system.stderr, 2)
+        Logger.error(opts.err_msg .. "Code: " .. system.code .. ", " .. system.stderr, 2)
+        _ = opts.on_error and opts.on_error(system)
+        return
       end
 
       _ = on_exit and on_exit(system)
     end)
   end)
 
-  if not status then return Logger.error("Error running command: " .. cmd .. "\n" .. result) end
+  if not status then return Logger.error(opts.err_msg .. result) end
+  result = opts.sync and result:wait() or result
 
   return result
 end
