@@ -1,8 +1,12 @@
 local DB = require("kulala.db")
 
+local function kulala_highlight()
+  return vim.api.nvim_create_namespace("kulala_highlight")
+end
+
 local function clear_highlights(bufnr, ns)
   bufnr = bufnr and bufnr or DB.get_current_buffer()
-  ns = ns and ns or vim.api.nvim_create_namespace("kulala_highlight")
+  ns = ns and ns or kulala_highlight()
 
   vim.api.nvim_buf_clear_namespace(bufnr, ns, 0, -1)
 end
@@ -14,12 +18,12 @@ end
 ---@param hl_group string
 local function highlight_range(bufnr, ns, start_pos, end_pos, hl_group, priority)
   bufnr = bufnr == 0 and DB.get_current_buffer() or bufnr
-  ns = ns == 0 and vim.api.nvim_create_namespace("kulala_highlight") or ns
+  ns = ns ~= 0 and ns or kulala_highlight()
 
   start_pos = type(start_pos) == "table" and start_pos or { start_pos, 0 }
   end_pos = type(end_pos) == "table" and end_pos or { end_pos, -1 }
 
-  vim.highlight.range(bufnr, ns, hl_group, start_pos, end_pos, { priority = priority or 1 })
+  vim.hl.range(bufnr, ns, hl_group, start_pos, end_pos, { priority = priority or 1 })
 end
 
 local function highlight_column(bufnr, ns, start_pos, end_pos, hl_group, priority)

@@ -7,7 +7,7 @@ local parser = require("kulala.parser.request")
 
 describe("grpc", function()
   local curl, system, wait_for_requests
-  local ui_buf, result, expected
+  local ui_buf, result
 
   describe("parses grpc request", function()
     before_each(function()

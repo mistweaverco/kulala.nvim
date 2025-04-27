@@ -236,7 +236,7 @@ describe("requests report", function()
       vim.api.nvim_set_current_win(vim.fn.bufwinid(ui_buf))
       h.send_keys("gg2j")
 
-      require("kulala.ui").jump_to_response()
+      require("kulala.ui").keymap_enter()
 
       result = h.get_buf_lines(h.get_kulala_buf())
       assert.has_string(result[1], "Request: 1/2")

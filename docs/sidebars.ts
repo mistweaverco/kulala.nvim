@@ -39,6 +39,7 @@ const sidebars: SidebarsConfig = {
         "usage/authentication",
         "usage/import-and-run-http",
         "usage/reading-file-data",
+        "usage/filter-response",
         "usage/redirect-the-response",
         "usage/sending-form-data",
         "usage/dynamically-setting-environment-variables-based-on-headers",

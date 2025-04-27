@@ -127,7 +127,7 @@ end
 local function modify_grpc_response(response)
   if response.method ~= "GRPC" then return response end
 
-  response.body = response.stats
+  response.body_raw = response.stats
   response.stats = ""
   response.headers = "Content-Type: application/json"
 
@@ -184,8 +184,10 @@ local function save_response(request_status, parsed_request)
     status = false,
     time = vim.fn.localtime(),
     duration = request_status.duration or 0,
-    body = FS.read_file(GLOBALS.BODY_FILE) or "",
+    body = "",
+    body_raw = FS.read_file(GLOBALS.BODY_FILE) or "",
     json = {},
+    filtered = nil,
     headers = FS.read_file(GLOBALS.HEADERS_FILE) or "",
     headers_tbl = INT_PROCESSING.get_headers() or {},
     cookies = INT_PROCESSING.get_cookies() or {},
@@ -204,6 +206,7 @@ local function save_response(request_status, parsed_request)
   response = modify_grpc_response(response)
   response = set_request_stats(response)
 
+  response.body = response.body_raw
   response.body = #response.body == 0 and "No response body (check Verbose output)" or response.body
   response.json = Json.parse(response.body) or {}
   response.errors = inject_payload(response.errors, parsed_request)

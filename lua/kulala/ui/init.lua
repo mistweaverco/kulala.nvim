@@ -3,6 +3,7 @@ local CMD = require("kulala.cmd")
 local CONFIG = require("kulala.config")
 local CURL_PARSER = require("kulala.parser.curl")
 local DB = require("kulala.db")
+local Ext_processing = require("kulala.external_processing")
 local FORMATTER = require("kulala.formatter")
 local FS = require("kulala.utils.fs")
 local Float = require("kulala.ui.float")
@@ -43,6 +44,7 @@ local function get_current_response_pos()
   return DB.global_update().current_response_pos or #responses
 end
 
+---@return Response
 local function get_current_response()
   local responses = DB.global_update().responses
   return responses[get_current_response_pos()]
@@ -193,6 +195,56 @@ local function format_body()
   return body, filetype or contenttype.ft
 end
 
+local function update_filter()
+  local filter = vim.api.nvim_get_current_line()
+  if not filter:find("JQ Filter") then return end
+
+  filter = vim.trim(filter:sub(12))
+  Ext_processing.jq(filter, get_current_response())
+  M.show_body()
+end
+
+M.toggle_filter = function()
+  local buf = get_kulala_buffer()
+  local row = 4
+
+  if vim.api.nvim_buf_get_lines(buf, row, row + 1, false)[1]:find("JQ Filter") then
+    return vim.api.nvim_buf_set_lines(buf, row - 1, row + 1, false, {})
+  end
+
+  local filter = { "JQ Filter: " .. (get_current_response().filter or ""), "" }
+
+  vim.api.nvim_buf_set_lines(buf, row, row, false, filter)
+
+  UI_utils.highlight_range(buf, 0, { row, 0 }, { row, 12 }, "Question")
+  UI_utils.highlight_range(buf, 0, { row, 10 }, { row, -1 }, "Special")
+end
+
+local function jump_to_response()
+  local responses = DB.global_update().responses
+  local win = vim.fn.bufwinid(get_current_response().buf)
+
+  if CONFIG.get().default_view == "report" then
+    local lnum = tonumber(vim.api.nvim_get_current_line():match("^%s*%d+"))
+    if not lnum then return end
+
+    for i = #responses, 1, -1 do
+      if responses[i].line == lnum then
+        set_current_response(i)
+        break
+      end
+    end
+
+    M.show_body()
+  elseif win > 0 then
+    vim.api.nvim_set_current_win(win)
+    vim.api.nvim_win_set_cursor(win, { get_current_response().line, 0 })
+
+    win = get_kulala_window()
+    _ = vim.api.nvim_win_get_config(win).relative == "editor" and vim.api.nvim_win_close(win, true)
+  end
+end
+
 M.show_headers = function()
   local headers = get_current_response().headers
   show(headers, "text", "headers")
@@ -201,6 +253,7 @@ end
 M.show_body = function()
   local body, filetype = format_body()
   show(body, filetype, "body")
+  _ = get_current_response().filter and M.toggle_filter()
 end
 
 M.show_headers_body = function()
@@ -250,33 +303,6 @@ M.show_next = function()
 
   set_current_response(next)
   M.open_default_view()
-end
-
-M.jump_to_response = function()
-  local responses = DB.global_update().responses
-  local win = vim.fn.bufwinid(get_current_response().buf)
-
-  if CONFIG.get().default_view == "report" then
-    local lnum = tonumber(vim.fn.getline("."):match("^%s*%d+"))
-    if not lnum then return end
-
-    for i = #responses, 1, -1 do
-      if responses[i].line == lnum then
-        set_current_response(i)
-        break
-      end
-    end
-
-    M.show_body()
-  elseif get_current_response().method == "WS" then
-    require("kulala.cmd.websocket").send()
-  elseif win > 0 then
-    vim.api.nvim_set_current_win(win)
-    vim.api.nvim_win_set_cursor(win, { get_current_response().line, 0 })
-
-    win = get_kulala_window()
-    _ = vim.api.nvim_win_get_config(win).relative == "editor" and vim.api.nvim_win_close(win, true)
-  end
 end
 
 M.show_previous = function()
@@ -404,6 +430,16 @@ M.open_all = function(_, line_nr)
 
     return true
   end)
+end
+
+M.keymap_enter = function()
+  if get_current_response().method == "WS" then
+    require("kulala.cmd.websocket").send()
+  elseif vim.api.nvim_get_current_line():find("JQ Filter") then
+    update_filter()
+  else
+    jump_to_response()
+  end
 end
 
 M.interrupt_requests = function()

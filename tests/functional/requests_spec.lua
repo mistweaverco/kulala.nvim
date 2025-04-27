@@ -12,6 +12,10 @@ local h = require("test_helper")
 
 assert.is_true(vim.fn.executable("npm") == 1)
 
+local function last_response()
+  return DB.global_data.responses[#DB.global_data.responses]
+end
+
 describe("requests", function()
   describe("show output of requests", function()
     local curl, system, wait_for_requests
@@ -123,6 +127,34 @@ describe("requests", function()
       assert.has_string(result, expected)
     end)
 
+    it("filters response with @jq", function()
+      h.create_buf(
+        ([[
+          # @jq { "Content": .headers["Content-Type"], "url": .url }
+          GET https://httpbin.org/simple
+      ]]):to_table(true),
+        "test.http"
+      )
+
+      curl.stub({
+        ["https://httpbin.org/simple"] = {
+          body = h.load_fixture("fixtures/simple_body.txt"),
+        },
+      })
+
+      kulala.run_all()
+      wait_for_requests(1)
+
+      result = h.get_buf_lines(ui_buf):to_string()
+      assert.has_string(result, 'JQ Filter: { "Content": .headers["Content-Type"], "url": .url }')
+
+      assert.is_same("application/json", last_response().json.Content)
+      assert.is_same("https://httpbin.org/simple", last_response().json.url)
+
+      assert.has_string(result, '"Content": "application/json"')
+      assert.has_string(result, '"url": "https://httpbin.org/simple"')
+    end)
+
     it("sets environment variables from response", function()
       vim.cmd.edit(h.expand_path("requests/advanced_A.http"))
 
@@ -200,7 +232,7 @@ describe("requests", function()
       assert.has_string(result, expected)
     end)
 
-    it("has access to request and response data through", function()
+    it("has access to request and response data through request variables", function()
       vim.cmd.edit(h.expand_path("requests/advanced_F.http"))
 
       curl.stub({

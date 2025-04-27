@@ -263,7 +263,7 @@ function System.reset()
 end
 
 function System.run(cmd, opts, on_exit)
-  System.args = { cmd = cmd, opts = opts, on_exit = on_exit }
+  System.args = { cmd = cmd, opts = opts or {}, on_exit = on_exit }
   System.args.opts.on_exit = on_exit
 
   if not job_cmd_match(cmd, System.cmd) then return System._system(cmd, opts, on_exit) end

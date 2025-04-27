@@ -3,6 +3,7 @@
 ## Version 5.3.0
 
 ### Feature: Kulala Formatter [fmt](usage/basic-usage.md) - format and import requests from Postman/Bruno/OpenAPI
+### Feature: JQ filter [filter](usage/filter-response.md)
 
 ## Version 5.2.0
 

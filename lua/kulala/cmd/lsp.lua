@@ -727,49 +727,49 @@ local get_source = function(params)
 end
 
 local function code_actions_fmt()
-  return (not current_ft or (current_ft ~= "http" and current_ft ~= "rest"))
-    and {
-      { title = "Convert to HTTP", command = "convert_http", fn = Fmt.convert },
-    }
+  return { { title = "Convert to HTTP", command = "convert_http", fn = Fmt.convert } }
+end
+
+local function code_actions_http()
+  return {
+    { title = "Copy as cURL", command = "copy_as_curl", fn = Kulala.copy },
+    { title = "Paste from curl", command = "paste_from_curl", fn = Kulala.from_curl },
+    { title = "Inspect current request", command = "inspect_current_request", fn = Kulala.inspect },
+    {
+      title = "Select environment",
+      command = "select_environment",
+      fn = function()
+        Kulala.set_selected_env()
+      end,
+    },
+    {
+      title = "Manage Auth Config",
+      command = "manage_auth_config",
+      fn = require("kulala.ui.auth_manager").open_auth_config,
+    },
+    { title = "Replay last request", command = "replay_last request", fn = Kulala.replay },
+    { title = "Download GraphQL schema", command = "download_graphql_schema", fn = Kulala.download_graphql_schema },
+    {
+      title = "Clear globals",
+      command = "clear_globals",
+      fn = function()
+        Kulala.scripts_clear_global()
+      end,
+    },
+    { title = "Clear cached files", command = "clear_cached_files", fn = Kulala.clear_cached_files },
+    { title = "Send request", command = "run_request", fn = Ui.open },
+    {
+      title = "Send all requests",
+      command = "run_request_all",
+      fn = function()
+        Ui.open_all()
+      end,
+    },
+  }
 end
 
 local function code_actions()
-  return code_actions_fmt()
-    or {
-      { title = "Copy as cURL", command = "copy_as_curl", fn = Kulala.copy },
-      { title = "Paste from curl", command = "paste_from_curl", fn = Kulala.from_curl },
-      { title = "Inspect current request", command = "inspect_current_request", fn = Kulala.inspect },
-      {
-        title = "Select environment",
-        command = "select_environment",
-        fn = function()
-          Kulala.set_selected_env()
-        end,
-      },
-      {
-        title = "Manage Auth Config",
-        command = "manage_auth_config",
-        fn = require("kulala.ui.auth_manager").open_auth_config,
-      },
-      { title = "Replay last request", command = "replay_last request", fn = Kulala.replay },
-      { title = "Download GraphQL schema", command = "download_graphql_schema", fn = Kulala.download_graphql_schema },
-      {
-        title = "Clear globals",
-        command = "clear_globals",
-        fn = function()
-          Kulala.scripts_clear_global()
-        end,
-      },
-      { title = "Clear cached files", command = "clear_cached_files", fn = Kulala.clear_cached_files },
-      { title = "Send request", command = "run_request", fn = Ui.open },
-      {
-        title = "Send all requests",
-        command = "run_request_all",
-        fn = function()
-          Ui.open_all()
-        end,
-      },
-    }
+  return (current_ft == "http" or current_ft == "rest") and code_actions_http() or code_actions_fmt()
 end
 
 local function get_symbol(name, kind, lnum, cnum)
@@ -963,6 +963,8 @@ function M.start_lsp(buf)
     end,
   }
 
+  local actions = vim.list_extend(code_actions_http(), code_actions_fmt())
+
   local client_id = vim.lsp.start({
     name = "kulala",
     cmd = server,
@@ -970,7 +972,7 @@ function M.start_lsp(buf)
     bufnr = buf,
     on_init = function(_client) end,
     on_exit = function(_code, _signal) end,
-    commands = vim.iter(code_actions()):fold({}, function(acc, action)
+    commands = vim.iter(actions):fold({}, function(acc, action)
       acc[action.command] = action.fn
       return acc
     end),

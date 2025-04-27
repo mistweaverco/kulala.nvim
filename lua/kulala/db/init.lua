@@ -24,7 +24,9 @@ M.session = {}
 ---@field time number -- time of the request
 ---
 ---@field body string -- body of the response
+---@field body_raw string -- body of the response (unaltered)
 ---@field json table -- json response
+---@field filter string|nil -- jq filter if applied
 ---
 ---@field headers string -- headers of the response
 ---@field headers_tbl table -- parsed headers of the response

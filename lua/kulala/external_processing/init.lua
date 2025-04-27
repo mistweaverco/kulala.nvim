@@ -27,28 +27,38 @@ M.stdin_cmd = function(cmdstring, response)
   -- Append the command string to the command table
   table.insert(cmd, cmdstring)
 
-  -- Execute the command with the provided contents as stdin
-  local res = vim.system(cmd, { stdin = contents, text = true }):wait()
+  local result =
+    Shell.run(cmd, { sync = true, stdin = response.body, err_msg = "Failed to run stdin_cmd", abort_on_stderr = true })
 
-  if res.code ~= 0 then
-    Logger.error(("stdin_cmd --> Command failed: %s. Error: %s"):format(cmdstring, res.stderr))
-    return ""
-  else
-    -- Remove trailing newline and return the result
-    return res.stdout:gsub("[\r\n]$", "")
-  end
+  return result and result.stdout:gsub("[\r\n]$", "")
 end
 
-M.env_stdin_cmd = function(cmdstring, contents)
+M.env_stdin_cmd = function(cmd, response)
   -- Extract environment variable name (first token)
-  local env_name, cmd_string = cmdstring:match("^(%S+)(.*)$")
+  local env_name, cmd_string = cmd:match("^(%S+)(.*)$")
+
   if not env_name then
     Logger.error("env_stdin_cmd --> Malformed metatag")
     return ""
   end
 
   -- save the result to the environment variable
-  DB.update().env[env_name] = M.stdin_cmd(cmd_string, contents)
+  DB.update().env[env_name] = M.stdin_cmd(cmd_string, response)
+end
+
+M.jq = function(filter, response)
+  if vim.tbl_keys(response.json) == 0 then return end
+
+  local result = Shell.run(
+    { "jq", filter },
+    { sync = true, stdin = response.body_raw, err_msg = "Failed to filter with jq", abort_on_stderr = true }
+  )
+
+  if not result or result.stdout == "" then return end
+
+  response.body = result.stdout
+  response.json = Json.parse(result.stdout, { verbose = true }) or response.json
+  response.filter = filter
 end
 
 return M

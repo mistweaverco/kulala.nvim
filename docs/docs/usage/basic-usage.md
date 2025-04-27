@@ -95,6 +95,7 @@ require("nvim-lightbulb").setup({
 - `# @curl-global-...` and `# @curl-...` allows you to set global and per-request flags for curl requests.
 - `# @grpc-global-...` and `# @grpc-...` allows you to set global and per-request flags for gRPC requests.
 - `# @stdin-cmd` allows you to execute an external command
+- `# @jq` allows you to filter the response body using jq.
 
 #### Variables
 
@@ -102,8 +103,8 @@ require("nvim-lightbulb").setup({
 - `{{variable}}` allows you to use variables defined in `metadata`, `system environment` variables, `http-client.env.json` file or `.env` file.
 - `{{$dynamic-variable}}` allows you to use predefined dynamic, aka `magic` variables.
 - `# @env-stdin-cmd` allows you to set environment variables using an external command.
-- `# #env-json-key` allows you to set environment variables using a JSON path on the response body.
-- `# #env-header-key` allows you to set environment variables from the response headers.
+- `# @env-json-key` allows you to set environment variables using a JSON path on the response body.
+- `# @env-header-key` allows you to set environment variables from the response headers.
 
 #### Requests import
 
