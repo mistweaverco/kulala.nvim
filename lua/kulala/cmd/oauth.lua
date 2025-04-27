@@ -4,7 +4,9 @@ local Crypto = require("kulala.cmd.crypto")
 local DB = require("kulala.db")
 local Env = require("kulala.parser.env")
 local Float = require("kulala.ui.float")
+local Json = require("kulala.utils.json")
 local Logger = require("kulala.logger")
+local Shell = require("kulala.cmd.shell_utils")
 local Table = require("kulala.utils.table")
 local Tcp = require("kulala.cmd.tcp")
 
@@ -22,26 +24,21 @@ local function make_request(url, body, request_desc)
   local headers = "Content-Type: application/x-www-form-urlencoded"
   local cmd = { Config.get().curl_path, "-s", "-X", "POST", "-H", headers, "-d", body, url }
 
-  local status, system, result, error
-  status, system = pcall(vim.system, cmd, { text = true }, function(system)
-    if system.code ~= 0 then error = "Request error:\n" .. (system.stderr or "") end
+  local error
+  local request = Shell.run(cmd, { err_msg = "Request error", abort_on_stderr = true }, function(system)
     Async.co_resume(co, system)
   end)
 
-  if not status then return Logger.error("Request error:\n" .. system) end
+  if not request then return end
+  local status, result = Async.co_yield(co, request_timeout)
 
-  status, result = Async.co_yield(co, request_timeout)
+  if result == "timeout" then return Logger.error("Request timeout: " .. request_desc) end
+  result = status and result or request:wait()
 
-  if status and not result then return Logger.error("Request timeout: " .. request_desc) end
-  if error then return Logger.error("Request error:\n" .. error) end
+  result, error = Json.parse(result.stdout or "{}")
+  if not result then error = "Error parsing authentication response:\n" .. error end
 
-  result = result or system:wait()
-
-  result = result.stdout or "{}"
-  status, result = pcall(vim.json.decode, result, { object = nil, array = nil })
-  if not status then error = "Error parsing authentication response:\n" .. result end
-
-  if result.error and result.error ~= "authorization_pending" then
+  if result and result.error and result.error ~= "authorization_pending" then
     error = result.error .. "\n" .. result.error_description
   end
   if error then return Logger.error("Failed to: " .. request_desc .. ". " .. error, 2), error end

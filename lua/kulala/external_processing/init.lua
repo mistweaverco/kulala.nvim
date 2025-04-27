@@ -1,20 +1,21 @@
 local DB = require("kulala.db")
+local Json = require("kulala.utils.json")
 local Logger = require("kulala.logger")
-local ShellUtils = require("kulala.cmd.shell_utils")
+local Shell = require("kulala.cmd.shell_utils")
 
 local M = {}
 
-M.stdin_cmd = function(cmdstring, contents)
+M.stdin_cmd = function(cmdstring, response)
   local cmd = {}
-  if ShellUtils.has_sh() then
+  if Shell.has_sh() then
     -- Use sh on Unix-like systems
     table.insert(cmd, "sh")
     table.insert(cmd, "-c")
-  elseif ShellUtils.has_zsh() then
+  elseif Shell.has_zsh() then
     -- Use zsh on macOS
     table.insert(cmd, "zsh")
     table.insert(cmd, "-c")
-  elseif ShellUtils.has_powershell() then
+  elseif Shell.has_powershell() then
     -- Use PowerShell on Windows
     table.insert(cmd, "powershell")
     table.insert(cmd, "-Command")

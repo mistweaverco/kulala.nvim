@@ -1,3 +1,4 @@
+local Json = require("kulala.utils.json")
 local Logger = require("kulala.logger")
 
 local M = {}
@@ -61,13 +62,10 @@ M.get_json = function(body)
   json.query = query
 
   if variables then
-    local status, result = pcall(vim.json.decode, variables)
+    local result, error = Json.parse(variables, { verbose = true })
+    if not result then return end
 
-    if status then
-      json.variables = result
-    else
-      Logger.error("Failed to parse query: " .. result)
-    end
+    json.variables = result
   end
 
   return vim.json.encode(json)

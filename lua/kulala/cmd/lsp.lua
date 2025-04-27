@@ -320,7 +320,6 @@ local header_values = {
 
 ---@type SourceTable
 local metadata = {
-  { "name", "name", "Request name" },
   { "prompt", "prompt ", "Prompt" },
   { "curl", "curl", "Curl flag" },
   { "curl-global", "curl-global", "Curl global flag" },
@@ -329,6 +328,8 @@ local metadata = {
   { "accept", "accept chunked", "Accept chunked responses" },
   { "env-stdin-cmd", "env-stdin-cmd ", "Set env variable with external cmd" },
   { "env-json-key", "env-json-key ", "Set env variable with json key" },
+  { "stdin-cmd", "env-stdin-cmd ", "Run external command" },
+  { "jq", "jq ", "Filter response body with jq" },
 }
 
 ---@type SourceTable

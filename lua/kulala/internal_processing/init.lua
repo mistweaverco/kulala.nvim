@@ -2,6 +2,7 @@ local CONFIG = require("kulala.config")
 local DB = require("kulala.db")
 local FS = require("kulala.utils.fs")
 local GLOBALS = require("kulala.globals")
+local Json = require("kulala.utils.json")
 local Logger = require("kulala.logger")
 
 local M = {}
@@ -137,11 +138,9 @@ M.env_header_key = function(cmd)
   local header_key = kv[2]
   local variable_name = kv[1]
   local value = headers[header_key:lower()]
-  if value == nil then
-    vim.notify("env-header-key --> Header not found.", vim.log.levels.ERROR)
-  else
-    DB.update().env[variable_name] = value
-  end
+
+  if not value then return Logger.error("env-header-key --> Header not found") end
+  DB.update().env[variable_name] = value
 end
 
 M.redirect_response_body_to_file = function(data)
@@ -160,16 +159,13 @@ M.redirect_response_body_to_file = function(data)
   end
 end
 
-M.env_json_key = function(cmd, body)
-  local status, json = pcall(vim.json.decode, body, { object = true, array = true })
+M.env_json_key = function(cmd, response)
+  local json = Json.parse(response.body)
+  if not json then return Logger.error("env-json-key --> JSON parsing failed.") end
 
-  if not status or json == nil then
-    Logger.error("env-json-key --> JSON parsing failed.")
-  else
-    local kv = vim.split(cmd, " ")
-    local value = get_nested_value(json, kv[2])
-    DB.update().env[kv[1]] = value
-  end
+  local kv = vim.split(cmd, " ")
+  local value = get_nested_value(json, kv[2])
+  DB.update().env[kv[1]] = value
 end
 
 M.prompt_var = function(metadata_value)

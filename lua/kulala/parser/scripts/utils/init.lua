@@ -3,8 +3,9 @@ local M = {}
 
 M.clear_global = function(key_or_keys)
   local globals_fp = Fs.get_global_scripts_variables_file_path()
-  local globals = Fs.file_exists(globals_fp) and vim.fn.json_decode(Fs.read_file(globals_fp)) or {}
-  if key_or_keys == nil then
+  local globals = Fs.read_json(globals_fp) or {}
+
+  if not key_or_keys then
     globals = {}
   elseif type(key_or_keys) == "table" then
     for _, key in ipairs(key_or_keys) do
@@ -13,7 +14,7 @@ M.clear_global = function(key_or_keys)
   elseif type(key_or_keys) == "string" then
     globals[key_or_keys] = nil
   end
-  Fs.write_file(globals_fp, vim.fn.json_encode(globals))
+  Fs.write_json(globals_fp, globals)
 end
 
 return M

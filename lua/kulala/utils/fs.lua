@@ -344,12 +344,7 @@ end
 
 M.read_json = function(filename)
   local content = M.read_file(filename)
-  if not content then return end
-
-  local status, result = pcall(vim.json.decode, content, { object = true, array = true })
-  if not status then return Logger.error("Error decoding JSON file: " .. filename .. ": " .. result) end
-
-  return result
+  return content and Json.parse(content)
 end
 
 ---Write JSON to file
