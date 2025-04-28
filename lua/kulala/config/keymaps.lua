@@ -255,7 +255,7 @@ local function collect_global_keymaps()
   local config = require("kulala.config")
   local config_global_keymaps = config.options.global_keymaps
   local global_keymaps, ft_keymaps = {}, {}
-  local prefix = config.options.global_keymaps_prefix or "R"
+  local prefix = config.options.global_keymaps_prefix
 
   if not config_global_keymaps then return end
 
