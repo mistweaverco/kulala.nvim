@@ -42,6 +42,10 @@ Authentication: Basic, Bearer, Digest, NTLM, OAuth2, Negotiate, AWS, SSL
 
 Assertions, automated testing and reporting
 
+Bulit-in LSP completion and formatting
+
+CLI tooling and CI hooks
+
 Scratchpad: for making requests
 
 

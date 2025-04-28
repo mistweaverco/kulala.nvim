@@ -205,7 +205,7 @@ local function parse_headers(request, line)
   local key, value = line:match("^([^:]+):%s*(.*)$")
 
   if key == "Cookie" then
-    request.cookie = value
+    request.cookie = #request.cookie == 0 and value or request.cookie .. "; " .. value
     return
   end
 

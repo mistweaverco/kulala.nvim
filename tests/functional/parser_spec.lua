@@ -34,6 +34,7 @@ describe("requests", function()
             Accept: application/json
             Authorization: Basic {{REQ_USERNAME}}:{{REQ_PASSWORD}}
             Cookie: {{MY_COOKIE}}
+            Cookie: another_cookie=me
 
             {
               "Timeout": {{DEFAULT_TIMEOUT}},
@@ -52,7 +53,7 @@ describe("requests", function()
             ["Authorization"] = "Basic Test_user:Test_password",
             ["Content-Type"] = "application/json",
           },
-          cookie = "awesome=me",
+          cookie = "awesome=me; another_cookie=me",
           body = ([[
             {
               "Timeout": 5000,
@@ -262,6 +263,24 @@ describe("requests", function()
           assert_url({
             "/simple",
           }, "GET", "httpbin.org/simple")
+        end)
+
+        it("urlencodes correctly", function()
+          -- `!` `#` `$` `&` `'` `(` `)` `*` `+` `,` `/` `:` `;` `=` `?` `@` `[` `]` `%` reserved
+          -- `?`, `&`, `=`, `/`, `#`, `:` special syntax
+
+          assert_url(
+            { "https://my.server.com/api/v1/object?filter=A B&C:D&E?F&G#H&I=J/K&L%M#fragment" },
+            "GET",
+            "https://my.server.com/api/v1/object?filter=A%20B&C%3AD&E%3FF&G%23H&I=J%2FK&L%25M#fragment"
+          )
+          assert_url(
+            {
+              [[https://my.server.com/api/v1/object?filter=owner.address.city in ["Berlin", "München", "Nürnberg"]']],
+            },
+            "GET",
+            [[https://my.server.com/api/v1/object?filter=owner.address.city%20in%20%5B%22Berlin%22%2C%20%22M%C3%BCnchen%22%2C%20%22N%C3%BCrnberg%22%5D%27]]
+          )
         end)
       end)
 
