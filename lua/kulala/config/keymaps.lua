@@ -2,61 +2,61 @@ local M = {}
 
 M.default_global_keymaps = {
   ["Open scratchpad"] = {
-    "<leader>Rb",
+    "b",
     function()
       require("kulala").scratchpad()
     end,
   },
   ["Open kulala"] = {
-    "<leader>Ro",
+    "o",
     function()
       require("kulala").open()
     end,
   },
   ["Close window"] = {
-    "<leader>Rq",
+    "q",
     function()
       require("kulala").close()
     end,
     ft = { "http", "rest" },
   },
   ["Copy as cURL"] = {
-    "<leader>Rc",
+    "c",
     function()
       require("kulala").copy()
     end,
     ft = { "http", "rest" },
   },
   ["Paste from curl"] = {
-    "<leader>RC",
+    "C",
     function()
       require("kulala").from_curl()
     end,
     ft = { "http", "rest" },
   },
   ["Inspect current request"] = {
-    "<leader>Ri",
+    "i",
     function()
       require("kulala").inspect()
     end,
     ft = { "http", "rest" },
   },
   ["Select environment"] = {
-    "<leader>Re",
+    "e",
     function()
       require("kulala").set_selected_env()
     end,
     ft = { "http", "rest" },
   },
   ["Manage Auth Config"] = {
-    "<leader>Ru",
+    "u",
     function()
       require("kulala.ui.auth_manager").open_auth_config()
     end,
     ft = { "http", "rest" },
   },
   ["Send request"] = {
-    "<leader>Rs",
+    "s",
     function()
       require("kulala").run()
     end,
@@ -71,69 +71,69 @@ M.default_global_keymaps = {
     ft = { "http", "rest" },
   },
   ["Send all requests"] = {
-    "<leader>Ra",
+    "a",
     function()
       require("kulala").run_all()
     end,
     mode = { "n", "v" },
   },
   ["Replay the last request"] = {
-    "<leader>Rr",
+    "r",
     function()
       require("kulala").replay()
     end,
   },
   ["Download GraphQL schema"] = {
-    "<leader>Rg",
+    "g",
     function()
       require("kulala").download_graphql_schema()
     end,
     ft = { "http", "rest" },
   },
   ["Jump to next request"] = {
-    "<leader>Rn",
+    "n",
     function()
       require("kulala").jump_next()
     end,
     ft = { "http", "rest" },
   },
   ["Jump to previous request"] = {
-    "<leader>Rp",
+    "p",
     function()
       require("kulala").jump_prev()
     end,
     ft = { "http", "rest" },
   },
   ["Find request"] = {
-    "<leader>Rf",
+    "f",
     function()
       require("kulala").search()
     end,
     ft = { "http", "rest" },
   },
   ["Toggle headers/body"] = {
-    "<leader>Rt",
+    "t",
     function()
       require("kulala").toggle_view()
     end,
     ft = { "http", "rest" },
   },
   ["Show stats"] = {
-    "<leader>RS",
+    "S",
     function()
       require("kulala").show_stats()
     end,
     ft = { "http", "rest" },
   },
   ["Clear globals"] = {
-    "<leader>Rx",
+    "x",
     function()
       require("kulala").scripts_clear_global()
     end,
     ft = { "http", "rest" },
   },
   ["Clear cached files"] = {
-    "<leader>RX",
+    "X",
     function()
       require("kulala").clear_cached_files()
     end,
@@ -255,6 +255,7 @@ local function collect_global_keymaps()
   local config = require("kulala.config")
   local config_global_keymaps = config.options.global_keymaps
   local global_keymaps, ft_keymaps = {}, {}
+  local prefix = config.options.global_keymaps_prefix or "R"
 
   if not config_global_keymaps then return end
 
@@ -265,6 +266,8 @@ local function collect_global_keymaps()
   vim.iter(config_global_keymaps):each(function(name, map)
     if map then
       map.desc = map.desc or name
+
+      map[1] = "<leader>" .. prefix .. map[1]
 
       if map.ft then
         vim.iter({ map.ft }):flatten():each(function(ft)
