@@ -267,7 +267,7 @@ local function collect_global_keymaps()
     if map then
       map.desc = map.desc or name
 
-      map[1] = "<leader>" .. prefix .. map[1]
+      map[1] = prefix .. map[1]
 
       if map.ft then
         vim.iter({ map.ft }):flatten():each(function(ft)

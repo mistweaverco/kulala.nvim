@@ -180,7 +180,7 @@ local M = {
 
   -- The globalKeymapPrefix setting allows users to define a custom prefix for all global keymaps registered by this plugin.
   -- This prevents conflicts with existing user-defined keymaps by namespacing the plugin's key bindings under a unique prefix.
-  global_keymaps_prefix = "R",
+  global_keymaps_prefix = "<leader>R",
 
   -- Kulala UI keymaps, override with custom keymaps as required (check docs or {plugins_path}/kulala.nvim/lua/kulala/config/keymaps.lua for details)
   ---@type boolean|table
