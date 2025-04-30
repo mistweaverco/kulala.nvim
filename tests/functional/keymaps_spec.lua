@@ -31,7 +31,7 @@ describe("keymaps", function()
       CONFIG.setup({
         global_keymaps = {
           ["Inspect current request"] = {
-            "<leader>RI",
+            "I",
             function() end,
           },
           ["Open scratchpad"] = false,
