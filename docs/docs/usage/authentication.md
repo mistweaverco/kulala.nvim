@@ -337,6 +337,18 @@ Authorization Code and `token` for Implicit grant types.
 
 However, you can specify it manually if you need to use a different value or several, like `id_token token`.
 
+#### Client Credentials
+
+Enter one of the following:
+
+- "none" if you do not want to specify client credentials in the request.
+
+- "in body" if you want to send client credentials in the request body.
+
+- "basic" to send a Basic authentication request in the request header (default value).
+
+- "jwt" to send a JWT token in the request body.
+
 #### PKCE
 
 Enables Proof Key for Code Exchange (PKCE). Applicable with the Authorization Code grant type.
@@ -352,7 +364,7 @@ and "Code Verifier". For example:
 ```
 #### Assertion
 
-For Grant Type `Client Credentials` a JWT token is used to authenticate the request. You can provide the JWT token in this field.
+For Grant Type `Client Credentials` with JWT token to authenticate the request. You can provide the JWT token in this field.
 
 #### JWT
 

@@ -19,10 +19,14 @@ local co, exit
 ---@param url string
 ---@param body string
 ---@param request_desc string - description of the request
+---@param params table|nil - additional parameters for the request
 ---@return table|nil, string|nil - response and error message
-local function make_request(url, body, request_desc)
+local function make_request(url, body, request_desc, params)
   local headers = "Content-Type: application/x-www-form-urlencoded"
-  local cmd = { Config.get().curl_path, "-s", "-X", "POST", "-H", headers, "-d", body, url }
+  local cmd = { Config.get().curl_path, "-s", "-X", "POST", "-H", headers }
+
+  cmd = params and params.headers and vim.list_extend(cmd, { "-H", params.headers }) or cmd
+  cmd = vim.list_extend(cmd, { "-d", body, url })
 
   local error
   local request = Shell.run(cmd, { err_msg = "Request error", abort_on_stderr = true }, function(system)
@@ -321,7 +325,44 @@ M.acquire_jwt_token = function(config_id)
   if not out then return end
 
   out.acquired_at = os.time()
-  out.expires_in = 10000 -- to allow for resuming requests with new token
+  out.expires_in = 10 -- to allow for resuming requests with new token
+  config = update_auth_data(config_id, out)
+
+  return config.auth_data.access_token
+end
+
+---Grant Type "Client Credentials"
+---Acquire a token using the client credentials for the given config_id
+M.acquire_client_credentials = function(config_id)
+  local config = get_auth_config(config_id)
+  local type = config["Client Credentials"] or "basic"
+
+  if type == "jwt" then return M.acquire_jwt_token(config_id) end
+
+  local required_params = { "Client ID", "Client Secret", "Token URL" }
+  if not validate_auth_params(config_id, required_params) then return end
+
+  local url = config["Token URL"]
+  local headers = type == "basic"
+    and "Authorization: Basic "
+      .. Crypto.base64_encode(vim.uri_encode(config["Client ID"]) .. ":" .. vim.uri_encode(config["Client Secret"]))
+
+  local body = "grant_type=client_credentials"
+  body = type == "in body"
+      and body .. "&client_id=" .. config["Client ID"] .. "&client_secret=" .. config["Client Secret"]
+    or body
+
+  body = config["Scope"] and body .. "&scope=" .. config["Scope"] or body
+  body = add_custom_params(config_id, body, "In Auth Request")
+
+  Logger.info("Acquiring token for config: " .. config_id)
+
+  local out = make_request(url, body, "acquire token", { headers = headers })
+  if not out then return end
+
+  out.acquired_at = os.time()
+  out.expires_in = 10 -- to allow for resuming requests with new token
+
   config = update_auth_data(config_id, out)
 
   return config.auth_data.access_token
@@ -357,7 +398,7 @@ M.acquire_auth = function(config_id)
   local code = M.receive_code(config_id)
   if not code then return Logger.error("Failed to acquire code for config: " .. config_id) end
 
-  config = update_auth_data(config_id, { code = code, acquired_at = os.time(), expires_in = 10000 }) -- to allow for resuming requests with new token
+  config = update_auth_data(config_id, { code = code, acquired_at = os.time(), expires_in = 10 }) -- to allow for resuming requests with new token
 
   return code
 end
@@ -406,7 +447,7 @@ M.acquire_token = function(config_id)
   config = update_auth_data(config_id, config.auth_data, true)
 
   if config["Grant Type"] == "Device Authorization" then return M.acquire_device_token(config_id) end
-  if config["Grant Type"] == "Client Credentials" then return M.acquire_jwt_token(config_id) end
+  if config["Grant Type"] == "Client Credentials" then return M.acquire_client_credentials(config_id) end
   if config["Grant Type"] == "Password" then return M.acquire_password_token(config_id) end
 
   local code = M.acquire_auth(config_id)
@@ -559,4 +600,73 @@ M.is_token_expired = function(config_id, type)
   return diff > expires_in, expires_in - diff
 end
 
+M.auth_template = function()
+  return {
+    ["Type"] = "OAuth2",
+    ["Username"] = "",
+    ["Scope"] = "",
+    ["Client ID"] = "",
+    ["Client Secret"] = "",
+    ["Grant Type"] = {
+      "Authorization Code",
+      "Client Credentials",
+      "Device Authorization",
+      "Implicit",
+      "Password",
+    },
+    ["Use ID Token"] = false,
+    ["Redirect URL"] = "",
+    ["Token URL"] = "",
+    ["Custom Request Parameters"] = {
+      ["my-custom-parameter"] = "my-custom-value",
+      ["access_type"] = {
+        ["Value"] = "offline",
+        ["Use"] = "In Auth Request",
+      },
+      ["audience"] = {
+        ["Use"] = "In Token Request",
+        ["Value"] = "https://my-audience.com/",
+      },
+      ["usage"] = {
+        ["Use"] = "In Auth Request",
+        ["Value"] = "https://my-usage.com/",
+      },
+      ["resource"] = {
+        "https =//my-resource/resourceId1",
+        "https =//my-resource/resourceId2",
+      },
+    },
+    ["Password"] = "",
+    ["Client Creadentials"] = {
+      "none",
+      "in body",
+      "basic",
+      "jwt",
+    },
+    ["PKCE"] = {
+      true,
+      {
+        ["Code Challenge Method"] = {
+          "Plain",
+          "SHA-256",
+        },
+        ["Code Verifier"] = "YYLzIBzrXpVaH5KRx86itubKLXHNGnJBPAogEwkhveM",
+      },
+    },
+    ["Revoke URL"] = "",
+    ["Device Auth URL"] = "",
+    ["Acquire Automatically"] = true,
+    ["Auth URL"] = "",
+    ["JWT"] = {
+      header = {
+        alg = "RS256",
+        typ = "JWT",
+      },
+      payload = {
+        ia = 0,
+        exp = 50,
+      },
+    },
+  }
+end
 return M

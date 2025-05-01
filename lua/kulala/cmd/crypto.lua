@@ -5,7 +5,7 @@ local Logger = require("kulala.logger")
 
 local M = {}
 
-local function base64_encode(input)
+M.base64_encode = function(input)
   return vim.base64.encode(input):gsub("+", "-"):gsub("/", "_"):gsub("=", "")
 end
 
@@ -27,7 +27,7 @@ M.pkce_verifier = function()
 
   if not verifier then return Logger.error(err_msg .. "failed to read random bytes") end
 
-  return base64_encode(verifier)
+  return M.base64_encode(verifier)
 end
 
 M.pkce_challenge = function(verifier, method)
@@ -59,7 +59,7 @@ M.pkce_challenge = function(verifier, method)
   os.remove(input_file)
   os.remove(output_file)
 
-  return base64_encode(hash)
+  return M.base64_encode(hash)
 end
 
 M.jwt_encode = function(header, payload, key)
@@ -72,8 +72,8 @@ M.jwt_encode = function(header, payload, key)
   local method = header.alg == "RS256" and "sign" or "hmac"
 
   -- Base64url encode the header and payload
-  local header_b64 = base64_encode(vim.json.encode(header))
-  local payload_b64 = base64_encode(vim.json.encode(payload))
+  local header_b64 = M.base64_encode(vim.json.encode(header))
+  local payload_b64 = M.base64_encode(vim.json.encode(payload))
 
   -- Save the signing input to a temp file
   local signing_input = header_b64 .. "." .. payload_b64
@@ -106,7 +106,7 @@ M.jwt_encode = function(header, payload, key)
 
   if not signature then return Logger.error(err_msg .. "failed to read signature") end
 
-  return signing_input .. "." .. base64_encode(signature)
+  return signing_input .. "." .. M.base64_encode(signature)
 end
 
 return M

@@ -2,6 +2,7 @@
 
 ## Version 5.3.0
 
+### Enhancement: Oauth2 - add Basic Authorization support for Client Credentials grant type
 ### Feature: Kulala Formatter [fmt](usage/basic-usage.md) - format and import requests from Postman/Bruno/OpenAPI
 ### Feature: JQ filter [filter](usage/filter-response.md)
 
@@ -19,6 +20,7 @@
 ### Docs: added runnable [demo](usage/demos.mdx) `*.http` examples
 ### Feature: `import` and `run` [commands](usage/import-and-run-http.md) to import and run requests from external `*.http` files
 ### Enhancement: improved compatibility with IntelliJ HTTP Client spec: [HTTP File spec](usage/http-file-spec.md)
+
  - URL line support for `absolute/origin/asterisk path`
  - `#` and `//` comments support
  - `GRAPHQL` method support

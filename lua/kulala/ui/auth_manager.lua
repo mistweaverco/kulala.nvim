@@ -11,70 +11,6 @@ local Table = require("kulala.utils.table")
 
 local M = {}
 
-local function auth_template()
-  return {
-    ["Type"] = "OAuth2",
-    ["Username"] = "",
-    ["Scope"] = "",
-    ["Client ID"] = "",
-    ["Client Secret"] = "",
-    ["Grant Type"] = {
-      "Authorization Code",
-      "Client Credentials",
-      "Device Authorization",
-      "Implicit",
-      "Password",
-    },
-    ["Use ID Token"] = false,
-    ["Redirect URL"] = "",
-    ["Token URL"] = "",
-    ["Custom Request Parameters"] = {
-      ["my-custom-parameter"] = "my-custom-value",
-      ["access_type"] = {
-        ["Value"] = "offline",
-        ["Use"] = "In Auth Request",
-      },
-      ["audience"] = {
-        ["Use"] = "In Token Request",
-        ["Value"] = "https://my-audience.com/",
-      },
-      ["usage"] = {
-        ["Use"] = "In Auth Request",
-        ["Value"] = "https://my-usage.com/",
-      },
-      ["resource"] = {
-        "https =//my-resource/resourceId1",
-        "https =//my-resource/resourceId2",
-      },
-    },
-    ["Password"] = "",
-    ["PKCE"] = {
-      true,
-      {
-        ["Code Challenge Method"] = {
-          "Plain",
-          "SHA-256",
-        },
-        ["Code Verifier"] = "YYLzIBzrXpVaH5KRx86itubKLXHNGnJBPAogEwkhveM",
-      },
-    },
-    ["Revoke URL"] = "",
-    ["Device Auth URL"] = "",
-    ["Acquire Automatically"] = true,
-    ["Auth URL"] = "",
-    ["JWT"] = {
-      header = {
-        alg = "RS256",
-        typ = "JWT",
-      },
-      payload = {
-        ia = 0,
-        exp = 50,
-      },
-    },
-  }
-end
-
 local function get_env()
   local cur_env = vim.g.kulala_selected_env or Config.get().default_env
   local env = DB.find_unique("http_client_env") or (Env.get_env() and DB.find_unique("http_client_env")) or {}
@@ -106,7 +42,7 @@ end
 local function add_new_config()
   local name = vim.fn.input("Enter new config name: ")
   if name and name ~= "" then
-    update_auth_config(name, auth_template())
+    update_auth_config(name, Oauth.auth_template())
     Logger.info("Added new Auth config: " .. name)
   end
 end
@@ -129,7 +65,7 @@ local function edit_env_file(config, picker, name)
   if not file then return end
 
   picker:close()
-  vim.cmd(('edit +/"%s": %s'):format(config, file))
+  vim.cmd(('edit +/"%s": %s'):format(config:gsub(" ", "\\ "), file))
 
   return true
 end

@@ -86,6 +86,8 @@ describe("oauth", function()
     system = h.System.stub({ "curl" }, {
       on_call = function(system)
         local params = parse_params(system.args.cmd[#system.args.cmd - 1])
+
+        params.headers = system.args.cmd[#system.args.cmd - 3]
         params.url = system.args.cmd[#system.args.cmd]
 
         system.async = true
@@ -220,66 +222,123 @@ describe("oauth", function()
       assert.near(os.time(), get_env().refresh_token_acquired_at, 1)
     end)
 
-    it("grant type - Client Credentials: generate JWT", function()
-      cmd.queue.resume:revert()
+    describe("grant type - Client Credentinals", function()
+      it("basic auth", function()
+        cmd.queue.resume:revert()
 
-      update_env({
-        ["Grant Type"] = "Client Credentials",
-        private_key = "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC5cHDxLOlZKpgT\nLNEF18AlQkxOHwYuP3VOuAeCxwCMlICSmfVRCzl5Zv+36fVTnvSF5tp1J46JI6jD\nM3WIE9UmjcRA13TVfzkoRuEKOfd20/PVEoxAXt4h5xgT4yuuJB1+C+R4xcZY4ul7\neCar1YJ12JJEt8vnZRGEhpjE8FtGvCBdDQ2+d7Qhr2LL8PIYW6mS6++5uCBAno+4\nevOmE2GkeQAfosrkDLSjOtNzF9pEYA5BzW1ZuZJJyWukUvaze4MqFH/6XfqzFPtr\n5XfQo8Olifljteic6JQx9KcvhXI7v1owtCpjkqcXMtiXtR23mRws0h//outYR0o4\nfJuOmouVAgMBAAECggEALJ/lXfRb1yxL2llvl4Na5tx0dlw65Yg5146rqAnxlOLr\nqdvI0A7ubsudgAmaEtxupYZvTcAOKexd4VOR1gRHx/ZXou72W6Y4//tGjmpypbLN\nu5myDI+HzwrInYiOa2KfgkSkX3fgimVYoHDChZlkwq0yTb0ZIX8N3yFww/u/S17y\n4sP3/+94dR6KWZTuufsmknAvByVGtVe3bGszYo77DC3m7+Kx2mR88anuP9a2H3Jf\nldzVCPvJ4bboncTFItxERRiHX/N7xwmNO7MzL5WZRL+GPe9+P/Hr/PKokeQc+yEg\n0cfWqKG0tyTLArRGOOHZ3wHLGuqjSFc+RZiXoL3dxQKBgQDwGSMjdhKa+Ck6SwkU\n26vvTLN5XTwleG9w5Mhj3esKs0DROEGfksFmSCCkFNboDl11RJuUldNwa4AVyZoc\nPbA96jRJGK7AEcNOV9FwdEs8rc0Berfn6klQuE66gsVonIM9fRiq8pYnnZ552Urh\nuHxgQoQL5iWCdl/IZ4kai8FHJwKBgQDFuI/Dv7HjFS9bOkIP7pg/KKYzl6VsUSlp\nEkd67V9TLHwIToq+k2cjmPMRCKD6KYkhbyOMN3GJpk348h9xdY9reIOBAb7hotbs\nQCRYFmuiksKeDoaP8N7MSIjs2C1AMO80RbyB2jLF8R9VIE64xZmUs0RBki5vqvtZ\naqQbpqxs4wKBgQCMbmd7Ckh/k76pddHt/T5nTPl8dugDEpo78dSzdM1RCN9UgA8C\nAphT9sQAtJ+uQxiuyl4lXiy5iGb2V2BoPDylOiMyzdkIRltxqzO5DowjBZTu1JRU\ndVhEekiyFmLYeRLaGB0hf5oLuclDg7CkrX8x3jXVr9son4wOb2BlwnBd6QKBgALs\nZKvHRNEPuiCGLv3fUD720eZHYrnERXF5RLdLlTI8oSTaTHDe6xJ6q3VgBElOnelx\npDvpgfNAEz0QD2j1DQbQxFj+9pyNdNIPbLoksri3pMsDeffc3t50YBnoZFrjnlXO\nhigBWujUVNtEXAWdXlT1hZfWmnsqMwcybXS/NSNzAoGBAJekqSCvUQHdiNWq1BPp\nM998rdujTGmfYCdKLT+c0i1/s3YuGu/h87tTSjXi7Jmq/iNVM2+RoTaGvvD1b+ZC\nGLcVcsqa6qD77WRQZ3q+2sF8v2vSd9oHT0R2jA4U/zVyF9dFOV4tT09xrFh7vLXM\nfYsrQTaSEta7ynoUI5/9NJTJ\n-----END PRIVATE KEY-----\n",
-        JWT = {
-          header = {
-            alg = "HS256",
-            typ = "JWT",
+        update_env({
+          ["Grant Type"] = "Client Credentials",
+          ["Client Credentials"] = "basic",
+        })
+
+        kulala.run()
+        wait_for_requests(1)
+
+        assert.has_properties(get_request(), {
+          audience = "kulala_api",
+          grant_type = "client_credentials",
+          headers = "Authorization: Basic Y2xpZW50X2lkOmNsaWVudF9zZWNyZXQ",
+          url = "https://token.url",
+        })
+
+        assert.has_properties(get_env(), {
+          access_token = "new_access_token",
+        })
+        assert.near(os.time(), get_env().acquired_at, 1)
+
+        assert.is.same("new_access_token", get_auth_header())
+      end)
+
+      it("in body auth", function()
+        cmd.queue.resume:revert()
+
+        update_env({
+          ["Grant Type"] = "Client Credentials",
+          ["Client Credentials"] = "in body",
+        })
+
+        kulala.run()
+        wait_for_requests(1)
+
+        assert.has_properties(get_request(), {
+          audience = "kulala_api",
+          client_id = "client_id",
+          client_secret = "client_secret",
+          grant_type = "client_credentials",
+          url = "https://token.url",
+        })
+
+        assert.has_properties(get_env(), {
+          access_token = "new_access_token",
+        })
+        assert.near(os.time(), get_env().acquired_at, 1)
+
+        assert.is.same("new_access_token", get_auth_header())
+      end)
+
+      it("generate JWT", function()
+        cmd.queue.resume:revert()
+
+        update_env({
+          ["Grant Type"] = "Client Credentials",
+          ["Client Credentials"] = "jwt",
+          private_key = "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC5cHDxLOlZKpgT\nLNEF18AlQkxOHwYuP3VOuAeCxwCMlICSmfVRCzl5Zv+36fVTnvSF5tp1J46JI6jD\nM3WIE9UmjcRA13TVfzkoRuEKOfd20/PVEoxAXt4h5xgT4yuuJB1+C+R4xcZY4ul7\neCar1YJ12JJEt8vnZRGEhpjE8FtGvCBdDQ2+d7Qhr2LL8PIYW6mS6++5uCBAno+4\nevOmE2GkeQAfosrkDLSjOtNzF9pEYA5BzW1ZuZJJyWukUvaze4MqFH/6XfqzFPtr\n5XfQo8Olifljteic6JQx9KcvhXI7v1owtCpjkqcXMtiXtR23mRws0h//outYR0o4\nfJuOmouVAgMBAAECggEALJ/lXfRb1yxL2llvl4Na5tx0dlw65Yg5146rqAnxlOLr\nqdvI0A7ubsudgAmaEtxupYZvTcAOKexd4VOR1gRHx/ZXou72W6Y4//tGjmpypbLN\nu5myDI+HzwrInYiOa2KfgkSkX3fgimVYoHDChZlkwq0yTb0ZIX8N3yFww/u/S17y\n4sP3/+94dR6KWZTuufsmknAvByVGtVe3bGszYo77DC3m7+Kx2mR88anuP9a2H3Jf\nldzVCPvJ4bboncTFItxERRiHX/N7xwmNO7MzL5WZRL+GPe9+P/Hr/PKokeQc+yEg\n0cfWqKG0tyTLArRGOOHZ3wHLGuqjSFc+RZiXoL3dxQKBgQDwGSMjdhKa+Ck6SwkU\n26vvTLN5XTwleG9w5Mhj3esKs0DROEGfksFmSCCkFNboDl11RJuUldNwa4AVyZoc\nPbA96jRJGK7AEcNOV9FwdEs8rc0Berfn6klQuE66gsVonIM9fRiq8pYnnZ552Urh\nuHxgQoQL5iWCdl/IZ4kai8FHJwKBgQDFuI/Dv7HjFS9bOkIP7pg/KKYzl6VsUSlp\nEkd67V9TLHwIToq+k2cjmPMRCKD6KYkhbyOMN3GJpk348h9xdY9reIOBAb7hotbs\nQCRYFmuiksKeDoaP8N7MSIjs2C1AMO80RbyB2jLF8R9VIE64xZmUs0RBki5vqvtZ\naqQbpqxs4wKBgQCMbmd7Ckh/k76pddHt/T5nTPl8dugDEpo78dSzdM1RCN9UgA8C\nAphT9sQAtJ+uQxiuyl4lXiy5iGb2V2BoPDylOiMyzdkIRltxqzO5DowjBZTu1JRU\ndVhEekiyFmLYeRLaGB0hf5oLuclDg7CkrX8x3jXVr9son4wOb2BlwnBd6QKBgALs\nZKvHRNEPuiCGLv3fUD720eZHYrnERXF5RLdLlTI8oSTaTHDe6xJ6q3VgBElOnelx\npDvpgfNAEz0QD2j1DQbQxFj+9pyNdNIPbLoksri3pMsDeffc3t50YBnoZFrjnlXO\nhigBWujUVNtEXAWdXlT1hZfWmnsqMwcybXS/NSNzAoGBAJekqSCvUQHdiNWq1BPp\nM998rdujTGmfYCdKLT+c0i1/s3YuGu/h87tTSjXi7Jmq/iNVM2+RoTaGvvD1b+ZC\nGLcVcsqa6qD77WRQZ3q+2sF8v2vSd9oHT0R2jA4U/zVyF9dFOV4tT09xrFh7vLXM\nfYsrQTaSEta7ynoUI5/9NJTJ\n-----END PRIVATE KEY-----\n",
+          JWT = {
+            header = {
+              alg = "HS256",
+              typ = "JWT",
+            },
+            payload = {
+              aud = "https://token.url",
+              exp = 50,
+              iss = "kulala-service-account",
+              scope = "devstorage.read_only",
+            },
           },
-          payload = {
-            aud = "https://token.url",
-            exp = 50,
-            iss = "kulala-service-account",
-            scope = "devstorage.read_only",
-          },
-        },
-      })
+        })
 
-      kulala.run()
-      wait_for_requests(1)
+        kulala.run()
+        wait_for_requests(1)
 
-      assert.is_true(#get_request().assertion > 0)
-      assert.has_properties(get_request(), {
-        audience = "kulala_api",
-        grant_type = "urn:ietf:params:oauth:grant-type:jwt-bearer",
-        url = "https://token.url",
-      })
+        assert.is_true(#get_request().assertion > 0)
+        assert.has_properties(get_request(), {
+          audience = "kulala_api",
+          grant_type = "urn:ietf:params:oauth:grant-type:jwt-bearer",
+          url = "https://token.url",
+        })
 
-      assert.has_properties(get_env(), {
-        access_token = "new_access_token",
-      })
-      assert.near(os.time(), get_env().acquired_at, 1)
+        assert.has_properties(get_env(), {
+          access_token = "new_access_token",
+        })
+        assert.near(os.time(), get_env().acquired_at, 1)
 
-      assert.is.same("new_access_token", get_auth_header())
-    end)
+        assert.is.same("new_access_token", get_auth_header())
+      end)
 
-    it("grant type - Client Credentials: use provided", function()
-      cmd.queue.resume:revert()
+      it("use provided assertion", function()
+        cmd.queue.resume:revert()
 
-      update_env({
-        ["Grant Type"] = "Client Credentials",
-        Assertion = "custom_assertion",
-      })
+        update_env({
+          ["Grant Type"] = "Client Credentials",
+          ["Client Credentials"] = "jwt",
+          Assertion = "custom_assertion",
+        })
 
-      kulala.run()
-      wait_for_requests(1)
+        kulala.run()
+        wait_for_requests(1)
 
-      assert.is_true(#get_request().assertion > 0)
-      assert.has_properties(get_request(), {
-        audience = "kulala_api",
-        grant_type = "urn:ietf:params:oauth:grant-type:jwt-bearer",
-        url = "https://token.url",
-      })
+        assert.is_true(#get_request().assertion > 0)
+        assert.has_properties(get_request(), {
+          audience = "kulala_api",
+          grant_type = "urn:ietf:params:oauth:grant-type:jwt-bearer",
+          url = "https://token.url",
+        })
 
-      assert.has_properties(get_env(), { access_token = "new_access_token" })
-      assert.near(os.time(), get_env().acquired_at, 1)
+        assert.has_properties(get_env(), { access_token = "new_access_token" })
+        assert.near(os.time(), get_env().acquired_at, 1)
 
-      assert.is.same("new_access_token", get_auth_header())
+        assert.is.same("new_access_token", get_auth_header())
+      end)
     end)
 
     it("grant type - Implicit", function()
