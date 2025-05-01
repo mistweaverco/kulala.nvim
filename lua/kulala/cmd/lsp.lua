@@ -873,14 +873,13 @@ local function format(params)
   }
 end
 
-local function initialize()
+local function initialize(params)
+  local ft = params.rootPath:sub(2)
   formatter = Config.options.formatter and Fmt.check_formatter(function()
     formatter = true
   end)
 
-  if not current_ft or (current_ft ~= "http" and current_ft ~= "rest") then
-    return { capabilities = { codeActionProvider = true } }
-  end
+  if ft ~= "http" and ft ~= "rest" then return { capabilities = { codeActionProvider = true } } end
 
   return {
     capabilities = {
@@ -944,7 +943,7 @@ local function new_server()
 end
 
 M.start = function(buf, ft)
-  M.start_lsp(buf)
+  M.start_lsp(buf, ft)
 
   _ = (ft == "http" or ft == "rest")
     and vim.iter(trigger_chars):each(function(char)
@@ -954,7 +953,7 @@ M.start = function(buf, ft)
     end)
 end
 
-function M.start_lsp(buf)
+function M.start_lsp(buf, ft)
   local server = new_server()
 
   local dispatchers = {
@@ -968,7 +967,7 @@ function M.start_lsp(buf)
   local client_id = vim.lsp.start({
     name = "kulala",
     cmd = server,
-    root_dir = "",
+    root_dir = ft,
     bufnr = buf,
     on_init = function(_client) end,
     on_exit = function(_code, _signal) end,

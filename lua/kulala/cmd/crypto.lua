@@ -5,6 +5,9 @@ local Logger = require("kulala.logger")
 
 local M = {}
 
+---Base64url encode the input string
+---@param input string Input string to be encoded
+---@return string Base64url encoded string
 M.base64_encode = function(input)
   return vim.base64.encode(input):gsub("+", "-"):gsub("/", "_"):gsub("=", "")
 end
@@ -13,6 +16,8 @@ local function openssl_path()
   return Config.get().openssl_path or "openssl"
 end
 
+---Generate a random PKCE verifier
+---@return string|nil PKCE verifier
 M.pkce_verifier = function()
   local err_msg = "Failure to generate PKCE verifier: "
 
@@ -30,6 +35,10 @@ M.pkce_verifier = function()
   return M.base64_encode(verifier)
 end
 
+---Generate a PKCE challenge from the verifier
+---@param verifier string PKCE verifier
+---@param method string PKCE method "Plain"|"S256" (default: "S256")
+---@return string|nil PKCE challenge
 M.pkce_challenge = function(verifier, method)
   method = method or "S256"
 
@@ -62,6 +71,19 @@ M.pkce_challenge = function(verifier, method)
   return M.base64_encode(hash)
 end
 
+---@class JWTPayload
+---@field iss? string Issuer
+---@field sub? string Subject
+---@field scope? string Scope
+---field aud? string Audience
+---field exp? number Expiration time (in seconds since epoch)
+---field iat? number Issued at (in seconds since epoch)
+
+---Generate a JWT token
+---@param header {alg: string, typ: string} JWT header alg: "RS256"|"HS256", typ: "JWT"
+---@param payload JWTPayload JWT payload
+---@param key string Signing key
+---@return string|nil JWT token
 M.jwt_encode = function(header, payload, key)
   local err_msg = "Failure to encode JWT: "
   local supported_alg = { "RS256", "HS256" }
