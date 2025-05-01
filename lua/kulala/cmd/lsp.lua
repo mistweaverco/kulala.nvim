@@ -27,7 +27,7 @@ local trigger_chars = { "@", "#", "-", ":", "{", "$", ">", "<", ".", "(", '"' }
 ---@type SourceTable
 local snippets = {
   { ">>", "> ", "Redirect output to file" },
-  { ">>!", ">! ", "Redirect output to file ovewriting" },
+  { ">>!", ">! ", "Redirect output to file overwriting" },
   { "< {% %}", " {%\n\t${0}\n%}\n", "Pre-request script" },
   { "> {% %}", " {%\n\t${0}\n%}\n", "Post-request script" },
   { "< {% %}", " {%\n\t-- lua\n${0}\n%}\n", "Pre-request lua script" },
@@ -574,7 +574,7 @@ local function document_variables()
   return items
 end
 
-local function dynamic_variablies()
+local function dynamic_variables()
   local kind = lsp_kind.Variable
   local auth_vars = { ["$auth.token"] = "Auth", ["$auth.idToken"] = "Auth" }
   local items = {}
@@ -583,7 +583,7 @@ local function dynamic_variablies()
 
   vim.iter(cache.dynamic_variables):each(function(name, value)
     value = type(value) == "function" and tostring(value()) or value
-    table.insert(items, make_item(name, value, lsp_kind.Variable, name, value, name:sub(2)))
+    table.insert(items, make_item(name, "Dynamic var", lsp_kind.Variable, name, value, name))
   end)
 
   kind = lsp_kind.Snippet
@@ -606,7 +606,7 @@ local function env_variables()
   end
 
   vim.iter(cache.env_variables):each(function(name, value)
-    table.insert(items, make_item(name, "Env var", kind, name, value, name .. "}}"))
+    table.insert(items, make_item(name, "Env var", kind, name, value, name))
   end)
 
   return items
@@ -650,7 +650,7 @@ local sources = {
   request_names = request_names,
   request_urls = request_urls,
   document_variables = document_variables,
-  dynamic_variables = dynamic_variablies,
+  dynamic_variables = dynamic_variables,
   env_variables = env_variables,
   auth_configs = auth_configs,
   methods = { methods, "Method" },
@@ -817,8 +817,8 @@ local function get_symbols()
 
     vim.iter(request.metadata):each(function(meta)
       cnum = cnum + 1
-      local meta = meta.name .. (meta.value and " " .. meta.value or "")
-      table.insert(symbol.children, get_symbol(meta, kind.TypeParameter, line - 1, cnum))
+      local metadata = meta.name .. (meta.value and " " .. meta.value or "")
+      table.insert(symbol.children, get_symbol(metadata, kind.TypeParameter, line - 1, cnum))
     end)
 
     vim.list_extend(symbol.children, {
