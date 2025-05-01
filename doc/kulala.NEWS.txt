@@ -4,12 +4,34 @@
 Table of Contents                              *kulala.NEWS-table-of-contents*
 
 1. Kulala News                                       |kulala.NEWS-kulala-news|
+  - Version 5.3.0                      |kulala.NEWS-kulala-news-version-5.3.0|
   - Version 5.2.0                      |kulala.NEWS-kulala-news-version-5.2.0|
   - Version 5.1.0                      |kulala.NEWS-kulala-news-version-5.1.0|
   - Version 5.0.0                      |kulala.NEWS-kulala-news-version-5.0.0|
 
 ==============================================================================
 1. Kulala News                                       *kulala.NEWS-kulala-news*
+
+
+VERSION 5.3.0                          *kulala.NEWS-kulala-news-version-5.3.0*
+
+
+ENHANCEMENT: OAUTH2 - ADD BASIC AUTHORIZATION SUPPORT FOR CLIENT CREDENTIALS GRANT TYPE
+
+
+FEATURE: JQ FILTER FILTER  |kulala.filter-response.txt|
+
+
+FEATURE: KULALA FORMATTER FMT - FORMAT AND IMPORT REQUESTS FROM POSTMAN/BRUNO/OPENAPI  |kulala.basic-usage.txt|
+
+
+FEATURE: KULALA CLI AND KULALA CI GITHUB ACTION KULALA-CLI-CI  |kulala.cli-ci.txt|
+
+
+ENHANCEMENT: UNIFY SYNTAX FOR NAMING REQUESTS WITH ### IN FAVOR OF # @NAME
+
+
+ENHANCEMENT: ALLOW RUN TO RUN REQUESTS FROM THE SAME FILE
 
 
 VERSION 5.2.0                          *kulala.NEWS-kulala-news-version-5.2.0*
@@ -21,13 +43,13 @@ ENHANCEMENT: KULALA LSP LSP - AUTOCOMPLETION, SYMBOLS SEARCH AND OUTLINE, CODE A
 FEATURE: LUA SCRIPTING  |kulala.lua-scripts.txt|
 
 
-FEATURE: SET HOST IN DEFAULT HEADERS IN HTTP-ENV.PROFILE.JSON FILES  |kulala.dotenv-and-http-client.env.json-support|
+FEATURE: SET HOST IN DEFAULT HEADERS IN HTTP-ENV.PROFILE.JSON FILES  |kulala.dotenv-and-http-client.env.json-support.txt|
 
 
-FEATURE: SET DEFAULT HEADERS PER ENVIRONMENT IN HTTP-ENV.PROFILE.JSON FILES  |kulala.dotenv-and-http-client.env.json-support|
+FEATURE: SET DEFAULT HEADERS PER ENVIRONMENT IN HTTP-ENV.PROFILE.JSON FILES  |kulala.dotenv-and-http-client.env.json-support.txt|
 
 
-FEATURE: PER-REQUEST AND GLOBAL @CURL FLAGS BASIC USAGE  |kulala.custom-curl-flags|
+FEATURE: PER-REQUEST AND GLOBAL @CURL FLAGS BASIC USAGE  |kulala.custom-curl-flags.txt|
 
 
 FEATURE: OAUTH2 SUPPORT  |kulala.authentication.txt|

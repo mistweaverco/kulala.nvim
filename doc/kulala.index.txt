@@ -35,6 +35,7 @@ USAGE - LEARN ABOUT THE MOST IMPORTANT KULALA.NVIM FEATURES!
 - Authentication.txt |kulala.authentication.txt|
 - Import and run http.txt |kulala.import-and-run-http.txt|
 - Reading file data.txt |kulala.reading-file-data.txt|
+- Filter response.txt |kulala.filter-response.txt|
 - Redirect the response.txt |kulala.redirect-the-response.txt|
 - Sending form data.txt |kulala.sending-form-data.txt|
 - Dynamically setting environment variables based on headers.txt
@@ -50,6 +51,7 @@ USAGE - LEARN ABOUT THE MOST IMPORTANT KULALA.NVIM FEATURES!
 - Custom curl flags.txt |kulala.custom-curl-flags.txt|
 - Public methods.txt |kulala.public-methods.txt|
 - Api.txt |kulala.api.txt|
+- Cli ci.txt |kulala.cli-ci.txt|
 - Demos.txt |kulala.demos.txt|
 
 
