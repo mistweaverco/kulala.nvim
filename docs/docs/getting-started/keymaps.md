@@ -2,11 +2,12 @@
 
 ## Global Keymaps
 
-Set to `true` to enable the [default keymaps](default-keymaps.md).
+Set to `true` to enable the [default keymaps](default-keymaps.md) and optionally set a prefix for the keymaps, which only applies to default keymaps.
 
 ```lua
 {
   global_keymaps = true
+  global_keymaps_prefix = "<leader>R"
 }
 ```
 

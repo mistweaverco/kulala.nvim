@@ -31,6 +31,7 @@ M.check_formatter = function(callback)
     vim.g.kulala_fmt_installing = true
 
     Fs.copy_dir(FMT_DIR, FMT_BUILD_DIR)
+    Fs.make_executable(FMT_BIN)
 
     Shell.run(
       { NPM_BIN, "install", "--prefix", FMT_BUILD_DIR },

@@ -49,11 +49,19 @@ Kulala includes a built-in in-process LSP server that provides the following fea
 - Symbols information: symbols search and symbols outline - `<leader>cs`, `<leader>cS`.
 - Hover information for requests: equivalent to Kulala's inspect command - `K`.
 - Code actions: a list of all available Kulala commands - `gra/<leader>ca`.
-- Formatting: format buffer/range - `gq/<leader>cf`.
+- Formatting: format buffer/range - `gq/<leader>cf`. 
 
 - In `json/yaml/bruno` files, code actions will be available to convert collections into HTTP format.
 
 :::info
+
+HTTP Formatter is disabled by default. You can enable it in your config with:
+
+```lua
+ui = {
+  formatter = true
+}
+```
 
 Kulala LSP does not set any keymaps, but relies on your Neovim's default LSP keymaps. Some distributions set these keymaps only for LSPs that have been
 setup through `nvim-lspconfig` or the distributions's own LSP config. In this case, you may need to enable them yourself. 

@@ -260,7 +260,7 @@ local function collect_global_keymaps()
   if not config_global_keymaps then return end
 
   local default_keymaps = {}
-  vim.iter(M.default_global_keymaps):each(function(name, map)
+  vim.iter(vim.deepcopy(M.default_global_keymaps)):each(function(name, map)
     map[1] = prefix .. map[1]
     default_keymaps[name] = map
   end)

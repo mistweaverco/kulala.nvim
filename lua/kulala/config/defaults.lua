@@ -122,13 +122,13 @@ local M = {
     -- enable/disable built-in autocompletion
     autocomplete = true,
 
-    -- enable/disable formatter
-    formatter = true,
+    -- enable/disable HTTP formatter
+    formatter = false,
 
     -- enable/disable lua syntax highlighting
     lua_syntax_hl = true,
 
-    -- Settings for pickers used for Enironment, Authentication and Requests Managers
+    -- Settings for pickers used for Environment, Authentication and Requests Managers
     pickers = {
       snacks = {
         layout = function()

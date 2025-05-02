@@ -299,6 +299,10 @@ M.command_exists = function(cmd)
   return vim.fn.executable(cmd) == 1
 end
 
+M.make_executable = function(file)
+  return M.os ~= "windows" and os.execute("chmod +x " .. file)
+end
+
 M.command_path = function(cmd)
   return vim.fn.exepath(cmd)
 end
