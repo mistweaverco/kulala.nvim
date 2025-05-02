@@ -1053,6 +1053,11 @@ UI.AUTOCOMPLETE
 Enable/disable built-in autocompletion.
 
 
+UI.FORMATTER
+
+Enable/disable HTTP formatter
+
+
 UI.LUA_SYNTAX_HL
 
 Enable/disable lua syntax highlighting.
@@ -1060,7 +1065,8 @@ Enable/disable lua syntax highlighting.
 
 UI.PICKERS
 
-Settings for pickers used for Enironment, Authentication and Requests Managers.
+Settings for pickers used for Environment, Authentication and Requests
+Managers.
 
 >lua
     pickers = {
@@ -1100,6 +1106,17 @@ Example:
     {
       "mistweaverco/kulala.nvim",
       global_keymaps = true,
+    }
+<
+
+
+GLOBAL_KEYMAPS_PREFIX
+
+Prefix for global keymaps
+
+>lua
+    {
+      global_keymaps_prefix = "<leader>R",
     }
 <
 
