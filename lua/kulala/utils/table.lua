@@ -21,6 +21,7 @@ M.remove_keys = function(tbl, keys)
   vim.iter(keys):each(function(key)
     tbl[key] = nil
   end)
+  return tbl
 end
 
 --- TODO: make recursive for nested tables

@@ -41,7 +41,7 @@ vim.system("curl -X GET http://localhost:3000")
 - To choose variables environment use `<leader>Re` and select the environment you want to use.
 - To manage Authentication configurations use `<leader>Ru`.
 
-### Kulala LSP
+### Kulala LSP and Formatter
 
 Kulala includes a built-in in-process LSP server that provides the following features:
 
@@ -49,6 +49,9 @@ Kulala includes a built-in in-process LSP server that provides the following fea
 - Symbols information: symbols search and symbols outline - `<leader>cs`, `<leader>cS`.
 - Hover information for requests: equivalent to Kulala's inspect command - `K`.
 - Code actions: a list of all available Kulala commands - `gra/<leader>ca`.
+- Formatting: format buffer/range - `gq/<leader>cf`.
+
+- In `json/yaml/bruno` files, code actions will be available to convert collections into HTTP format.
 
 :::info
 
@@ -91,12 +94,17 @@ require("nvim-lightbulb").setup({
 - `# @accept chunked` allows you to accept Transfer-Encoding: chunked responses and streamed responses.
 - `# @curl-global-...` and `# @curl-...` allows you to set global and per-request flags for curl requests.
 - `# @grpc-global-...` and `# @grpc-...` allows you to set global and per-request flags for gRPC requests.
+- `# @stdin-cmd` allows you to execute an external command
+- `# @jq` allows you to filter the response body using jq.
 
 #### Variables
 
 - `@variable-name=variable-value` is used to define variables that can be used in request URL, headers and body.
 - `{{variable}}` allows you to use variables defined in `metadata`, `system environment` variables, `http-client.env.json` file or `.env` file.
 - `{{$dynamic-variable}}` allows you to use predefined dynamic, aka `magic` variables.
+- `# @env-stdin-cmd` allows you to set environment variables using an external command.
+- `# @env-json-key` allows you to set environment variables using a JSON path on the response body.
+- `# @env-header-key` allows you to set environment variables from the response headers.
 
 #### Requests import
 

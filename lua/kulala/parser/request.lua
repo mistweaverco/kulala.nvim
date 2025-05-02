@@ -126,7 +126,8 @@ end
 
 local function encode_url_params(url)
   local anchor = ""
-  local index = url:find("#")
+  local _, index = url:find(".*#")
+
   if index then
     anchor = "#" .. url_encode(url:sub(index + 1))
     url = url:sub(1, index - 1)

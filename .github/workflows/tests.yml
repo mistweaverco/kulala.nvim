@@ -8,6 +8,8 @@ on:
     branches:
       - main
     types: ["labeled", "opened", "synchronize", "reopened"]
+  push:
+    branches: develop
 
 jobs:
   test-linux:

@@ -13,7 +13,14 @@ end
 
 M.log = function(message, level)
   level = level or log_levels.INFO
-  local notify = vim.in_fast_event() and vim.schedule_wrap(vim.notify) or vim.notify
+  local notify = vim.notify
+
+  if not vim.fn.has("gui_running") then
+    return vim.print(message)
+  elseif vim.in_fast_event() then
+    notify = vim.schedule_wrap(vim.notify)
+  end
+
   notify(message, level, default_options)
 end
 

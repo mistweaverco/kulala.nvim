@@ -3,6 +3,7 @@ local CONFIG = require("kulala.config")
 local DB = require("kulala.db")
 local GLOBALS = require("kulala.globals")
 local kulala = require("kulala")
+local ui = require("kulala.ui")
 
 local kulala_name = GLOBALS.UI_ID
 local kulala_config
@@ -326,6 +327,35 @@ describe("UI", function()
       expected = h.load_fixture("fixtures/request_1_body.txt")
 
       assert.has_string(result, expected)
+    end)
+
+    it("updates jq filter", function()
+      h.set_buf_lines(
+        http_buf,
+        ([[
+          # @jq { "Content": .headers["Content-Type"], "url": .url }
+          GET https://httpbin.org/simple
+      ]]):to_table(true)
+      )
+
+      curl.stub({
+        ["https://httpbin.org/simple"] = {
+          body = h.load_fixture("fixtures/simple_body.txt"),
+        },
+      })
+
+      kulala.run()
+      wait_for_requests(1)
+
+      result = h.get_buf_lines(ui_buf):to_string()
+      assert.has_string(result, 'JQ Filter: { "Content": .headers["Content-Type"], "url": .url }')
+
+      vim.api.nvim_buf_set_lines(ui_buf, 4, 5, false, { 'JQ Filter: { "Content": .json.foo }' })
+      vim.api.nvim_win_set_cursor(h.get_kulala_win(), { 5, 0 })
+      ui.keymap_enter()
+
+      result = h.get_buf_lines(h.get_kulala_buf())
+      assert.has_string(result, '"Content": "bar"')
     end)
   end)
 

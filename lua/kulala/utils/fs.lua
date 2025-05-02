@@ -344,31 +344,27 @@ end
 
 M.read_json = function(filename)
   local content = M.read_file(filename)
-  if not content then return end
-
-  local status, result = pcall(vim.json.decode, content, { object = true, array = true })
-  if not status then return Logger.error("Error decoding JSON file: " .. filename .. ": " .. result) end
-
-  return result
+  return content and Json.parse(content)
 end
 
 ---Write JSON to file
 ---@param filename string
 ---@param data table
 ---@param format boolean|nil -- format the JSON with jq
----@param escape boolean|nil -- do not escape [/"]
+---@param escape boolean|nil -- escape [/"]
 M.write_json = function(filename, data, format, escape)
   local content = vim.json.encode(data)
   if not content then return end
 
   content = format and Json.format(content) or content
+  content = escape == true and content or content:gsub("\\/", "/"):gsub('\\"', '"')
 
-  content = escape == false and content or content:gsub("\\/", "/"):gsub('\\"', '"')
   return M.write_file(filename, content)
 end
 
 ---@param content string
 ---@param binary? boolean|nil
+---@return string|nil path to the temp file
 M.get_temp_file = function(content, binary)
   local tmp_file = vim.fn.tempname()
   local mode = binary and "wb" or "w"

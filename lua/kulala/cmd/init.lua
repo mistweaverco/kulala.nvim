@@ -8,6 +8,7 @@ local FS = require("kulala.utils.fs")
 local GLOBALS = require("kulala.globals")
 local INLAY = require("kulala.inlay")
 local INT_PROCESSING = require("kulala.internal_processing")
+local Json = require("kulala.utils.json")
 local Logger = require("kulala.logger")
 local REQUEST_PARSER = require("kulala.parser.request")
 local Scripts = require("kulala.parser.scripts")
@@ -79,9 +80,7 @@ local function process_prompt_vars(res)
   return true
 end
 
-local function process_metadata(result)
-  local body = FS.read_file(GLOBALS.BODY_FILE)
-
+local function process_metadata(request, response)
   local int_meta_processors = {
     ["env-json-key"] = "env_json_key",
     ["env-header-key"] = "env_header_key",
@@ -90,15 +89,16 @@ local function process_metadata(result)
   local ext_meta_processors = {
     ["stdin-cmd"] = "stdin_cmd",
     ["env-stdin-cmd"] = "env_stdin_cmd",
+    ["jq"] = "jq",
   }
 
   local processor
-  for _, metadata in ipairs(result.metadata) do
+  for _, metadata in ipairs(request.metadata) do
     processor = int_meta_processors[metadata.name]
-    _ = processor and INT_PROCESSING[processor](metadata.value, body)
+    _ = processor and INT_PROCESSING[processor](metadata.value, response)
 
     processor = ext_meta_processors[metadata.name]
-    _ = processor and EXT_PROCESSING[processor](metadata.value, body)
+    _ = processor and EXT_PROCESSING[processor](metadata.value, response)
   end
 end
 
@@ -127,7 +127,7 @@ end
 local function modify_grpc_response(response)
   if response.method ~= "GRPC" then return response end
 
-  response.body = response.stats
+  response.body_raw = response.stats
   response.stats = ""
   response.headers = "Content-Type: application/json"
 
@@ -135,10 +135,8 @@ local function modify_grpc_response(response)
 end
 
 local function set_request_stats(response)
-  local _, stats = pcall(vim.json.decode, response.stats, { object = true, array = true })
-
-  response.stats = _ and stats or response.stats
-  response.response_code = _ and tonumber(stats.response_code) or response.code
+  response.stats = Json.parse(response.stats) or {}
+  response.response_code = tonumber(response.stats.response_code) or response.code
   response.status = response.code == 0 and response.response_code < 400
 
   return response
@@ -186,8 +184,10 @@ local function save_response(request_status, parsed_request)
     status = false,
     time = vim.fn.localtime(),
     duration = request_status.duration or 0,
-    body = FS.read_file(GLOBALS.BODY_FILE) or "",
+    body = "",
+    body_raw = FS.read_file(GLOBALS.BODY_FILE) or "",
     json = {},
+    filtered = nil,
     headers = FS.read_file(GLOBALS.HEADERS_FILE) or "",
     headers_tbl = INT_PROCESSING.get_headers() or {},
     cookies = INT_PROCESSING.get_cookies() or {},
@@ -203,13 +203,12 @@ local function save_response(request_status, parsed_request)
     buf = buf,
   }
 
-  local status, result = pcall(vim.json.decode, response.body, { object = true, array = true })
-  response.json = status and result or {}
-
   response = modify_grpc_response(response)
   response = set_request_stats(response)
 
+  response.body = response.body_raw
   response.body = #response.body == 0 and "No response body (check Verbose output)" or response.body
+  response.json = Json.parse(response.body) or {}
   response.errors = inject_payload(response.errors, parsed_request)
 
   table.insert(responses, response)
@@ -218,12 +217,10 @@ local function save_response(request_status, parsed_request)
 end
 
 local function process_response(request_status, parsed_request, callback)
-  local response
+  local response = save_response(request_status, parsed_request)
 
-  process_metadata(parsed_request)
+  process_metadata(parsed_request, response)
   process_internal(parsed_request)
-
-  response = save_response(request_status, parsed_request)
 
   if process_external(parsed_request, response) then -- replay request
     parsed_request.processed = true
@@ -271,9 +268,9 @@ local function handle_response(request_status, parsed_request, callback)
   end, debug.traceback)
 
   _ = not (code and processing_status) and process_errors(parsed_request, request_status, processing_errors)
+  _ = (not success and config.halt_on_error) and M.queue:reset() or M.queue:run_next()
 
   callback(success, request_status.duration, parsed_request.show_icon_line_number)
-  _ = (not success and config.halt_on_error) and M.queue:reset() or M.queue:run_next()
 end
 
 local function received_unbffured(request, response)
@@ -380,8 +377,8 @@ end
 ---@param line_nr? number|nil
 ---@param callback function
 ---@return nil
-M.run_parser = function(requests, line_nr, callback)
-  local variables, reqs_to_process
+M.run_parser = function(requests, variables, line_nr, callback)
+  local reqs_to_process
 
   M.queue:reset()
 
@@ -401,7 +398,7 @@ M.run_parser = function(requests, line_nr, callback)
   reqs_to_process = reqs_to_process or requests
 
   for _, req in ipairs(reqs_to_process) do
-    INLAY.show("loading", req.show_icon_line_number)
+    INLAY.show(DB.current_buffer, "loading", req.show_icon_line_number)
 
     M.queue:add(function()
       UI_utils.highlight_request(req)

@@ -39,6 +39,7 @@ const sidebars: SidebarsConfig = {
         "usage/authentication",
         "usage/import-and-run-http",
         "usage/reading-file-data",
+        "usage/filter-response",
         "usage/redirect-the-response",
         "usage/sending-form-data",
         "usage/dynamically-setting-environment-variables-based-on-headers",
@@ -52,6 +53,7 @@ const sidebars: SidebarsConfig = {
         "usage/custom-curl-flags",
         "usage/public-methods",
         "usage/api",
+        "usage/cli-ci"
         'usage/demos'
       ],
     },

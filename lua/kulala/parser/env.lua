@@ -1,6 +1,7 @@
 local Config = require("kulala.config")
 local DB = require("kulala.db")
 local FS = require("kulala.utils.fs")
+local Json = require("kulala.utils.json")
 local Logger = require("kulala.logger")
 local Table = require("kulala.utils.table")
 
@@ -17,32 +18,33 @@ local function get_vscode_env()
       local success, settings_json_content = pcall(vim.fn.readfile, vscode_dir .. "/settings.json")
 
       if success then
-        local settings = vim.fn.json_decode(settings_json_content)
-        if settings and settings["rest-client.environmentVariables"] then
-          local f = settings["rest-client.environmentVariables"]
-          if f["$shared"] then
-            DB.update().http_client_env_shared =
-              vim.tbl_deep_extend("force", DB.find_unique("http_client_env_shared"), f["$shared"])
-          end
-          f["$shared"] = nil
-          DB.update().http_client_env = vim.tbl_deep_extend("force", DB.find_unique("http_client_env"), f)
-        end
-      end
-    end
+        local settings = Json.parse(settings_json_content)
+        if not (settings and settings["rest-client.environmentVariables"]) then return end
 
-    if code_workspace_file then
-      local code_workspace = vim.fn.json_decode(vim.fn.readfile(code_workspace_file))
-      local settings = code_workspace.settings
-
-      if settings and settings["rest-client.environmentVariables"] then
         local f = settings["rest-client.environmentVariables"]
         if f["$shared"] then
           DB.update().http_client_env_shared =
             vim.tbl_deep_extend("force", DB.find_unique("http_client_env_shared"), f["$shared"])
         end
+
         f["$shared"] = nil
         DB.update().http_client_env = vim.tbl_deep_extend("force", DB.find_unique("http_client_env"), f)
       end
+    end
+
+    if code_workspace_file then
+      local code_workspace = FS.read_json(code_workspace_file) or {}
+      local settings = code_workspace.settings
+
+      if not (settings and settings["rest-client.environmentVariables"]) then return end
+
+      local f = settings["rest-client.environmentVariables"]
+      if f["$shared"] then
+        DB.update().http_client_env_shared =
+          vim.tbl_deep_extend("force", DB.find_unique("http_client_env_shared"), f["$shared"])
+      end
+      f["$shared"] = nil
+      DB.update().http_client_env = vim.tbl_deep_extend("force", DB.find_unique("http_client_env"), f)
     end
   end
 end

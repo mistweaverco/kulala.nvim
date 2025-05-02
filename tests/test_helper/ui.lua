@@ -169,31 +169,31 @@ end
 
 ---@param bufnr integer
 ---@return string[] lines
-UITestHelper.get_buf_lines = function(bufnr)
+h.get_buf_lines = function(bufnr)
   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
   return extend_table(lines)
 end
 
 ---@param bufnr integer
 ---@param lines string[]
-UITestHelper.set_buf_lines = function(bufnr, lines, line_s, line_e)
+h.set_buf_lines = function(bufnr, lines, line_s, line_e)
   return vim.api.nvim_buf_set_lines(bufnr, line_s or 0, line_e or -1, false, h.to_table(lines))
 end
 
 ---@return integer[] bufnr list
-UITestHelper.list_loaded_bufs = function()
+h.list_loaded_bufs = function()
   local bufnr_list = vim.api.nvim_list_bufs()
 
   local loaded_bufs = {}
   for _, bufnr in ipairs(bufnr_list) do
-    if vim.api.nvim_buf_is_loaded(bufnr) then loaded_bufs[#loaded_bufs + 1] = bufnr end
+    if vim.api.nvim_buf_is_loaded(bufnr) then loaded_bufs[tostring(bufnr)] = vim.fn.bufname(bufnr) end
   end
 
   return loaded_bufs
 end
 
 ---@return table [id:name]
-UITestHelper.list_loaded_buf_names = function()
+h.list_loaded_buf_names = function()
   return vim.iter(vim.api.nvim_list_bufs()):fold({}, function(acc, id)
     local name = vim.fn.bufname(id)
     local current_buf = vim.api.nvim_get_current_buf()

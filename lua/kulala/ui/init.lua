@@ -3,6 +3,7 @@ local CMD = require("kulala.cmd")
 local CONFIG = require("kulala.config")
 local CURL_PARSER = require("kulala.parser.curl")
 local DB = require("kulala.db")
+local Ext_processing = require("kulala.external_processing")
 local FORMATTER = require("kulala.formatter")
 local FS = require("kulala.utils.fs")
 local Float = require("kulala.ui.float")
@@ -43,6 +44,7 @@ local function get_current_response_pos()
   return DB.global_update().current_response_pos or #responses
 end
 
+---@return Response
 local function get_current_response()
   local responses = DB.global_update().responses
   return responses[get_current_response_pos()]
@@ -151,12 +153,13 @@ local function show_progress()
   local message = ("Running.. %s/%s"):format(CMD.queue.done, CMD.queue.total)
   message = message .. " - press <C-c> to cancel  "
 
-  Float.create_window_footer(
-    get_kulala_buffer(),
-    get_kulala_window(),
-    message,
-    { hl_group = "Special", buf_name = "kulala://requests_progress", row_offset = row_offset }
-  )
+  Float.create_window_footer(message, {
+    buf = get_kulala_buffer(),
+    win = get_kulala_window(),
+    name = "kulala://requests_progress",
+    row_offset = row_offset,
+    auto_close = true,
+  })
 end
 
 local function show(contents, filetype, mode)
@@ -192,6 +195,56 @@ local function format_body()
   return body, filetype or contenttype.ft
 end
 
+local function update_filter()
+  local filter = vim.api.nvim_get_current_line()
+  if not filter:find("JQ Filter") then return end
+
+  filter = vim.trim(filter:sub(12))
+  Ext_processing.jq(filter, get_current_response())
+  M.show_body()
+end
+
+M.toggle_filter = function()
+  local buf = get_kulala_buffer()
+  local row = 4
+
+  if vim.api.nvim_buf_get_lines(buf, row, row + 1, false)[1]:find("JQ Filter") then
+    return vim.api.nvim_buf_set_lines(buf, row - 1, row + 1, false, {})
+  end
+
+  local filter = { "JQ Filter: " .. (get_current_response().filter or ""), "" }
+
+  vim.api.nvim_buf_set_lines(buf, row, row, false, filter)
+
+  UI_utils.highlight_range(buf, 0, { row, 0 }, { row, 12 }, "Question")
+  UI_utils.highlight_range(buf, 0, { row, 10 }, { row, -1 }, "Special")
+end
+
+local function jump_to_response()
+  local responses = DB.global_update().responses
+  local win = vim.fn.bufwinid(get_current_response().buf)
+
+  if CONFIG.get().default_view == "report" then
+    local lnum = tonumber(vim.api.nvim_get_current_line():match("^%s*%d+"))
+    if not lnum then return end
+
+    for i = #responses, 1, -1 do
+      if responses[i].line == lnum then
+        set_current_response(i)
+        break
+      end
+    end
+
+    M.show_body()
+  elseif win > 0 then
+    vim.api.nvim_set_current_win(win)
+    vim.api.nvim_win_set_cursor(win, { get_current_response().line, 0 })
+
+    win = get_kulala_window()
+    _ = vim.api.nvim_win_get_config(win).relative == "editor" and vim.api.nvim_win_close(win, true)
+  end
+end
+
 M.show_headers = function()
   local headers = get_current_response().headers
   show(headers, "text", "headers")
@@ -200,6 +253,7 @@ end
 M.show_body = function()
   local body, filetype = format_body()
   show(body, filetype, "body")
+  _ = get_current_response().filter and M.toggle_filter()
 end
 
 M.show_headers_body = function()
@@ -251,33 +305,6 @@ M.show_next = function()
   M.open_default_view()
 end
 
-M.jump_to_response = function()
-  local responses = DB.global_update().responses
-  local win = vim.fn.bufwinid(get_current_response().buf)
-
-  if CONFIG.get().default_view == "report" then
-    local lnum = tonumber(vim.fn.getline("."):match("^%s*%d+"))
-    if not lnum then return end
-
-    for i = #responses, 1, -1 do
-      if responses[i].line == lnum then
-        set_current_response(i)
-        break
-      end
-    end
-
-    M.show_body()
-  elseif get_current_response().method == "WS" then
-    require("kulala.cmd.websocket").send()
-  elseif win > 0 then
-    vim.api.nvim_set_current_win(win)
-    vim.api.nvim_win_set_cursor(win, { get_current_response().line, 0 })
-
-    win = get_kulala_window()
-    _ = vim.api.nvim_win_get_config(win).relative == "editor" and vim.api.nvim_win_close(win, true)
-  end
-end
-
 M.show_previous = function()
   local current_pos = get_current_response_pos()
   local previous = current_pos <= 1 and current_pos or current_pos - 1
@@ -320,28 +347,30 @@ M.show_help = function()
     table.insert(help, ("  - %s: `%s`"):format(keymap, value[1]))
   end)
 
-  Float.create({
-    buf_name = "kulala_help",
-    contents = help,
+  Float.create(help, {
+    name = "kulala_help",
     ft = "markdown",
-    position = "cursor",
+    relative = "cursor",
+    border = "rounded",
     focusable = true,
+    auto_size = true,
+    auto_close = true,
     close_keymaps = { "q", "<esc>", "?" },
   })
 end
 
 M.show_news_footer = function()
   if CONFIG.get().disable_news_popup then return end
-
   if DB.settings.news_ver == GLOBALS.VERSION then return end
 
-  local lines = "Check out the latest Kulala changes with `g?`"
-  Float.create_window_footer(
-    get_kulala_buffer(),
-    get_kulala_window(),
-    lines,
-    { hl_group = "Special", buf_name = "kulala://news_footer" }
-  )
+  local msg = "Check out the latest Kulala changes with `g?`"
+  Float.create_window_footer(msg, {
+    buf = get_kulala_buffer(),
+    win = get_kulala_window(),
+    name = "kulala://news_footer",
+    row_offset = 2,
+    auto_close = true,
+  })
 end
 
 M.show_news = function()
@@ -382,11 +411,11 @@ M.open_all = function(_, line_nr)
   local db = DB.global_update()
   local status, elapsed_ms
 
-  DB.set_current_buffer()
+  local buf = DB.set_current_buffer()
   db.previous_response_pos = #db.responses
   INLAY.clear()
 
-  CMD.run_parser(nil, line_nr, function(success, duration, icon_linenr)
+  CMD.run_parser(nil, nil, line_nr, function(success, duration, icon_linenr)
     if success then
       elapsed_ms = UI_utils.pretty_ms(duration)
       status = "done"
@@ -396,11 +425,21 @@ M.open_all = function(_, line_nr)
 
     set_current_response(#db.responses)
 
-    INLAY.show(status, icon_linenr, elapsed_ms)
+    INLAY.show(buf, status, icon_linenr, elapsed_ms)
     M.open_default_view()
 
     return true
   end)
+end
+
+M.keymap_enter = function()
+  if get_current_response().method == "WS" then
+    require("kulala.cmd.websocket").send()
+  elseif vim.api.nvim_get_current_line():find("JQ Filter") then
+    update_filter()
+  else
+    jump_to_response()
+  end
 end
 
 M.interrupt_requests = function()
@@ -417,7 +456,7 @@ M.replay = function()
 
   local db = DB.global_update()
 
-  CMD.run_parser({ last_request }, nil, function(_)
+  CMD.run_parser({ last_request }, nil, nil, function(_)
     set_current_response(#db.responses)
     M.open_default_view()
 
@@ -471,74 +510,17 @@ M.from_curl = function()
 end
 
 M.inspect = function()
-  local inspect_name = "kulala://inspect"
-
   local content = Inspect.get_contents()
   if #content == 0 then return end
 
-  -- Create a new buffer
-  local buf = vim.fn.bufnr(inspect_name)
-
-  _ = buf > 0 and vim.api.nvim_buf_delete(buf, { force = true })
-  buf = vim.api.nvim_create_buf(false, true)
-
-  -- Set the content of the buffer
-  vim.api.nvim_buf_set_lines(buf, 0, -1, false, content)
-
-  -- Set the filetype to http to enable syntax highlighting
-  vim.bo[buf].filetype = "http"
-  vim.api.nvim_buf_set_name(buf, inspect_name)
-
-  -- Get the total dimensions of the editor
-  local total_width = vim.o.columns
-  local total_height = vim.o.lines
-
-  -- Calculate the content dimensions
-  local content_width = 0
-  for _, line in ipairs(content) do
-    if #line > content_width then content_width = #line end
-  end
-  local content_height = #content
-
-  -- Ensure the window doesn't exceed 80% of the total size
-  local win_width = math.min(content_width, math.floor(total_width * 0.8))
-  local win_height = math.min(content_height, math.floor(total_height * 0.8))
-
-  -- Calculate the window position to center it
-  local row = math.floor((total_height - win_height) / 2)
-  local col = math.floor((total_width - win_width) / 2)
-
-  -- Define the floating window configuration
-  local win_config = {
-    relative = "editor",
-    width = win_width,
-    height = win_height,
-    row = row,
-    col = col,
-    style = "minimal",
+  Float.create(content, {
+    name = "kulala://inspect",
+    ft = "http",
+    relative = "cursor",
+    focusable = true,
     border = "rounded",
-  }
-
-  -- Create the floating window with the buffer
-  local win = vim.api.nvim_open_win(buf, true, win_config)
-
-  -- Set up an autocommand to close the floating window on any buffer leave
-  vim.api.nvim_create_autocmd("BufLeave", {
-    buffer = buf,
-    once = true,
-    callback = function()
-      vim.api.nvim_win_close(win, true)
-    end,
-  })
-
-  -- Map the 'q' key to close the window
-  vim.api.nvim_buf_set_keymap(buf, "n", "q", "", {
-    noremap = true,
-    silent = true,
-    callback = function()
-      vim.api.nvim_win_close(win, true)
-      vim.api.nvim_buf_delete(buf, { force = true })
-    end,
+    auto_size = true,
+    close_keymaps = { "q", "<esc>" },
   })
 end
 

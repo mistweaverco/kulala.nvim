@@ -27,7 +27,7 @@ M.co_yield = function(co, timeout, ...)
     local timer = vim.uv.new_timer()
     timer:start(timeout, 0, function()
       timer:close()
-      M.co_resume(co, false)
+      M.co_resume(co, false, "timeout")
     end)
   end
 

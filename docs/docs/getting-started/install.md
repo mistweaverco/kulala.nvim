@@ -37,4 +37,11 @@ require("lazy").setup({
 By default global keymaps are disabled, change to `global_keymaps = true` to get a complete set of key mappings for Kulala.  
 Check the [keymaps documentation](keymaps.md) for details.
 
+Kulala provides a built-in formatter for HTTP files, which relies on `Kulala-FMT` included as a submodule. 
+If your package manager does not support submodules, you may need to fetch it manually.
+
+```sh
+git fetch --recurse-submodules
+```
+
 :::

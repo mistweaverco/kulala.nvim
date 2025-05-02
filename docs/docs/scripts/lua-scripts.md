@@ -15,6 +15,8 @@ Script context has the following objects and functions available:
 
 as well as access to Neovim's `_G` global table.
 
+For authentication purposes, you can use Kulala's crypto module with `require("kulala.cmd.crypto")`
+
 ### Client
 
 ```lua

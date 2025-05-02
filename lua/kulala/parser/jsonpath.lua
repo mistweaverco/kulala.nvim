@@ -1,9 +1,12 @@
+local Json = require("kulala.utils.json")
+
 local M = {}
 
 M.parse = function(body, path)
   local subpath = string.gsub(path, "^%$%.", "")
 
-  local result = vim.fn.json_decode(body)
+  local result = Json.parse(body)
+  if not result then return end
 
   local path_parts = {}
 

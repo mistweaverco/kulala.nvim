@@ -185,6 +185,12 @@ M.default_kulala_keymaps = {
       require("kulala.ui").show_report()
     end,
   },
+  ["Show filter"] = {
+    "F",
+    function()
+      require("kulala.ui").toggle_filter()
+    end,
+  },
   ["Next response"] = {
     "]",
     function()
@@ -200,10 +206,10 @@ M.default_kulala_keymaps = {
   ["Jump to response"] = {
     "<CR>",
     function()
-      require("kulala.ui").jump_to_response()
+      require("kulala.ui").keymap_enter()
     end,
     mode = { "n", "v" },
-    desc = "also: Send WS message for WS connections",
+    desc = "also: Update filter and Send WS message for WS connections",
   },
   ["Clear responses history"] = {
     "X",

@@ -6,6 +6,7 @@ local Table = require("kulala.utils.table")
 local M = {}
 
 M.data = nil
+M.session = {}
 
 ---@class Response
 ---@field id string
@@ -23,7 +24,9 @@ M.data = nil
 ---@field time number -- time of the request
 ---
 ---@field body string -- body of the response
+---@field body_raw string -- body of the response (unaltered)
 ---@field json table -- json response
+---@field filter string|nil -- jq filter if applied
 ---
 ---@field headers string -- headers of the response
 ---@field headers_tbl table -- parsed headers of the response
@@ -46,13 +49,13 @@ M.data = nil
 
 ---@class GlobalData
 ---@field responses Response[] -- history of responses
----@field current_response_pos number|nil -- index of current response shown in UI
----@field previous_response_pos number|nil -- index of previous response shown in UI
+---@field current_response_pos number -- index of current response shown in UI
+---@field previous_response_pos number -- index of previous response shown in UI
 ---@field replay Request|nil -- previous request stored for replay
 M.global_data = {
   responses = {},
-  current_response_pos = nil,
-  previous_response_pos = nil,
+  current_response_pos = 0,
+  previous_response_pos = 0,
   replay = nil,
 }
 

@@ -1,4 +1,5 @@
 local Logger = require("kulala.logger")
+local Shell = require("kulala.cmd.shell_utils")
 
 local M = {}
 
@@ -18,13 +19,25 @@ M.format = function(json_string)
   end
 
   cmd = cmd or { "jq", "--sort-keys", "-n", json_string }
+  local result = Shell.run(cmd, { sync = true, err_msg = "Failed to format JSON", abort_on_stderr = true })
 
-  local result = vim.system(cmd, { text = true }):wait()
-  if not result or result.code ~= 0 then return json_string, Logger.warn("Failed to format JSON: " .. result.stderr) end
-
+  if not result then return json_string end
   _ = temp_file and os.remove(temp_file)
 
   return result.stdout
+end
+
+M.parse = function(str, opts)
+  opts = opts or { object = true, array = true }
+  local verbose = opts.verbose or false
+
+  local status, result = pcall(vim.json.decode, str, opts)
+  if not status then
+    _ = verbose and Logger.error("Failed to parse JSON: " .. result)
+    return nil, result
+  end
+
+  return result
 end
 
 return M
