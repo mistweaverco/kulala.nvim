@@ -835,13 +835,17 @@ Disable the news popup.
 
 Enable/disable built-in autocompletion.
 
+### ui.formatter
+
+Enable/disable HTTP formatter
+
 ### ui.lua_syntax_hl
 
 Enable/disable lua syntax highlighting.
 
 ### ui.pickers
 
-Settings for pickers used for Enironment, Authentication and Requests Managers.
+Settings for pickers used for Environment, Authentication and Requests Managers.
 
 ```lua
 pickers = {
@@ -879,6 +883,16 @@ Example:
 {
   "mistweaverco/kulala.nvim",
   global_keymaps = true,
+}
+```
+
+### global_keymaps_prefix
+  
+  Prefix for global keymaps
+
+```lua
+{
+  global_keymaps_prefix = "<leader>R",
 }
 ```
 

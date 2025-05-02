@@ -65,7 +65,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Setup Kulala CI
-        uses: mistweaverco/kulala.nvim/ci
+        uses: mistweaverco/kulala.nvim@ci
 
       - name: Checkout repo
         uses: actions/checkout@v4

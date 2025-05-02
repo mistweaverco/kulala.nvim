@@ -259,23 +259,26 @@ local function collect_global_keymaps()
 
   if not config_global_keymaps then return end
 
+  local default_keymaps = {}
+  vim.iter(vim.deepcopy(M.default_global_keymaps)):each(function(name, map)
+    map[1] = prefix .. map[1]
+    default_keymaps[name] = map
+  end)
+
   config_global_keymaps = type(config_global_keymaps) == "table"
-      and vim.tbl_extend("force", M.default_global_keymaps, config_global_keymaps)
-    or vim.deepcopy(M.default_global_keymaps)
+      and vim.tbl_extend("force", default_keymaps, config_global_keymaps)
+    or default_keymaps
 
   vim.iter(config_global_keymaps):each(function(name, map)
-    if map then
-      map.desc = map.desc or name
+    if not map then return end
+    map.desc = map.desc or name
 
-      map[1] = prefix .. map[1]
-
-      if map.ft then
-        vim.iter({ map.ft }):flatten():each(function(ft)
-          ft_keymaps[ft] = vim.list_extend(ft_keymaps[ft] or {}, { map })
-        end)
-      else
-        global_keymaps = vim.list_extend(global_keymaps, { map })
-      end
+    if map.ft then
+      vim.iter({ map.ft }):flatten():each(function(ft)
+        ft_keymaps[ft] = vim.list_extend(ft_keymaps[ft] or {}, { map })
+      end)
+    else
+      global_keymaps = vim.list_extend(global_keymaps, { map })
     end
   end)
 
@@ -290,7 +293,7 @@ local function create_ft_autocommand(ft, maps)
   vim.api.nvim_create_autocmd({ "BufEnter", "BufRead", "BufNewFile", "BufFilePost", "FileType" }, {
     group = vim.api.nvim_create_augroup("Kulala filetype setup for *." .. ft, { clear = true }),
     pattern = { "*." .. ft, ft },
-    desc = "Kulala: setup keymaps for http filtypes",
+    desc = "Kulala: setup keymaps for http filetypes",
     callback = function(ev)
       vim.iter(maps):each(function(map)
         set_keymap(map, ev.buf)

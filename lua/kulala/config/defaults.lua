@@ -122,13 +122,13 @@ local M = {
     -- enable/disable built-in autocompletion
     autocomplete = true,
 
-    -- enable/disable formatter
-    formatter = true,
+    -- enable/disable HTTP formatter
+    formatter = false,
 
     -- enable/disable lua syntax highlighting
     lua_syntax_hl = true,
 
-    -- Settings for pickers used for Enironment, Authentication and Requests Managers
+    -- Settings for pickers used for Environment, Authentication and Requests Managers
     pickers = {
       snacks = {
         layout = function()
@@ -178,8 +178,7 @@ local M = {
     },
   ]]
 
-  -- The globalKeymapPrefix setting allows users to define a custom prefix for all global keymaps registered by this plugin.
-  -- This prevents conflicts with existing user-defined keymaps by namespacing the plugin's key bindings under a unique prefix.
+  -- Prefix for global keymaps
   global_keymaps_prefix = "<leader>R",
 
   -- Kulala UI keymaps, override with custom keymaps as required (check docs or {plugins_path}/kulala.nvim/lua/kulala/config/keymaps.lua for details)

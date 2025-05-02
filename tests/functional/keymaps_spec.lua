@@ -29,6 +29,7 @@ describe("keymaps", function()
   describe("global keymaps", function()
     before_each(function()
       CONFIG.setup({
+        global_keymaps_prefix = "",
         global_keymaps = {
           ["Inspect current request"] = {
             "I",
@@ -66,7 +67,7 @@ describe("keymaps", function()
     end)
 
     it("sets and disables custom keymaps", function()
-      expected = "<leader>RI"
+      expected = "I"
       assert.is_true(vim.tbl_contains(keymaps_n, expected))
       assert.is_false(vim.tbl_contains(keymaps_n, global_keymaps["Open scratchpad"][1]))
     end)
