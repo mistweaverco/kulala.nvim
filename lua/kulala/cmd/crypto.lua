@@ -106,9 +106,9 @@ M.jwt_encode = function(header, payload, key)
 
   -- Save the key to a temp file
   local key_file = os.tmpname()
-  if not Fs.write_file(key_file, key, true) then
-    return Logger.report_error(err_msg .. "failed to write key temp file")
-  end
+  if not Fs.write_file(key_file, key, true) then return Logger.error(err_msg .. "failed to write key temp file") end
+
+  key_file = method == "sign" and key_file or "$(<" .. key_file .. ")"
 
   -- Sign with OpenSSL
   local signature_file = os.tmpname()
