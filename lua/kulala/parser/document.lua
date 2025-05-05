@@ -232,7 +232,7 @@ local function parse_body(request, line)
   local _, content_type = PARSER_UTILS.get_header(request.headers, "content-type")
   content_type = content_type or ""
 
-  if line:find("^< ") then
+  if line:find("^< [^{]") then
     line = M.expand_included_filepath(line)
   elseif content_type:find("^application/x%-www%-form%-urlencoded") then
     -- should be no line endings or they should be urlencoded
