@@ -284,8 +284,7 @@ DEFAULT_ENV
 
 Default environment.
 
-See: Environment files
-https://learn.microsoft.com/en-us/aspnet/core/test/http-files?view=aspnetcore-8.0#environment-files.
+See: [Environment files][see-env-files].
 
 Possible values:
 
@@ -1135,6 +1134,17 @@ Example:
     {
       "mistweaverco/kulala.nvim",
       kulala_keymaps = false,
+    }
+<
+
+
+KULALA_KEYMAPS_PREFIX
+
+Prefix for kulala keymaps
+
+>lua
+    {
+      kulala_keymaps_prefix = "",
     }
 <
 

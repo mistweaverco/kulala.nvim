@@ -7,9 +7,12 @@ on:
       - '**/*.lua'
     branches:
       - main
+      - develop
     types: ["labeled", "opened", "synchronize", "reopened"]
   push:
     branches: develop
+
+  workflow_dispatch:
 
 jobs:
   test-linux:

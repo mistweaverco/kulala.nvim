@@ -39,10 +39,10 @@ local function parse_string_variables(str, variables, env, silent)
     -- Check each source for the variable
     if variable_name:find("^%$") then
       value = DYNAMIC_VARS.read(variable_name)
-    elseif variables[variable_name] then
-      value = parse_string_variables(variables[variable_name], variables, env)
     elseif env[variable_name] then
       value = env[variable_name]
+    elseif variables[variable_name] then
+      value = parse_string_variables(variables[variable_name], variables, env)
     elseif REQUEST_VARIABLES.parse(variable_name) then
       value = REQUEST_VARIABLES.parse(variable_name)
     else

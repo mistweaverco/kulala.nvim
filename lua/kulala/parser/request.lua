@@ -45,18 +45,14 @@ local M = {}
 ---@field cmd string[] -- The command to execute the request
 ---@field body_temp_file string -- The path to the temporary file containing the body
 ---
----@field curl CurlCommand|nil -- The curl command
+---@field curl CurlCommand -- The curl command
 ---@field grpc GrpcCommand|nil -- The gRPC command
 ---
----@field processed boolean -- Indicates if request has been already processed, used by replay()
 ---@field file string -- The file path of the document
 ---@field ft string -- The filetype of the document
 
 ---@class CurlCommand
 ---@field flags table<string, string> -- flags
-local default_curl_command = {
-  flags = {},
-}
 
 ---@class GrpcCommand
 ---@field address string|nil -- host:port, can be omitted if proto|proto-set is provided
@@ -78,6 +74,7 @@ local default_request = {
   ft = "text",
   cmd = {},
   body_temp_file = "",
+  curl = { flags = {} },
 }
 
 local function process_grpc_flags(request, flag, value)
@@ -101,7 +98,6 @@ local function process_curl_flags(request, flag, value)
   if flag:match("^global%-") then
     global_flags[flag:sub(8)] = value
   else
-    request.curl = request.curl or vim.deepcopy(default_curl_command)
     request.curl.flags[flag] = value
   end
 
@@ -125,6 +121,8 @@ local function url_encode(str)
 end
 
 local function encode_url_params(url)
+  if vim.uri_decode(url) ~= url then return url end
+
   local anchor = ""
   local _, index = url:find(".*#")
 
@@ -178,8 +176,6 @@ end
 ---@param document_variables DocumentVariables -- The variables defined in the document
 ---@param silent boolean|nil -- Whether to suppress not found variable warnings
 local process_variables = function(request, document_variables, silent)
-  if request.processed then return end
-
   local env = ENV_PARSER.get_env() or {}
   local params = { document_variables, env, silent }
 
@@ -190,7 +186,7 @@ local process_variables = function(request, document_variables, silent)
   request.body_display = StringVariablesParser.parse(request.body_display, unpack(params))
   request.body_computed = StringVariablesParser.parse(request.body_computed or request.body, unpack(params))
 
-  request.environment = vim.tbl_extend("force", env, document_variables)
+  request.environment = vim.tbl_extend("keep", env, document_variables)
 
   return env
 end
@@ -229,7 +225,7 @@ local function save_body_with_files(request)
         Logger.warn("The file '" .. path .. "' could not be included. Skipping ...")
       end
     else
-      line = line:find("\r$") and line .. "\n" or line
+      line = line .. "\n"
       ---@diagnostic disable-next-line: cast-local-type
       status = status and result:write(line)
     end
@@ -241,6 +237,7 @@ end
 
 local function set_variables(request, document_variables)
   document_variables = document_variables or {}
+
   parse_metadata(request)
 
   -- INFO: if has_pre_request_script: silently replace the variables,
@@ -301,7 +298,10 @@ local function process_pre_request_scripts(request, document_variables)
   -- but this time also warn the user if a variable is not found
   process_variables(request, document_variables)
 
-  return not (request.environment["__skip_request"] == "true")
+  local skip = request.environment["__skip_request"] == "true"
+  request.environment["__skip_request"] = nil
+
+  return not skip
 end
 
 local function process_body(request)
@@ -312,7 +312,7 @@ local function process_body(request)
 
     if status then
       request.body_temp_file = path
-      table.insert(request.cmd, "--data-binary")
+      table.insert(request.cmd, request.curl.flags["data-urlencode"] and "--data-urlencode" or "--data-binary")
       table.insert(request.cmd, "@" .. path)
     else
       Logger.error("Failed to create a temporary file for the request body")
@@ -402,8 +402,9 @@ end
 
 local function process_headers(request)
   for key, value in pairs(request.headers) do
+    value = value == "" and ";" or ":" .. value
     table.insert(request.cmd, "-H")
-    table.insert(request.cmd, key .. ":" .. value)
+    table.insert(request.cmd, key .. value)
   end
 end
 
@@ -421,10 +422,33 @@ local function process_cookies(request)
   end
 end
 
-local function process_options(request)
-  for _, additional_curl_option in pairs(CONFIG.get().additional_curl_options) do
-    table.insert(request.cmd, additional_curl_option)
+local function process_custom_curl_flags(request)
+  local env = DB.find_unique("http_client_env") or {}
+
+  local flags = vim.list_extend({}, CONFIG.get().additional_curl_options or {})
+  local curl_flags = vim.tbl_extend("force", DB.find_unique("env").curl or {}, request.curl.flags)
+
+  local ssl_config = vim.tbl_get(env, ENV_PARSER.get_current_env(), "SSLConfiguration", "verifyHostCertificate")
+  if ssl_config == false and not vim.tbl_contains(flags, "--insecure") and not vim.tbl_contains(flags, "-k") then
+    table.insert(flags, "--insecure")
   end
+
+  vim.iter(curl_flags):each(function(flag, value)
+    if flag == "-k" or flag == "--insecure" then return end
+
+    if flag == "data-urlencode" then
+      request.curl.flags["data-urlencode"] = ""
+      return
+    end
+
+    local prefix = #flag > 1 and "--" or "-"
+    table.insert(flags, prefix .. flag)
+    _ = (value and #value > 1) and table.insert(flags, value)
+  end)
+
+  vim.iter(flags):each(function(flag)
+    table.insert(request.cmd, flag)
+  end)
 end
 
 local function toggle_chunked_mode(request)
@@ -512,19 +536,12 @@ local function build_curl_command(request)
 
   toggle_chunked_mode(request)
 
-  local flags = vim.tbl_extend("force", DB.find_unique("env").curl or {}, request.curl and request.curl.flags or {})
-  vim.iter(flags):each(function(flag, value)
-    local prefix = #flag > 1 and "--" or "-"
-    table.insert(request.cmd, prefix .. flag)
-    _ = (value and #value > 1) and table.insert(request.cmd, value)
-  end)
-
   process_auth_headers(request)
   process_protocol(request)
   process_headers(request)
   process_body(request)
   process_cookies(request)
-  process_options(request)
+  process_custom_curl_flags(request)
 
   table.insert(request.cmd, "-A")
   table.insert(request.cmd, "kulala.nvim/" .. GLOBALS.VERSION)
@@ -533,7 +550,7 @@ end
 
 ---Gets data from specified DocumentRequest or a request within specified line or the first request in the list if no request or line is provided
 ---@param requests DocumentRequest[] List of document requests
----@param request DocumentRequest|nil The request to parse
+---@param document_request DocumentRequest|nil The request to parse
 ---@param line_nr number|nil The line number where the request starts
 ---@return Request|nil -- Table containing the request data or nil if parsing fails
 function M.get_basic_request_data(requests, document_request, line_nr)
@@ -545,7 +562,7 @@ function M.get_basic_request_data(requests, document_request, line_nr)
 
   request = vim.tbl_extend("keep", request, document_request)
 
-  request.url_raw = document_request.url
+  request.url_raw = request.url_raw or document_request.url -- url_raw may be already set if the request is being replayed
   request.body_raw = document_request.body
 
   Table.remove_keys(request, { "body", "variables", "start_line", "end_line" })
@@ -576,11 +593,9 @@ M.parse = function(requests, document_variables, document_request)
   local request = M.get_basic_request_data(requests, document_request, line_nr)
   if not request then return end
 
-  if not request.processed then
-    local env = set_variables(request, document_variables)
-    set_headers(request, document_variables, env)
-    process_graphql(request)
-  end
+  local env = set_variables(request, document_variables)
+  set_headers(request, document_variables, env)
+  process_graphql(request)
 
   local json = vim.json.encode(request)
   FS.write_file(GLOBALS.REQUEST_FILE, json, false)
@@ -599,7 +614,6 @@ M.parse = function(requests, document_variables, document_request)
   -- Save this to global, so .replay() can be triggered from any buffer or window
   DB.global_update().replay = vim.deepcopy(request)
   DB.global_update().replay.show_icon_line_number = nil
-  DB.global_update().replay.processed = true
 
   return request
 end

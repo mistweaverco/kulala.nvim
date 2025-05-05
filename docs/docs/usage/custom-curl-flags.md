@@ -4,8 +4,8 @@
 
 ## Usage
 
-- Local flags: `@curl-..` apply for current request only.
-- Global flags: `@curl-global-..` apply when running all requests in a buffer.
+- Local flags: `# @curl-..` apply for current request only.
+- Global flags: `# @curl-global-..` apply when running all requests in a buffer.
 
 ```http
 # @curl-global-compressed
@@ -20,6 +20,6 @@ Host: example.com
 
 Local flags take precedence over global flags.
 
-Make sure that global flags are not separated by `###` from the first request.
+If you need to apply curl flags to OAuth requests, you have to use `# @curl-global-..` flags.
 
 :::

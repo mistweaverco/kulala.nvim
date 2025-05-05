@@ -35,10 +35,12 @@ local parse_params = function(str)
   end)
 end
 
-local update_env = function(tbl)
-  local env = fs.read_json(http_client_path) or {}
+local update_env = function(tbl, private)
+  local path = private and http_client_private_path or http_client_path
+  local env = fs.read_json(path) or {}
+
   env.dev.Security.Auth.GAPI = vim.tbl_extend("force", env.dev.Security.Auth.GAPI, tbl)
-  fs.write_json(http_client_path, env)
+  fs.write_json(path, env)
 end
 
 local update_auth_data = function(tbl)
@@ -86,9 +88,9 @@ describe("oauth", function()
     system = h.System.stub({ "curl" }, {
       on_call = function(system)
         local params = parse_params(system.args.cmd[#system.args.cmd - 1])
-
-        params.headers = system.args.cmd[#system.args.cmd - 3]
+        params.headers = system.args.cmd[8]
         params.url = system.args.cmd[#system.args.cmd]
+        params.cmd = system.args.cmd
 
         system.async = true
 
@@ -110,6 +112,7 @@ describe("oauth", function()
     kulala_config.setup({ default_view = "body", debug = 1, jq_path = "jq" })
     http_buf = h.create_buf(
       ([[
+        # @curl-global-verbose
         GET https://secure.com
         Authorization: Bearer {{$auth.token("GAPI")}}
       ]]):to_table(true),
@@ -276,7 +279,50 @@ describe("oauth", function()
         assert.is.same("new_access_token", get_auth_header())
       end)
 
-      it("generate JWT", function()
+      it("generate JWT - HS256", function()
+        cmd.queue.resume:revert()
+
+        update_env({
+          ["Grant Type"] = "Client Credentials",
+          ["Client Credentials"] = "jwt",
+          JWT = {
+            header = {
+              alg = "HS256",
+              typ = "JWT",
+            },
+            payload = {
+              aud = "https://token.url",
+              iat = 1746360495,
+              exp = 1746360500,
+              iss = "kulala-service-account",
+              scope = "devstorage.read_only",
+            },
+          },
+        })
+
+        update_env({
+          ["Client Secret"] = "client_secret_client_secret_client_secret_client_secret",
+        }, true)
+
+        kulala.run()
+        wait_for_requests(1)
+
+        assert.has_properties(get_request(), {
+          audience = "kulala_api",
+          grant_type = "urn:ietf:params:oauth:grant-type:jwt-bearer",
+          url = "https://token.url",
+          assertion = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJodHRwczovL3Rva2VuLnVybCIsImV4cCI6MTc0NjM2MDUwMCwiaWF0IjoxNzQ2MzYwNDk1LCJpc3MiOiJrdWxhbGEtc2VydmljZS1hY2NvdW50Iiwic2NvcGUiOiJkZXZzdG9yYWdlLnJlYWRfb25seSJ9.y58lczQ-y660InDrAy8kLMJa-sIKtWAhIwq5Pa199gE",
+        })
+
+        assert.has_properties(get_env(), {
+          access_token = "new_access_token",
+        })
+        assert.near(os.time(), get_env().acquired_at, 1)
+
+        assert.is.same("new_access_token", get_auth_header())
+      end)
+
+      it("generate JWT - RS256", function()
         cmd.queue.resume:revert()
 
         update_env({
@@ -285,26 +331,31 @@ describe("oauth", function()
           private_key = "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC5cHDxLOlZKpgT\nLNEF18AlQkxOHwYuP3VOuAeCxwCMlICSmfVRCzl5Zv+36fVTnvSF5tp1J46JI6jD\nM3WIE9UmjcRA13TVfzkoRuEKOfd20/PVEoxAXt4h5xgT4yuuJB1+C+R4xcZY4ul7\neCar1YJ12JJEt8vnZRGEhpjE8FtGvCBdDQ2+d7Qhr2LL8PIYW6mS6++5uCBAno+4\nevOmE2GkeQAfosrkDLSjOtNzF9pEYA5BzW1ZuZJJyWukUvaze4MqFH/6XfqzFPtr\n5XfQo8Olifljteic6JQx9KcvhXI7v1owtCpjkqcXMtiXtR23mRws0h//outYR0o4\nfJuOmouVAgMBAAECggEALJ/lXfRb1yxL2llvl4Na5tx0dlw65Yg5146rqAnxlOLr\nqdvI0A7ubsudgAmaEtxupYZvTcAOKexd4VOR1gRHx/ZXou72W6Y4//tGjmpypbLN\nu5myDI+HzwrInYiOa2KfgkSkX3fgimVYoHDChZlkwq0yTb0ZIX8N3yFww/u/S17y\n4sP3/+94dR6KWZTuufsmknAvByVGtVe3bGszYo77DC3m7+Kx2mR88anuP9a2H3Jf\nldzVCPvJ4bboncTFItxERRiHX/N7xwmNO7MzL5WZRL+GPe9+P/Hr/PKokeQc+yEg\n0cfWqKG0tyTLArRGOOHZ3wHLGuqjSFc+RZiXoL3dxQKBgQDwGSMjdhKa+Ck6SwkU\n26vvTLN5XTwleG9w5Mhj3esKs0DROEGfksFmSCCkFNboDl11RJuUldNwa4AVyZoc\nPbA96jRJGK7AEcNOV9FwdEs8rc0Berfn6klQuE66gsVonIM9fRiq8pYnnZ552Urh\nuHxgQoQL5iWCdl/IZ4kai8FHJwKBgQDFuI/Dv7HjFS9bOkIP7pg/KKYzl6VsUSlp\nEkd67V9TLHwIToq+k2cjmPMRCKD6KYkhbyOMN3GJpk348h9xdY9reIOBAb7hotbs\nQCRYFmuiksKeDoaP8N7MSIjs2C1AMO80RbyB2jLF8R9VIE64xZmUs0RBki5vqvtZ\naqQbpqxs4wKBgQCMbmd7Ckh/k76pddHt/T5nTPl8dugDEpo78dSzdM1RCN9UgA8C\nAphT9sQAtJ+uQxiuyl4lXiy5iGb2V2BoPDylOiMyzdkIRltxqzO5DowjBZTu1JRU\ndVhEekiyFmLYeRLaGB0hf5oLuclDg7CkrX8x3jXVr9son4wOb2BlwnBd6QKBgALs\nZKvHRNEPuiCGLv3fUD720eZHYrnERXF5RLdLlTI8oSTaTHDe6xJ6q3VgBElOnelx\npDvpgfNAEz0QD2j1DQbQxFj+9pyNdNIPbLoksri3pMsDeffc3t50YBnoZFrjnlXO\nhigBWujUVNtEXAWdXlT1hZfWmnsqMwcybXS/NSNzAoGBAJekqSCvUQHdiNWq1BPp\nM998rdujTGmfYCdKLT+c0i1/s3YuGu/h87tTSjXi7Jmq/iNVM2+RoTaGvvD1b+ZC\nGLcVcsqa6qD77WRQZ3q+2sF8v2vSd9oHT0R2jA4U/zVyF9dFOV4tT09xrFh7vLXM\nfYsrQTaSEta7ynoUI5/9NJTJ\n-----END PRIVATE KEY-----\n",
           JWT = {
             header = {
-              alg = "HS256",
+              alg = "RS256",
               typ = "JWT",
             },
             payload = {
               aud = "https://token.url",
-              exp = 50,
+              iat = 1746360495,
+              exp = 1746360500,
               iss = "kulala-service-account",
               scope = "devstorage.read_only",
             },
           },
         })
 
+        update_env({
+          ["Client Secret"] = "client_secret_client_secret_client_secret_client_secret",
+        }, true)
+
         kulala.run()
         wait_for_requests(1)
 
-        assert.is_true(#get_request().assertion > 0)
         assert.has_properties(get_request(), {
           audience = "kulala_api",
           grant_type = "urn:ietf:params:oauth:grant-type:jwt-bearer",
           url = "https://token.url",
+          assertion = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJodHRwczovL3Rva2VuLnVybCIsImV4cCI6MTc0NjM2MDUwMCwiaWF0IjoxNzQ2MzYwNDk1LCJpc3MiOiJrdWxhbGEtc2VydmljZS1hY2NvdW50Iiwic2NvcGUiOiJkZXZzdG9yYWdlLnJlYWRfb25seSJ9.Q4G8JrXHIswxKMRu7QVEzTCGi5kL_EksoQjDGwOIBdU_Lc2XtrB0NOVhBIKPtKfkiWPlfdNBqsg1KMlfGGDFn7Ge1yARn97JELWyZN1TxCLuncyBgLxiwr8v9f1meX-Vj-Fj7DQQdgSQfBR3w0TDO74CDdtqRCozQFNudsrrVOnBgjutyQmwJeoICJTIN89Uk9RP2rkWDQES7bH2EZ4kDRqRFVTTi8N7bU4veGHlO0wYr4OB7nLclTDwzcwhL1Mzrv9wLYpDxDhbffwjVz8ZmfWBgUQFTaw_MxBOYq4Q5yhYPXLswH-NuFPDIFviKlbXJrkjARfOa3ghlKmuulTHtA",
         })
 
         assert.has_properties(get_env(), {
@@ -458,7 +509,7 @@ describe("oauth", function()
         verification_url = "verification_url",
         interval = 1,
       })
-      assert.near(os.time(), get_env().acquired_at, 1)
+      assert.near(os.time(), get_env().acquired_at, 5)
 
       -- Opens browser with the verification URL and copies the user code to clipboard
       assert.is.same("verification_url", result.url_params.url)
@@ -572,6 +623,19 @@ describe("oauth", function()
         audience = "https://my-audience.com/",
         state = "state",
       })
+    end)
+
+    it("takes into account curl flags", function()
+      update_env({ ["Grant Type"] = "Password" })
+
+      kulala_config.options.additional_curl_options = { "--location" }
+
+      kulala.run()
+      wait_for_requests(1)
+
+      assert.is_true(vim.tbl_contains(get_request().cmd, "--location"))
+      assert.is_true(vim.tbl_contains(get_request().cmd, "--verbose"))
+      assert.is_true(vim.tbl_contains(get_request().cmd, "--insecure"))
     end)
   end)
 

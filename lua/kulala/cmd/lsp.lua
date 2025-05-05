@@ -337,6 +337,8 @@ local curl = {
   { "curl-compressed", "curl-compressed", "Decompress response" },
   { "curl-location", "curl-location", "Follow redirects" },
   { "curl-no-buffer", "curl-no-buffer", "Disable buffering" },
+  { "curl-insecure", "curl-insecure", "Skip secure connection verification" },
+  { "curl-data-urlencode", "curl-data-urlencode", "Urlencode payload" },
 }
 
 ---@type SourceTable
@@ -352,6 +354,7 @@ local grpc = {
 local script_client = {
   { "client.global.get", "client.global.get(${1:varName})$0", "Get a  global variable" },
   { "client.global.set", "client.global.set(${1:varName}, ${2:value})$0", "Set a global variable" },
+  { "client.responses", 'client.responses["${1:name}"]$0', "Previous responses" },
   { "client.log", "client.log(${1:message})$0", "Log message" },
   { "client.test", "client.test(${1:name}, ${2:fn})$0", "Define a test suite" },
   { "client.assert", "client.assert(${1:value}, ${2:message?})$0", "Checks if the value is truthy" },
@@ -408,10 +411,18 @@ local script_request = {
 ---@type SourceTable
 local script_response = {
   { "response.responseCode", "response.responseCode()$0", "Get response code" },
+  { "response.status", "response.status()$0", "Get response status" },
+  { "response.code", "response.code()$0", "Get request code" },
+  { "response.url", "response.url()$0", "Get response URL" },
   { "response.body", "response.body()$0", "Get response body" },
+  { "response.json", "response.json()$0", "Get response json" },
+  { "response.errors", "response.errors()$0", "Get response errors" },
   { "response.headers.all", "response.headers.all()$0", "Get all response headers" },
   { "valueOf", "valueOf()$0", "Get response header value" },
   { "valuesOf", "valuesOf()$0", "Get all response header values" },
+  { "response.cookies", "response.cookies()$0", "Get response cookies" },
+  { "response.headers", "response.headers()$0", "Get response headers" },
+  { "response.headers_tbl", "response.headers_tbl()$0", "Get response headers table" },
 }
 
 ---@type SourceTable
@@ -667,7 +678,8 @@ local sources = {
 
 local function source_type(params)
   local line = vim.api.nvim_buf_get_lines(current_buffer, params.position.line, params.position.line + 1, false)[1]
-  line = line:sub(1, params.position.character)
+
+  line = line and line:sub(1, params.position.character) or ""
 
   local matches = {
     { "@curl%-", "curl" },
@@ -693,7 +705,7 @@ local function source_type(params)
 
   local is_script = false
   for i = params.position.line, 1, -1 do
-    local l = vim.api.nvim_buf_get_lines(current_buffer, i, i + 1, false)[1]
+    local l = vim.api.nvim_buf_get_lines(current_buffer, i, i + 1, false)[1] or ""
     if l:match("###") then break end
     if l:match("{%%") then
       is_script = true
@@ -728,15 +740,16 @@ local get_source = function(params)
 end
 
 local function code_actions_fmt()
-  return { { title = "Convert to HTTP", command = "convert_http", fn = Fmt.convert } }
+  return { { group = "Formatting", title = "Convert to HTTP", command = "convert_http", fn = Fmt.convert } }
 end
 
 local function code_actions_http()
   return {
-    { title = "Copy as cURL", command = "copy_as_curl", fn = Kulala.copy },
-    { title = "Paste from curl", command = "paste_from_curl", fn = Kulala.from_curl },
-    { title = "Inspect current request", command = "inspect_current_request", fn = Kulala.inspect },
+    { group = "cURL", title = "Copy as cURL", command = "copy_as_curl", fn = Kulala.copy },
+    { group = "cURL", title = "Paste from curl", command = "paste_from_curl", fn = Kulala.from_curl },
+    { group = "Request", title = "Inspect current request", command = "inspect_current_request", fn = Kulala.inspect },
     {
+      group = "Environment",
       title = "Select environment",
       command = "select_environment",
       fn = function()
@@ -744,22 +757,35 @@ local function code_actions_http()
       end,
     },
     {
+      group = "Authentication",
       title = "Manage Auth Config",
       command = "manage_auth_config",
       fn = require("kulala.ui.auth_manager").open_auth_config,
     },
-    { title = "Replay last request", command = "replay_last request", fn = Kulala.replay },
-    { title = "Download GraphQL schema", command = "download_graphql_schema", fn = Kulala.download_graphql_schema },
+    { group = "Request", title = "Replay last request", command = "replay_last request", fn = Kulala.replay },
     {
+      group = "GraphQL",
+      title = "Download GraphQL schema",
+      command = "download_graphql_schema",
+      fn = Kulala.download_graphql_schema,
+    },
+    {
+      group = "Environment",
       title = "Clear globals",
       command = "clear_globals",
       fn = function()
         Kulala.scripts_clear_global()
       end,
     },
-    { title = "Clear cached files", command = "clear_cached_files", fn = Kulala.clear_cached_files },
-    { title = "Send request", command = "run_request", fn = Ui.open },
     {
+      group = "Environment",
+      title = "Clear cached files",
+      command = "clear_cached_files",
+      fn = Kulala.clear_cached_files,
+    },
+    { group = "Request", title = "Send request", command = "run_request", fn = Ui.open },
+    {
+      group = "Request",
       title = "Send all requests",
       command = "run_request_all",
       fn = function()
@@ -905,6 +931,19 @@ local handlers = {
   ["shutdown"] = function() end,
 }
 
+local function set_current_buf(params)
+  if not (params and params.textDocument and params.textDocument.uri) then return end
+
+  local buf = vim.uri_to_bufnr(params.textDocument.uri)
+  local buf_valid = vim.api.nvim_buf_is_valid(buf)
+
+  current_buffer = buf_valid and buf or 0
+  current_ft = buf_valid and vim.api.nvim_get_option_value("filetype", { buf = buf }) or nil
+
+  local win = buf_valid and vim.fn.win_findbuf(buf)[1] or 0
+  current_line = vim.api.nvim_win_get_cursor(win)[1]
+end
+
 local function new_server()
   local function server(dispatchers)
     local closing = false
@@ -912,12 +951,7 @@ local function new_server()
 
     function srv.request(method, params, handler)
       local status, error = xpcall(function()
-        if params and params.textDocument then
-          current_buffer = vim.uri_to_bufnr(params.textDocument.uri)
-          current_line = vim.api.nvim_win_get_cursor(vim.fn.bufwinid(current_buffer))[1]
-          current_ft = vim.api.nvim_get_option_value("filetype", { buf = current_buffer })
-        end
-
+        set_current_buf(params)
         _ = handlers[method] and handler(nil, handlers[method](params))
       end, debug.traceback)
 

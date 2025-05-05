@@ -69,6 +69,7 @@ M.default_global_keymaps = {
     end,
     mode = { "n", "v" },
     ft = { "http", "rest" },
+    prefix = false,
   },
   ["Send all requests"] = {
     "a",
@@ -196,12 +197,14 @@ M.default_kulala_keymaps = {
     function()
       require("kulala.ui").show_next()
     end,
+    prefix = false,
   },
   ["Previous response"] = {
     "[",
     function()
       require("kulala.ui").show_previous()
     end,
+    prefix = false,
   },
   ["Jump to response"] = {
     "<CR>",
@@ -210,6 +213,7 @@ M.default_kulala_keymaps = {
     end,
     mode = { "n", "v" },
     desc = "also: Update filter and Send WS message for WS connections",
+    prefix = false,
   },
   ["Clear responses history"] = {
     "X",
@@ -223,6 +227,7 @@ M.default_kulala_keymaps = {
       require("kulala.cmd.websocket").send()
     end,
     mode = { "n", "v" },
+    prefix = false,
   },
   ["Interrupt requests"] = {
     "<C-c>",
@@ -230,24 +235,28 @@ M.default_kulala_keymaps = {
       require("kulala.ui").interrupt_requests()
     end,
     desc = "also: CLose WS connection",
+    prefix = false,
   },
   ["Show help"] = {
     "?",
     function()
       require("kulala.ui").show_help()
     end,
+    prefix = false,
   },
   ["Show news"] = {
     "g?",
     function()
       require("kulala.ui").show_news()
     end,
+    prefix = false,
   },
   ["Close"] = {
     "q",
     function()
       require("kulala.ui").close_kulala_buffer()
     end,
+    prefix = false,
   },
 }
 
@@ -259,9 +268,10 @@ local function collect_global_keymaps()
 
   if not config_global_keymaps then return end
 
-  local default_keymaps = {}
-  vim.iter(vim.deepcopy(M.default_global_keymaps)):each(function(name, map)
-    map[1] = prefix .. map[1]
+  local default_keymaps = vim.deepcopy(M.default_global_keymaps)
+
+  vim.iter(default_keymaps):each(function(name, map)
+    map[1] = map.prefix == false and map[1] or prefix .. map[1]
     default_keymaps[name] = map
   end)
 
@@ -308,9 +318,16 @@ M.get_kulala_keymaps = function()
 
   if not config_kulala_keymaps then return end
 
+  local default_keymaps = vim.deepcopy(M.default_kulala_keymaps)
+
+  vim.iter(default_keymaps):each(function(name, map)
+    map[1] = map.prefix == false and map[1] or config.options.kulala_keymaps_prefix .. map[1]
+    default_keymaps[name] = map
+  end)
+
   config_kulala_keymaps = type(config_kulala_keymaps) == "table"
-      and vim.tbl_extend("force", M.default_kulala_keymaps, config_kulala_keymaps)
-    or M.default_kulala_keymaps
+      and vim.tbl_extend("force", default_keymaps, config_kulala_keymaps)
+    or default_keymaps
 
   return config_kulala_keymaps
 end

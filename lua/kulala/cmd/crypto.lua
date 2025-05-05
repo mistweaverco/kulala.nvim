@@ -1,6 +1,7 @@
 ---@diagnostic disable: undefined-field
 local Config = require("kulala.config")
 local Fs = require("kulala.utils.fs")
+local Json = require("kulala.utils.json")
 local Logger = require("kulala.logger")
 
 local M = {}
@@ -9,7 +10,7 @@ local M = {}
 ---@param input string Input string to be encoded
 ---@return string Base64url encoded string
 M.base64_encode = function(input)
-  return vim.base64.encode(input):gsub("+", "-"):gsub("/", "_"):gsub("=", "")
+  return vim.base64.encode(input):gsub("+", "-"):gsub("/", "_"):gsub("=+$", "")
 end
 
 local function openssl_path()
@@ -75,9 +76,9 @@ end
 ---@field iss? string Issuer
 ---@field sub? string Subject
 ---@field scope? string Scope
----field aud? string Audience
----field exp? number Expiration time (in seconds since epoch)
----field iat? number Issued at (in seconds since epoch)
+---@field aud? string Audience
+---@field exp? number Expiration time (in seconds since epoch)
+---@field iat? number Issued at (in seconds since epoch)
 
 ---Generate a JWT token
 ---@param header {alg: string, typ: string} JWT header alg: "RS256"|"HS256", typ: "JWT"
@@ -94,25 +95,34 @@ M.jwt_encode = function(header, payload, key)
   local method = header.alg == "RS256" and "sign" or "hmac"
 
   -- Base64url encode the header and payload
-  local header_b64 = M.base64_encode(vim.json.encode(header))
-  local payload_b64 = M.base64_encode(vim.json.encode(payload))
+  local header_b64 = M.base64_encode(Json.encode(header, { sort = true }):gsub("%s+", ""))
+  local payload_b64 = M.base64_encode(Json.encode(payload, { sort = true }):gsub("%s+", ""))
 
   -- Save the signing input to a temp file
   local signing_input = header_b64 .. "." .. payload_b64
   local input_file = os.tmpname()
-  if not Fs.write_file(input_file, signing_input, true) then
+
+  if not Fs.write_file(input_file, signing_input, false, true) then
     return Logger.error(err_msg .. "failed to open temp file")
   end
 
   -- Save the key to a temp file
   local key_file = os.tmpname()
-  if not Fs.write_file(key_file, key, true) then
-    return Logger.report_error(err_msg .. "failed to write key temp file")
+  if not Fs.write_file(key_file, key, false, true) then
+    return Logger.error(err_msg .. "failed to write key temp file")
   end
+
+  key_file = method == "sign" and key_file or '"' .. key .. '"'
 
   -- Sign with OpenSSL
   local signature_file = os.tmpname()
-  local cmd = ("%s dgst -sha256 -%s %s -out %s %s"):format(openssl_path(), method, key_file, signature_file, input_file)
+  local cmd = ("%s dgst -sha256 -%s %s -binary -out %s %s"):format(
+    openssl_path(),
+    method,
+    key_file,
+    signature_file,
+    input_file
+  )
 
   local ret = os.execute(cmd)
   if ret ~= 0 then return Logger.error(err_msg .. "failed to sign with OpenSSL") end

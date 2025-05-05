@@ -173,7 +173,7 @@ M.prompt_var = function(metadata_value)
 
   local var_name = kv[1]
   local prompt = table.concat(kv, " ", 2)
-  prompt = prompt == "" and "Enter value for variable: " .. var_name or prompt
+  prompt = prompt == "" and "Enter value for variable [" .. var_name .. "]: " or prompt
 
   local value = vim.fn.input(prompt)
   if not value or value == "" then return false end

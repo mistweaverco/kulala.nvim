@@ -161,13 +161,15 @@ end
 --- @param filename string
 --- @param content string
 --- @param append boolean|nil
+--- @param binary boolean|nil
 --- @usage fs.write_file('Makefile', 'all: \n\t@echo "Hello World"')
 --- @usage fs.write_file('Makefile', 'all: \n\t@echo "Hello World"', true)
 --- @return boolean
 --- @usage local p = fs.write_file('Makefile', 'all: \n\t@echo "Hello World"')
-M.write_file = function(filename, content, append)
+M.write_file = function(filename, content, append, binary)
   local f, mode
   mode = append and "a" or "w"
+  mode = binary and mode .. "b" or mode
 
   f = io.open(filename, mode)
   if not f then return false end
@@ -357,6 +359,7 @@ end
 ---@param format boolean|nil -- format the JSON with jq
 ---@param escape boolean|nil -- escape [/"]
 M.write_json = function(filename, data, format, escape)
+  data = next(data) and data or { _ = "" }
   local content = vim.json.encode(data)
   if not content then return end
 
@@ -425,24 +428,23 @@ M.include_file = function(file, path)
 end
 
 --- Delete *.js request script files and request_variables.json
-M.delete_request_scripts_files = function() -- cache/nvim/kulala/scripts/requests
+M.delete_request_scripts_files = function() -- .cache/nvim/kulala/scripts/requests
   local dir = M.get_request_scripts_dir()
   M.delete_files_in_directory(dir)
 end
 
----Deletes all cached files, request scripts and variables
----except global_variables.json in cache/nvim/kulala/scripts
-M.delete_cached_files = function(silent) -- cache/nvim/kulala
+---Deletes cached files: request.json and script output
+M.delete_cached_files = function(silent) -- .cache/nvim/kulala
   local tmp_dir = M.get_plugin_tmp_dir()
   local deleted_files = M.delete_files_in_directory(tmp_dir)
 
-  --TODO: delete global_variables.json ?
+  if silent then return end
 
-  local list = vim.iter(deleted_files):fold("", function(list, file)
-    return list .. "- " .. file .. "\n"
+  local list = vim.iter(deleted_files):fold("", function(acc, file)
+    return acc .. "- " .. file .. "\n"
   end)
 
-  if not silent then Logger.info("Deleted files:\n" .. list) end
+  Logger.info("Deleted files:\n" .. list)
 end
 
 return M
