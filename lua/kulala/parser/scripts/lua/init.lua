@@ -16,6 +16,15 @@ local script_output = {
   },
 }
 
+local function get_nested_path(key)
+  return vim
+    .iter(vim.split(key, "[%.%[%]]"))
+    :map(function(v)
+      return v and v ~= "" and (tonumber(v) and tonumber(v) or v) or nil
+    end)
+    :totable()
+end
+
 local assert = {
   test_suit = nil,
   test = function(name, fn)
@@ -41,13 +50,13 @@ local assert = {
     script_env.assert.save(status, message, expected, value)
   end,
   response_has = function(key, expected, message)
-    local value = vim.tbl_get(script_env.response, unpack(vim.split(key, "%.")))
-    local status = script_env.response[key] == value
+    local value = vim.tbl_get(script_env.response.json, unpack(get_nested_path(key)))
+    local status = value == expected
     script_env.assert.save(status, message, expected, vim.inspect(value))
   end,
   headers_has = function(key, expected, message)
-    local value = script_env.response.headers[key]
-    local status = script_env.response.headers[key] == value
+    local value = script_env.response.headers_tbl[key]
+    local status = value == expected
     script_env.assert.save(status, message, expected, value)
   end,
   body_has = function(expected, message)
@@ -55,8 +64,8 @@ local assert = {
     script_env.assert.has_string(value, expected, message)
   end,
   json_has = function(key, expected, message)
-    local value = vim.tbl_get(script_env.response.json, unpack(vim.split(key, "%.")))
-    local status = script_env.response.json[key] == value
+    local value = vim.tbl_get(script_env.response.json, unpack(get_nested_path(key)))
+    local status = value == expected
     script_env.assert.save(status, message, expected, vim.inspect(value))
   end,
 }

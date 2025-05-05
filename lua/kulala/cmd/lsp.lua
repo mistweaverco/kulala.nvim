@@ -408,10 +408,18 @@ local script_request = {
 ---@type SourceTable
 local script_response = {
   { "response.responseCode", "response.responseCode()$0", "Get response code" },
+  { "response.status", "response.status()$0", "Get response status" },
+  { "response.code", "response.code()$0", "Get request code" },
+  { "response.url", "response.url()$0", "Get response URL" },
   { "response.body", "response.body()$0", "Get response body" },
+  { "response.json", "response.json()$0", "Get response json" },
+  { "response.errors", "response.errors()$0", "Get response errors" },
   { "response.headers.all", "response.headers.all()$0", "Get all response headers" },
   { "valueOf", "valueOf()$0", "Get response header value" },
   { "valuesOf", "valuesOf()$0", "Get all response header values" },
+  { "response.cookies", "response.cookies()$0", "Get response cookies" },
+  { "response.headers", "response.headers()$0", "Get response headers" },
+  { "response.headers_tbl", "response.headers_tbl()$0", "Get response headers table" },
 }
 
 ---@type SourceTable
