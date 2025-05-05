@@ -18,12 +18,6 @@ Kulala is swahili for "rest" or "relax".
 
 It allows you to make HTTP requests from within Neovim.
 
-<p></p>
-
-![demo](./assets/demo.gif)
-
-<p></p>
-
 ## Features
   
 Protocols: HTTP, GRPC, GraphQL, WebSocket, Streaming
@@ -50,81 +44,7 @@ CLI tooling and CI hooks
 
 Scratchpad: for making requests
 
-
-#### Together with [Kulala Language Server](https://github.com/mistweaverco/kulala-ls) and [Kulala Formatter](https://github.com/mistweaverco/kulala-fmt), Kulala aims to provide the best REST Client experience on the web without leaving your favourite editor!
-
-
-#### We love feature requests and feedback, so if you have any ideas or suggestions, please let us know!  
-
-#### We will be happy to implement them ❤️
-
 </div>
 
 ## Install
 
-> [!WARNING]
-> Requires Neovim 0.10.0+ and cURL.
->
-> See [requirements](https://neovim.getkulala.net/docs/getting-started/requirements).
-
-Via [lazy.nvim](https://github.com/folke/lazy.nvim):
-
-### Configuration
-
-```lua
-require("lazy").setup({
-  {
-    "mistweaverco/kulala.nvim",
-    keys = {
-      { "<leader>Rs", desc = "Send request" },
-      { "<leader>Ra", desc = "Send all requests" },
-      { "<leader>Rb", desc = "Open scratchpad" },
-    },
-    ft = {"http", "rest"},
-    opts = {
-      -- your configuration comes here
-      global_keymaps = false,
-    },
-  },
-})
-```
-
-> [!WARNING]
->`opts` needs to be at least an empty table `{}` and can't be completely omitted.
-
-> [!NOTE]
-> By default global keymaps are disabled, change to `global_keymaps = true` to get a complete set of key mappings for Kulala. Check the [keymaps documentation](https://neovim.getkulala.net/docs/getting-started/keymaps) for details.
-
-See complete [configuration options](https://neovim.getkulala.net/docs/getting-started/configuration-options) for more information.
-
-## Honorable mentions
-
-### rest.nvim
-
-For getting this project started.
-
-This project was heavily inspired by the idea of having a REST client in Neovim.
-
-The actual state of [rest.nvim](https://github.com/rest-nvim/rest.nvim)
-as archived kicked off the development of kulala.nvim.
-
-> [!NOTE]
-> The project has been [un-archived][restnvim-unarchived-post] again,
-> so check it out if you're looking for an alternative.
-
-### curl.nvim
-
-If you want a simple scratchpad for making HTTP requests,
-check out [curl.nvim](https://github.com/oysandvik94/curl.nvim)
-
-It's very different to this project, but it's a great tool for making
-HTTP requests from within Neovim and maybe just your cup of tea.
-
-### httpbin.org
-
-For providing a great service for testing HTTP requests and
-making it in all the kulala examples.
-
-Thanks for making it easy to test and develop this plugin.
-
-[restnvim-unarchived-post]: https://github.com/rest-nvim/rest.nvim/issues/398#issue-2442747909

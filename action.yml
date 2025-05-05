@@ -18,13 +18,19 @@ runs:
     with:
       node-version: '22'
 
+  - name: Setup Kulala CI
+    uses: actions/checkout@v4
+    with:
+      repository: mistweaverco/kulala.nvim
+      path: kulala.nvim
+
   - name: Set GitHub Env
     run: |
-      echo "$KULALA_CLI_PATH" >> $GITHUB_PATH
+      echo "$KULALA_CLI_PATH" >> "${GITHUB_PATH}"
     shell: bash
     env:
-      KULALA_CLI_PATH: ${{ github.action_path }}/lua/cli
+      KULALA_CLI_PATH: ${{ github.workspace }}/kulala.nvim/lua/cli
 
-  - name: Setup Kulala CI
+  - name: Update Kulala CI
     run: kulala_ci.sh
     shell: bash
