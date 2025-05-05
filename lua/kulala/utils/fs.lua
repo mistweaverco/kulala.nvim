@@ -161,13 +161,15 @@ end
 --- @param filename string
 --- @param content string
 --- @param append boolean|nil
+--- @param binary boolean|nil
 --- @usage fs.write_file('Makefile', 'all: \n\t@echo "Hello World"')
 --- @usage fs.write_file('Makefile', 'all: \n\t@echo "Hello World"', true)
 --- @return boolean
 --- @usage local p = fs.write_file('Makefile', 'all: \n\t@echo "Hello World"')
-M.write_file = function(filename, content, append)
+M.write_file = function(filename, content, append, binary)
   local f, mode
   mode = append and "a" or "w"
+  mode = binary and mode .. "b" or mode
 
   f = io.open(filename, mode)
   if not f then return false end

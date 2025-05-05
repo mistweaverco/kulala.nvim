@@ -301,8 +301,8 @@ M.create_JWT = function(config_id)
     return Logger.error(header.alg .. " key not found for config " .. config_id)
   end
 
-  payload.exp = os.time() + (jwt.payload.exp or 50)
-  payload.iat = os.time()
+  payload.iat = jwt.payload.iat or os.time()
+  payload.exp = jwt.payload.exp or jwt.payload.iat + 50
 
   return Crypto.jwt_encode(header, payload, config.private_key or config["Client Secret"])
 end

@@ -372,7 +372,7 @@ If you would like for JWT token to be generated automatically, you can provide t
 
 For algorithm, `RS256` you also need to provide `private_key` in the `http-client.private.env.json` file, for `HS256` the `Client Secret` is used.
 
-Fields `exp` and `iat` are optional. If not provided, they will be calculated automatically.
+Fields `exp` and `iat` are optional. If not provided, they will be calculated automatically (iat = current time, exp = iat + 50 seconds).
 
 ```json
 "JWT": {
