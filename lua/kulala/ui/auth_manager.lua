@@ -12,7 +12,7 @@ local Table = require("kulala.utils.table")
 local M = {}
 
 local function get_env()
-  local cur_env = vim.g.kulala_selected_env or Config.get().default_env
+  local cur_env = Env.get_current_env()
   local env = DB.find_unique("http_client_env") or (Env.get_env() and DB.find_unique("http_client_env")) or {}
 
   local auth = vim.tbl_get(env, cur_env, "Security", "Auth")
@@ -31,7 +31,7 @@ local function update_auth_config(name, value)
     Logger.info("Created public env file: " .. public_env_path)
   end
 
-  local cur_env = vim.g.kulala_selected_env or Config.get().default_env
+  local cur_env = Env.get_current_env()
   local public_env = Fs.read_json(public_env_path) or {}
 
   Table.set_at(public_env, { cur_env, "Security", "Auth", name }, value)
