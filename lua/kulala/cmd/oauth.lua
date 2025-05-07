@@ -16,6 +16,29 @@ local request_timeout = 30000 -- 30 seconds
 local request_interval = 5000 -- 5 seconds
 local co, exit
 
+local function get_curl_flags()
+  local env = Async.co_wrap(co, function()
+    return DB.find_unique("http_client_env") or {}
+  end)
+
+  local flags = vim.list_extend({}, Config.get().additional_curl_options or {})
+
+  local ssl_config = vim.tbl_get(env, Env.get_current_env(), "SSLConfiguration", "verifyHostCertificate")
+  if ssl_config == false and not vim.tbl_contains(flags, "--insecure") and not vim.tbl_contains(flags, "-k") then
+    table.insert(flags, "--insecure")
+  end
+
+  vim.iter(DB.find_unique("env").curl or {}):each(function(flag, value)
+    if flag == "-k" or flag == "--insecure" then return end
+
+    local prefix = #flag > 1 and "--" or "-"
+    table.insert(flags, prefix .. flag)
+    _ = (value and #value > 1) and table.insert(flags, value)
+  end)
+
+  return flags
+end
+
 ---@param url string
 ---@param body string
 ---@param request_desc string - description of the request
@@ -24,8 +47,10 @@ local co, exit
 local function make_request(url, body, request_desc, params)
   local headers = "Content-Type: application/x-www-form-urlencoded"
   local cmd = { Config.get().curl_path, "-s", "-X", "POST", "-H", headers }
+  local curl_flags = get_curl_flags()
 
   cmd = params and params.headers and vim.list_extend(cmd, { "-H", params.headers }) or cmd
+  cmd = vim.list_extend(cmd, curl_flags)
   cmd = vim.list_extend(cmd, { "-d", body, url })
 
   local error
@@ -52,7 +77,7 @@ end
 
 ---@return table - get the auth config for the current environment, under Security.Auth
 local function get_auth_config(config_id)
-  local cur_env = vim.g.kulala_selected_env or Config.get().default_env
+  local cur_env = Env.get_current_env()
   local env = Async.co_wrap(co, function()
     return Env.get_env() and DB.find_unique("http_client_env") or {}
   end)
@@ -637,7 +662,7 @@ M.auth_template = function()
       },
     },
     ["Password"] = "",
-    ["Client Creadentials"] = {
+    ["Client Credentials"] = {
       "none",
       "in body",
       "basic",

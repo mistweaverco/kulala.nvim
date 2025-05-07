@@ -337,6 +337,7 @@ local curl = {
   { "curl-compressed", "curl-compressed", "Decompress response" },
   { "curl-location", "curl-location", "Follow redirects" },
   { "curl-no-buffer", "curl-no-buffer", "Disable buffering" },
+  { "curl-insecure", "curl-insecure", "Skip secure connection verification" },
 }
 
 ---@type SourceTable
@@ -913,6 +914,19 @@ local handlers = {
   ["shutdown"] = function() end,
 }
 
+local function set_current_buf(params)
+  if not (params and params.textDocument and params.textDocument.uri) then return end
+
+  local buf = vim.uri_to_bufnr(params.textDocument.uri)
+  local buf_valid = vim.api.nvim_buf_is_valid(current_buffer)
+
+  current_buffer = buf_valid and buf or 0
+  current_ft = buf_valid and vim.api.nvim_get_option_value("filetype", { buf = buf }) or nil
+
+  local win = buf_valid and vim.fn.win_findbuf(buf)[1] or 0
+  current_line = vim.api.nvim_win_get_cursor(win)[1]
+end
+
 local function new_server()
   local function server(dispatchers)
     local closing = false
@@ -920,12 +934,7 @@ local function new_server()
 
     function srv.request(method, params, handler)
       local status, error = xpcall(function()
-        if params and params.textDocument then
-          current_buffer = vim.uri_to_bufnr(params.textDocument.uri)
-          current_line = vim.api.nvim_win_get_cursor(vim.fn.bufwinid(current_buffer))[1]
-          current_ft = vim.api.nvim_get_option_value("filetype", { buf = current_buffer })
-        end
-
+        set_current_buf(params)
         _ = handlers[method] and handler(nil, handlers[method](params))
       end, debug.traceback)
 

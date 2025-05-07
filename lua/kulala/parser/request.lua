@@ -421,10 +421,29 @@ local function process_cookies(request)
   end
 end
 
-local function process_options(request)
-  for _, additional_curl_option in pairs(CONFIG.get().additional_curl_options) do
-    table.insert(request.cmd, additional_curl_option)
+local function process_custom_curl_flags(request)
+  local env = DB.find_unique("http_client_env") or {}
+
+  local flags = vim.list_extend({}, CONFIG.get().additional_curl_options or {})
+  local curl_flags =
+    vim.tbl_extend("force", DB.find_unique("env").curl or {}, request.curl and request.curl.flags or {})
+
+  local ssl_config = vim.tbl_get(env, ENV_PARSER.get_current_env(), "SSLConfiguration", "verifyHostCertificate")
+  if ssl_config == false and not vim.tbl_contains(flags, "--insecure") and not vim.tbl_contains(flags, "-k") then
+    table.insert(flags, "--insecure")
   end
+
+  vim.iter(curl_flags):each(function(flag, value)
+    if flag == "-k" or flag == "--insecure" then return end
+
+    local prefix = #flag > 1 and "--" or "-"
+    table.insert(flags, prefix .. flag)
+    _ = (value and #value > 1) and table.insert(flags, value)
+  end)
+
+  vim.iter(flags):each(function(flag)
+    table.insert(request.cmd, flag)
+  end)
 end
 
 local function toggle_chunked_mode(request)
@@ -512,19 +531,12 @@ local function build_curl_command(request)
 
   toggle_chunked_mode(request)
 
-  local flags = vim.tbl_extend("force", DB.find_unique("env").curl or {}, request.curl and request.curl.flags or {})
-  vim.iter(flags):each(function(flag, value)
-    local prefix = #flag > 1 and "--" or "-"
-    table.insert(request.cmd, prefix .. flag)
-    _ = (value and #value > 1) and table.insert(request.cmd, value)
-  end)
-
   process_auth_headers(request)
   process_protocol(request)
   process_headers(request)
   process_body(request)
   process_cookies(request)
-  process_options(request)
+  process_custom_curl_flags(request)
 
   table.insert(request.cmd, "-A")
   table.insert(request.cmd, "kulala.nvim/" .. GLOBALS.VERSION)

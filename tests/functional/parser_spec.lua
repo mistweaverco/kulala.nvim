@@ -104,6 +104,18 @@ describe("requests", function()
         assert.is_true(vim.tbl_contains(result.cmd, "--location"))
       end)
 
+      it("processes SSL Configuration", function()
+        h.create_buf(
+          ([[
+            POST https://httpbingo.org/1
+      ]]):to_table(true),
+          h.expand_path("requests/simple.http")
+        )
+
+        result = parser.parse() or {}
+        assert.is_true(vim.tbl_contains(result.cmd, "--insecure"))
+      end)
+
       it("processes request only if it has not been processed yet", function()
         h.create_buf(
           ([[
