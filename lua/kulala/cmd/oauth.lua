@@ -18,11 +18,10 @@ local co, exit
 
 local function get_curl_flags()
   local env = Async.co_wrap(co, function()
-    return Env.get_env() and DB.find_unique("http_client_env") or {}
+    return DB.find_unique("http_client_env") or {}
   end)
 
-  local flags = {}
-  vim.list_extend(flags, Config.get().additional_curl_options or {})
+  local flags = vim.list_extend({}, Config.get().additional_curl_options or {})
 
   local ssl_config = vim.tbl_get(env, Env.get_current_env(), "SSLConfiguration", "verifyHostCertificate")
   if ssl_config == false and not vim.tbl_contains(flags, "--insecure") and not vim.tbl_contains(flags, "-k") then

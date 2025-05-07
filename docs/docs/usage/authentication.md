@@ -282,7 +282,7 @@ For example:
 
 :::info
 
-If you need to set custom curl flags for authentication requests, e.g. `--insecure` to skip secure connection verification - you can do this 
+If you need to set custom curl flags for authentication requests, e.g., `--insecure` to skip secure connection verification - you can do this 
 with `# @curl-global-..` flags in you .http file or by setting `additional_curl_options` in Kulala's config.
 
 :::
