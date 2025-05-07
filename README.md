@@ -55,13 +55,13 @@ Scratchpad: for making requests
 
 100% Compatibility with IntelliJ HTTP Client
 
-# .
+#
 
 Together with [Kulala Language Server](https://github.com/mistweaverco/kulala-ls) and [Kulala Formatter](https://github.com/mistweaverco/kulala-fmt), we aim to provide the best REST Client experience on the web without leaving your favourite editor!
 
-# ..
+#
 
-Kulala team loves feature requests and feedback, so if you have any ideas or suggestions, please let us know!  
+Kulala team loves feature requests and feedback, so if you have any ideas or suggestions, please let us know! 
 We will be happy to implement them ❤️
 
 </div>
@@ -91,7 +91,6 @@ require("lazy").setup({
       -- your configuration comes here
       global_keymaps = false,
       global_keymaps_prefix = "<leader>R",
-      kulala_keymaps_prefix = "",
     },
   },
 })
