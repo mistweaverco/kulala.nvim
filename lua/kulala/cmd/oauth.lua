@@ -637,7 +637,7 @@ M.auth_template = function()
       },
     },
     ["Password"] = "",
-    ["Client Creadentials"] = {
+    ["Client Credentials"] = {
       "none",
       "in body",
       "basic",

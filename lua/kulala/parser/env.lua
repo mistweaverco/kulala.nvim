@@ -81,6 +81,8 @@ local function get_http_client_private_env()
   end
 
   f["$shared"] = nil
+  f["$schema"] = nil
+
   DB.update().http_client_env = vim.tbl_deep_extend("force", DB.find_unique("http_client_env") or {}, f)
 
   return f
@@ -108,6 +110,7 @@ local function get_http_client_env()
     end
 
     f["$shared"] = nil
+    f["$schema"] = nil
     DB.update().http_client_env = vim.tbl_deep_extend("force", DB.find_unique("http_client_env"), f)
   end
 end

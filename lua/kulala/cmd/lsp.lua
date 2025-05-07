@@ -337,6 +337,7 @@ local curl = {
   { "curl-compressed", "curl-compressed", "Decompress response" },
   { "curl-location", "curl-location", "Follow redirects" },
   { "curl-no-buffer", "curl-no-buffer", "Disable buffering" },
+  { "curl-insecure", "curl-insecure", "Skip secure connection verification" },
 }
 
 ---@type SourceTable

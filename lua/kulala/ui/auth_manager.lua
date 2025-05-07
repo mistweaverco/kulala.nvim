@@ -15,9 +15,10 @@ local function get_env()
   local cur_env = vim.g.kulala_selected_env or Config.get().default_env
   local env = DB.find_unique("http_client_env") or (Env.get_env() and DB.find_unique("http_client_env")) or {}
 
-  local auth = vim.tbl_get(env, cur_env, "Security", "Auth") or Table.set_at(env, { cur_env, "Security", "Auth" }, {})
+  local auth = vim.tbl_get(env, cur_env, "Security", "Auth")
+    or Table.set_at(env, { cur_env, "Security", "Auth" }, {})[cur_env].Security.Auth
 
-  return auth
+  return auth, cur_env
 end
 
 local function update_auth_config(name, value)
@@ -117,8 +118,7 @@ local function open_auth_telescope()
 
       attach_mappings = function(prompt_bufnr, map)
         local function run_cmd(cmd)
-          local selection = action_state.get_selected_entry()
-          if not selection then return end
+          local selection = action_state.get_selected_entry() or {}
 
           local picker = {
             close = function()
@@ -158,8 +158,10 @@ local function open_auth_telescope()
 end
 
 local function open_auth_snacks()
-  local env = get_env()
+  local env, cur_env = get_env()
+
   local config_names = vim.tbl_keys(env)
+
   local items = vim.iter(config_names):fold({}, function(acc, name)
     local config_data = env[name]
     table.insert(acc, {
@@ -177,6 +179,7 @@ local function open_auth_snacks()
   end)
 
   local run_cmd = function(key, ctx, item)
+    item = item or {}
     if commands[key][1](item.text, ctx) == true then return end
     ctx:close()
     M.open_auth_config()
@@ -186,17 +189,20 @@ local function open_auth_snacks()
   local keys = {}
 
   vim.iter(commands):each(function(key)
-    _actions[key] = function(ctx, item, action)
+    _actions[key] = function(ctx, item)
       run_cmd(key, ctx, item)
     end
     keys[key] = { key, mode = { "n" }, desc = commands[key][2] }
   end)
+
+  local env_file_path = vim.fs.relpath(vim.fs.dirname(vim.fn.bufname(DB.current_buffer)), get_env_file())
 
   snacks_picker({
     title = "Auth Configurations",
     items = items,
     actions = _actions,
     layout = Config.options.ui.pickers.snacks.layout,
+    show_empty = true,
 
     preview = function(ctx)
       set_buffer(ctx.picker.layout.wins.preview.buf, ctx.item.content)
@@ -210,7 +216,7 @@ local function open_auth_snacks()
           number = false,
           relativenumber = false,
           signcolumn = "no",
-          winbar = (" "):rep(5) .. vim.fn.fnamemodify(get_env_file(), ":~"),
+          winbar = (" "):rep(5) .. keys_hint,
           wrap = false,
           sidescrolloff = 1,
         },
@@ -221,7 +227,7 @@ local function open_auth_snacks()
       list = {
         title = "Auth Configurations",
         wo = {
-          winbar = keys_hint,
+          winbar = (" "):rep(5) .. env_file_path .. " (Current env: " .. cur_env .. ")",
         },
       },
     },
