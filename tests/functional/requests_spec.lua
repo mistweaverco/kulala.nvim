@@ -77,7 +77,7 @@ describe("requests", function()
       dynamic_vars.reset()
     end)
 
-    it("it substitues document variables and does authorization", function()
+    it("it substitutes document variables and does authorization", function()
       vim.cmd.edit(h.expand_path("requests/simple.http"))
 
       curl.stub({
