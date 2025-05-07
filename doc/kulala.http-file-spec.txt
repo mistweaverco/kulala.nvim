@@ -71,9 +71,9 @@ Multiline
     - `ws`
     - `wss`
 - `URL` is the URL to send the request to. The URL can include query string
-    parameters, which are automatically url-encoded. The URL doesn’t have
-    to point to a local web project and can point to any URL. Numeric 
-    IPv4 `http://127.0.0.1` and IPv6 `http://[::1]` addresses are supported.
+    parameters, which are automatically url-encoded. The URL doesn’t have to
+    point to a local web project and can point to any URL. Numeric IPv4
+    `http://127.0.0.1` and IPv6 `http://[::1]` addresses are supported.
 - `HTTPVersion` is optional and specifies the HTTP version that should be used,
     that’s, `HTTP/1.1`, `HTTP/2`, or `HTTP/3`.
 
