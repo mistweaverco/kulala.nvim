@@ -293,6 +293,7 @@ M.receive_code = function(config_id)
 
     if params.code or params.access_token then
       if params.access_token then params.acquired_at = os.time() end
+      params.expires_in = params.expires_in or 10 -- to allow for resuming requests with new token
 
       vim.schedule(function()
         update_auth_data(config_id, params)
@@ -350,7 +351,7 @@ M.acquire_jwt_token = function(config_id)
   if not out then return end
 
   out.acquired_at = os.time()
-  out.expires_in = 10 -- to allow for resuming requests with new token
+  out.expires_in = out.expires_in or 10 -- to allow for resuming requests with new token
   config = update_auth_data(config_id, out)
 
   return config.auth_data.access_token
@@ -386,7 +387,7 @@ M.acquire_client_credentials = function(config_id)
   if not out then return end
 
   out.acquired_at = os.time()
-  out.expires_in = 10 -- to allow for resuming requests with new token
+  out.expires_in = out.expires_in or 10 -- to allow for resuming requests with new token
 
   config = update_auth_data(config_id, out)
 
@@ -423,7 +424,7 @@ M.acquire_auth = function(config_id)
   local code = M.receive_code(config_id)
   if not code then return Logger.error("Failed to acquire code for config: " .. config_id) end
 
-  config = update_auth_data(config_id, { code = code, acquired_at = os.time(), expires_in = 10 }) -- to allow for resuming requests with new token
+  config = update_auth_data(config_id, { code = code, acquired_at = os.time() })
 
   return code
 end
