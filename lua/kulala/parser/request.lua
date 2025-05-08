@@ -426,8 +426,7 @@ local function process_custom_curl_flags(request)
   local env = DB.find_unique("http_client_env") or {}
 
   local flags = vim.list_extend({}, CONFIG.get().additional_curl_options or {})
-  local curl_flags =
-    vim.tbl_extend("force", DB.find_unique("env").curl or {}, request.curl and request.curl.flags or {})
+  local curl_flags = vim.tbl_extend("force", DB.find_unique("env").curl or {}, request.curl.flags)
 
   local ssl_config = vim.tbl_get(env, ENV_PARSER.get_current_env(), "SSLConfiguration", "verifyHostCertificate")
   if ssl_config == false and not vim.tbl_contains(flags, "--insecure") and not vim.tbl_contains(flags, "-k") then
@@ -436,6 +435,11 @@ local function process_custom_curl_flags(request)
 
   vim.iter(curl_flags):each(function(flag, value)
     if flag == "-k" or flag == "--insecure" then return end
+
+    if flag == "data-urlencode" then
+      request.curl.flags["data-urlencode"] = ""
+      return
+    end
 
     local prefix = #flag > 1 and "--" or "-"
     table.insert(flags, prefix .. flag)
