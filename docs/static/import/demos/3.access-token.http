@@ -4,10 +4,9 @@
 # <request-name>.response.body.<json.path>
   
 
-### Get token (simulating login)
-
 ### login
-POST https://httpbin.org/post HTTP/1.1
+
+POST https://echo.getkulala.net/post HTTP/1.1
 Content-Type: application/json
 
 {
@@ -18,10 +17,10 @@ Content-Type: application/json
 
 ### Access protected resource with Bearer token
 
-GET https://httpbin.org/bearer HTTP/1.1
-Authorization: Bearer {{login.response.body.json.access_token}}
+GET https://echo.getkulala.net/bearer HTTP/1.1
+Authorization: Bearer {{login.response.body.body.access_token}}
 
 ### Access protected resource with custom token header
 
-GET https://httpbin.org/headers HTTP/1.1
-X-API-Key: {{login.response.body.json.username}}
+GET https://echo.getkulala.net/headers HTTP/1.1
+X-API-Key: {{login.response.body.body.username}}

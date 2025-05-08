@@ -5,7 +5,7 @@ If you have provided a request name in the request definition with
 
 ```http
 ### THIS_IS_AN_EXAMPLE_REQUEST_NAME
-POST https://httpbin.org/post HTTP/1.1
+POST https://echo.getkulala.net/post HTTP/1.1
 Content-Type: application/x-www-form-urlencoded
 
 name=foo&password=bar
@@ -60,7 +60,7 @@ GET https://github.com HTTP/1.1
 
 ###
 
-POST https://httpbin.org/post HTTP/1.1
+POST https://echo.getkulala.net/post HTTP/1.1
 Accept: application/json
 Content-Type: application/json
 
@@ -104,7 +104,7 @@ references in an http file.
 
 ```http
 ### REQUEST_ONE
-POST https://httpbin.org/post HTTP/1.1
+POST https://echo.getkulala.net/post HTTP/1.1
 Accept: application/json
 Content-Type: application/json
 
@@ -115,17 +115,17 @@ Content-Type: application/json
 ###
 
 ### REQUEST_TWO
-POST https://httpbin.org/post HTTP/1.1
+POST https://echo.getkulala.net/post HTTP/1.1
 Accept: application/json
 Content-Type: application/json
 
 {
-  "token": "{{REQUEST_ONE.response.body.$.json.token}}"
+  "token": "{{REQUEST_ONE.response.body.$.body.token}}"
 }
 
 ###
 
-POST https://httpbin.org/post HTTP/1.1
+POST https://echo.getkulala.net/post HTTP/1.1
 Accept: application/json
 Content-Type: application/json
 
