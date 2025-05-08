@@ -17,7 +17,7 @@ To test this feature,
 create a file with the `.http` extension and write your HTTP requests in it.
 
 ```http title="magic-variables.http"
-POST https://httpbin.org/post HTTP/1.1
+POST https://echo.getkulala.net/post HTTP/1.1
 Content-Type: application/json
 Accept: application/json
 
