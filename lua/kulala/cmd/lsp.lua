@@ -919,7 +919,7 @@ local function set_current_buf(params)
   if not (params and params.textDocument and params.textDocument.uri) then return end
 
   local buf = vim.uri_to_bufnr(params.textDocument.uri)
-  local buf_valid = vim.api.nvim_buf_is_valid(current_buffer)
+  local buf_valid = vim.api.nvim_buf_is_valid(buf)
 
   current_buffer = buf_valid and buf or 0
   current_ft = buf_valid and vim.api.nvim_get_option_value("filetype", { buf = buf }) or nil
