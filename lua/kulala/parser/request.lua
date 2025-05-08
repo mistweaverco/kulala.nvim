@@ -45,7 +45,7 @@ local M = {}
 ---@field cmd string[] -- The command to execute the request
 ---@field body_temp_file string -- The path to the temporary file containing the body
 ---
----@field curl CurlCommand|nil -- The curl command
+---@field curl CurlCommand -- The curl command
 ---@field grpc GrpcCommand|nil -- The gRPC command
 ---
 ---@field processed boolean -- Indicates if request has been already processed, used by replay()
@@ -54,9 +54,6 @@ local M = {}
 
 ---@class CurlCommand
 ---@field flags table<string, string> -- flags
-local default_curl_command = {
-  flags = {},
-}
 
 ---@class GrpcCommand
 ---@field address string|nil -- host:port, can be omitted if proto|proto-set is provided
@@ -78,6 +75,7 @@ local default_request = {
   ft = "text",
   cmd = {},
   body_temp_file = "",
+  curl = { flags = {} },
 }
 
 local function process_grpc_flags(request, flag, value)
@@ -101,7 +99,6 @@ local function process_curl_flags(request, flag, value)
   if flag:match("^global%-") then
     global_flags[flag:sub(8)] = value
   else
-    request.curl = request.curl or vim.deepcopy(default_curl_command)
     request.curl.flags[flag] = value
   end
 
@@ -312,7 +309,7 @@ local function process_body(request)
 
     if status then
       request.body_temp_file = path
-      table.insert(request.cmd, "--data-binary")
+      table.insert(request.cmd, request.curl.flags["data-urlencode"] and "--data-urlencode" or "--data-binary")
       table.insert(request.cmd, "@" .. path)
     else
       Logger.error("Failed to create a temporary file for the request body")
@@ -425,8 +422,7 @@ local function process_custom_curl_flags(request)
   local env = DB.find_unique("http_client_env") or {}
 
   local flags = vim.list_extend({}, CONFIG.get().additional_curl_options or {})
-  local curl_flags =
-    vim.tbl_extend("force", DB.find_unique("env").curl or {}, request.curl and request.curl.flags or {})
+  local curl_flags = vim.tbl_extend("force", DB.find_unique("env").curl or {}, request.curl.flags)
 
   local ssl_config = vim.tbl_get(env, ENV_PARSER.get_current_env(), "SSLConfiguration", "verifyHostCertificate")
   if ssl_config == false and not vim.tbl_contains(flags, "--insecure") and not vim.tbl_contains(flags, "-k") then
@@ -435,6 +431,11 @@ local function process_custom_curl_flags(request)
 
   vim.iter(curl_flags):each(function(flag, value)
     if flag == "-k" or flag == "--insecure" then return end
+
+    if flag == "data-urlencode" then
+      request.curl.flags["data-urlencode"] = ""
+      return
+    end
 
     local prefix = #flag > 1 and "--" or "-"
     table.insert(flags, prefix .. flag)
