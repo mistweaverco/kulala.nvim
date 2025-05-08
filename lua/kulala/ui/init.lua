@@ -486,7 +486,6 @@ M.copy = function()
 
     if previous_flag == "--data-binary" or previous_flag == "--data-urlencode" then
       local body = FS.read_file(flag:sub(2), true) or "[could not read file]"
-      body = #body > 1000 and flag or body
       cmd = ("%s%s %s "):format(cmd, previous_flag, vim.fn.shellescape(body))
     end
 
