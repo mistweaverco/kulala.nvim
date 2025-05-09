@@ -338,7 +338,7 @@ local curl = {
   { "curl-location", "curl-location", "Follow redirects" },
   { "curl-no-buffer", "curl-no-buffer", "Disable buffering" },
   { "curl-insecure", "curl-insecure", "Skip secure connection verification" },
-  { "curl-data-urlencode", "curl-data_urlencode", "Urlencode payload" },
+  { "curl-data-urlencode", "curl-data-urlencode", "Urlencode payload" },
 }
 
 ---@type SourceTable
@@ -677,7 +677,8 @@ local sources = {
 
 local function source_type(params)
   local line = vim.api.nvim_buf_get_lines(current_buffer, params.position.line, params.position.line + 1, false)[1]
-  line = line:sub(1, params.position.character)
+
+  line = line and line:sub(1, params.position.character) or ""
 
   local matches = {
     { "@curl%-", "curl" },
@@ -703,7 +704,7 @@ local function source_type(params)
 
   local is_script = false
   for i = params.position.line, 1, -1 do
-    local l = vim.api.nvim_buf_get_lines(current_buffer, i, i + 1, false)[1]
+    local l = vim.api.nvim_buf_get_lines(current_buffer, i, i + 1, false)[1] or ""
     if l:match("###") then break end
     if l:match("{%%") then
       is_script = true

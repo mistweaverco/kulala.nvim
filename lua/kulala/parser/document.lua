@@ -116,6 +116,7 @@ local function get_request_from_fenced_code_block()
 
   -- Get the total number of lines in the current buffer
   local total_lines = vim.api.nvim_buf_line_count(buf)
+  if total_lines == 0 then return end
 
   -- Search for the start of the fenced code block (``` or similar)
   local block_start = nil
