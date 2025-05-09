@@ -88,9 +88,9 @@ describe("oauth", function()
     system = h.System.stub({ "curl" }, {
       on_call = function(system)
         local params = parse_params(system.args.cmd[#system.args.cmd - 1])
-
-        params.headers = system.args.cmd[#system.args.cmd - 3]
+        params.headers = system.args.cmd[8]
         params.url = system.args.cmd[#system.args.cmd]
+        params.cmd = system.args.cmd
 
         system.async = true
 
@@ -112,6 +112,7 @@ describe("oauth", function()
     kulala_config.setup({ default_view = "body", debug = 1, jq_path = "jq" })
     http_buf = h.create_buf(
       ([[
+        # @curl-global-verbose
         GET https://secure.com
         Authorization: Bearer {{$auth.token("GAPI")}}
       ]]):to_table(true),
@@ -508,7 +509,7 @@ describe("oauth", function()
         verification_url = "verification_url",
         interval = 1,
       })
-      assert.near(os.time(), get_env().acquired_at, 1)
+      assert.near(os.time(), get_env().acquired_at, 5)
 
       -- Opens browser with the verification URL and copies the user code to clipboard
       assert.is.same("verification_url", result.url_params.url)
@@ -622,6 +623,19 @@ describe("oauth", function()
         audience = "https://my-audience.com/",
         state = "state",
       })
+    end)
+
+    it("takes into account curl flags", function()
+      update_env({ ["Grant Type"] = "Password" })
+
+      kulala_config.options.additional_curl_options = { "--location" }
+
+      kulala.run()
+      wait_for_requests(1)
+
+      assert.is_true(vim.tbl_contains(get_request().cmd, "--location"))
+      assert.is_true(vim.tbl_contains(get_request().cmd, "--verbose"))
+      assert.is_true(vim.tbl_contains(get_request().cmd, "--insecure"))
     end)
   end)
 

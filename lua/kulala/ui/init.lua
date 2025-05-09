@@ -475,7 +475,7 @@ M.copy = function()
   local request = PARSER.parse()
   if not request then return Logger.error("No request found") end
 
-  local skip_flags = { "-o", "-D", "--cookie-jar", "-w", "--data-binary" }
+  local skip_flags = { "-o", "-D", "--cookie-jar", "-w", "--data-binary", "--data-urlencode" }
   local previous_flag
 
   local cmd = vim.iter(request.cmd):fold("", function(cmd, flag)
@@ -484,9 +484,9 @@ M.copy = function()
       cmd = cmd .. flag .. " "
     end
 
-    if previous_flag == "--data-binary" then
+    if previous_flag == "--data-binary" or previous_flag == "--data-urlencode" then
       local body = FS.read_file(flag:sub(2), true) or "[could not read file]"
-      cmd = ("%s--data-binary %s "):format(cmd, vim.fn.shellescape(body))
+      cmd = ("%s%s %s "):format(cmd, previous_flag, vim.fn.shellescape(body))
     end
 
     previous_flag = flag

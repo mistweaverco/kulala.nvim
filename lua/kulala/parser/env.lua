@@ -81,6 +81,8 @@ local function get_http_client_private_env()
   end
 
   f["$shared"] = nil
+  f["$schema"] = nil
+
   DB.update().http_client_env = vim.tbl_deep_extend("force", DB.find_unique("http_client_env") or {}, f)
 
   return f
@@ -108,6 +110,7 @@ local function get_http_client_env()
     end
 
     f["$shared"] = nil
+    f["$schema"] = nil
     DB.update().http_client_env = vim.tbl_deep_extend("force", DB.find_unique("http_client_env"), f)
   end
 end
@@ -117,7 +120,7 @@ local function create_private_env()
   env_path = env_path and vim.fn.fnamemodify(env_path, ":h") or FS.get_current_buffer_dir()
 
   local private_env_path = env_path .. "/http-client.private.env.json"
-  local cur_env = vim.g.kulala_selected_env or Config.get().default_env
+  local cur_env = M.get_current_env()
 
   local env = { [cur_env] = { Security = { Auth = {} } } }
   FS.write_json(private_env_path, env)
@@ -133,7 +136,7 @@ M.update_http_client_auth = function(config_id, data)
   local env = FS.read_json(env_path)
   if not env then return end
 
-  local cur_env = vim.g.kulala_selected_env or Config.get().default_env
+  local cur_env = M.get_current_env()
   Table.set_at(env, { cur_env, "Security", "Auth", config_id, "auth_data" }, data)
 
   FS.write_json(env_path, env, true)
@@ -147,6 +150,10 @@ local function get_scripts_variables(env)
   if request_scripts_variables then env = vim.tbl_extend("force", env, request_scripts_variables) end
 
   return env
+end
+
+M.get_current_env = function()
+  return vim.g.kulala_selected_env or Config.get().default_env
 end
 
 M.get_env = function()
@@ -166,7 +173,7 @@ M.get_env = function()
   get_http_client_private_env()
   env = get_http_client_env_shared(env)
 
-  local cur_env = vim.g.kulala_selected_env or Config.get().default_env
+  local cur_env = M.get_current_env()
   local selected_env = DB.find_unique("http_client_env") and DB.find_unique("http_client_env")[cur_env]
 
   if selected_env then env = vim.tbl_extend("force", env, selected_env) end

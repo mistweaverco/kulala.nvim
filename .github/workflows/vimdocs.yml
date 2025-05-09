@@ -32,4 +32,4 @@ jobs:
         uses: peter-evans/create-pull-request@v7
         with:
           commit-message: "docs: Auto-generate vimdocs + vimtags"
-          branch: "autogen/vimdocs-${{ github.run_id }}"
+          branch: "autogen/vimdocs"
