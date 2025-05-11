@@ -23,7 +23,12 @@ local function highlight_range(bufnr, ns, start_pos, end_pos, hl_group, priority
   start_pos = type(start_pos) == "table" and start_pos or { start_pos, 0 }
   end_pos = type(end_pos) == "table" and end_pos or { end_pos, -1 }
 
-  vim.hl.range(bufnr, ns, hl_group, start_pos, end_pos, { priority = priority or 1 })
+  -- Check Neovim version and use the appropriate highlight API
+  local highlight = vim.fn.has("nvim-0.10") == 1
+    and vim.highlight.range
+    or vim.hl.range
+
+  highlight(bufnr, ns, hl_group, start_pos, end_pos, { priority = priority or 1 })
 end
 
 local function highlight_column(bufnr, ns, start_pos, end_pos, hl_group, priority)
