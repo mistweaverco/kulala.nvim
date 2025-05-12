@@ -309,6 +309,7 @@ describe("requests", function()
             Content-Type: application/x-www-form-urlencoded
             User-Agent: header with : colons and [
             Origin: https://httpbingo.org
+            Empty-Header:
           ]]):to_table(true),
           h.expand_path("requests/simple.http")
         )
@@ -320,6 +321,7 @@ describe("requests", function()
           ["Content-Type"] = "application/x-www-form-urlencoded",
           ["User-Agent"] = "header with : colons and [",
           ["Origin"] = "https://httpbingo.org",
+          ["Empty-Header"] = "",
         })
       end)
 

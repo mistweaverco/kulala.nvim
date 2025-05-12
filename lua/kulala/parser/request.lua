@@ -399,8 +399,9 @@ end
 
 local function process_headers(request)
   for key, value in pairs(request.headers) do
+    value = value == "" and ";" or ":" .. value
     table.insert(request.cmd, "-H")
-    table.insert(request.cmd, key .. ":" .. value)
+    table.insert(request.cmd, key .. value)
   end
 end
 
