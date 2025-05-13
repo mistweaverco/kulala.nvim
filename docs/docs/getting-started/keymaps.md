@@ -2,7 +2,7 @@
 
 ## Global Keymaps
 
-Set to `true` to enable the [default keymaps](default-keymaps.md) and optionally set a prefix for the keymaps, which only applies to default keymaps, but not to your custom keymaps.
+Set to `true` to enable the [default keymaps](default-keymaps.md) and optionally set a prefix for the keymaps, which only applies to default keymapsn but not to your custom keymaps.
 
 ```lua
 {
