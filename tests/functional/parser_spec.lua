@@ -532,7 +532,7 @@ describe("requests", function()
         )
 
         result = parser.parse() or {}
-        assert.is_same(h.load_fixture(result.body_temp_file, true), "Sample POST request body")
+        assert.is_same(h.load_fixture(result.body_temp_file, true), "Sample POST request body\n")
       end)
 
       it("redirects response to a file", function()

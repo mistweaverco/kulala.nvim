@@ -646,8 +646,8 @@ describe("UI", function()
           and [[curl -X "POST" -v -s -H "Content-Type:application/json" --data-binary "{""foo"": ""bar""}" --cookie "cookie_key=value" -A "kulala.nvim/%s" "http://localhost:3001/request_1"]]
         or [[curl -X 'POST' -v -s -H 'Content-Type:application/json' --data-binary '{"foo": "bar"}' --cookie 'cookie_key=value' -A 'kulala.nvim/%s' 'http://localhost:3001/request_1']]
 
-      expected = (expected):format(GLOBALS.VERSION)
-      result = vim.fn.getreg("+")
+      expected = (expected):format(GLOBALS.VERSION):gsub("\n", "")
+      result = vim.fn.getreg("+"):gsub("\n", "")
       assert.is.same(expected, result)
     end)
 

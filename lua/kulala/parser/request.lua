@@ -226,7 +226,7 @@ local function save_body_with_files(request)
         Logger.warn("The file '" .. path .. "' could not be included. Skipping ...")
       end
     else
-      line = line:find("\r$") and line .. "\n" or line
+      line = line .. "\n"
       ---@diagnostic disable-next-line: cast-local-type
       status = status and result:write(line)
     end
