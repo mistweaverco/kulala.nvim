@@ -739,15 +739,16 @@ local get_source = function(params)
 end
 
 local function code_actions_fmt()
-  return { { title = "Convert to HTTP", command = "convert_http", fn = Fmt.convert } }
+  return { { group = "Formatting", title = "Convert to HTTP", command = "convert_http", fn = Fmt.convert } }
 end
 
 local function code_actions_http()
   return {
-    { title = "Copy as cURL", command = "copy_as_curl", fn = Kulala.copy },
-    { title = "Paste from curl", command = "paste_from_curl", fn = Kulala.from_curl },
-    { title = "Inspect current request", command = "inspect_current_request", fn = Kulala.inspect },
+    { group = "cURL", title = "Copy as cURL", command = "copy_as_curl", fn = Kulala.copy },
+    { group = "cURL", title = "Paste from curl", command = "paste_from_curl", fn = Kulala.from_curl },
+    { group = "Request", title = "Inspect current request", command = "inspect_current_request", fn = Kulala.inspect },
     {
+      group = "Environment",
       title = "Select environment",
       command = "select_environment",
       fn = function()
@@ -755,22 +756,35 @@ local function code_actions_http()
       end,
     },
     {
+      group = "Authentication",
       title = "Manage Auth Config",
       command = "manage_auth_config",
       fn = require("kulala.ui.auth_manager").open_auth_config,
     },
-    { title = "Replay last request", command = "replay_last request", fn = Kulala.replay },
-    { title = "Download GraphQL schema", command = "download_graphql_schema", fn = Kulala.download_graphql_schema },
+    { group = "Request", title = "Replay last request", command = "replay_last request", fn = Kulala.replay },
     {
+      group = "GraphQL",
+      title = "Download GraphQL schema",
+      command = "download_graphql_schema",
+      fn = Kulala.download_graphql_schema,
+    },
+    {
+      group = "Environment",
       title = "Clear globals",
       command = "clear_globals",
       fn = function()
         Kulala.scripts_clear_global()
       end,
     },
-    { title = "Clear cached files", command = "clear_cached_files", fn = Kulala.clear_cached_files },
-    { title = "Send request", command = "run_request", fn = Ui.open },
     {
+      group = "Environment",
+      title = "Clear cached files",
+      command = "clear_cached_files",
+      fn = Kulala.clear_cached_files,
+    },
+    { group = "Request", title = "Send request", command = "run_request", fn = Ui.open },
+    {
+      group = "Request",
       title = "Send all requests",
       command = "run_request_all",
       fn = function()
