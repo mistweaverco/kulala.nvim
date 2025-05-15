@@ -15,15 +15,22 @@ There are several ways to execute a request:
 
 ### Executing requests in non `.http` files
 
-- You can execute requests in any file type. However, since the `###` delimiters are only recognized in `.http` files, you will need to position the cursor exactly on the line with the request or visually select the required requests and their accompanying data.
-- Common comment syntax is recognized, so you can run requests that are commented out in your code, for example:
+- You can execute requests from any file type.  If you wrap your requests in a code block with ````http .. ````, it will behave just like in a `.http` file.
+- Common comment syntax is recognized, so you can put requests in the comments of your code files.
 
-```lua
-vim.system("curl -X GET http://localhost:3000")
+If you cannot wrap requests in a code block, you will need to position the cursor exactly on the line with the request or visually select the required 
+requests and their accompanying data.
 
--- POST http://localhost:3000
--- Content-Type: application/json
--- {"name": "John Doe"}
+```js
+// You javascript code here
+console.log('Hello world!');
+
+/* My test request
+
+```http
+POST http://localhost:3000
+Content-Type: application/json
+{"name": "John Doe"}
 
 ```
 
