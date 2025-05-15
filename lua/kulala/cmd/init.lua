@@ -154,7 +154,11 @@ local function inject_payload(errors, request)
   end
 
   lnum = lnum or #lines
-  _ = #vim.trim(request.body or "") > 0 and table.insert(lines, lnum + 1, "> Payload:\n\n" .. request.body .. "\n")
+
+  local body = FS.read_file(request.body_temp_file) or ""
+  body = #body > 1000 and request.body or body
+
+  _ = #vim.trim(body) > 0 and table.insert(lines, lnum + 1, "> Payload:\n\n" .. body .. "\n")
 
   return table.concat(lines, "\n")
 end

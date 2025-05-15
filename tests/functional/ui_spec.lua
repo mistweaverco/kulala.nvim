@@ -384,7 +384,7 @@ describe("UI", function()
       })
     end)
 
-    it("stores responses of consequtive requests", function()
+    it("stores responses of consecutive requests", function()
       vim.cmd.edit(h.expand_path("requests/advanced_E.http"))
 
       kulala.run_all()
