@@ -237,6 +237,7 @@ local function process_response(request_status, parsed_request, callback)
 
   if process_external(parsed_request, response) then -- replay request
     M.queue:add(function()
+      initialize()
       process_request({ parsed_request }, parsed_request, parsed_request.environment, callback)
     end, 1)
   end
