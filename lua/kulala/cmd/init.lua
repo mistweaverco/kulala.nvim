@@ -72,6 +72,11 @@ function queue.run_next(self)
   end)
 end
 
+local function initialize()
+  FS.delete_request_scripts_files()
+  FS.delete_cached_files(true)
+end
+
 local function process_prompt_vars(res)
   for _, metadata in ipairs(res.metadata) do
     if metadata.name == "prompt" and not INT_PROCESSING.prompt_var(metadata.value) then return false end
@@ -107,7 +112,8 @@ local function process_internal(result)
 end
 
 local function process_external(request, response)
-  _ = Scripts.run("post_request", request, response) and REQUEST_PARSER.process_variables(request, {}, true)
+  _ = Scripts.run("post_request", request, response)
+    and REQUEST_PARSER.process_variables(request, request.environment, true)
 
   response.script_pre_output = FS.read_file(GLOBALS.SCRIPT_PRE_OUTPUT_FILE) or ""
   response.script_post_output = FS.read_file(GLOBALS.SCRIPT_POST_OUTPUT_FILE) or ""
@@ -116,7 +122,10 @@ local function process_external(request, response)
   response.assert_status = response.assert_output.status
   response.status = response.status and response.assert_status ~= false
 
-  return request.environment["__replay_request"] == "true"
+  local replay = request.environment["__replay_request"] == "true"
+  request.environment["__replay_request"] = nil
+
+  return replay
 end
 
 local function process_api()
@@ -227,10 +236,9 @@ local function process_response(request_status, parsed_request, callback)
   process_internal(parsed_request)
 
   if process_external(parsed_request, response) then -- replay request
-    parsed_request.processed = true
-
     M.queue:add(function()
-      process_request({ parsed_request }, parsed_request, {}, callback)
+      initialize()
+      process_request({ parsed_request }, parsed_request, parsed_request.environment, callback)
     end, 1)
   end
 
@@ -282,11 +290,6 @@ local function received_unbffured(request, response)
   return unbuffered and response:find("Connected") and FS.file_exists(GLOBALS.BODY_FILE)
 end
 
-local function initialize()
-  FS.delete_request_scripts_files()
-  FS.delete_cached_files(true)
-end
-
 local function parse_request(requests, request, variables)
   initialize()
 
@@ -297,7 +300,7 @@ local function parse_request(requests, request, variables)
   local parsed_request, status = REQUEST_PARSER.parse(requests, variables, request)
   if not parsed_request then
     status = status == "skipped" and "is skipped" or "could not be parsed"
-    return Logger.warn(("Request at line: %s " .. status):format(request.start_line))
+    return Logger.warn(("Request at line: %s " .. status):format(request.start_line or request.show_icon_line_number))
   end
 
   return parsed_request
@@ -373,7 +376,7 @@ function process_request(requests, request, variables, callback)
 end
 
 ---Parses and executes DocumentRequest/s:
----if requests are provied then runs the first request in the list
+---if requests are provided then runs the first request in the list
 ---if line_nr is provided then runs the request from current buffer within the line number
 ---if line_nr is 0, then runs visually selected requests
 ---or runs all requests in the document

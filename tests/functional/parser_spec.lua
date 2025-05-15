@@ -121,7 +121,7 @@ describe("requests", function()
         assert.is_true(vim.tbl_contains(result.cmd, "--insecure"))
       end)
 
-      it("processes request only if it has not been processed yet", function()
+      it("processes urlencodes url only if it has not been done yet", function()
         h.create_buf(
           ([[
             GET https://typicode.com/todos?date=2020-01-01 12:34:56
@@ -132,9 +132,7 @@ describe("requests", function()
         result = parser.parse() or {}
         assert.is_same("https://typicode.com/todos?date=2020-01-01%2012%3A34%3A56", result.url)
 
-        result.processed = true
-
-        result = parser.parse({ result })
+        result = parser.parse({ result }) or {}
         assert.is_same("https://typicode.com/todos?date=2020-01-01%2012%3A34%3A56", result.url)
       end)
 

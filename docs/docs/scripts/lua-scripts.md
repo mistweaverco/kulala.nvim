@@ -11,7 +11,7 @@ Script context has the following objects and functions available:
 - `client` - The client object.
 - `request` - The request object.
 - `response` - The response object.
-- `assert` - The assert object - a colection of assertion functions.
+- `assert` - The assert object - a collection of assertion functions.
 
 as well as access to Neovim's `_G` global table.
 
@@ -22,6 +22,7 @@ For authentication purposes, you can use Kulala's crypto module with `require("k
 ```lua
 local client = {
   global = {}, -- global variables persisted between requests
+  responses = {}, -- responses of previous requests
   clear_all = function() end, -- clear all global variables
   log = function(msg) end, -- log a message
   test = function(name, fn) end, -- alias for assert.test
@@ -52,8 +53,8 @@ local client = {
 ---@field body_computed string|nil -- The computed body as sent by curl; with variables and dynamic variables replaced
 ---@field body_display string|nil -- The body with variables and dynamic variables replaced and sanitized
 local request = {
-  skip = function() end, -- skip the request
-  replay = function() end, -- replay the request
+  skip = function() end, -- skip the request (useful in pre-request scripts)
+  replay = function() end, -- replay the request (useful in post-request scripts)
 }
 ```
 

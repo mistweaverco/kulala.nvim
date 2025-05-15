@@ -31,8 +31,6 @@ local M = {}
 ---
 ---@field name string|nil -- The name of the request, used for run()
 ---@field file string|nil -- The file the request was imported from, used for run()
----
----@field processed boolean -- Whether the request has been processed, used by replay()
 
 ---@alias DocumentVariables table<string, string|number|boolean>
 
@@ -77,7 +75,6 @@ local default_document_request = {
   },
   name = nil,
   file = nil,
-  processed = false,
 }
 
 local function split_content_by_blocks(lines, line_offset)

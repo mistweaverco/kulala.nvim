@@ -354,6 +354,7 @@ local grpc = {
 local script_client = {
   { "client.global.get", "client.global.get(${1:varName})$0", "Get a  global variable" },
   { "client.global.set", "client.global.set(${1:varName}, ${2:value})$0", "Set a global variable" },
+  { "client.responses", 'client.responses["${1:name}"]$0', "Previous responses" },
   { "client.log", "client.log(${1:message})$0", "Log message" },
   { "client.test", "client.test(${1:name}, ${2:fn})$0", "Define a test suite" },
   { "client.assert", "client.assert(${1:value}, ${2:message?})$0", "Checks if the value is truthy" },

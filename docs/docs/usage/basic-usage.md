@@ -11,7 +11,7 @@ There are several ways to execute a request:
 - Press `<leader>Ra` to run all requests in the buffer.
 - Press `<C-c>` to cancel request execution.
 - To search for a request in the buffer, press `<leader>Rf`.
-- You can use `#` or `//` to comment out a request or its data, and it wil not be processed.
+- You can use `#` or `//` to comment out a request or its data, and it will not be processed.
 
 ### Executing requests in non `.http` files
 
