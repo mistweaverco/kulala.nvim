@@ -57,7 +57,7 @@ kulala_cli http_examples --list
 
 ## Kulala CI
 
-Kulala provides a Github Action to run HTTP files as part of your CI/CD pipeline.
+Kulala provides a GitHub Action to run HTTP files as part of your CI/CD pipeline.
 
 The action is available at Github Marketplace: [Kulala Action](https://github.com/marketplace/actions/kulala-cli-action). 
 

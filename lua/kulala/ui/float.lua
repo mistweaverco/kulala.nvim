@@ -50,7 +50,7 @@ local function float_defaults(opts)
     { "buf", "name", "auto_size", "row_offset", "col_offset", "hl_group", "ft", "close_keymaps", "auto_close" }
   )
 
-  local win_opts_base = {
+  return vim.tbl_extend("keep", win_opts, {
     relative = "win",
     width = width,
     height = height,
@@ -59,13 +59,9 @@ local function float_defaults(opts)
     style = "minimal",
     border = "none",
     focusable = false,
+    mouse = vim.fn.has("nvim-0.10") == 1 and true or nil,
     zindex = 100,
-  }
-
-  -- Add 'mouse = true' only if Neovim is older than 0.10
-  if vim.fn.has("nvim-0.10") == 0 then win_opts_base.mouse = true end
-
-  return vim.tbl_extend("keep", win_opts, win_opts_base)
+  })
 end
 
 local function set_close_keymaps(buf, win, keymaps)
