@@ -35,39 +35,44 @@ The CLI comes with some sane defaults, but you can override them in
 
 KULALA CLI                               *kulala.cli-ci-cli-and-ci-kulala-cli*
 
->text
-    Usage: 
+Usage:
+
+>
+      Kulala CLI [--list] [--halt] [-m] [-h] 
     
-          Kulala CLI [--list] [--halt] [-m] [-h] 
+      [-v {body,headers,headers_body,verbose,script_output,report}]
     
-          [-v {body,headers,headers_body,verbose,script_output,report}]
+      [-e <env>] [-n <name> ...] [-l <line> ...]
     
-          [-e <env>] [-n <name> ...] [-l <line> ...]
-    
-          [<input>] ...
-    
-    Arguments:
-    
-          input                      Path to folder or HTTP file/s
+      [<input>] ...
+<
+
+Arguments:
+
+>
+      input                      Path to folder or HTTP file/s
+                            
+<
+
+Options:
+
+>
+      --list                     List requests in HTTP file
                                 
-    Options:                    
-    
-          --list                     List requests in HTTP file
-                                    
-          --name (-n) [<name>] ...   Filter requests by name
-                                    
-          --line (-l) [<line>] ...   Filter requests by line #
-                                    
-          --env (-e) <env>           Environment
-                                    
-          --view (-v)                Response view
-                                      {body,headers,headers_body,verbose,script_output,report}
-                                    
-          --halt                     Halt on error
-                                    
-          --mono (-m)                No color output
-                                    
-          --help (-h)                Help
+      --name (-n) [<name>] ...   Filter requests by name
+                                
+      --line (-l) [<line>] ...   Filter requests by line #
+                                
+      --env (-e) <env>           Environment
+                                
+      --view (-v)                Response view
+                                  {body,headers,headers_body,verbose,script_output,report}
+                                
+      --halt                     Halt on error
+                                
+      --mono (-m)                No color output
+                                
+      --help (-h)                Help
 <
 
 >bash
