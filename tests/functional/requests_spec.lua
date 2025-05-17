@@ -328,7 +328,7 @@ describe("requests", function()
       h.create_buf(
         ([[
           < {%
-            request.variables.set("URL", "request_1");
+            if (!request.variables.get("URL")) { request.variables.set("URL", "request_1"); }
           %}
           GET http://localhost:3001/{{URL}}
 

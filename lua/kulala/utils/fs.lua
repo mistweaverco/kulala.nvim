@@ -359,6 +359,7 @@ end
 ---@param format boolean|nil -- format the JSON with jq
 ---@param escape boolean|nil -- escape [/"]
 M.write_json = function(filename, data, format, escape)
+  data = next(data) and data or { _ = "" }
   local content = vim.json.encode(data)
   if not content then return end
 
