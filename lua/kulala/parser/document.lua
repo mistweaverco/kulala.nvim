@@ -31,8 +31,6 @@ local M = {}
 ---
 ---@field name string|nil -- The name of the request, used for run()
 ---@field file string|nil -- The file the request was imported from, used for run()
----
----@field processed boolean -- Whether the request has been processed, used by replay()
 
 ---@alias DocumentVariables table<string, string|number|boolean>
 
@@ -77,7 +75,6 @@ local default_document_request = {
   },
   name = nil,
   file = nil,
-  processed = false,
 }
 
 local function split_content_by_blocks(lines, line_offset)
@@ -116,6 +113,7 @@ local function get_request_from_fenced_code_block()
 
   -- Get the total number of lines in the current buffer
   local total_lines = vim.api.nvim_buf_line_count(buf)
+  if total_lines == 0 then return end
 
   -- Search for the start of the fenced code block (``` or similar)
   local block_start = nil

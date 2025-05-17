@@ -1,7 +1,6 @@
-local CONFIG = require("kulala.config")
 local DB = require("kulala.db")
 local INT_PROCESSING = require("kulala.internal_processing")
-local Logger = require("kulala.logger")
+local Shell = require("kulala.cmd.shell_utils")
 
 local M = {}
 
@@ -47,10 +46,11 @@ local function get_body_value_from_path(name, method, subpath)
       cmd[k] = v
     end
 
-    local ret = vim.system(cmd, { stdin = base_table[method].body, text = true }):wait()
-    if ret.code ~= 0 then return Logger.error(("Error sourcing body contents from: %s"):format(ret.stderr)) end
-
-    return ret.stdout
+    local ret = Shell.run(
+      cmd,
+      { stdin = base_table.body, sync = true, err_msg = "Failed to run path resolver", abort_on_stderr = true }
+    )
+    return ret and ret.stdout
   end
 end
 

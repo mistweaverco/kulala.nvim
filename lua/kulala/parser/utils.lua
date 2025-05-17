@@ -4,8 +4,8 @@ local M = {}
 
 ---Get the current line number of the cursor, 1-indexed
 M.get_current_line_number = function()
-  local win_id = vim.fn.bufwinid(DB.get_current_buffer())
-  return vim.api.nvim_win_get_cursor(win_id)[1]
+  local win_id = vim.fn.win_findbuf(DB.get_current_buffer())[1]
+  return win_id and vim.api.nvim_win_get_cursor(win_id)[1] or 1
 end
 
 ---Strips invalid characters at the beginning of the line, e.g. comment characters

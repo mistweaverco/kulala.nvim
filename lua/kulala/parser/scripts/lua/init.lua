@@ -1,4 +1,5 @@
 local Config = require("kulala.config")
+local Db = require("kulala.db")
 local Fs = require("kulala.utils.fs")
 local Globals = require("kulala.globals")
 local Logger = require("kulala.logger")
@@ -23,6 +24,12 @@ local function get_nested_path(key)
       return v and v ~= "" and (tonumber(v) and tonumber(v) or v) or nil
     end)
     :totable()
+end
+
+local function get_response(_, name)
+  return vim.iter(Db.global_update().responses):rfind(function(response)
+    return response.name == name
+  end) or {}
 end
 
 local assert = {
@@ -94,6 +101,7 @@ local client = {
     _ = not Config.options.ui.disable_script_print_output and Logger.info(msg)
   end,
   global = {},
+  responses = setmetatable({}, { __index = get_response }),
   test = function(name, fn)
     assert.test(name, fn)
   end,
@@ -103,22 +111,24 @@ local client = {
   end,
 }
 
-local request = {
-  skip = function()
-    script_env.request.environment["__skip_request"] = "true"
-  end,
-  replay = function()
-    script_env.request.environment["__replay_request"] = "true"
-  end,
-  environment = setmetatable({}, {
-    __index = function(t, k)
-      return rawget(t, k) or script_env.request._environment[k]
+local request = function()
+  return {
+    skip = function()
+      script_env.request.environment["__skip_request"] = "true"
     end,
-    __call = function()
-      return vim.tbl_extend("force", script_env.request._environment, script_env.request.environment)
+    replay = function()
+      script_env.request.environment["__replay_request"] = "true"
     end,
-  }),
-}
+    environment = setmetatable(Fs.read_json(Fs.get_request_scripts_variables_file_path()) or {}, {
+      __index = function(t, k)
+        return rawget(t, k) or script_env.request._environment[k]
+      end,
+      __call = function()
+        return vim.tbl_extend("force", script_env.request._environment, script_env.request.environment)
+      end,
+    }),
+  }
+end
 
 local function set_script_env(type, _request, _response)
   script_env.type = type
@@ -129,14 +139,20 @@ local function set_script_env(type, _request, _response)
   script_env.client.global = Fs.read_json(Fs.get_global_scripts_variables_file_path()) or {}
 
   script_env.request = _request or {}
-  script_env.request._environment = _request.environment
-  script_env.request.environment = nil
+  script_env.request._environment = _request.environment -- make a copy of the original environment
+  script_env.request.environment = nil -- clear the environment, so only new and modified variables are stored
 
   script_env.response = _response or {}
   script_env.assert = assert
 
   setmetatable(script_env, { __index = _G })
-  setmetatable(script_env.request, { __index = request })
+  setmetatable(script_env.request, { __index = request() })
+end
+
+local function restore_script_env()
+  script_env.request.environment = script_env.request._environment
+  script_env.request._environment = nil
+  setmetatable(script_env.request, nil)
 end
 
 local function eval(script, script_type)
@@ -170,6 +186,8 @@ M.run = function(type, scripts, _request, _response)
 
   Fs.write_json(Fs.get_request_scripts_variables_file_path(), script_env.request.environment)
   Fs.write_json(Fs.get_global_scripts_variables_file_path(), script_env.client.global)
+
+  restore_script_env()
 
   _ = type == "pre_request" and Fs.write_file(Globals.SCRIPT_PRE_OUTPUT_FILE, script_env.output.pre_request)
   _ = type == "post_request" and Fs.write_file(Globals.SCRIPT_POST_OUTPUT_FILE, script_env.output.post_request)
