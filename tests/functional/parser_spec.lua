@@ -89,7 +89,11 @@ describe("requests", function()
             POST https://httpbingo.org/1
             ###
             # @curl-location
+            # @curl-data-urlencode
             POST https://httpbingo.org/2
+            Content-Type: application/json
+
+            { "key": "value" }
       ]]):to_table(true),
           "test.http"
         )
@@ -102,9 +106,22 @@ describe("requests", function()
         result = parser.parse() or {}
         assert.is_true(vim.tbl_contains(result.cmd, "--compressed"))
         assert.is_true(vim.tbl_contains(result.cmd, "--location"))
+        assert.is_true(vim.tbl_contains(result.cmd, "--data-urlencode"))
       end)
 
-      it("processes request only if it has not been processed yet", function()
+      it("processes SSL Configuration", function()
+        h.create_buf(
+          ([[
+            POST https://httpbingo.org/1
+      ]]):to_table(true),
+          h.expand_path("requests/simple.http")
+        )
+
+        result = parser.parse() or {}
+        assert.is_true(vim.tbl_contains(result.cmd, "--insecure"))
+      end)
+
+      it("processes urlencodes url only if it has not been done yet", function()
         h.create_buf(
           ([[
             GET https://typicode.com/todos?date=2020-01-01 12:34:56
@@ -115,9 +132,7 @@ describe("requests", function()
         result = parser.parse() or {}
         assert.is_same("https://typicode.com/todos?date=2020-01-01%2012%3A34%3A56", result.url)
 
-        result.processed = true
-
-        result = parser.parse({ result })
+        result = parser.parse({ result }) or {}
         assert.is_same("https://typicode.com/todos?date=2020-01-01%2012%3A34%3A56", result.url)
       end)
 
@@ -292,6 +307,7 @@ describe("requests", function()
             Content-Type: application/x-www-form-urlencoded
             User-Agent: header with : colons and [
             Origin: https://httpbingo.org
+            Empty-Header:
           ]]):to_table(true),
           h.expand_path("requests/simple.http")
         )
@@ -303,6 +319,7 @@ describe("requests", function()
           ["Content-Type"] = "application/x-www-form-urlencoded",
           ["User-Agent"] = "header with : colons and [",
           ["Origin"] = "https://httpbingo.org",
+          ["Empty-Header"] = "",
         })
       end)
 
@@ -513,7 +530,7 @@ describe("requests", function()
         )
 
         result = parser.parse() or {}
-        assert.is_same(h.load_fixture(result.body_temp_file, true), "Sample POST request body")
+        assert.is_same(h.load_fixture(result.body_temp_file, true), "Sample POST request body\n")
       end)
 
       it("redirects response to a file", function()

@@ -8,6 +8,9 @@
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/mistweaverco/kulala.nvim?style=for-the-badge)](https://github.com/mistweaverco/kulala.nvim/releases/latest)
 [![Discord](assets/badge-discord.svg)](https://discord.gg/QyVQmfY4Rt)
 
+[![Main status](https://img.shields.io/github/actions/workflow/status/mistweaverco/kulala.nvim/tests.yml?label=main&style=for-the-badge)](https://github.com/mistweaverco/kulala.nvim/actions/workflows/tests.yml)
+[![Develop status](https://img.shields.io/github/actions/workflow/status/mistweaverco/kulala.nvim/tests.yml?branch=develop&label=develop&style=for-the-badge)](https://github.com/mistweaverco/kulala.nvim/actions/workflows/tests.yml)
+
 [Requirements](https://neovim.getkulala.net/docs/getting-started/requirements) • [Install](#install) • [Usage](https://neovim.getkulala.net/docs/usage) • [HTTP File Spec](https://neovim.getkulala.net/docs/usage/http-file-spec)
 
 <p></p>
@@ -50,13 +53,16 @@ CLI tooling and CI hooks
 
 Scratchpad: for making requests
 
+100% Compatibility with IntelliJ HTTP Client
 
-#### Together with [Kulala Language Server](https://github.com/mistweaverco/kulala-ls) and [Kulala Formatter](https://github.com/mistweaverco/kulala-fmt), Kulala aims to provide the best REST Client experience on the web without leaving your favourite editor!
+# .
 
+Together with [Kulala Language Server](https://github.com/mistweaverco/kulala-ls) and [Kulala Formatter](https://github.com/mistweaverco/kulala-fmt), we aim to provide the best REST Client experience on the web without leaving your favourite editor!
 
-#### We love feature requests and feedback, so if you have any ideas or suggestions, please let us know!  
+# ..
 
-#### We will be happy to implement them ❤️
+Kulala team loves feature requests and feedback, so if you have any ideas or suggestions, please let us know!  
+We will be happy to implement them ❤️
 
 </div>
 
@@ -84,6 +90,8 @@ require("lazy").setup({
     opts = {
       -- your configuration comes here
       global_keymaps = false,
+      global_keymaps_prefix = "<leader>R",
+      kulala_keymaps_prefix = "",
     },
   },
 })

@@ -61,7 +61,12 @@ M.toggle_winbar_tab = function(buf, win_id, view)
 
     if info then
       local desc = info.desc
-      desc = keymaps[info.keymap] and desc .. " (" .. keymaps[info.keymap][1] .. ")" or desc
+      local map = keymaps[info.keymap]
+        and keymaps[info.keymap][1]
+          :gsub("<[Ll]eader>", vim.g.mapleader or "%1")
+          :gsub("<[Ll]ocalleader>", vim.g.maplocalleader or "%1")
+
+      desc = map and desc .. " (" .. map .. ")" or desc
       desc = view == key and "%#KulalaTabSel# " .. desc or "%#KulalaTab# " .. desc
       desc = desc .. " %*"
 

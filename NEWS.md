@@ -2,6 +2,10 @@
 
 ## Version 5.3.0
 
+### Enhancement: config option `kulala_keymaps_prefix` to set custom prefix for Kulala keymaps
+### Enhancement: support `@curl-data-urlencode` flag
+### Enhancement: support `SSL Configuration` in `http-client.private.env.json` files
+### Enhancement: Oauth2 - `@curl-global` flags and `additional_curl_options` take effect in auth requests
 ### Enhancement: Oauth2 - add Basic Authorization support for Client Credentials grant type
 ### Feature: JQ filter [filter](usage/filter-response.md)
 ### Feature: Kulala Formatter [fmt](usage/basic-usage.md) - format and import requests from Postman/Bruno/OpenAPI

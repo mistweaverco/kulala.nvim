@@ -77,7 +77,7 @@ describe("requests", function()
       dynamic_vars.reset()
     end)
 
-    it("it substitues document variables and does authorization", function()
+    it("it substitutes document variables and does authorization", function()
       vim.cmd.edit(h.expand_path("requests/simple.http"))
 
       curl.stub({
@@ -328,7 +328,7 @@ describe("requests", function()
       h.create_buf(
         ([[
           < {%
-            request.variables.set("URL", "request_1");
+            if (!request.variables.get("URL")) { request.variables.set("URL", "request_1"); }
           %}
           GET http://localhost:3001/{{URL}}
 

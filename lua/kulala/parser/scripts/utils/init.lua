@@ -1,4 +1,6 @@
 local Fs = require("kulala.utils.fs")
+local Logger = require("kulala.logger")
+
 local M = {}
 
 M.clear_global = function(key_or_keys)
@@ -14,7 +16,9 @@ M.clear_global = function(key_or_keys)
   elseif type(key_or_keys) == "string" then
     globals[key_or_keys] = nil
   end
+
   Fs.write_json(globals_fp, globals)
+  Logger.info("Cleared global variables: " .. (key_or_keys or "all"))
 end
 
 return M

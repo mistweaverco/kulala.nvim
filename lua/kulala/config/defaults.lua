@@ -189,6 +189,8 @@ local M = {
       ["Show headers"] = { "H", function() require("kulala.ui").show_headers() end, },
     }
   ]]
+
+  kulala_keymaps_prefix = "",
 }
 
 return M
