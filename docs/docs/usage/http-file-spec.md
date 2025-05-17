@@ -11,7 +11,7 @@ Kulala supports `absolute`, `origin` and `asterisk path` formats for HTTP reques
 
 `Absolute` format: `HTTPMethod` `URL` `HTTPVersion`: 
 ```http
-GET https://weater.com:7220/weatherforecast?city=New York&day=2025-05-07
+GET https://weather.com:7220/weatherforecast?city=New York&day=2025-05-07
 ```
 
  `Origin` format: `HTTPMethod` `URL`:

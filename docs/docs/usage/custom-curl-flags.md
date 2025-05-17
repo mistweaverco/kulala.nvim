@@ -20,6 +20,6 @@ Host: example.com
 
 Local flags take precedence over global flags.
 
-If you need to apply curl flags to Oauth requests, you have to use `# @curl-global-..` flags.
+If you need to apply curl flags to OAuth requests, you have to use `# @curl-global-..` flags.
 
 :::
