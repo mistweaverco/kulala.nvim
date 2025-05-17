@@ -14,12 +14,14 @@ Table of Contents                           *kulala.keymaps-table-of-contents*
 GLOBAL KEYMAPS                         *kulala.keymaps-keymaps-global-keymaps*
 
 Set to `true` to enable the |kulala.default-keymaps.txt| and optionally set a
-prefix for the keymaps, which only applies to default keymaps.
+prefix for the keymaps, which only applies to default keymaps, but not to your
+custom keymaps.
 
 >lua
     {
       global_keymaps = true
       global_keymaps_prefix = "<leader>R"
+      kulala_keymaps_prefix = "",
     }
 <
 
