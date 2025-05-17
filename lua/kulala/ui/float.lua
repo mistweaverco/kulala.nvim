@@ -59,7 +59,7 @@ local function float_defaults(opts)
     style = "minimal",
     border = "none",
     focusable = false,
-    mouse = true,
+    mouse = vim.fn.has("nvim-0.10") == 1 and true or nil,
     zindex = 100,
   })
 end

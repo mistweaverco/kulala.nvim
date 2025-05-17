@@ -1,3 +1,4 @@
+local Fs = require("kulala.utils.fs")
 local Javascript = require("kulala.parser.scripts.javascript")
 local Lua = require("kulala.parser.scripts.lua")
 
@@ -33,6 +34,12 @@ M.run = function(type, request, response)
       table.insert(js.files, file)
     end
   end)
+
+  local request_vars = Fs.read_json(Fs.get_request_scripts_variables_file_path()) or {}
+  request_vars.__skip_request = nil
+  request_vars.__replay_request = nil
+
+  Fs.write_json(Fs.get_request_scripts_variables_file_path(), request_vars)
 
   status = not is_empty(lua) and Lua.run(type, lua, request, response)
   status = not is_empty(js) and Javascript.run(type, js) or status

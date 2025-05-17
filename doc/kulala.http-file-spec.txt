@@ -21,7 +21,7 @@ request.
 `Absolute` format: `HTTPMethod` `URL` `HTTPVersion`:
 
 >http
-    GET https://weater.com:7220/weatherforecast
+    GET https://weater.com:7220/weatherforecast?city=New York&day=2025-05-07
 <
 
 `Origin` format: `HTTPMethod` `URL`:
@@ -29,7 +29,7 @@ request.
 Single line
 
 >http
-    GET /api/get
+    GET /api/get?id=123&value=some thing
     Host: example.com
 <
 
@@ -41,7 +41,7 @@ Multiline
         /html
         /get
         ?id=123
-        &value=content
+        &value=some "longer" content
 <
 
 `Asterisk` format: `HTTPMethod` `URL`:
@@ -71,9 +71,9 @@ Multiline
     - `ws`
     - `wss`
 - `URL` is the URL to send the request to. The URL can include query string
-    parameters. The URL doesn’t have to point to a local web project and can
-    point to any URL. Numeric IPv4 `http://127.0.0.1` and IPv6 `http://[::1]`
-    addresses are supported.
+    parameters, which are automatically url-encoded. The URL doesn’t have to
+    point to a local web project and can point to any URL. Numeric IPv4
+    `http://127.0.0.1` and IPv6 `http://[::1]` addresses are supported.
 - `HTTPVersion` is optional and specifies the HTTP version that should be used,
     that’s, `HTTP/1.1`, `HTTP/2`, or `HTTP/3`.
 

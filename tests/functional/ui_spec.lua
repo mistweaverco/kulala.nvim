@@ -384,7 +384,7 @@ describe("UI", function()
       })
     end)
 
-    it("stores responses of consequtive requests", function()
+    it("stores responses of consecutive requests", function()
       vim.cmd.edit(h.expand_path("requests/advanced_E.http"))
 
       kulala.run_all()
@@ -646,8 +646,8 @@ describe("UI", function()
           and [[curl -X "POST" -v -s -H "Content-Type:application/json" --data-binary "{""foo"": ""bar""}" --cookie "cookie_key=value" -A "kulala.nvim/%s" "http://localhost:3001/request_1"]]
         or [[curl -X 'POST' -v -s -H 'Content-Type:application/json' --data-binary '{"foo": "bar"}' --cookie 'cookie_key=value' -A 'kulala.nvim/%s' 'http://localhost:3001/request_1']]
 
-      expected = (expected):format(GLOBALS.VERSION)
-      result = vim.fn.getreg("+")
+      expected = (expected):format(GLOBALS.VERSION):gsub("\n", "")
+      result = vim.fn.getreg("+"):gsub("\n", "")
       assert.is.same(expected, result)
     end)
 

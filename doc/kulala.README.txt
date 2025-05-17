@@ -5,9 +5,11 @@ Table of Contents                            *kulala.README-table-of-contents*
 
 1. kulala.nvim                                     |kulala.README-kulala.nvim|
   - Features                              |kulala.README-kulala.nvim-features|
-  - Install                                |kulala.README-kulala.nvim-install|
-  - Honorable mentions          |kulala.README-kulala.nvim-honorable-mentions|
-2. Links                                                 |kulala.README-links|
+2. .                                                         |kulala.README-.|
+3. ..                                                       |kulala.README-..|
+  - Install                                         |kulala.README-..-install|
+  - Honorable mentions                   |kulala.README-..-honorable-mentions|
+4. Links                                                 |kulala.README-links|
 
 ==============================================================================
 1. kulala.nvim                                     *kulala.README-kulala.nvim*
@@ -54,17 +56,26 @@ CLI tooling and CI hooks
 
 Scratchpad: for making requests
 
-
-TOGETHER WITH KULALA LANGUAGE SERVER AND KULALA FORMATTER, KULALA AIMS TO PROVIDE THE BEST REST CLIENT EXPERIENCE ON THE WEB WITHOUT LEAVING YOUR FAVOURITE EDITOR! Kulala Language Server https://github.com/mistweaverco/kulala-ls Kulala Formatter https://github.com/mistweaverco/kulala-fmt
-
-
-WE LOVE FEATURE REQUESTS AND FEEDBACK, SO IF YOU HAVE ANY IDEAS OR SUGGESTIONS, PLEASE LET US KNOW!
+100% Compatibility with IntelliJ HTTP Client
 
 
-WE WILL BE HAPPY TO IMPLEMENT THEM ❤️
+==============================================================================
+2. .                                                         *kulala.README-.*
+
+Together with Kulala Language Server https://github.com/mistweaverco/kulala-ls
+and Kulala Formatter https://github.com/mistweaverco/kulala-fmt, we aim to
+provide the best REST Client experience on the web without leaving your
+favourite editor!
 
 
-INSTALL                                    *kulala.README-kulala.nvim-install*
+==============================================================================
+3. ..                                                       *kulala.README-..*
+
+Kulala team loves feature requests and feedback, so if you have any ideas or
+suggestions, please let us know! We will be happy to implement them ❤️
+
+
+INSTALL                                             *kulala.README-..-install*
 
 
   [!WARNING] Requires Neovim 0.10.0+ and cURL.
@@ -88,6 +99,7 @@ CONFIGURATION
         opts = {
           -- your configuration comes here
           global_keymaps = false,
+          global_keymaps_prefix = "<leader>R",
         },
       },
     })
@@ -106,7 +118,7 @@ https://neovim.getkulala.net/docs/getting-started/configuration-options for
 more information.
 
 
-HONORABLE MENTIONS              *kulala.README-kulala.nvim-honorable-mentions*
+HONORABLE MENTIONS                       *kulala.README-..-honorable-mentions*
 
 
 REST.NVIM
@@ -141,7 +153,7 @@ the kulala examples.
 Thanks for making it easy to test and develop this plugin.
 
 ==============================================================================
-2. Links                                                 *kulala.README-links*
+4. Links                                                 *kulala.README-links*
 
 1. *Kulala Logo*: logo.svg
 2. *Made with love*: assets/badge-made-with-love.svg

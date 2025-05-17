@@ -280,6 +280,13 @@ For example:
 }
 ```
 
+:::info
+
+If you need to set custom curl flags for authentication requests, e.g., `--insecure` to skip secure connection verification - you can do this 
+with `# @curl-global-..` flags in your .http file or by setting `additional_curl_options` in Kulala's config.
+
+:::
+
 ### Authentication configuration parameters
 
 #### Type
@@ -387,6 +394,42 @@ Fields `exp` and `iat` are optional. If not provided, they will be calculated au
 }
 ```
 
+:::info
+
+If you would like to build a JWT token manually or generate PKCE challenge/verifier , you can use built-in library in Lua request scripts:
+
+```lua
+local crypto = require("kulala.cmd.crypto")
+
+---@class JWTPayload
+---@field iss? string Issuer
+---@field sub? string Subject
+---@field scope? string Scope
+---@field aud? string Audience
+---@field exp? number Expiration time (in seconds since epoch)
+---@field iat? number Issued at (in seconds since epoch)
+
+---Generate a JWT token
+---@param header {alg: string, typ: string} JWT header alg: "RS256"|"HS256", typ: "JWT"
+---@param payload JWTPayload JWT payload
+---@param key string Signing key
+---@return string|nil JWT token
+M.jwt_encode = function(header, payload, key)
+
+---Generate a random PKCE verifier
+---@return string|nil PKCE verifier
+M.pkce_verifier = function()
+
+
+---Generate a PKCE challenge from the verifier
+---@param verifier string PKCE verifier
+---@param method string PKCE method "Plain"|"S256" (default: "S256")
+---@return string|nil PKCE challenge
+M.pkce_challenge = function(verifier, method)
+```
+
+:::
+
 #### Scope
 
 A scope to limit an application's access to a user's account. Possible values depend on the service you are trying to access.
@@ -457,3 +500,23 @@ Example:
 ```
 
 [dyn-env]: dynamically-setting-environment-variables-based-on-response-json.md
+
+## Disable certificate verification
+
+For development purposes, you may have a host with self-signed or expired certificates. If you trust this host, you can disable verification of its certificate.
+
+In the http-client.private.env.json file, add `verifyHostCertificate": false` to the SSLConfiguration object. For example:
+
+```json
+{
+    "dev": {
+        "SSLConfiguration": {
+            "verifyHostCertificate": false
+        }
+    }
+}
+```
+
+If you run a request with this environment, the certificate verification will be disabled. 
+
+This is equivalent to setting `--insecure` flag in `additional_curl_options` in the config file or with `# @curl-global-insecure` in the request.
