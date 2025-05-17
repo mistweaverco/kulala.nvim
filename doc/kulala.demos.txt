@@ -217,6 +217,78 @@ The archive |kulala.demos.zip| also contains sample `httt-client-env.json` and
     {
       "date_header_from_request_two": "{{BONOBO}}"
     }
+    
+    ### Request_one
+    # Get results and iterate over them, replaying the request for each item
+    
+    POST https://httpbin.org/post HTTP/1.1
+    Accept: application/json
+    Content-Type: application/json
+    
+    {
+      "results": [
+        { "id": 1, "desc": "some_username" },
+        { "id": 2, "desc": "another_username" }
+      ]
+    }
+    
+    > {%
+      client.global.set("results", response.body.json.results); // save results to global variable, as js does not have access to responses history
+    %}
+    
+    ### Request_js
+    
+    < {%
+      const results = client.global.get("results");
+      if (!results) { return; }
+      
+      var idx = (request.variables.get("idx") ?? -1) + 1; // initialize index
+      request.variables.set("idx", idx); // update index
+    
+      const item = results[idx];
+    
+      if (!item) { 
+        request.variables.set("idx", -1); // reset index
+        client.global.set("results", null);
+        return request.skip(); // skip if no more items
+      }
+    
+      client.log(item);
+    
+      const url = "https://httpbin.org/get";
+      request.variables.set("url", url + "?" + item.desc); // update url variable, cannot access request.url_raw like in lua
+    %}
+    
+    GET {{url}}
+    
+    > {%
+      const results = client.global.get("results");
+      if (results) { request.replay(); }
+    %}
+    
+    ### Request_lua
+    
+    < {%
+      -- lua
+      local response = client.responses["Request_one"].json
+      if not response then return end
+    
+      request.environment.idx = (request.environment.idx or 0) + 1 -- initialize index
+      local item = response.json.results[request.environment.idx]
+    
+      if not item then return request.skip() end   -- skip if no more items
+    
+      client.log(item)
+      request.url_raw = request.environment.url .. "?" .. item.desc
+    %}
+    
+    @url = https://httpbin.org/get
+    GET {{url}}
+    
+    > {%
+      -- lua
+      request.replay()
+    %}
 <
 
 6.body-from-file.http
