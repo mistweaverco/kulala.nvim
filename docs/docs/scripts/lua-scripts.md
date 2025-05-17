@@ -204,3 +204,44 @@ Authorization: Bearer {{TOKEN}}
 If you want to modify request URL, use `request.url_raw`.
 
 :::
+
+### Iterating over results and making requests for each item
+
+```http
+### Request_one
+
+POST https://httpbin.org/post HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+
+{
+  "results": [
+    { "id": 1, "desc": "some_username" },
+    { "id": 2, "desc": "another_username" }
+  ]
+}
+
+### Request_two
+
+< {%
+  -- lua
+  local response = client.responses["Request_one"].json
+  if not response then return end
+
+  request.environment.idx = (request.environment.idx or 0) + 1 -- initialize index
+  local item = response.results[request.environment.idx]
+
+  if not item then return request.skip() end   -- skip if no more items
+
+  client.log(item)
+  request.url_raw = request.environment.url .. "?" .. item.desc
+%}
+
+@url = https://httpbin.org/get
+GET {{url}}
+
+> {%
+  -- lua
+  request.replay()
+%}
+```
