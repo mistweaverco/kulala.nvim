@@ -53,7 +53,7 @@ const sidebars: SidebarsConfig = {
         "usage/custom-curl-flags",
         "usage/public-methods",
         "usage/api",
-        "usage/cli-ci"
+        "usage/cli-ci",
         'usage/demos'
       ],
     },
