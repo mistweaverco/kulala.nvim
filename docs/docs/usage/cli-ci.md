@@ -16,6 +16,7 @@ The CLI comes with some sane defaults, but you can override them in `kulala.nvim
 
 ## Kulala CLI
 
+```text
 Usage: 
 
       Kulala CLI [--list] [--halt] [-m] [-h] 
@@ -48,6 +49,7 @@ Options:
       --mono (-m)                No color output
                                 
       --help (-h)                Help
+```
 
 ```bash
 kulala_cli http_examples/cli.http -e prod -v report -n Login Request -l 15 20 
