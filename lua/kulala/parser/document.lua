@@ -236,7 +236,7 @@ local function parse_body(request, line)
     -- should be no line endings or they should be urlencoded
     line_ending = ""
   elseif content_type:find("^multipart/form%-data") then
-    -- per RFC2616 3.7.2. and RFC2046 5.1.1 multipart boundaries must end with \r\n
+    -- per RFC2616 3.7.2. and RFC2046 5.1.1 multipart boundaries endings and line endings must be represented as CRLF
     line_ending = "\r\n"
   end
 
