@@ -19,9 +19,7 @@ the named request or its latest response.
 
 If you want to refer the response of a named request,
 you need to manually trigger the named request to retrieve its response first.
-Otherwise the plain text of
-variable reference like
-`{{THIS_IS_AN_EXAMPLE_REQUEST_NAME.response.body.$.id}}`
+Otherwise the plain text of variable reference like `{{THIS_IS_AN_EXAMPLE_REQUEST_NAME.response.body.$.id}}`
 will be sent instead.
 
 :::

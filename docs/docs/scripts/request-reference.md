@@ -207,6 +207,14 @@ Replays the current request. Useful for conditional requests, see below.
 request.replay();
 ```
 
+## request.iteration
+
+Returns the current count of request replays.
+
+```javascript
+request.replay();
+```
+
 ### Conditional requests
 
 ```http
@@ -256,13 +264,9 @@ Content-Type: application/json
   const results = client.global.get("results");
   if (!results) { return; }
   
-  var idx = (request.variables.get("idx") ?? -1) + 1; // initialize index
-  request.variables.set("idx", idx); // update index
-
-  const item = results[idx];
+  const item = results[request.iteration() - 1]; // get item by index
 
   if (!item) { 
-    request.variables.set("idx", -1); // reset index
     client.global.set("results", null);
     return request.skip(); // skip if no more items
   }

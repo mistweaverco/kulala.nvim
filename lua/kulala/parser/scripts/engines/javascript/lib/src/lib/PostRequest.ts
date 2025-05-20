@@ -124,5 +124,8 @@ export const Request = {
   },
   replay: () => {
     Request.variables.set('__replay_request', "true");
+  },
+  iteration: () => {
+    return Request.variables.get('__iteration');
   }
 };

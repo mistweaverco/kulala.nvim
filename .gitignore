@@ -1,6 +1,7 @@
 .env
 .tests
 .nvim
+.log*
 
 node_modules
 package-lock.json
