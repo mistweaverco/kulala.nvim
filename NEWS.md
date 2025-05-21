@@ -2,6 +2,7 @@
 
 ## Version 5.3.0
 
+### Feature: Scripting `request.iteration()` - current count of replays [Lua](scripts/lua-scripts.md), [JS](scripts/request-reference.md)
 ### Enhancement: config option `kulala_keymaps_prefix` to set custom prefix for Kulala keymaps
 ### Enhancement: support `@curl-data-urlencode` flag
 ### Enhancement: support `SSL Configuration` in `http-client.private.env.json` files

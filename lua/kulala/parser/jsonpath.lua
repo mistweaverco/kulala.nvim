@@ -3,7 +3,7 @@ local Json = require("kulala.utils.json")
 local M = {}
 
 M.parse = function(body, path)
-  local subpath = string.gsub(path, "^%$%.", "")
+  local subpath = string.gsub(path, "^%$%.*", "")
 
   local result = Json.parse(body)
   if not result then return end

@@ -36,8 +36,16 @@ M.run = function(type, request, response)
   end)
 
   local request_vars = Fs.read_json(Fs.get_request_scripts_variables_file_path()) or {}
+
   request_vars.__skip_request = nil
   request_vars.__replay_request = nil
+
+  if not request_vars.__iteration then
+    request_vars.__iteration = 1
+    request_vars.__iteration_type = type
+  elseif request_vars.__iteration_type == type then
+    request_vars.__iteration = request_vars.__iteration + 1 -- increment only in the same type of request
+  end
 
   Fs.write_json(Fs.get_request_scripts_variables_file_path(), request_vars)
 

@@ -406,6 +406,7 @@ local script_request = {
   },
   { "request.skip", "request.skip()$0", "Skip request" },
   { "request.replay", "request.replay()$0", "Replay request" },
+  { "request.iteration", "request.iteration()$0", "The current count of request replays" },
 }
 
 ---@type SourceTable

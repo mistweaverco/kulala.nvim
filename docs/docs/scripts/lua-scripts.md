@@ -55,6 +55,8 @@ local client = {
 local request = {
   skip = function() end, -- skip the request (useful in pre-request scripts)
   replay = function() end, -- replay the request (useful in post-request scripts)
+  variables = {}, -- request variables, alias for environment (for compatibility with JS scripting)
+  iteration = function() end, -- the current count of request replays
 }
 ```
 
@@ -225,12 +227,10 @@ Content-Type: application/json
 
 < {%
   -- lua
-  local response = client.responses["Request_one"].json
+  local response = client.responses["Request_one"].json -- get body of the response decoded as json
   if not response then return end
 
-  request.environment.idx = (request.environment.idx or 0) + 1 -- initialize index
-  local item = response.results[request.environment.idx]
-
+  local item = response.json.results[request.iteration()]
   if not item then return request.skip() end   -- skip if no more items
 
   client.log(item)

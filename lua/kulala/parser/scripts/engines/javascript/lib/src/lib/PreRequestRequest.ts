@@ -123,6 +123,9 @@ export const Request = {
   },
   skip: () => {
     Request.variables.set('__skip_request', "true");
+  },
+  iteration: () => {
+    return Request.variables.get('__iteration');
   }
 };
 

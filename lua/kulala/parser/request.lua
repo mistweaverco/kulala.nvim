@@ -214,7 +214,7 @@ local function save_body_with_files(request)
 
   local lines = vim.split(request.body_computed, "\n")
 
-  for _, line in ipairs(lines) do
+  for i, line in ipairs(lines) do
     -- skip lines that begin with '< [file not found]'
     local path = line:match("^< ([^%[\r\n]+)[\r\n]*$")
 
@@ -225,7 +225,7 @@ local function save_body_with_files(request)
         Logger.warn("The file '" .. path .. "' could not be included. Skipping ...")
       end
     else
-      line = line .. "\n"
+      line = (i ~= #lines or line:find("\r$")) and (line .. "\n") or line -- add newline only for multipart/form-data and if not last line
       ---@diagnostic disable-next-line: cast-local-type
       status = status and result:write(line)
     end

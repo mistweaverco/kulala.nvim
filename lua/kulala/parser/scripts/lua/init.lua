@@ -112,21 +112,28 @@ local client = {
 }
 
 local request = function()
+  local environment = setmetatable(Fs.read_json(Fs.get_request_scripts_variables_file_path()) or {}, {
+    __index = function(t, k)
+      return rawget(t, k) or script_env.request._environment[k]
+    end,
+    __call = function()
+      return vim.tbl_extend("force", script_env.request._environment, script_env.request.environment)
+    end,
+  })
+
   return {
+    environment = environment,
+    variables = environment,
+
     skip = function()
       script_env.request.environment["__skip_request"] = "true"
     end,
     replay = function()
       script_env.request.environment["__replay_request"] = "true"
     end,
-    environment = setmetatable(Fs.read_json(Fs.get_request_scripts_variables_file_path()) or {}, {
-      __index = function(t, k)
-        return rawget(t, k) or script_env.request._environment[k]
-      end,
-      __call = function()
-        return vim.tbl_extend("force", script_env.request._environment, script_env.request.environment)
-      end,
-    }),
+    iteration = function()
+      return script_env.request.environment["__iteration"]
+    end,
   }
 end
 
