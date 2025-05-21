@@ -17,6 +17,7 @@ Table of Contents                 *kulala.request-reference-table-of-contents*
   - request.url.tryGetSubstituted|kulala.request-reference-scripts-request-reference-request.url.trygetsubstituted|
   - request.skip|kulala.request-reference-scripts-request-reference-request.skip|
   - request.replay|kulala.request-reference-scripts-request-reference-request.replay|
+  - request.iteration|kulala.request-reference-scripts-request-reference-request.iteration|
 
 ==============================================================================
 1. Scripts request reference*kulala.request-reference-scripts-request-reference*
@@ -233,6 +234,15 @@ Replays the current request. Useful for conditional requests, see below.
 <
 
 
+REQUEST.ITERATION*kulala.request-reference-scripts-request-reference-request.iteration*
+
+Returns the current count of request replays.
+
+>javascript
+    request.replay();
+<
+
+
 CONDITIONAL REQUESTS
 
 >http
@@ -283,13 +293,9 @@ ITERATING OVER RESULTS AND MAKING REQUESTS FOR EACH ITEM
       const results = client.global.get("results");
       if (!results) { return; }
       
-      var idx = (request.variables.get("idx") ?? -1) + 1; // initialize index
-      request.variables.set("idx", idx); // update index
-    
-      const item = results[idx];
+      const item = results[request.iteration() - 1]; // get item by index
     
       if (!item) { 
-        request.variables.set("idx", -1); // reset index
         client.global.set("results", null);
         return request.skip(); // skip if no more items
       }
