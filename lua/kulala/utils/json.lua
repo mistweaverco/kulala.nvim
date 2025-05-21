@@ -27,6 +27,10 @@ M.format = function(json_string)
   return result.stdout
 end
 
+---Parse a JSON string into a Lua table
+---@param str string
+---@param opts table<{object: boolean, array: boolean, verbose: boolean}> -- verbose: log errors
+---@return table|nil, string|nil
 M.parse = function(str, opts)
   opts = opts or { object = true, array = true }
   local verbose = opts.verbose or false

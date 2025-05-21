@@ -286,6 +286,7 @@ local header_values = {
   { "application/octet-stream" },
   { "application/pdf" },
   { "application/zip" },
+  { "application/graphql-response+json" },
   { "text/plain" },
   { "text/html" },
   { "text/css" },

@@ -55,7 +55,7 @@ end
 
 M.get_json = function(body)
   local query, variables = parse(body)
-  local json = { query = "", variables = "" }
+  local json = { query = "" }
 
   if not (query and #query > 0) then return end
 
