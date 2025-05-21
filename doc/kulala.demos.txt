@@ -242,13 +242,9 @@ The archive |kulala.demos.zip| also contains sample `httt-client-env.json` and
       const results = client.global.get("results");
       if (!results) { return; }
       
-      var idx = (request.variables.get("idx") ?? -1) + 1; // initialize index
-      request.variables.set("idx", idx); // update index
-    
-      const item = results[idx];
+      const item = results[request.iteration() - 1]; // get item by index
     
       if (!item) { 
-        request.variables.set("idx", -1); // reset index
         client.global.set("results", null);
         return request.skip(); // skip if no more items
       }
@@ -273,9 +269,7 @@ The archive |kulala.demos.zip| also contains sample `httt-client-env.json` and
       local response = client.responses["Request_one"].json
       if not response then return end
     
-      request.environment.idx = (request.environment.idx or 0) + 1 -- initialize index
-      local item = response.json.results[request.environment.idx]
-    
+      local item = response.json.results[request.iteration()]
       if not item then return request.skip() end   -- skip if no more items
     
       client.log(item)
