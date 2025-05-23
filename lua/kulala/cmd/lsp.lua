@@ -286,6 +286,7 @@ local header_values = {
   { "application/octet-stream" },
   { "application/pdf" },
   { "application/zip" },
+  { "application/graphql-response+json" },
   { "text/plain" },
   { "text/html" },
   { "text/css" },
@@ -836,7 +837,9 @@ local function get_symbols()
   vim.iter(cache.requests):each(function(request)
     local cnum = 0
     local line = request.show_icon_line_number - 2
-    symbol = get_symbol(request.name, kind.Function, line) or {}
+
+    symbol = get_symbol(request.name, kind.Function, line)
+    if not symbol then return end
 
     if #request.scripts.pre_request.inline + #request.scripts.pre_request.files > 0 then
       table.insert(symbol.children, get_symbol("|< Pre-request script", kind.Module, line - 2))

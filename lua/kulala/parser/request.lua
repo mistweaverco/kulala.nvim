@@ -276,6 +276,7 @@ local function process_graphql(request)
     or PARSER_UTILS.contains_header(request.headers, "x-request-type", "graphql")
 
   if request.body and #request.body > 0 and is_graphql then
+    request.method = "POST"
     local gql_json = GRAPHQL_PARSER.get_json(request.body)
 
     if gql_json then
@@ -285,6 +286,7 @@ local function process_graphql(request)
       request.body_computed = gql_json
     end
   end
+
   return request
 end
 
