@@ -19,6 +19,6 @@ http-client.env.json
 !/tests/**/*.http
 !/tests/functional/requests/*.http
 
-todo.md
 selene.toml
 neovim.yml
+.todo.md
