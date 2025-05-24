@@ -8,6 +8,7 @@ local M = {}
 
 ---@class DocumentRequest
 ---@field metadata table<{name: string, value: string}>
+---@field comments string[]
 ---
 ---@field method string
 ---@field url string
@@ -49,6 +50,7 @@ local M = {}
 ---@type DocumentRequest
 local default_document_request = {
   metadata = {},
+  comments = {},
   variables = {},
   method = "",
   url = "",
@@ -419,9 +421,10 @@ M.get_document = function(lines, path)
     for relative_linenr, line in ipairs(block.lines) do
       if line:match("^# @") then
         parse_metadata(request, line)
-      -- skip comments and silently skip URLs that are commented out
+      -- collect comments
       elseif line:match("^%s*#") or line:match("^%s*//") then
-        parse_url(request, line:match("^%s*[#/]+%s*(.+)") or "")
+        local comment = line:gsub("^%s*[#/]+%s*", "")
+        table.insert(request.comments, comment)
       -- end of inline scripting
       elseif is_request_line and line:match("^import ") then
         parse_import_command(variables, request, imported_requests, line)

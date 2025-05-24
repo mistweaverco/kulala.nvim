@@ -567,7 +567,7 @@ function M.get_basic_request_data(requests, document_request, line_nr)
   request.url_raw = request.url_raw or document_request.url -- url_raw may be already set if the request is being replayed
   request.body_raw = document_request.body
 
-  Table.remove_keys(request, { "body", "variables", "start_line", "end_line" })
+  Table.remove_keys(request, { "comments", "body", "variables", "start_line", "end_line" })
 
   return request
 end

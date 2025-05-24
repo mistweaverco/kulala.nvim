@@ -1,5 +1,6 @@
 local Augroups = require("kulala.augroups")
 local CONFIG = require("kulala.config")
+local Export = require("kulala.cmd.export")
 local Fmt = require("kulala.cmd.fmt")
 local Fs = require("kulala.utils.fs")
 local GLOBALS = require("kulala.globals")
@@ -101,6 +102,10 @@ end
 
 M.import = function(from)
   Fmt.convert(from)
+end
+
+M.export = function()
+  Export.export_requests()
 end
 
 return M

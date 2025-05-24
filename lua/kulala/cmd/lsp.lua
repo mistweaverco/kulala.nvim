@@ -2,6 +2,7 @@ local Config = require("kulala.config")
 local Db = require("kulala.db")
 local Dynamic_variables = require("kulala.parser.dynamic_vars")
 local Env = require("kulala.parser.env")
+local Export = require("kulala.cmd.export")
 local Fmt = require("kulala.cmd.fmt")
 local Inspect = require("kulala.parser.inspect")
 local Kulala = require("kulala")
@@ -792,6 +793,14 @@ local function code_actions_http()
       command = "run_request_all",
       fn = function()
         Ui.open_all()
+      end,
+    },
+    {
+      group = "Request",
+      title = "Export requests",
+      command = "export_requests",
+      fn = function(action)
+        require("kulala.cmd.export").export_requests(action)
       end,
     },
   }
