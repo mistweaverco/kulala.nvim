@@ -73,18 +73,21 @@ M.format = function(text)
   return result and result.stdout
 end
 
-M.convert = function()
+M.convert = function(from)
   local path = vim.fn.expand("%:p")
   local ft = vim.bo.filetype
   local cmd = { FMT_BIN, "convert" }
 
   if ft == "bruno" then
-    vim.list_extend(cmd, { "--from", "bruno" })
+    from = "bruno"
     path = vim.fs.dirname(path)
+  elseif ft == "yaml" then
+    from = "openapi"
   end
 
-  table.insert(cmd, path)
+  from = type(from) == "string" and from or "postman"
 
+  vim.list_extend(cmd, { "--from", from, path })
   local result = Shell.run(cmd, { err_msg = "Formatter error: " })
 
   result = result and result:wait()
@@ -96,9 +99,5 @@ M.convert = function()
   local file = table.remove(vim.split(out, " "))
   _ = vim.fn.filereadable(file) == 1 and vim.cmd.edit(file)
 end
-
--- kulala-fmt convert --from openapi openapi.yaml
--- kulala-fmt convert --from postman postman.json
--- kulala-fmt convert --from bruno path/to/bruno/collection
 
 return M

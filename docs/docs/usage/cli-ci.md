@@ -4,11 +4,15 @@ The Kulala CLI is a command-line interface that allows you to execute HTTP files
 
 It can be used standalone or as part of a CI/CD pipeline, effectively turning your HTTP files into an API test suite.
 
-## Requirements
+## Installation and Requirements
 
-Kulala CLI requires Neovim (nvim) and curl to be present on your PATH. 
+Kulala CLI is basically a CLI interface for Kulala, so it requires Neovim (nvim) and curl to be present on your PATH. 
+
+You can install it either as you would usually install Kulala as a Neovim plugin, or you can manually clone the repository.
 
 Optionally, grpcurl (for GRPC), websocat (for Websockets), jq (for JSON formatting) and nvim-treesitter for response highlighting may be installed.
+
+The CLI executable is `kulala.nvim/lua/cli/kulala_cli.lua` file, which you can put on your PATH.
 
 ## Configuration
 

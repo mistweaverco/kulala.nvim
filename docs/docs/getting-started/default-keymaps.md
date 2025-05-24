@@ -54,6 +54,7 @@ Keymaps with `ft` set will only be available in buffers with the specified filet
   ["Show script output"] = { "O", function() require("kulala.ui").show_script_output() end, },
   ["Show stats"] = { "S", function() require("kulala.ui").show_stats() end, },
   ["Show report"] = { "R", function() require("kulala.ui").show_report() end, },
+  ["Show filter"] = { "F", function() require("kulala.ui").toggle_filter() end },
 
   ["Send WS message"] = { "<S-CR>", function() require("kulala.cmd.websocket").send() end, mode = { "n", "v" }, },
   ["Interrupt requests"] = { "<C-c>", function() require("kulala.cmd.websocket").close() end, desc = "also: CLose WS connection" },
