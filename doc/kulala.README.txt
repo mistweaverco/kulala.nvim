@@ -5,10 +5,10 @@ Table of Contents                            *kulala.README-table-of-contents*
 
 1. kulala.nvim                                     |kulala.README-kulala.nvim|
   - Features                              |kulala.README-kulala.nvim-features|
-2. .                                                         |kulala.README-.|
-3. ..                                                       |kulala.README-..|
-  - Install                                         |kulala.README-..-install|
-  - Honorable mentions                   |kulala.README-..-honorable-mentions|
+2. •                                                     |kulala.README-•|
+3. ••                                               |kulala.README-••|
+  - Install                                     |kulala.README-••-install|
+  - Honorable mentions               |kulala.README-••-honorable-mentions|
 4. Links                                                 |kulala.README-links|
 
 ==============================================================================
@@ -23,7 +23,8 @@ https://github.com/mistweaverco/kulala.nvim/actions/workflows/tests.yml
 
 Requirements https://neovim.getkulala.net/docs/getting-started/requirements •
 |kulala.README-install| • Usage https://neovim.getkulala.net/docs/usage •
-HTTP File Spec https://neovim.getkulala.net/docs/usage/http-file-spec
+HTTP File Spec https://neovim.getkulala.net/docs/usage/http-file-spec •
+Kulala GH Action https://github.com/mistweaverco/kulala-github-action
 
 A fully-featured REST Client Interface for Neovim.
 
@@ -63,7 +64,7 @@ Scratchpad: for making requests
 
 
 ==============================================================================
-2. .                                                         *kulala.README-.*
+2. •                                                     *kulala.README-•*
 
 Together with Kulala Language Server https://github.com/mistweaverco/kulala-ls
 and Kulala Formatter https://github.com/mistweaverco/kulala-fmt, we aim to
@@ -72,13 +73,13 @@ favourite editor!
 
 
 ==============================================================================
-3. ..                                                       *kulala.README-..*
+3. ••                                               *kulala.README-••*
 
 Kulala team loves feature requests and feedback, so if you have any ideas or
 suggestions, please let us know! We will be happy to implement them ❤️
 
 
-INSTALL                                             *kulala.README-..-install*
+INSTALL                                         *kulala.README-••-install*
 
 
   [!WARNING] Requires Neovim 0.10.0+ and cURL.
@@ -100,7 +101,6 @@ CONFIGURATION
         },
         ft = {"http", "rest"},
         opts = {
-          -- your configuration comes here
           global_keymaps = false,
           global_keymaps_prefix = "<leader>R",
           kulala_keymaps_prefix = "",
@@ -109,9 +109,6 @@ CONFIGURATION
     })
 <
 
-
-  [!WARNING] `opts` needs to be at least an empty table `{}` and can’t be
-  completely omitted.
 
   [!NOTE] By default global keymaps are disabled, change to `global_keymaps =
   true` to get a complete set of key mappings for Kulala. Check the keymaps
@@ -122,7 +119,7 @@ https://neovim.getkulala.net/docs/getting-started/configuration-options for
 more information.
 
 
-HONORABLE MENTIONS                       *kulala.README-..-honorable-mentions*
+HONORABLE MENTIONS                   *kulala.README-••-honorable-mentions*
 
 
 REST.NVIM
@@ -135,10 +132,6 @@ Neovim.
 The actual state of rest.nvim https://github.com/rest-nvim/rest.nvim as
 archived kicked off the development of kulala.nvim.
 
-
-  [!NOTE] The project has been un-archived
-  https://github.com/rest-nvim/rest.nvim/issues/398#issue-2442747909 again, so
-  check it out if you’re looking for an alternative.
 
 CURL.NVIM
 
