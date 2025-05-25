@@ -1,0 +1,31 @@
+### Request 1
+# Kulala Request Description 1
+
+< {%
+console.log("This is PRE request")
+%}
+
+# Kulala Request Description 2
+
+@var_name = var_value
+@var_name_2 = var_value_2
+
+POST https://httpbin.org/post HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+
+{
+"results": [
+{ "id": 1, "desc": "some_username" }
+]
+}
+
+> {%
+console.log("This is POST request")
+%}
+
+### Request 2
+
+GET https://httpbin.org/get?param1=value1&param2=value
+%}
+

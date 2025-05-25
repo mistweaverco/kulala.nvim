@@ -151,10 +151,14 @@ M.get_dir_by_filepath = function(filepath)
   return vim.fn.fnamemodify(filepath, ":h")
 end
 
-M.find_all_http_files = function()
+---Get all http and rest files in given path or current buffer directory
+--- @param path string|nil
+M.find_all_http_files = function(path)
+  path = vim.fn.isdirectory(path) == 1 and path or M.get_current_buffer_dir()
+
   return vim.fs.find(function(name)
     return name:match("%.http$") or name:match("%.rest$")
-  end, { path = M.get_current_buffer_dir(), type = "file", limit = 1000 })
+  end, { path = path, type = "file", limit = 1000 })
 end
 
 -- Writes string to file

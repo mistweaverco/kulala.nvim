@@ -52,7 +52,7 @@ const sidebars: SidebarsConfig = {
         "usage/streaming-and-transfer-chunked",
         "usage/custom-curl-flags",
         "usage/public-methods",
-        "usage/importer",
+        "usage/import-export",
         "usage/api",
         "usage/cli-ci",
         'usage/demos'
