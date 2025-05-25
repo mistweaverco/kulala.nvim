@@ -50,6 +50,7 @@ USAGE - LEARN ABOUT THE MOST IMPORTANT KULALA.NVIM FEATURES!
 - Streaming and transfer chunked.txt |kulala.streaming-and-transfer-chunked.txt|
 - Custom curl flags.txt |kulala.custom-curl-flags.txt|
 - Public methods.txt |kulala.public-methods.txt|
+- Import export.txt |kulala.import-export.txt|
 - Api.txt |kulala.api.txt|
 - Cli ci.txt |kulala.cli-ci.txt|
 - Demos.txt |kulala.demos.txt|
