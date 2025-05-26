@@ -18,6 +18,7 @@ local function get_vscode_env()
       local success, settings_json_content = pcall(vim.fn.readfile, vscode_dir .. "/settings.json")
 
       if success then
+        settings_json_content = table.concat(settings_json_content)
         local settings = Json.parse(settings_json_content)
         if not (settings and settings["rest-client.environmentVariables"]) then return end
 
