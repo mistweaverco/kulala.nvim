@@ -19,6 +19,7 @@ local setup = function()
   Cmd = require("kulala.cmd")
   Db = require("kulala.db")
   Parser = require("kulala.parser.document")
+  Export = require("kulala.cmd.export")
   Colors = require("cli.colors")
   Ui = require("kulala.ui")
   UI_utils = require("kulala.ui.utils")
@@ -64,7 +65,7 @@ local function get_args()
 
   local parser = Argparse()({
     name = "Kulala CLI",
-    description = "REST client CLI",
+    description = "Kualala REST client CLI",
     epilog = "For more info, see https://neovim.getkulala.net\n",
   })
 
@@ -85,10 +86,16 @@ local function get_args()
   parser:flag("--halt", "Halt on error")
   parser:flag("-m --mono", "Monochrome output")
 
+  parser:require_command(false)
+  parser:command("import"):summary("Import HTTP files from Postman/OpenAPI/Bruno")
+  parser:command("export"):summary("Export HTTP file or folder to Postman collection")
+
   args = parser:parse(_G.arg)
 
   args.name = args.name or {}
   args.line = args.line or {}
+
+  if vim.tbl_contains({ "import", "export" }, args.input[1]) then args.command = table.remove(args.input, 1) end
 
   _G.arg = args
 end
@@ -196,8 +203,15 @@ local function run_file(file)
   return status
 end
 
+local function run_command()
+  if args.command == "export" then Export.export_requests(args.input[1]) end
+  return true
+end
+
 local function run()
   local status = true
+
+  if args.command then return run_command() end
 
   vim.iter(args.input):each(function(path)
     path = vim.fs.normalize(vim.fs.abspath(path))

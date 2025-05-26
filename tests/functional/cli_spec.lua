@@ -1,6 +1,7 @@
 ---@diagnostic disable: undefined-field
 local Config = require("kulala.config")
 local Db = require("kulala.db")
+local Fs = require("kulala.utils.fs")
 local h = require("test_helper")
 
 local function run_cli(args)
@@ -144,5 +145,14 @@ describe("cli", function()
     assert.is_same(1, exit_code)
     assert.is_same(1, curl.requests_no)
     assert.has_string(output.log, "Status: FAIL")
+  end)
+
+  it("exports HTTP file", function()
+    stub(Fs, "write_json", true)
+
+    run_cli({ "export", h.expand_path("fixtures/export") })
+    assert.has_string(output.log, "Exported collection:")
+
+    Fs.write_json:revert()
   end)
 end)

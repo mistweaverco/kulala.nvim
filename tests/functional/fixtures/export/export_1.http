@@ -2,7 +2,7 @@
 # Kulala Request Description 1
 
 < {%
-console.log("This is PRE request")
+  console.log("This is PRE request")
 %}
 
 # Kulala Request Description 2
@@ -15,17 +15,17 @@ Accept: application/json
 Content-Type: application/json
 
 {
-"results": [
-{ "id": 1, "desc": "some_username" }
-]
+  "results": [
+    { "id": 1, "desc": "some_username" }
+  ]
 }
 
 > {%
-console.log("This is POST request")
+  console.log("This is POST request")
 %}
 
 ### Request 2
 
 GET https://httpbin.org/get?param1=value1&param2=value
-%}
 
+> ./post.js

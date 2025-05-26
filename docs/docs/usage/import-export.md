@@ -21,5 +21,13 @@ The importer will try to detect the format automatically, but if it fails, you c
 
 Currently, Kulala supports exporting to Postman collections format only.
 
-Export can be run either through `Export requests` code action, which is available in `http` and `rest` files, or directly 
-with `require("kulala").export()` command, while inside the buffer with the HTTP collection to export.
+Export can be run either through `Export file` or `Export folder` code action, which is available in `http` and `rest` files, or directly 
+with `require("kulala").export(path)` command, where `path=file|folder|nil`, while inside the buffer with the HTTP collection to export.
+
+:::info
+
+Currently, Kulala exports body of the request in the `raw` format only, which is fully functional, 
+but you will not get form-data and form-urlencoded variables laid out in the Postman UI.  If this is critical for you, please let us know by opening an issue and we will 
+implement it in the future.
+
+:::

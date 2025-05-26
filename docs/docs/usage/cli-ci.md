@@ -31,6 +31,10 @@ Usage:
 
       [<input>] ...
 
+Commands:
+      import                    Import HTTP file from Postman/OpenAPI/Bruno
+      export                    Export HTTP file or folder to Postman collection
+
 Arguments:
 
       input                      Path to folder or HTTP file/s

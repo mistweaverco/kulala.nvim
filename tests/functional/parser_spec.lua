@@ -90,6 +90,7 @@ describe("requests", function()
             ###
             # @curl-location
             # @curl-data-urlencode
+            # @curl-connect-timeout 1000
             POST https://httpbingo.org/2
             Content-Type: application/json
 
@@ -107,6 +108,8 @@ describe("requests", function()
         assert.is_true(vim.tbl_contains(result.cmd, "--compressed"))
         assert.is_true(vim.tbl_contains(result.cmd, "--location"))
         assert.is_true(vim.tbl_contains(result.cmd, "--data-urlencode"))
+        assert.is_true(vim.tbl_contains(result.cmd, "--connect-timeout"))
+        assert.is_true(vim.tbl_contains(result.cmd, "1000"))
       end)
 
       it("processes SSL Configuration", function()
