@@ -147,6 +147,14 @@ describe("cli", function()
     assert.has_string(output.log, "Status: FAIL")
   end)
 
+  pending("imports HTTP files", function()
+    local file = h.expand_path("fixtures/export/export.json")
+    run_cli({ "import", "--from", "postman", file })
+
+    Fs.delete_file(h.expand_path("fixtures/export/export.http"))
+    assert.has_string(output.log, "Converted PostMan Collection")
+  end)
+
   it("exports HTTP file", function()
     stub(Fs, "write_json", true)
 

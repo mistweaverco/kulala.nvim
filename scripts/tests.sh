@@ -26,6 +26,16 @@ install_dependencies() {
   cd ./tests/functional/scripts
   npm install
   cd ../../..
+
+
+
+  # to build tree-sitter-kulala
+  # echo "Installing Python packages ===================================="
+  # apt-get update
+  # apt-get install -y python3-pip
+
+  # echo "Installing kulala-fmt ===================================="
+  # npm install -g @mistweaverco/kulala-fmt
 }
 
 run() {

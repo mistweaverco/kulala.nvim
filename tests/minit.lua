@@ -10,6 +10,7 @@ _, _G.DevTools = pcall(require, "log")
 
 -- Install JS scripts dependencies
 require("kulala.parser.scripts.engines.javascript").install_dependencies(true)
+-- require("kulala.cmd.fmt").check_formatter(nil, true)
 
 -- Setup lazy.nvim
 require("lazy.minit").busted({

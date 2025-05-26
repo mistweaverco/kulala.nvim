@@ -8,12 +8,12 @@ local Shell = require("kulala.cmd.shell_utils")
 local M = {}
 
 local FMT_DIR = Fs.get_plugin_root_dir() .. "/../../fmt"
-local FMT_BUILD_DIR = Fs.join_paths(Fs.get_plugin_tmp_dir(), "fmt")
+local FMT_BUILD_DIR = Fs.join_paths(Fs.get_plugin_tmp_dir(), "fmt") -- .cache/nvim/kulala/fmt
 
 local NPM_BIN = vim.fn.exepath("npm")
-local FMT_BIN = FMT_BUILD_DIR .. "/dist/cli.cjs"
+local FMT_CMD = { "npm", "exec", "--prefix", FMT_BUILD_DIR, "--", "kulala-fmt" }
 
-M.check_formatter = function(callback)
+M.check_formatter = function(callback, wait)
   if vim.g.kulala_fmt_installing then return false end
 
   local function get_build_ver()
@@ -24,16 +24,16 @@ M.check_formatter = function(callback)
   Db.session.fmt_build_ver_repo = Db.session.fmt_build_ver_repo or get_build_ver()
   if Db.settings.fmt_build_ver_local == Db.session.fmt_build_ver_repo then return true end
 
+  Logger.warn("Updating formatter...please wait")
   local progress = Float.create_progress_float("Updating formatter...")
 
-  local co
+  local co, cmd_install, cmd_build
   co = coroutine.create(function()
     vim.g.kulala_fmt_installing = true
 
     Fs.copy_dir(FMT_DIR, FMT_BUILD_DIR)
-    Fs.make_executable(FMT_BIN)
 
-    Shell.run(
+    cmd_install = Shell.run(
       { NPM_BIN, "install", "--prefix", FMT_BUILD_DIR },
       { err_msg = "Formatter install failed: ", on_error = progress.hide },
       function()
@@ -42,7 +42,7 @@ M.check_formatter = function(callback)
     )
     Async.co_yield(co)
 
-    Shell.run(
+    cmd_build = Shell.run(
       { NPM_BIN, "run", "build", "--prefix", FMT_BUILD_DIR },
       { err_msg = "Formatter build failed: ", on_error = progress.hide },
       function()
@@ -54,11 +54,16 @@ M.check_formatter = function(callback)
     Db.settings:write({ fmt_build_ver_local = Db.session.fmt_build_ver_repo })
     vim.g.kulala_fmt_installing = false
 
-    callback()
+    _ = callback and callback()
     progress.hide()
   end)
 
   Async.co_resume(co)
+
+  _ = wait and cmd_install:wait()
+  if not cmd_build then return false end
+
+  _ = wait and cmd_build:wait()
 
   return false
 end
@@ -67,16 +72,24 @@ M.format = function(text)
   text = type(text) == "table" and text or { text }
   text = table.concat(text, "\n") .. "\n"
 
-  local result = Shell.run({ FMT_BIN, "format", "--stdin" }, { stdin = text, err_msg = "Formatter error: " })
+  local cmd = vim.list_extend(vim.deepcopy(FMT_CMD), { "format", "--stdin" })
+  local result = Shell.run(cmd, { stdin = text, err_msg = "Formatter error: " })
+
   result = result and result:wait()
 
   return result and result.stdout
 end
 
-M.convert = function(from)
-  local path = vim.fn.expand("%:p")
-  local ft = vim.bo.filetype
-  local cmd = { FMT_BIN, "convert" }
+---Converts from Postman/OpenAPI/Bruno to HTTP
+---@param from string|nil "postman"|"openapi"|"bruno"
+---@param path string|nil Path to the file to convert
+M.convert = function(from, path)
+  M.check_formatter(nil, true)
+  path = path or vim.fn.expand("%:p")
+
+  local ext = vim.fn.fnamemodify(path, ":e")
+  local ft = ext:match("ya?ml") and "yaml" or ext:match("bruno") and "bruno"
+  local cmd = vim.list_extend(vim.deepcopy(FMT_CMD), { "convert" })
 
   if ft == "bruno" then
     from = "bruno"

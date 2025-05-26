@@ -239,6 +239,10 @@ M.export_requests = function(action)
     path = bufname
   end
 
+  if vim.fn.isdirectory(path) + vim.fn.filereadable(path) == 0 then
+    return Logger.error("Folder/File not found: " .. path)
+  end
+
   local collection = to_postman(path, export_type)
 
   local file = vim.fn.fnamemodify(path, ":t:r") .. ".json"

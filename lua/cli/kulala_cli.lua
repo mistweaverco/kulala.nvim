@@ -20,6 +20,7 @@ local setup = function()
   Db = require("kulala.db")
   Parser = require("kulala.parser.document")
   Export = require("kulala.cmd.export")
+  Fmt = require("kulala.cmd.fmt")
   Colors = require("cli.colors")
   Ui = require("kulala.ui")
   UI_utils = require("kulala.ui.utils")
@@ -87,8 +88,14 @@ local function get_args()
   parser:flag("-m --mono", "Monochrome output")
 
   parser:require_command(false)
-  parser:command("import"):summary("Import HTTP files from Postman/OpenAPI/Bruno")
   parser:command("export"):summary("Export HTTP file or folder to Postman collection")
+  parser:command("import"):summary("Import HTTP files from Postman/OpenAPI/Bruno")
+
+  parser:option("-f --from", "Import from"):choices({
+    "postman",
+    "openapi",
+    "bruno",
+  })
 
   args = parser:parse(_G.arg)
 
@@ -204,7 +211,11 @@ local function run_file(file)
 end
 
 local function run_command()
-  if args.command == "export" then Export.export_requests(args.input[1]) end
+  if #args.input == 0 then return Logger.error("No input file specified") end
+
+  _ = args.command == "export" and Export.export_requests(args.input[1])
+  _ = args.command == "import" and Fmt.convert(args.from, args.input[1])
+
   return true
 end
 
