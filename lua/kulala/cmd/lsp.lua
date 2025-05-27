@@ -1006,7 +1006,7 @@ function M.start_lsp(buf, ft)
   local client_id = vim.lsp.start({
     name = "kulala",
     cmd = server,
-    root_dir = ft,
+    root_dir = vim.fs.root(0, ".git") or vim.fn.getcwd() or ft,
     bufnr = buf,
     on_init = function(_client) end,
     on_exit = function(_code, _signal) end,
