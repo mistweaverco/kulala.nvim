@@ -310,6 +310,10 @@ local function process_body(request)
   local content_type_header_name, content_type_header_value = PARSER_UTILS.get_header(request.headers, "content-type")
 
   if content_type_header_name and content_type_header_value and request.body and #request.body_computed > 0 then
+    if content_type_header_value == "application/x-www-form-urlencoded" then
+      request.body_computed = request.body_computed:gsub("\n", "")
+    end
+
     local status, path = save_body_with_files(request)
 
     if status then
