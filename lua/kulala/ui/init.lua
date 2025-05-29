@@ -130,13 +130,11 @@ local function open_kulala_window(buf)
   end
 
   win_config = vim.tbl_extend("force", win_config, config.ui.win_opts or {})
-  win = vim.api.nvim_open_win(buf, true, win_config)
+  win = vim.api.nvim_open_win(buf, false, win_config)
 
   vim.api.nvim_set_option_value("signcolumn", "yes:1", { win = win })
   vim.api.nvim_set_option_value("number", false, { win = win })
   vim.api.nvim_set_option_value("relativenumber", false, { win = win })
-
-  _ = config.display_mode == "split" and vim.api.nvim_set_current_win(request_win)
 
   return win
 end
