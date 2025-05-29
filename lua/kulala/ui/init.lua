@@ -136,6 +136,8 @@ local function open_kulala_window(buf)
   vim.api.nvim_set_option_value("number", false, { win = win })
   vim.api.nvim_set_option_value("relativenumber", false, { win = win })
 
+  -- _ = config.display_mode == "split" and vim.api.nvim_set_current_win(request_win)
+
   return win
 end
 
