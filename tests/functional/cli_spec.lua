@@ -147,7 +147,8 @@ describe("cli", function()
     assert.has_string(output.log, "Status: FAIL")
   end)
 
-  pending("imports HTTP files", function()
+  -- pending, as fmt-dependencies install in minit.lua gives weird errors in lazy.nvim async runner
+  pending("it::imports HTTP files", function()
     local file = h.expand_path("fixtures/export/export.json")
     run_cli({ "import", "--from", "postman", file })
 

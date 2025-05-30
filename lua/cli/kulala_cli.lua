@@ -66,7 +66,7 @@ local function get_args()
 
   local parser = Argparse()({
     name = "Kulala CLI",
-    description = "Kualala REST client CLI",
+    description = "Kulala REST client CLI",
     epilog = "For more info, see https://neovim.getkulala.net\n",
   })
 
