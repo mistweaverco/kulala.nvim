@@ -11,7 +11,7 @@ local FMT_DIR = Fs.get_plugin_root_dir() .. "/../../fmt"
 local FMT_BUILD_DIR = Fs.join_paths(Fs.get_plugin_tmp_dir(), "fmt") -- .cache/nvim/kulala/fmt
 
 local NPM_BIN = vim.fn.exepath("npm")
-local FMT_CMD = { "npm", "exec", "--prefix", FMT_BUILD_DIR, "--", "kulala-fmt" }
+local FMT_CMD = { NPM_BIN, "exec", "--prefix", FMT_BUILD_DIR, "--", "kulala-fmt" }
 
 M.check_formatter = function(callback, wait)
   if vim.g.kulala_fmt_installing then return false end
@@ -61,7 +61,7 @@ M.check_formatter = function(callback, wait)
   Async.co_resume(co)
 
   _ = wait and cmd_install:wait()
-  if not cmd_build then return false end
+  if not cmd_build then return false end -- close coutine if install failed ?
 
   _ = wait and cmd_build:wait()
 
@@ -85,7 +85,7 @@ end
 ---@param path string|nil Path to the file to convert
 M.convert = function(from, path)
   M.check_formatter(nil, true)
-  path = path or vim.fn.expand("%:p")
+  path = type(path) == "string" and path or vim.fn.expand("%:p")
 
   local ext = vim.fn.fnamemodify(path, ":e")
   local ft = ext:match("ya?ml") and "yaml" or ext:match("bruno") and "bruno"

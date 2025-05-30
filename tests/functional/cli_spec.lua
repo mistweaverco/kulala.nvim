@@ -147,7 +147,7 @@ describe("cli", function()
     assert.has_string(output.log, "Status: FAIL")
   end)
 
-  pending("imports HTTP files", function()
+  pending("it::imports HTTP files", function()
     local file = h.expand_path("fixtures/export/export.json")
     run_cli({ "import", "--from", "postman", file })
 
