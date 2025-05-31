@@ -271,12 +271,15 @@ local function set_headers(request, document_variables, env)
 end
 
 local function process_graphql(request)
-  local is_graphql = request.method == "GRAPHQL"
-    or PARSER_UTILS.contains_meta_tag(request, "graphql")
-    or PARSER_UTILS.contains_header(request.headers, "x-request-type", "graphql")
+  local has_graphql_meta_tag = PARSER_UTILS.contains_meta_tag(request, "graphql")
+  local has_graphql_header = PARSER_UTILS.contains_header(request.headers, "x-request-type", "graphql")
+
+  local is_graphql = request.method == "GRAPHQL" or has_graphql_meta_tag or has_graphql_header
 
   if request.body and #request.body > 0 and is_graphql then
     request.method = "POST"
+    if not has_graphql_header then request.headers["x-request-type"] = "GraphQL" end
+
     local gql_json = GRAPHQL_PARSER.get_json(request.body)
 
     if gql_json then

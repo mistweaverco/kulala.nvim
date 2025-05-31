@@ -10,17 +10,10 @@ local M = {}
 M.download_schema = function()
   local req = Parser.parse()
 
-  if not req then
-    Logger.error("No request found")
-    return
-  end
+  if not req then return Logger.error("No request found") end
 
-  if
-    Parserutils.contains_meta_tag(req, "graphql") == false
-    and Parserutils.contains_header(req.headers, "x-request-type", "GraphQL") == false
-  then
-    Logger.warn("Not a GraphQL request")
-    return
+  if not Parserutils.contains_header(req.headers, "x-request-type", "GraphQL") then
+    return Logger.warn("Not a GraphQL request")
   end
 
   if not Parserutils.contains_header(req.headers, "content-type", "application/json") then
