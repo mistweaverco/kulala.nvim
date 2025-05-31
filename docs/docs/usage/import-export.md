@@ -9,7 +9,7 @@ Kulala comes with built-in support for importing and exporting HTTP collections 
 The import is provided by the formatter module which should be enabled in the options:
 
 ```lua
-opts = { ui = { formatter = true } }
+opts = { lsp = { formatter = true } }
 ```
 
 Import can be run either through `Convert to HTTP` code action, which is available in `json`, `yaml`, and `bruno` files, or directly 
@@ -26,8 +26,7 @@ with `require("kulala").export(path)` command, where `path=file|folder|nil`, whi
 
 :::info
 
-Currently, Kulala exports body of the request in the `raw` format only, which is fully functional, 
-but you will not get form-data and form-urlencoded variables laid out in the Postman UI.  If this is critical for you, please let us know by opening an issue and we will 
-implement it in the future.
+Currently, Kulala supports export of Authentication data for Basic and Bearer authentication methods only.
+If you need to export other authentication methods, please open an issue on the Kulala GitHub repository.
 
 :::

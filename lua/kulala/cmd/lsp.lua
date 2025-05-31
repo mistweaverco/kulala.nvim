@@ -923,7 +923,7 @@ end
 
 local function initialize(params)
   local ft = params.rootPath:sub(2)
-  formatter = Config.options.formatter and Fmt.check_formatter(function()
+  formatter = Config.options.lsp.formatter and Fmt.check_formatter(function()
     formatter = true
   end)
 

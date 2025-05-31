@@ -119,12 +119,6 @@ local M = {
 
     disable_news_popup = false,
 
-    -- enable/disable built-in autocompletion
-    autocomplete = true,
-
-    -- enable/disable HTTP formatter
-    formatter = false,
-
     -- enable/disable lua syntax highlighting
     lua_syntax_hl = true,
 
@@ -146,6 +140,14 @@ local M = {
         end,
       },
     },
+  },
+
+  lsp = {
+    -- enable/disable built-in LSP server
+    enable = true,
+
+    -- enable/disable HTTP formatter
+    formatter = false,
   },
 
   -- enable/disable debug mode

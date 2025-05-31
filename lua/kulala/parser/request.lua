@@ -200,8 +200,6 @@ local function get_file_with_replaced_variables(path, request)
 end
 
 ---Save body to a temporary file, including files specified with "< /path" syntax into request body
----NOTE: We are not saving the line endings, except "\r\n" which appear in multipart-form
-
 ---@param request Request
 ---@return boolean|nil status
 ---@return string|nil result_path path
@@ -276,7 +274,7 @@ local function process_graphql(request)
 
   local is_graphql = request.method == "GRAPHQL" or has_graphql_meta_tag or has_graphql_header
 
-  if request.body and #request.body > 0 and is_graphql then
+  if is_graphql and request.body and #request.body > 0 then
     request.method = "POST"
     if not has_graphql_header then request.headers["x-request-type"] = "GraphQL" end
 

@@ -3,6 +3,7 @@
 ## Version 5.4.0
 
 ### Feature: Export requests to [Postman](usage/import-export.md)
+### Enhancement: add `import|export` commands to CLI
 
 ## Version 5.3.0
 

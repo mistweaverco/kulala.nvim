@@ -2,6 +2,7 @@ local Fs = require("kulala.utils.fs")
 local Graphql = require("kulala.parser.graphql")
 local Logger = require("kulala.logger")
 local Parser = require("kulala.parser.document")
+local Parser_utils = require("kulala.parser.utils")
 
 local lsp = vim.lsp
 
@@ -54,6 +55,7 @@ local Postman = {
 
   request = {
     description = "",
+    auth = nil,
     url = "", -- string | url
     method = "", -- string
     header = {}, -- header | header[]
@@ -85,8 +87,6 @@ local Postman = {
     options = nil,
   },
 
-  urlencoded = { key = "", value = "", disabled = false },
-
   formdata = {
     type = "", -- "text"|"file"
     src = "", -- string|string[]|nil
@@ -102,6 +102,21 @@ local Postman = {
   },
 
   graphql = { query = "", variables = {} },
+
+  auth = {
+    type = "",
+    noauth = nil,
+    apikey = nil,
+    awsv4 = nil,
+    basic = nil,
+    bearer = nil,
+    digest = nil,
+    edgegrid = nil,
+    hawk = nil,
+    ntlm = nil,
+    oauth1 = nil,
+    oauth2 = nil,
+  },
 }
 
 local function new(tbl, params)
@@ -109,28 +124,211 @@ local function new(tbl, params)
   return vim.tbl_deep_extend("force", tbl, params or {})
 end
 
-local function get_url(request)
-  return request.url
-end
-
 local function get_headers(request)
   local headers = {}
+
   vim.iter(request.headers):each(function(key, value)
     local header = new(Postman.header, { key = key, value = value })
+
+    -- let Postman set these headers
+    if
+      Parser_utils.contains_header(request.headers, "Content-Type", "multipart/form-data")
+      or Parser_utils.contains_header(request.headers, "Authorization")
+    then
+      return
+    end
+
     table.insert(headers, header)
   end)
+
   return headers
 end
 
+local function parse_params(body)
+  local params_map, params = {}, {}
+
+  -- Handle arrays
+  -- colors[]=red&colors[]=blue
+  -- colors[0]=red&colors[1]=blue
+  for pair in body:gmatch("([^&]+)") do
+    local k, v = pair:match("^([^=]+)=?(.*)")
+    if k then
+      -- Handle array notation like key[] or key[0]
+      local base_key = k:match("^([^%[]+)%[")
+      if base_key then
+        params_map[base_key] = params_map[base_key] or {}
+        table.insert(params_map[base_key], v or "")
+      else -- Handle simple and repeated keys like key=value&key=another_value
+        if params_map[k] then
+          -- Key already exists, convert to array
+          if type(params_map[k]) ~= "table" then params_map[k] = { params_map[k] } end
+          table.insert(params_map[k], v or "")
+        else
+          params_map[k] = v or ""
+        end
+      end
+    end
+  end
+
+  for k, v in pairs(params_map) do
+    -- Array value - Postman expects one entry with comma-separated values
+    local value = type(v) == "table" and table.concat(v, ",") or v
+    table.insert(params, new(Postman.query_param, { key = k, value = value }))
+  end
+
+  return params
+end
+
+local function get_url(request)
+  local url = new(Postman.url, { raw = request.url })
+
+  local protocol, rest = request.url:match("^([^:]+)://(.*)$")
+  url.protocol = protocol or "http"
+
+  rest = protocol and rest or request.url
+
+  local authority, path_query_fragment = rest:match("^([^/]+)(.*)$")
+  authority = authority or rest
+
+  local host, port = authority:match("^([^:]+):(.+)$")
+  url.host = host or authority
+  url.port = port
+
+  if not path_query_fragment then
+    url.path = "/"
+  else
+    local path = path_query_fragment:match("^([^?#]*)")
+    url.path = path or "/"
+
+    local query_string = path_query_fragment:match("%?([^#]*)") or ""
+    url.query = parse_params(query_string)
+    url.hash = path_query_fragment:match("#(.*)$")
+  end
+
+  return url
+end
+
+-- The standard formdata format is:
+-- --boundary\r\n
+-- headers\r\n\r\n
+-- content\r\n
+-- --boundary\r\n
+-- ... more parts ...
+-- --boundary--\r\n
+local function parse_formdata(body, boundary)
+  local formdata_items, parts = {}, {}
+  local escaped_boundary = ("--" .. boundary):gsub("([%.%-%+%[%]%(%)%^%$%*%?%%])", "%%%1")
+
+  local pattern = escaped_boundary .. "\r\n(.-)\r\n" .. escaped_boundary
+
+  local first_part = body:match(pattern) -- first part might not have a leading boundary
+  if first_part then
+    table.insert(parts, first_part)
+    body = body:sub(2 + #boundary + #first_part)
+  end
+
+  local part = ""
+  while part do
+    part = body:match("\r\n" .. pattern)
+    if not part then break end
+
+    table.insert(parts, part)
+    body = body:sub(4 + #boundary + #part)
+  end
+
+  for _, part in ipairs(parts) do
+    local headers, content = part:match("(.-)\r\n\r\n(.*)")
+
+    if headers and content then
+      local name = headers:match('name="([^"]+)"')
+      local filename = headers:match('filename="([^"]+)"')
+      local content_type = headers:match("Content%-Type: ([^\r\n]+)")
+
+      local item = new(Postman.formdata, { key = name or "", contentType = content_type or "" })
+
+      --TODO: get file contents as value
+      if filename then
+        item.type = "file"
+        item.src = filename
+      else
+        item.type = "text"
+        item.value = content
+      end
+
+      table.insert(formdata_items, item)
+    end
+  end
+
+  return formdata_items
+end
+
+local function request_type(request, type)
+  return request.method == type or Parser_utils.contains_header(request.headers, "Content-Type", type)
+end
+
 local function get_body(request)
-  if request.method == "GRAPHQL" then
+  local body = new(Postman.body, { mode = "raw", raw = request.body })
+
+  if request_type(request, "GRAPHQL") then
     request.method = "POST" -- Postman expects POST for GraphQL requests
 
     local _, json = Graphql.get_json(request.body)
-    return new(Postman.body, { mode = "graphql", graphql = json or {} })
+
+    body.mode = "graphql"
+    body.graphql = json or {}
   end
 
-  return new(Postman.body, { mode = "raw", raw = request.body })
+  if request_type(request, "application/x-www-form-urlencoded") then
+    body.mode = "urlencoded"
+    body.urlencoded = parse_params(request.body) or {}
+  end
+
+  if request_type(request, "multipart/form-data") then
+    local boundary
+
+    for key, value in pairs(request.headers) do
+      if key:lower() == "content-type" then
+        boundary = value:match("boundary=([^;]+)")
+        break
+      end
+    end
+
+    body.mode = "formdata"
+    body.formdata = parse_formdata(request.body, boundary)
+  end
+
+  return body
+end
+
+local function auth_type(request, type)
+  return Parser_utils.contains_header(request.headers, "Authorization", type)
+end
+
+local function get_auth(request)
+  local auth = new(Postman.auth)
+
+  if auth_type(request, "basic") then
+    auth.type = "basic"
+    auth.basic = {}
+
+    local header = Parser_utils.get_header_value(request.headers, "Authorization") or ""
+    local user, pass = header:match("[Bb]asic ([^:]+):(.*)")
+
+    table.insert(auth.basic, { key = "username", value = user })
+    table.insert(auth.basic, { key = "password", value = pass })
+  end
+
+  if auth_type(request, "bearer") then
+    auth.type = "bearer"
+    auth.bearer = {}
+
+    local header = Parser_utils.get_header_value(request.headers, "Authorization") or ""
+    local token = header:match("[Bb]earer (.*)")
+
+    table.insert(auth.bearer, { key = "token", value = token })
+  end
+
+  return auth
 end
 
 local function get_script(scripts, type)
@@ -199,6 +397,7 @@ local function to_postman(path, export_type)
 
       item.request = new(Postman.request, {
         description = table.concat(request.comments, "\n"),
+        auth = get_auth(request),
         url = get_url(request),
         header = get_headers(request),
         body = get_body(request),

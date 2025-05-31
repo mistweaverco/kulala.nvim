@@ -1,0 +1,11 @@
+### Basic auth
+
+POST https://httpbin.org/post HTTP/1.1
+Authorization: Basic user:pass
+Content-Type: application/json
+
+### Bearer Token
+
+POST https://httpbin.org/post HTTP/1.1
+Authorization: Bearer secret_token
+Content-Type: application/json

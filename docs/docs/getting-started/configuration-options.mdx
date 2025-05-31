@@ -831,14 +831,6 @@ Example:
 
 Disable the news popup.
 
-### ui.autocomplete
-
-Enable/disable built-in autocompletion.
-
-### ui.formatter
-
-Enable/disable HTTP formatter
-
 ### ui.lua_syntax_hl
 
 Enable/disable lua syntax highlighting.
@@ -867,6 +859,25 @@ pickers = {
 },
 ```
 
+## LSP
+
+### lsp.enable
+
+Enable/disable Kulala LSP server.
+
+### lsp.formatter
+
+Enable/disable HTTP formatter.
+
+```lua
+{
+  lsp = {
+    enable = true,
+    formatter = false,
+  },
+}
+
+```
 ## Keymaps
 
 ### global_keymaps

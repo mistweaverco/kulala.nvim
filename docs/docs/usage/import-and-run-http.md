@@ -4,7 +4,7 @@ Kulala lets you import HTTP requests from other .http files. You can:
 
 - Run all HTTP requests from specified files
 - Run specific HTTP requests from imported files
-- Run specifig HTTP requests from current file
+- Run specific HTTP requests from current file
 
 ## Usage
 
