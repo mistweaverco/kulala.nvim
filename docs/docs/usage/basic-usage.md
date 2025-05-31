@@ -134,9 +134,9 @@ require("nvim-lightbulb").setup({
 
 #### Scripts
 
-- `> {% %}` and `> {% -- lua }` allow you to run an inline `pre-request` `js|lua` scripts.
-- `> /path/to/script.js|lua` allows you to run a `pre-request` `js|lua` script in a file.
-- `< {% %}` and `< {% --lua %}` allows you to run an inline `post-request` `js|lua` script.
-- `< /path/to/script.js|lua` allows you to run a `post-request` `js|lua` script in a file.
+- `< {% %}` and `< {% -- lua }` allow you to run an inline `pre-request` `js|lua` scripts.
+- `< /path/to/script.js|lua` allows you to run a `pre-request` `js|lua` script in a file.
+- `> {% %}` and `> {% --lua %}` allows you to run an inline `post-request` `js|lua` script.
+- `> /path/to/script.js|lua` allows you to run a `post-request` `js|lua` script in a file.
 
 For details please consult the corresponding sections in the documentation.

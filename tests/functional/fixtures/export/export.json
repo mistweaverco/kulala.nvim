@@ -1,0 +1,187 @@
+{
+  "info": {
+    "description": "Exported from Kulala: /home/yaro/projects/kulala.nvim/tests/functional/fixtures/export",
+    "name": "export",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/"
+  },
+  "item": [
+    {
+      "description": "Kulala Export: /home/yaro/projects/kulala.nvim/tests/functional/fixtures/export/export_1.http",
+      "item": [
+        {
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "  console.log(\"This is PRE request\")"
+                ],
+                "name": "inline",
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "  console.log(\"This is POST request\")"
+                ],
+                "name": "inline",
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "id": "export_1:3",
+          "name": "Request 1",
+          "request": {
+            "body": {
+              "disabled": false,
+              "mode": "raw",
+              "raw": "{\n  \"results\": [\n    { \"id\": 1, \"desc\": \"some_username\" }\n  ]\n}"
+            },
+            "description": "Kulala Request Description 1\nKulala Request Description 2",
+            "header": [
+              {
+                "disabled": false,
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "disabled": false,
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "url": "https://httpbin.org/post"
+          },
+          "response": []
+        },
+        {
+          "event": [],
+          "id": "export_1:29",
+          "name": "Request 2",
+          "request": {
+            "body": {
+              "disabled": false,
+              "mode": "raw",
+              "raw": ""
+            },
+            "description": "",
+            "header": [],
+            "method": "GET",
+            "url": "https://httpbin.org/get?param1=value1&param2=value"
+          },
+          "response": []
+        }
+      ],
+      "name": "export_1"
+    },
+    {
+      "description": "Kulala Export: /home/yaro/projects/kulala.nvim/tests/functional/fixtures/export/export_2.http",
+      "item": [
+        {
+          "event": [],
+          "id": "export_2:7",
+          "name": "Request 3",
+          "request": {
+            "body": {
+              "disabled": false,
+              "mode": "raw",
+              "raw": "{\n  \"results\": [{ \"id\": 1, \"desc\": \"some_username\" }]\n}"
+            },
+            "description": "Kulala Request Description 1",
+            "header": [
+              {
+                "disabled": false,
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "disabled": false,
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "url": "https://httpbin.org/post"
+          },
+          "response": []
+        },
+        {
+          "event": [],
+          "id": "export_2:18",
+          "name": "Request 4",
+          "request": {
+            "body": {
+              "disabled": false,
+              "mode": "raw",
+              "raw": ""
+            },
+            "description": "",
+            "header": [],
+            "method": "GET",
+            "url": "https://httpbin.org/get?param1=value1&param2=value"
+          },
+          "response": []
+        },
+        {
+          "event": [],
+          "id": "export_2:23",
+          "name": "Request 5",
+          "request": {
+            "body": {
+              "disabled": false,
+              "graphql": {
+                "query": "query Person($id: ID) { person(personID: $id) { name } } ",
+                "variables": {
+                  "id": 1
+                }
+              },
+              "mode": "graphql",
+              "raw": ""
+            },
+            "description": "",
+            "header": [
+              {
+                "disabled": false,
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "url": "https://swapi-graphql.netlify.app/graphql"
+          },
+          "response": []
+        }
+      ],
+      "name": "export_2"
+    }
+  ],
+  "variable": [
+    {
+      "disabled": false,
+      "id": "var_name",
+      "key": "var_name",
+      "value": "var_value"
+    },
+    {
+      "disabled": false,
+      "id": "var_name_2",
+      "key": "var_name_2",
+      "value": "var_value_2"
+    },
+    {
+      "disabled": false,
+      "id": "var_name_3",
+      "key": "var_name_3",
+      "value": "var_value_3"
+    },
+    {
+      "disabled": false,
+      "id": "var_name_4",
+      "key": "var_name_4",
+      "value": "var_value_4"
+    }
+  ]
+}

@@ -2,6 +2,7 @@ local Config = require("kulala.config")
 local Db = require("kulala.db")
 local Dynamic_variables = require("kulala.parser.dynamic_vars")
 local Env = require("kulala.parser.env")
+local Export = require("kulala.cmd.export")
 local Fmt = require("kulala.cmd.fmt")
 local Inspect = require("kulala.parser.inspect")
 local Kulala = require("kulala")
@@ -29,7 +30,9 @@ local snippets = {
   { ">>", "> ", "Redirect output to file" },
   { ">>!", ">! ", "Redirect output to file overwriting" },
   { "< {% %}", " {%\n\t${0}\n%}\n", "Pre-request script" },
+  { "< ", " ${1:path/to/script.js}", "Pre-request script file" },
   { "> {% %}", " {%\n\t${0}\n%}\n", "Post-request script" },
+  { "> ", " ${1:path/to/script.js}", "Post-request script file" },
   { "< {% %}", " {%\n\t-- lua\n${0}\n%}\n", "Pre-request lua script" },
   { "> {% %}", " {%\n\t-- lua\n${0}\n%}\n", "Post-request lua script" },
 }
@@ -793,6 +796,18 @@ local function code_actions_http()
       fn = function()
         Ui.open_all()
       end,
+    },
+    {
+      group = "Request",
+      title = "Export file",
+      command = "export_file",
+      fn = Export.export_requests,
+    },
+    {
+      group = "Request",
+      title = "Export folder",
+      command = "export_folder",
+      fn = Export.export_requests,
     },
   }
 end

@@ -107,7 +107,7 @@ end
 
 Output.spy = function()
   Output._spy = true
-  Output.stub()
+  return Output.stub()
 end
 
 Output.stub = function()

@@ -1,5 +1,4 @@
 local Json = require("kulala.utils.json")
-local Logger = require("kulala.logger")
 
 local M = {}
 
@@ -53,6 +52,8 @@ local function parse(body)
   return query_string, variables_string
 end
 
+---Get GraphQL JSON from the request body
+---@return string|nil, table|nil
 M.get_json = function(body)
   local query, variables = parse(body)
   local json = { query = "" }
@@ -68,7 +69,7 @@ M.get_json = function(body)
     json.variables = result
   end
 
-  return vim.json.encode(json)
+  return vim.json.encode(json), json
 end
 
 return M

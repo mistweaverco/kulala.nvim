@@ -26,6 +26,11 @@ install_dependencies() {
   cd ./tests/functional/scripts
   npm install
   cd ../../..
+
+  echo "Installing kulala-fmt build dependencies ===================================="
+
+  # apt-get update -y
+  # apt-get install -y python3-pip gcc g++ make cmake
 }
 
 run() {

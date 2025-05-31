@@ -26,7 +26,7 @@ M.pkce_verifier = function()
   local cmd = ("%s rand -out %s 32"):format(openssl_path(), output_file)
 
   local ret = os.execute(cmd)
-  if ret ~= 0 then return Logger.error(err_msg .. "failed to generate random bytes") end
+  if not ret then return Logger.error(err_msg .. "failed to generate random bytes") end
 
   local verifier = Fs.read_file(output_file, true)
   os.remove(output_file)
@@ -55,7 +55,7 @@ M.pkce_challenge = function(verifier, method)
   local cmd = ("%s dgst -sha256 -binary -out %s %s"):format(openssl_path(), output_file, input_file)
 
   local ret = os.execute(cmd)
-  if ret ~= 0 then
+  if not ret then
     os.remove(input_file)
     return Logger.error(err_msg .. "failed to generate SHA256 hash")
   end
@@ -125,7 +125,7 @@ M.jwt_encode = function(header, payload, key)
   )
 
   local ret = os.execute(cmd)
-  if ret ~= 0 then return Logger.error(err_msg .. "failed to sign with OpenSSL") end
+  if not ret then return Logger.error(err_msg .. "failed to sign with OpenSSL") end
 
   -- Read the signature
   local signature = Fs.read_file(signature_file, true)
