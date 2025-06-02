@@ -156,7 +156,7 @@ Thanks for making it easy to test and develop this plugin.
 2. *Made with love*: assets/badge-made-with-love.svg
 3. *GitHub release (latest by date)*: https://img.shields.io/github/v/release/mistweaverco/kulala.nvim?style=for-the-badge
 4. *Discord*: assets/badge-discord.svg
-5. *Main status*: https://img.shields.io/github/actions/workflow/status/mistweaverco/kulala.nvim/tests.yml?label=main&style=for-the-badge
+5. *Main status*: https://img.shields.io/github/actions/workflow/status/mistweaverco/kulala.nvim/tests.yml?label=main&branch=main&style=for-the-badge
 6. *Develop status*: https://img.shields.io/github/actions/workflow/status/mistweaverco/kulala.nvim/tests.yml?branch=develop&label=develop&style=for-the-badge
 7. *demo*: ./assets/demo.gif
 
