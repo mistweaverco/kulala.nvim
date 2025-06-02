@@ -350,11 +350,13 @@ describe("UI", function()
       result = h.get_buf_lines(ui_buf):to_string()
       assert.has_string(result, 'JQ Filter: { "Content": .headers["Content-Type"], "url": .url }')
 
+      vim.api.nvim_set_current_buf(ui_buf)
       vim.api.nvim_buf_set_lines(ui_buf, 4, 5, false, { 'JQ Filter: { "Content": .json.foo }' })
+
       vim.api.nvim_win_set_cursor(h.get_kulala_win(), { 5, 0 })
       ui.keymap_enter()
 
-      result = h.get_buf_lines(h.get_kulala_buf())
+      result = h.get_buf_lines(ui_buf)
       assert.has_string(result, '"Content": "bar"')
     end)
   end)
@@ -389,6 +391,8 @@ describe("UI", function()
 
       kulala.run_all()
       wait_for_requests(3)
+
+      vim.api.nvim_set_current_buf(ui_buf)
 
       expected = h.load_fixture("fixtures/advanced_E3_body.txt")
       result = h.get_buf_lines(ui_buf):to_string()
@@ -486,6 +490,8 @@ describe("UI", function()
 
       kulala.run_all()
       wait_for_requests(3)
+
+      vim.api.nvim_set_current_buf(ui_buf)
       h.send_keys("[")
 
       result = h.get_buf_lines(ui_buf):to_string()
@@ -512,6 +518,8 @@ describe("UI", function()
 
       kulala.run_all()
       wait_for_requests(3)
+
+      vim.api.nvim_set_current_buf(ui_buf)
       h.send_keys("X")
 
       result = h.get_buf_lines(ui_buf):to_string()
@@ -544,7 +552,9 @@ describe("UI", function()
       kulala.run()
       wait_for_requests(1)
 
+      vim.api.nvim_set_current_buf(ui_buf)
       h.send_keys("q")
+
       assert.is_false(vim.fn.bufexists(ui_buf) > 0)
     end)
 
@@ -656,6 +666,8 @@ describe("UI", function()
 
       kulala.run()
       wait_for_requests(1)
+
+      vim.api.nvim_set_current_buf(ui_buf)
 
       result = h.get_extmarks(ui_buf, 0, 1, { type = "virt_text" })[1][4].virt_text[1]
       assert.is_same("? - help", result[1])

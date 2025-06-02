@@ -1,0 +1,289 @@
+{
+  "info": {
+    "description": "Exported from Kulala: /home/yaro/projects/kulala.nvim/tests/functional/fixtures/export/export_1.http",
+    "name": "export_1",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/"
+  },
+  "item": [
+    {
+      "description": "Kulala Export: /home/yaro/projects/kulala.nvim/tests/functional/fixtures/export/export_1.http",
+      "item": [
+        {
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "  console.log(\"This is PRE request\")"
+                ],
+                "name": "inline",
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "  console.log(\"This is POST request\")"
+                ],
+                "name": "inline",
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "id": "export_1:2",
+          "name": "Request 1",
+          "request": {
+            "body": {
+              "disabled": false,
+              "mode": "raw",
+              "raw": "{\n  \"results\": [\n    { \"id\": 1, \"desc\": \"some_username\" }\n  ]\n}"
+            },
+            "description": "Kulala Request Description 1\nKulala Request Description 2",
+            "header": [
+              {
+                "disabled": false,
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "disabled": false,
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "url": {
+              "host": "httpbin.org",
+              "path": "/post",
+              "protocol": "https",
+              "query": [],
+              "raw": "https://httpbin.org/post"
+            }
+          },
+          "response": []
+        },
+        {
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": "console.log(\"POST script file\");\n",
+                "name": "./post.js",
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "id": "export_1:28",
+          "name": "Request 2",
+          "request": {
+            "body": {
+              "disabled": false,
+              "mode": "raw",
+              "raw": ""
+            },
+            "description": "",
+            "header": [],
+            "method": "GET",
+            "url": {
+              "host": "httpbin.org",
+              "path": "/get",
+              "protocol": "https",
+              "query": [
+                {
+                  "disabled": false,
+                  "key": "param2",
+                  "value": "value"
+                },
+                {
+                  "disabled": false,
+                  "key": "param1",
+                  "value": "value1"
+                }
+              ],
+              "raw": "https://httpbin.org/get?param1=value1&param2=value"
+            }
+          },
+          "response": []
+        },
+        {
+          "event": [],
+          "id": "export_1:34",
+          "name": "Request url params",
+          "request": {
+            "body": {
+              "disabled": false,
+              "mode": "raw",
+              "raw": ""
+            },
+            "description": "",
+            "header": [],
+            "method": "GET",
+            "url": {
+              "hash": "fragment",
+              "host": "httpbin.org",
+              "path": "/get",
+              "port": "443",
+              "protocol": "https",
+              "query": [
+                {
+                  "disabled": false,
+                  "key": "param2",
+                  "value": "value"
+                },
+                {
+                  "disabled": false,
+                  "key": "param1",
+                  "value": "value1"
+                }
+              ],
+              "raw": "https://httpbin.org:443/get?param1=value1&param2=value#fragment"
+            }
+          },
+          "response": []
+        },
+        {
+          "event": [],
+          "id": "export_1:38",
+          "name": "Request Urlencoded Form Params",
+          "request": {
+            "body": {
+              "disabled": false,
+              "mode": "urlencoded",
+              "raw": "username=foo&password=bar&client_id=foo&colors[]=red&colors[]=blue&levels[0]=top&levels[1]=bottom&skill=jump&skill=run",
+              "urlencoded": [
+                {
+                  "disabled": false,
+                  "key": "username",
+                  "value": "foo"
+                },
+                {
+                  "disabled": false,
+                  "key": "client_id",
+                  "value": "foo"
+                },
+                {
+                  "disabled": false,
+                  "key": "colors",
+                  "value": "red,blue"
+                },
+                {
+                  "disabled": false,
+                  "key": "skill",
+                  "value": "jump,run"
+                },
+                {
+                  "disabled": false,
+                  "key": "password",
+                  "value": "bar"
+                },
+                {
+                  "disabled": false,
+                  "key": "levels",
+                  "value": "top,bottom"
+                }
+              ]
+            },
+            "description": "",
+            "header": [
+              {
+                "disabled": false,
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "method": "POST",
+            "url": {
+              "host": "httpbin.org",
+              "path": "/post",
+              "protocol": "http",
+              "query": [],
+              "raw": "httpbin.org/post"
+            }
+          },
+          "response": []
+        },
+        {
+          "event": [],
+          "id": "export_1:51",
+          "name": "Request Form Data",
+          "request": {
+            "body": {
+              "disabled": false,
+              "formdata": [
+                {
+                  "contentType": "image/jpeg",
+                  "disabled": false,
+                  "key": "logo",
+                  "src": "logo.png",
+                  "type": "file",
+                  "value": ""
+                },
+                {
+                  "contentType": "",
+                  "disabled": false,
+                  "key": "x",
+                  "src": "",
+                  "type": "text",
+                  "value": "0"
+                },
+                {
+                  "contentType": "",
+                  "disabled": false,
+                  "key": "y",
+                  "src": "",
+                  "type": "text",
+                  "value": "1.4333333333333333"
+                },
+                {
+                  "contentType": "",
+                  "disabled": false,
+                  "key": "w",
+                  "src": "",
+                  "type": "text",
+                  "value": "514.5666666666667"
+                },
+                {
+                  "contentType": "",
+                  "disabled": false,
+                  "key": "h",
+                  "src": "",
+                  "type": "text",
+                  "value": "514.5666666666667"
+                }
+              ],
+              "mode": "formdata",
+              "raw": "------WebKitFormBoundary{{$timestamp}}\r\nContent-Disposition: form-data; name=\"logo\"; filename=\"logo.png\"\r\nContent-Type: image/jpeg\r\n\r\n< /home/yaro/projects/kulala.nvim/tests/functional/fixtures/export/../../requests/demo.png\n\r\n------WebKitFormBoundary{{$timestamp}}\r\nContent-Disposition: form-data; name=\"x\"\r\n\r\n0\r\n------WebKitFormBoundary{{$timestamp}}\r\nContent-Disposition: form-data; name=\"y\"\r\n\r\n1.4333333333333333\r\n------WebKitFormBoundary{{$timestamp}}\r\nContent-Disposition: form-data; name=\"w\"\r\n\r\n514.5666666666667\r\n------WebKitFormBoundary{{$timestamp}}\r\nContent-Disposition: form-data; name=\"h\"\r\n\r\n514.5666666666667\r\n------WebKitFormBoundary{{$timestamp}}--"
+            },
+            "description": "",
+            "header": [],
+            "method": "POST",
+            "url": {
+              "host": "httpbin.org",
+              "path": "/post",
+              "protocol": "https",
+              "query": [],
+              "raw": "https://httpbin.org/post"
+            }
+          },
+          "response": []
+        }
+      ],
+      "name": "export_1"
+    }
+  ],
+  "variable": [
+    {
+      "disabled": false,
+      "id": "var_name_2",
+      "key": "var_name_2",
+      "value": "var_value_2"
+    },
+    {
+      "disabled": false,
+      "id": "var_name",
+      "key": "var_name",
+      "value": "var_value"
+    }
+  ]
+}

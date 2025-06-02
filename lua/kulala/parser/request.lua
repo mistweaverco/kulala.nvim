@@ -200,8 +200,6 @@ local function get_file_with_replaced_variables(path, request)
 end
 
 ---Save body to a temporary file, including files specified with "< /path" syntax into request body
----NOTE: We are not saving the line endings, except "\r\n" which appear in multipart-form
-
 ---@param request Request
 ---@return boolean|nil status
 ---@return string|nil result_path path
@@ -271,12 +269,15 @@ local function set_headers(request, document_variables, env)
 end
 
 local function process_graphql(request)
-  local is_graphql = request.method == "GRAPHQL"
-    or PARSER_UTILS.contains_meta_tag(request, "graphql")
-    or PARSER_UTILS.contains_header(request.headers, "x-request-type", "graphql")
+  local has_graphql_meta_tag = PARSER_UTILS.contains_meta_tag(request, "graphql")
+  local has_graphql_header = PARSER_UTILS.contains_header(request.headers, "x-request-type", "graphql")
 
-  if request.body and #request.body > 0 and is_graphql then
+  local is_graphql = request.method == "GRAPHQL" or has_graphql_meta_tag or has_graphql_header
+
+  if is_graphql and request.body and #request.body > 0 then
     request.method = "POST"
+    if not has_graphql_header then request.headers["x-request-type"] = "GraphQL" end
+
     local gql_json = GRAPHQL_PARSER.get_json(request.body)
 
     if gql_json then
@@ -310,6 +311,10 @@ local function process_body(request)
   local content_type_header_name, content_type_header_value = PARSER_UTILS.get_header(request.headers, "content-type")
 
   if content_type_header_name and content_type_header_value and request.body and #request.body_computed > 0 then
+    if content_type_header_value == "application/x-www-form-urlencoded" then
+      request.body_computed = request.body_computed:gsub("\n", "")
+    end
+
     local status, path = save_body_with_files(request)
 
     if status then
@@ -567,7 +572,7 @@ function M.get_basic_request_data(requests, document_request, line_nr)
   request.url_raw = request.url_raw or document_request.url -- url_raw may be already set if the request is being replayed
   request.body_raw = document_request.body
 
-  Table.remove_keys(request, { "body", "variables", "start_line", "end_line" })
+  Table.remove_keys(request, { "comments", "body", "variables", "start_line", "end_line" })
 
   return request
 end

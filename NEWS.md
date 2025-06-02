@@ -1,5 +1,10 @@
 # Kulala News
 
+## Version 5.4.0
+
+### Feature: Export requests to [Postman](usage/import-export.md)
+### Enhancement: add `import|export` commands to CLI
+
 ## Version 5.3.0
 
 ### Feature: Scripting `request.iteration()` - current count of replays [Lua](scripts/lua-scripts.md), [JS](scripts/request-reference.md)
@@ -29,10 +34,10 @@
 ### Feature: `import` and `run` [commands](usage/import-and-run-http.md) to import and run requests from external `*.http` files
 ### Enhancement: improved compatibility with IntelliJ HTTP Client spec: [HTTP File spec](usage/http-file-spec.md)
 
- - URL line support for `absolute/origin/asterisk path`
- - `#` and `//` comments support
- - `GRAPHQL` method support
- - multi line URL support
+  - URL line support for `absolute/origin/asterisk path`
+  - `#` and `//` comments support
+  - `GRAPHQL` method support
+  - multi line URL support
  
 ### Enhancement: `win_opts` [config option](getting-started/configuration-options.mdx) to customize Kulala UI properties 
 

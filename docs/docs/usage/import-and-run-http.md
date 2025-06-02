@@ -4,6 +4,7 @@ Kulala lets you import HTTP requests from other .http files. You can:
 
 - Run all HTTP requests from specified files
 - Run specific HTTP requests from imported files
+- Run specific HTTP requests from current file
 
 ## Usage
 
@@ -60,3 +61,32 @@ run #Request with two vars (@host=example.com, @user=userName)
 - Nested imports are supported. You can import .http files that contain `import` and `run` from other .http files. 
 
 :::
+
+### Run specific requests from the current .http file
+
+In the example below, when you run `#Request_one`, it will run the `Autenticate` request first, and then the `Request_one` request.
+
+```http
+### Autenticate
+POST https://httpbin.org/post HTTP/1.1
+Content-Type: application/x-ndjson
+
+< ./sample.ndjson
+
+
+
+### Request_one
+
+run #Autenticate
+
+POST https://httpbin.org/post HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+
+{
+  "results": [
+    { "id": 1, "desc": "some_username" },
+    { "id": 2, "desc": "another_username" }
+  ]
+}
+```
