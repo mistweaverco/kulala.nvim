@@ -5,6 +5,7 @@ Table of Contents             *kulala.configuration-options-table-of-contents*
 
 1. Configuration Options  |kulala.configuration-options-configuration-options|
   - UI Options |kulala.configuration-options-configuration-options-ui-options|
+  - LSP               |kulala.configuration-options-configuration-options-lsp|
   - Keymaps       |kulala.configuration-options-configuration-options-keymaps|
 
 ==============================================================================
@@ -1047,16 +1048,6 @@ UI.DISABLE_NEWS_POPUP
 Disable the news popup.
 
 
-UI.AUTOCOMPLETE
-
-Enable/disable built-in autocompletion.
-
-
-UI.FORMATTER
-
-Enable/disable HTTP formatter
-
-
 UI.LUA_SYNTAX_HL
 
 Enable/disable lua syntax highlighting.
@@ -1085,6 +1076,28 @@ Managers.
         end,
       },
     },
+<
+
+
+LSP                   *kulala.configuration-options-configuration-options-lsp*
+
+
+LSP.ENABLE
+
+Enable/disable Kulala LSP server.
+
+
+LSP.FORMATTER
+
+Enable/disable HTTP formatter.
+
+>lua
+    {
+      lsp = {
+        enable = true,
+        formatter = false,
+      },
+    }
 <
 
 
