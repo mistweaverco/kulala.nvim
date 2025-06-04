@@ -54,6 +54,11 @@ local M = {
     },
   },
 
+  scripts = {
+    -- Resolves "NODE_PATH" environment variable for node scripts. Defaults to the first "node_modules" directory found upwards from "script_file_dir".
+    node_path_resolver = nil, ---@type fun(http_file_dir: string, script_file_dir: string, script_data: ScriptData): string|nil
+  },
+
   ui = {
     -- display mode: possible values: "split", "float"
     display_mode = "split",

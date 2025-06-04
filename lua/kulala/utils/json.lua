@@ -29,7 +29,7 @@ end
 
 ---Parse a JSON string into a Lua table
 ---@param str string
----@param opts table<{object: boolean, array: boolean, verbose: boolean}> -- verbose: log errors
+---@param opts table<{ verbose: boolean, luanil: table<{object: boolean, array: boolean }> }> -- verbose: log errors
 ---@return table|nil, string|nil
 M.parse = function(str, opts)
   opts = vim.tbl_extend("keep", opts or {}, {
