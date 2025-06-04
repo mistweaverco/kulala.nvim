@@ -168,7 +168,7 @@ A typical flow includes the following steps:
 
 You can manually create an authentication configuration in the `http-client.env.json` file or use Kulala Authentication Manager to create it for you. 
 
-1\. Press `<leader>Ru` to open the Authentication Manager, then press `a` to add a new authentication configuration.
+1. Press `<leader>Ru` to open the Authentication Manager, then press `a` to add a new authentication configuration.
 
 This will create a configuration template for the authentication configuration in the `http-client.env.json` file, under the current environment.  
 
@@ -196,7 +196,7 @@ Replace the placeholder `auth-id` with a meaningful name that you will use to re
 
 Specify the authentication parameters. The required parameters depend on the selected "Grant Type". Remove unnecessary parameters from the template.
 
-2\. To edit `http-client.env.json` file, press `e` in the Authentication Manager. Press `p` for `http-client.private.env.json` file and press `m` to remove the authentication configuration.
+2. To edit `http-client.env.json` file, press `e` in the Authentication Manager. Press `p` for `http-client.private.env.json` file and press `m` to remove the authentication configuration.
 
 ### Use authentication configuration in HTTP requests
 
@@ -433,6 +433,10 @@ M.pkce_challenge = function(verifier, method)
 #### Scope
 
 A scope to limit an application's access to a user's account. Possible values depend on the service you are trying to access.
+
+#### Expires In
+
+If your auth provider does not return the `expires_in` field, a default value of `10` seconds will be set.  Otherwise, you can specify it manually in seconds.
 
 #### Acquire Automatically
 

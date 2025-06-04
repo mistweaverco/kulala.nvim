@@ -283,7 +283,14 @@ M.receive_code = function(config_id)
   local url = config["Redirect URL"]
 
   if not url:find("localhost") and not url:find("127.0.0.1") then
-    return vim.uri_decode(vim.fn.input("Enter the Auth code: "))
+    local code = vim.uri_decode(vim.fn.input("Enter the Auth code/token: "))
+
+    update_auth_data(config_id, {
+      code = code,
+      expires_in = config["Expires In"] or 10, -- to allow for resuming requests with new token
+    })
+
+    return code
   end
 
   local port = url:match(":(%d+)") or 80
@@ -292,8 +299,7 @@ M.receive_code = function(config_id)
     local params = parse_params(request) or {}
 
     if params.code or params.access_token then
-      if params.access_token then params.acquired_at = os.time() end
-      params.expires_in = params.expires_in or 10 -- to allow for resuming requests with new token
+      params.expires_in = params.expires_in or config["Expires In"] or 10 -- to allow for resuming requests with new token
 
       vim.schedule(function()
         update_auth_data(config_id, params)
@@ -351,7 +357,7 @@ M.acquire_jwt_token = function(config_id)
   if not out then return end
 
   out.acquired_at = os.time()
-  out.expires_in = out.expires_in or 10 -- to allow for resuming requests with new token
+  out.expires_in = out.expires_in or config["Expires In"] or 10 -- to allow for resuming requests with new token
   config = update_auth_data(config_id, out)
 
   return config.auth_data.access_token
@@ -387,7 +393,7 @@ M.acquire_client_credentials = function(config_id)
   if not out then return end
 
   out.acquired_at = os.time()
-  out.expires_in = out.expires_in or 10 -- to allow for resuming requests with new token
+  out.expires_in = out.expires_in or config["Expires In"] or 10 -- to allow for resuming requests with new token
 
   config = update_auth_data(config_id, out)
 
@@ -629,10 +635,7 @@ end
 M.auth_template = function()
   return {
     ["Type"] = "OAuth2",
-    ["Username"] = "",
-    ["Scope"] = "",
-    ["Client ID"] = "",
-    ["Client Secret"] = "",
+    ["Acquire Automatically"] = true,
     ["Grant Type"] = {
       "Authorization Code",
       "Client Credentials",
@@ -641,8 +644,15 @@ M.auth_template = function()
       "Password",
     },
     ["Use ID Token"] = false,
-    ["Redirect URL"] = "",
+    ["Client ID"] = "",
+    ["Client Secret"] = "",
+    ["Auth URL"] = "",
     ["Token URL"] = "",
+    ["Device Auth URL"] = "",
+    ["Redirect URL"] = "",
+    ["Revoke URL"] = "",
+    ["Expires In"] = "",
+    ["Scope"] = "",
     ["Custom Request Parameters"] = {
       ["my-custom-parameter"] = "my-custom-value",
       ["access_type"] = {
@@ -662,6 +672,7 @@ M.auth_template = function()
         "https =//my-resource/resourceId2",
       },
     },
+    ["Username"] = "",
     ["Password"] = "",
     ["Client Credentials"] = {
       "none",
@@ -679,10 +690,6 @@ M.auth_template = function()
         ["Code Verifier"] = "YYLzIBzrXpVaH5KRx86itubKLXHNGnJBPAogEwkhveM",
       },
     },
-    ["Revoke URL"] = "",
-    ["Device Auth URL"] = "",
-    ["Acquire Automatically"] = true,
-    ["Auth URL"] = "",
     ["JWT"] = {
       header = {
         alg = "RS256",

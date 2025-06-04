@@ -32,7 +32,10 @@ end
 ---@param opts table<{object: boolean, array: boolean, verbose: boolean}> -- verbose: log errors
 ---@return table|nil, string|nil
 M.parse = function(str, opts)
-  opts = opts or { object = true, array = true }
+  opts = vim.tbl_extend("keep", opts or {}, {
+    luanil = { object = true, array = true },
+  })
+
   local verbose = opts.verbose or false
 
   local status, result = pcall(vim.json.decode, str, opts)
