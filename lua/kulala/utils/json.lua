@@ -29,18 +29,18 @@ end
 
 ---Parse a JSON string into a Lua table
 ---@param str string
----@param opts table<{ verbose: boolean, luanil: table<{object: boolean, array: boolean }> }> -- verbose: log errors
+---@param opts? table<{ verbose: boolean, luanil: table<{object: boolean, array: boolean }> }> -- verbose: log errors
+---@param filename? string -- used for logging errors
 ---@return table|nil, string|nil
-M.parse = function(str, opts)
-  opts = vim.tbl_extend("keep", opts or {}, {
+M.parse = function(str, opts, filename)
+  opts = vim.tbl_deep_extend("keep", opts or {}, {
+    verbose = false,
     luanil = { object = true, array = true },
   })
 
-  local verbose = opts.verbose or false
-
-  local status, result = pcall(vim.json.decode, str, opts)
+  local status, result = pcall(vim.json.decode, str or "", opts)
   if not status then
-    _ = verbose and Logger.error("Failed to parse JSON: " .. result)
+    _ = opts.verbose and Logger.error(("Failed to parse %s: %s"):format(filename or "JSON", result))
     return nil, result
   end
 
