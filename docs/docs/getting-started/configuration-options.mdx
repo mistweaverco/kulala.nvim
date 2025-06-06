@@ -497,10 +497,12 @@ Example:
 
 ### ui.win_opts
 
-Kualala UI window options.
+Kualala UI buffer and window options.
 
 You can set your own window options here.
 
+    -- window options to override win_config: width/height/split/vertical.., buffer/window options
+    win_opts = { bo = {}, wo = {} },
 
 Default: `{}`
 
@@ -511,10 +513,13 @@ Example:
   "mistweaverco/kulala.nvim",
   opts = {
     ui = {
+      ---@type kulala.ui.win_config
       win_opts = {
         width = 80,
         height = 20,
         split = "vertical",
+        bo = { foldmethod = "indent" }, -- buffer options
+        wo = { number = true, wrap = true }, -- window options
       },
     },
   },

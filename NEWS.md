@@ -2,6 +2,7 @@
 
 ## Version 5.4.0
 
+### Enhancement: option `ui.win_opts` to set custom Kulala UI buffer and window options
 ### Feature: Export requests to [Postman](usage/import-export.md)
 ### Enhancement: add `import|export` commands to CLI
 
