@@ -4,6 +4,7 @@ local Dynamic_variables = require("kulala.parser.dynamic_vars")
 local Env = require("kulala.parser.env")
 local Export = require("kulala.cmd.export")
 local Fmt = require("kulala.cmd.fmt")
+local Fs = require("kulala.utils.fs")
 local Inspect = require("kulala.parser.inspect")
 local Kulala = require("kulala")
 local Logger = require("kulala.logger")
@@ -63,7 +64,7 @@ end
 
 local state = {
   current_buffer = 0,
-  current_line = 0,
+  current_line = 0, -- 1-based line number
   current_ft = nil,
   formatter = false,
 }
@@ -78,6 +79,7 @@ local cache = {
   auth_configs = nil,
   scripts = nil,
   symbols = nil,
+  graphql = {},
   is_fresh = function(self)
     return self.buffer == state.current_buffer and self.lnum == state.current_line
   end,
@@ -207,18 +209,133 @@ local function scripts()
   return cache.scripts
 end
 
-local function graphql()
-  --TODO: make specfic to request
-  if cache.graphql then return cache.graphql end
-  cache.graphql = {}
+local function find_upwards(cur_line, pattern)
+  for i = cur_line - 1, 1, -1 do
+    local line = vim.api.nvim_buf_get_lines(state.current_buffer, i, i + 1, false)[1] or ""
+    local match = line:match(pattern)
 
+    if match then return match, i end
+    if line:match("###") then break end
+  end
+end
+
+local function get_graphql_type(req_name, field_name, type)
+  local description = "`kind:` [" .. type.kind .. "]"
+
+  description = type.name and (description .. ", `name:` [" .. type.name .. "]") or description
+  description = type.ofType and (description .. " (" .. get_graphql_type(req_name, field_name, type.ofType) .. ")")
+    or description
+
+  if type.kind == "OBJECT" then cache.graphql[req_name].field_types[field_name] = type.name end
+
+  return description
+end
+
+local function get_graphql_args(req_name, field_name, args)
   local kind = lsp_kind.Variable
-  local name = "country"
-  local details = "details"
 
-  table.insert(cache.graphql, make_item(name, "GraphQL", kind, name, details, name))
+  return vim
+    .iter(args or {})
+    :map(function(arg)
+      local type = get_graphql_type(req_name, field_name, arg.type)
+      local details = "`name`: [" .. arg.name .. "]\n" .. "`type`: " .. type .. "\n"
 
-  return cache.graphql
+      details = arg.defaultValue and (details .. "`defaultValue`: " .. arg.defaultValue .. "\n") or details
+
+      return make_item(arg.name, "GQL:arg", kind, arg.name, details, arg.name)
+    end)
+    :totable()
+end
+
+local function get_graphql_fields(req_name, fields)
+  local kind = lsp_kind.Variable
+
+  return vim
+    .iter(fields or {})
+    :map(function(field)
+      local details = { "`type`: " .. get_graphql_type(req_name, field.name, field.type) }
+      local args = get_graphql_args(req_name, field.name, field.args)
+
+      _ = #args > 0
+        and table.insert(details, "\n**args**:\n" .. vim
+          .iter(args)
+          :fold("", function(acc, item)
+            return acc .. item.documentation.value .. "\n"
+          end)
+          :gsub("\n$", ""))
+
+      local item = make_item(field.name, "GQL:field", kind, field.name, table.concat(details, "\n"), field.name)
+      item.args = args
+
+      return item
+    end)
+    :totable()
+end
+
+local function get_graphql_types(req_name, types)
+  local kind = lsp_kind.Variable
+
+  return vim
+    .iter(types)
+    :map(function(type)
+      local fields = get_graphql_fields(req_name, type.fields)
+      local details = {}
+
+      table.insert(details, "**kind**: " .. type.kind)
+      _ = type.description and table.insert(details, "**description:** " .. type.description)
+
+      _ = #fields > 0
+        and table.insert(details, "\n**fields:**\n\n" .. vim.iter(fields):fold("", function(acc, item)
+          return acc .. item.documentation.value .. "\n"
+        end))
+
+      local item = make_item(type.name, "GQL:type", kind, type.name, table.concat(details, "\n"), type.name)
+      item.fields = fields
+
+      return item
+    end)
+    :totable()
+end
+
+local function graphql()
+  local req_url = find_upwards(state.current_line - 1, "GRAPHQL (.+)")
+  if not req_url then return {} end
+
+  local req_name = find_upwards(state.current_line - 1, "### ([^%s]+)")
+  req_name = req_name or req_url:gsub("https?://", ""):match("([^/]+)")
+
+  if not cache.graphql[req_name] then
+    local schema_path = Fs.get_current_buffer_dir() .. "/" .. req_name .. ".graphql-schema.json"
+    local schema = Fs.read_json(schema_path)
+
+    if not schema then return {} end
+
+    cache.graphql[req_name] = { queryType = schema.data.__schema.queryType.name, types = {}, field_types = {} }
+    cache.graphql[req_name].types = get_graphql_types(req_name, schema.data.__schema.types)
+  end
+
+  local lnum, cnum = state.current_line - 1, vim.fn.col(".") - 1
+  local is_args = vim.api.nvim_buf_get_text(state.current_buffer, lnum, 0, lnum, cnum, {})[1]:match("%s*(.+)%s*%(")
+
+  local parent = find_upwards(lnum, "%s*([^%s%(]+).*{")
+  parent = parent == "query" and cache.graphql[req_name].queryType
+    or cache.graphql[req_name].field_types[parent]
+    or parent
+
+  local parent_type = vim.iter(cache.graphql[req_name].types):find(function(item)
+    return item.label:lower() == parent:lower()
+  end)
+
+  if not parent_type or not parent_type.fields then return cache.graphql[req_name].types end
+
+  if is_args then
+    local field = vim.iter(parent_type.fields):find(function(item)
+      return item.label:lower() == is_args:lower()
+    end)
+    return field and field.args or {}
+  end
+
+  return parent_type.fields
 end
 
 ---@class Source
@@ -277,23 +394,10 @@ local function source_type(params)
     if line:match(match[1]) then return match[2] end
   end
 
-  local is_script, is_graphql = false, false
-
-  for i = params.position.line, 1, -1 do
-    local l = vim.api.nvim_buf_get_lines(state.current_buffer, i, i + 1, false)[1] or ""
-    if l:match("###") then break end
-
-    if l:match("{%%") then
-      is_script = true
-      break
-    elseif l:match("query.*{") or l:match("mutation.*{") then
-      is_graphql = true
-      break
-    end
+  if find_upwards(params.position.line, "query.*{") or find_upwards(params.position.line, "mutation.*{") then
+    return { "graphql", "urls" }
   end
-
-  if is_graphql then return { "graphql", "urls" } end
-  if is_script then return { "scripts", "urls", "headers_names", "header_values" } end
+  if find_upwards(params.position.line, "{%%") then return { "scripts", "urls", "headers_names", "header_values" } end
 
   return { "commands", "methods", "schemes", "urls", "header_names", "snippets" }
 end
