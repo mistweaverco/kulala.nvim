@@ -67,16 +67,34 @@ Default is `true`.
 
 ### Kulala LSP Keymaps
 
-Kulala LSP does not set any keymaps, but relies on your Neovim's default LSP keymaps. Some distributions set these keymaps only for LSPs that have been
-setup through `nvim-lspconfig` or the distributions's own LSP config. In this case, you may need to enable them yourself.
+Kulala LSP does not set any keymaps by default, but relies on Neovim's default LSP keymaps. 
+
+Some distributions, like `AstroNvim`, set these keymaps only for LSPs that have been setup through `nvim-lspconfig` or the distributions's own LSP configs. 
+In this case, you may need to enable them yourself.
+
+You can do this, either by enabling the default Kulala's LSP keymaps:
+```lua
+{
+  lsp = {
+    keymaps = true, -- enables default Kulala's LSP keymaps
+  }
+}
+```
+
+by customizing them or setting to `false` to disable some or all of them:
 
 ```lua
-vim.keymap.set("n", "<leader>cs", vim.lsp.buf.document_symbol, { desc = "Search Symbols" })
-vim.keymap.set("n", "<leader>cs", function() Snacks.picker.lsp_symbols { layout = { preset = "vscode", preview = "main" } } end, { desc = "Search Symbols" }) -- requires snacks.nvim
-
-vim.keymap.set("n", "<leader>cS", function() require("aerial").toggle() end, { desc = "Symbols outline" }) -- requires aerial.nvim (recommended)
-vim.keymap.set("n", "<leader>cS", "<cmd>Trouble symbols toggle focus=false<cr>", { desc = "Symbols outline" }) -- requires trouble.nvim
-
-vim.keymap.set("n", "K", vim.lsp.buf.hover, { desc = "Hover" })
-vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, { desc = "Code Action" })
+{
+  lsp = {
+      keymaps = {
+        ["<leader>ls"] = { vim.lsp.buf.document_symbol, desc = "Search Symbols" },
+        ["<leader>lv"] = { function() Snacks.picker.lsp_symbols({ layout = { preset = "vscode", preview = "main" } }) end, desc = "Search Symbols", }, -- requires snacks.nvim
+        ["<leader>lt"] = { "<cmd>Trouble symbols toggle focus=false<cr>", desc = "Symbols outline" }, -- requires trouble.nvim
+        ["<leader>lS"] = { function() require("aerial").toggle() end, desc = "Symbols outline", }, -- requires aerial.nvim (recommended)
+        ["K"] = { vim.lsp.buf.hover, desc = "Hover" },
+        ["<leader>la"] = { vim.lsp.buf.code_action, desc = "Code Action" },
+        ["<leader>lf"] = { vim.lsp.buf.format, desc = "Buffer Format" },
+      }
+    }
+}
 ```

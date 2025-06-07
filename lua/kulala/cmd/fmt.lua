@@ -75,9 +75,9 @@ M.format = function(text)
   local cmd = vim.list_extend(vim.deepcopy(FMT_CMD), { "format", "--stdin" })
   local result = Shell.run(cmd, { stdin = text, err_msg = "Formatter error: " })
 
-  result = result and result:wait()
+  result = result and result:wait() or {}
 
-  return result and result.stdout
+  return result.code == 0 and result.stdout or text
 end
 
 ---Converts from Postman/OpenAPI/Bruno to HTTP

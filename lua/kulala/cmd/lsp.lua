@@ -430,7 +430,12 @@ end
 local function code_actions_http()
   return {
     { group = "cURL", title = "Copy as cURL", command = "copy_as_curl", fn = Kulala.copy },
-    { group = "cURL", title = "Paste from curl", command = "paste_from_curl", fn = Kulala.from_curl },
+    {
+      group = "cURL",
+      title = "Paste from curl",
+      command = "paste_from_curl",
+      fn = Kulala.from_curl,
+    },
     { group = "Request", title = "Inspect current request", command = "inspect_current_request", fn = Kulala.inspect },
     {
       group = "Environment",

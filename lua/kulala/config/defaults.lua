@@ -151,6 +151,10 @@ local M = {
     -- enable/disable built-in LSP server
     enable = true,
 
+    --enable/disable/customize  LSP keymaps
+    ---@type boolean|table
+    keymaps = false, -- disabled by default, as Kulala relies on default Neovim LSP keymaps
+
     -- enable/disable HTTP formatter
     formatter = false,
   },

@@ -886,6 +886,10 @@ pickers = {
 
 Enable/disable Kulala LSP server.
 
+### lsp.keymaps
+
+Enable/disable/customize Kulala LSP keymaps
+
 ### lsp.formatter
 
 Enable/disable HTTP formatter.
@@ -894,6 +898,7 @@ Enable/disable HTTP formatter.
 {
   lsp = {
     enable = true,
+    keymaps = false, -- disabled by default, as Kulala relies on default Neovim LSP keymaps
     formatter = false,
   },
 }
