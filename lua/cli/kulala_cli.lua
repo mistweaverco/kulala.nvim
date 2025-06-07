@@ -201,11 +201,12 @@ local function run_file(file)
 
   io.write("\n")
 
-  local msg = status and { "Status: OK", Config.ui.report.successHiglight }
+  local msg = status and { "Status: OK", Config.ui.report.successHighlight }
     or { "Status: FAIL", Config.ui.report.errorHighlight }
   Colors.print(unpack(msg))
 
   vim.api.nvim_buf_delete(buf, { force = true })
+  db.responses = {}
 
   return status
 end
