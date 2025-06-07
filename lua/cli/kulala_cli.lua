@@ -163,7 +163,7 @@ local get_requests = function()
 end
 
 local function is_last()
-  return #Cmd.queue.tasks == 0
+  return Cmd.queue.done == Cmd.queue.total
 end
 
 local function run_file(file)
