@@ -87,7 +87,7 @@ local function get_cookies_value_from_path(name, subpath)
   local path_parts = {}
 
   -- Split the path into parts
-  for part in string.gmatch(subpath, "[^%.%[%]\"']+") do
+  for part in subpath:gmatch("[^%.%[%]\"']+") do
     table.insert(path_parts, part)
   end
 

@@ -1,8 +1,11 @@
+local Db = require("kulala.db")
+local Env = require("kulala.parser.env")
 local Fs = require("kulala.utils.fs")
 local Graphql = require("kulala.parser.graphql")
 local Logger = require("kulala.logger")
 local Parser = require("kulala.parser.document")
 local Parser_utils = require("kulala.parser.utils")
+local Var_parser = require("kulala.parser.string_variables_parser")
 
 local lsp = vim.lsp
 
@@ -365,6 +368,35 @@ local function get_scripts(request)
   return events
 end
 
+local function get_variables(request, variables, env)
+  local vars = {}
+
+  vim.iter({ "url", "headers", "cookie", "body" }):each(function(part)
+    local content = request[part]
+    content = type(content) ~= "table" and content
+      or vim.iter(content):fold("", function(acc, _, v)
+        return acc .. v .. "\n"
+      end)
+
+    for var in content:gmatch("{{(.-)}}") do
+      vars[var] = Var_parser.get_var_value(var, variables, env, false)
+    end
+  end)
+
+  return vars
+end
+
+local function get_env(path)
+  local current_buf = vim.fn.bufnr(path)
+  local temp_buf = current_buf == -1 and vim.fn.bufnr(path, true)
+
+  Db.set_current_buffer(temp_buf or current_buf)
+  local env = Env.get_env() or {}
+
+  _ = temp_buf and vim.api.nvim_buf_delete(temp_buf, { force = true })
+  return env
+end
+
 local function to_postman(path, export_type)
   local files = export_type == "folder" and Fs.find_all_http_files(path) or { path }
 
@@ -374,6 +406,8 @@ local function to_postman(path, export_type)
       description = "Exported from Kulala: " .. path,
     },
   })
+
+  local env = get_env(files[1])
 
   vim.iter(files):each(function(path)
     local lines = vim.split(Fs.read_file(path) or "", "\n")
@@ -404,8 +438,9 @@ local function to_postman(path, export_type)
       })
 
       item.request.method = request.method -- can be mutated by GRAPHQL in get_body()
-
       table.insert(item_group.item, item)
+
+      variables = vim.tbl_extend("force", variables, get_variables(request, variables, env))
     end)
 
     table.insert(collection.item, item_group)

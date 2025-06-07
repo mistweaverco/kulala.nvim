@@ -20,6 +20,10 @@ local WINBAR = require("kulala.ui.winbar")
 
 local M = {}
 
+---@class kulala.ui.win_config: vim.api.keyset.win_config
+---@field bo table<string, any> Buffer options
+---@field wo table<string, any> Window options
+
 local is_initialized = function()
   return CONFIG.get().initialized
 end
@@ -78,14 +82,22 @@ local function set_maps_autocommands(buf)
 end
 
 local open_kulala_buffer = function(filetype)
+  local config = CONFIG.get()
   local buf = get_kulala_buffer()
 
   if not buf then
     buf = vim.api.nvim_create_buf(true, true)
     set_maps_autocommands(buf)
 
-    vim.api.nvim_set_option_value("filetype", filetype, { buf = buf })
-    vim.api.nvim_set_option_value("buftype", "nofile", { buf = buf })
+    local bo = vim.tbl_extend("keep", config.ui.win_opts.bo or {}, {
+      filetype = filetype,
+      buftype = "nofile",
+    })
+
+    vim.iter(bo):each(function(key, value)
+      vim.api.nvim_set_option_value(key, value, { buf = buf })
+    end)
+
     vim.api.nvim_buf_set_name(buf, GLOBALS.UI_ID)
   end
 
@@ -110,6 +122,12 @@ local function open_kulala_window(buf)
 
   local request_win = vim.fn.win_findbuf(DB.get_current_buffer())[1] or vim.api.nvim_get_current_win()
 
+  local win_opts = vim.deepcopy(config.ui.win_opts or {})
+  local wo = win_opts.wo or {}
+
+  win_opts.bo = nil
+  win_opts.wo = nil
+
   if config.display_mode == "float" then
     local width = math.max(vim.o.columns - 10, 1)
     local height = math.max(vim.o.lines - 10, 1)
@@ -129,12 +147,18 @@ local function open_kulala_window(buf)
     win_config = { split = config.split_direction == "vertical" and "right" or "below", win = request_win }
   end
 
-  win_config = vim.tbl_extend("force", win_config, config.ui.win_opts or {})
+  win_config = vim.tbl_extend("force", win_config, win_opts)
   win = vim.api.nvim_open_win(buf, false, win_config)
 
-  vim.api.nvim_set_option_value("signcolumn", "yes:1", { win = win })
-  vim.api.nvim_set_option_value("number", false, { win = win })
-  vim.api.nvim_set_option_value("relativenumber", false, { win = win })
+  wo = vim.tbl_extend("keep", wo, {
+    signcolumn = "yes:1",
+    number = false,
+    relativenumber = false,
+  })
+
+  vim.iter(wo):each(function(key, value)
+    vim.api.nvim_set_option_value(key, value, { win = win })
+  end)
 
   _ = config.display_mode == "float" and vim.api.nvim_set_current_win(win)
 

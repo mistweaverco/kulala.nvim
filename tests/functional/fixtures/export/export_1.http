@@ -50,28 +50,28 @@ skill=run
 ### Request Form Data
 
 POST https://httpbin.org/post HTTP/1.1
-Content-Type: multipart/form-data; boundary=----WebKitFormBoundary{{$timestamp}}
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary
 
-------WebKitFormBoundary{{$timestamp}}
+------WebKitFormBoundary
 Content-Disposition: form-data; name="logo"; filename="logo.png"
 Content-Type: image/jpeg
 
 < ../../requests/demo.png
 
-------WebKitFormBoundary{{$timestamp}}
+------WebKitFormBoundary
 Content-Disposition: form-data; name="x"
 
 0
-------WebKitFormBoundary{{$timestamp}}
+------WebKitFormBoundary
 Content-Disposition: form-data; name="y"
 
 1.4333333333333333
-------WebKitFormBoundary{{$timestamp}}
+------WebKitFormBoundary
 Content-Disposition: form-data; name="w"
 
 514.5666666666667
-------WebKitFormBoundary{{$timestamp}}
+------WebKitFormBoundary
 Content-Disposition: form-data; name="h"
 
 514.5666666666667
-------WebKitFormBoundary{{$timestamp}}--
+------WebKitFormBoundary

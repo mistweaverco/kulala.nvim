@@ -12,6 +12,8 @@ local Table = require("kulala.utils.table")
 local M = {}
 
 local function get_env()
+  DB.set_current_buffer(vim.fn.bufnr())
+
   local cur_env = Env.get_current_env()
   local env = DB.find_unique("http_client_env") or (Env.get_env() and DB.find_unique("http_client_env")) or {}
 
@@ -63,7 +65,7 @@ end
 
 local function edit_env_file(config, picker, name)
   local file = get_env_file(name)
-  if not file then return end
+  if not config or not file then return end
 
   picker:close()
   vim.cmd(('edit +/"%s": %s'):format(config:gsub(" ", "\\ "), file))
@@ -159,7 +161,6 @@ end
 
 local function open_auth_snacks()
   local env, cur_env = get_env()
-
   local config_names = vim.tbl_keys(env)
 
   local items = vim.iter(config_names):fold({}, function(acc, name)
@@ -195,7 +196,8 @@ local function open_auth_snacks()
     keys[key] = { key, mode = { "n" }, desc = commands[key][2] }
   end)
 
-  local env_file_path = vim.fs.relpath(vim.fs.dirname(vim.fn.bufname(DB.current_buffer)), get_env_file())
+  local env_file_path = get_env_file()
+  if not env_file_path then return Logger.warn("http-client.env.json not found") end
 
   snacks_picker({
     title = "Auth Configurations",

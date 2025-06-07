@@ -98,7 +98,7 @@ local function get_http_client_env()
   local http_client_env_json = FS.find_file_in_parent_dirs("http-client.env.json")
 
   if http_client_env_json then
-    local f = FS.read_json(http_client_env_json) or {}
+    local f = FS.read_json(http_client_env_json, { verbose = true }) or {}
 
     if f["$shared"] then
       DB.update().http_client_env_shared =

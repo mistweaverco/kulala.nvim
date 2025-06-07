@@ -32,3 +32,16 @@ query Person($id: ID) {
 {
   "id": 1
 }
+
+### Request 6
+
+@URL = https://httpbin.org
+
+POST {{URL}}/post
+Accept: {{header_content_type}}
+Cookie: {{cookie_name}}={{cookie_value}}
+
+{
+  "username": "{{USERNAME}}",
+  "password": "{{PASSWORD}}"
+}

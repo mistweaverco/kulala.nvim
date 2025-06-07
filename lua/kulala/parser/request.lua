@@ -15,7 +15,7 @@ local Table = require("kulala.utils.table")
 
 local M = {}
 
----@class Request
+---@class Request: DocumentRequest
 ---@field metadata { name: string, value: string }[] -- Metadata of the request
 ---@field environment table<string, string|number> -- The environment and document-variables
 ---

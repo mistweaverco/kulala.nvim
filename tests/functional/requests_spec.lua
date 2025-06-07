@@ -410,6 +410,8 @@ describe("requests", function()
 
       h.create_buf(
         ([[
+          ### Countries
+
           POST https://countries.trevorblades.com
           X-REQUEST-TYPE: GraphQL
 
@@ -426,6 +428,7 @@ describe("requests", function()
         "test.http"
       )
 
+      vim.fn.setpos(".", { 0, 2, 1 })
       kulala.download_graphql_schema()
 
       system:wait(2000, function()
@@ -438,7 +441,7 @@ describe("requests", function()
       end, { predicate = true }))
 
       expected = h.load_fixture("fixtures/graphql_schema_body.txt")
-      result = h.load_fixture(vim.uv.cwd() .. "/test.graphql-schema.json")
+      result = h.load_fixture(vim.uv.cwd() .. "/Countries.graphql-schema.json")
 
       assert.has_string(result, expected)
     end)

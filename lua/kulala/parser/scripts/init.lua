@@ -13,11 +13,12 @@ end
 ---@param response Response|nil
 --- @return boolean status
 M.run = function(type, request, response)
-  local lua = { inline = {}, files = {} }
-  local js = { inline = {}, files = {} }
+  local scripts = request.scripts[type]
+
+  local lua = { inline = {}, files = {}, priority = scripts.priority }
+  local js = { inline = {}, files = {}, priority = scripts.priority }
 
   local status = false
-  local scripts = request.scripts[type]
 
   if is_empty(scripts) then return false end
 

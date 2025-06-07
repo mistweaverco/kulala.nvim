@@ -588,6 +588,7 @@ describe("oauth", function()
     it("adds custom params to requests", function()
       update_env({
         ["Grant Type"] = "Authorization Code",
+        ["Expires In"] = 3500,
         ["Custom Request Parameters"] = {
           audience = {
             Use = "In Token Request",
@@ -622,6 +623,11 @@ describe("oauth", function()
         resource = "https://my-resource/resourceId1 https://my-resource/resourceId2",
         audience = "https://my-audience.com/",
         state = "state",
+      })
+
+      assert.has_properties(get_env(), {
+        code = "auth_code",
+        expires_in = 3500,
       })
     end)
 

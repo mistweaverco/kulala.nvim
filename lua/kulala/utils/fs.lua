@@ -352,9 +352,12 @@ M.read_file = function(filename, is_binary)
   return content
 end
 
-M.read_json = function(filename)
+---Read JSON from file
+---@param filename string path absolute or relative to buffer dir
+---@param opts? table<{ verbose: boolean, luanil: table<{object: boolean, array: boolean }> }> -- verbose: log errors
+M.read_json = function(filename, opts)
   local content = M.read_file(filename)
-  return content and Json.parse(content)
+  return content and Json.parse(content, opts, filename)
 end
 
 ---Write JSON to file

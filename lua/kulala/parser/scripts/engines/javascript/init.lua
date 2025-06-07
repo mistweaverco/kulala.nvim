@@ -100,18 +100,17 @@ M.install_dependencies = function(wait)
 end
 
 ---@param script_type "pre_request_client_only" | "pre_request" | "post_request_client_only" | "post_request"
----type of script
 ---@param is_external_file boolean -- is external file
 ---@param script_data string[]|string -- either list of inline scripts or path to script file
 ---@return string|nil, string|nil
 local generate_one = function(script_type, is_external_file, script_data)
   local userscript
-  local base_file_path = FILE_MAPPING[script_type]
 
-  if base_file_path == nil then return nil, nil end
+  local base_file_path = FILE_MAPPING[script_type]
+  if not base_file_path then return end
 
   local base_file = FS.read_file(base_file_path)
-  if base_file == nil then return nil, nil end
+  if not base_file then return end
 
   local script_cwd
   local buf_dir = FS.get_current_buffer_dir()
@@ -139,7 +138,7 @@ local generate_one = function(script_type, is_external_file, script_data)
   local uuid = FS.get_uuid()
   local script_path = FS.join_paths(REQUEST_SCRIPTS_DIR, uuid .. ".js")
 
-  FS.write_file(script_path, base_file, false)
+  FS.write_file(script_path, base_file)
 
   return script_path, script_cwd
 end
@@ -153,20 +152,29 @@ end
 ---@return JsScripts<table> -- paths to scripts
 local generate_all = function(script_type, scripts_data)
   local scripts = {}
-  local script_path, script_cwd = generate_one(script_type, false, scripts_data.inline)
-
-  if script_path and script_cwd then table.insert(scripts, { path = script_path, cwd = script_cwd }) end
+  local script_path, script_cwd
 
   for _, script_data in ipairs(scripts_data.files) do
     script_path, script_cwd = generate_one(script_type, true, script_data)
     if script_path and script_cwd then table.insert(scripts, { path = script_path, cwd = script_cwd }) end
   end
 
+  script_path, script_cwd = generate_one(script_type, false, scripts_data.inline)
+
+  local pos = scripts_data.priority == "inline" and 1 or (#scripts + 1)
+  if script_path and script_cwd then table.insert(scripts, pos, { path = script_path, cwd = script_cwd }) end
+
   return scripts
 end
 
 local scripts_is_empty = function(scripts_data)
   return #scripts_data.inline == 0 and #scripts_data.files == 0
+end
+
+local function default_node_path_resolver(_, script_file_dir, _)
+  local path =
+    vim.fs.find({ "node_modules" }, { path = script_file_dir, limit = 1, type = "directory", upward = true })[1]
+  return path or FS.join_paths(script_file_dir, "node_modules")
 end
 
 ---@param type "pre_request_client_only" | "pre_request" | "post_request_client_only" | "post_request" -- type of script
@@ -186,8 +194,14 @@ M.run = function(type, data)
   if #scripts == 0 then return end
 
   for _, script in ipairs(scripts) do
+    local buf_dir = FS.get_current_buffer_dir()
+    local node_path_resolver = CONFIG.get().scripts.node_path_resolver or default_node_path_resolver
+
     local output = vim
-      .system({ NODE_BIN, script.path }, { cwd = script.cwd, env = { NODE_PATH = FS.join_paths(script.cwd, "node_modules") } })
+      .system(
+        { NODE_BIN, script.path },
+        { cwd = script.cwd, env = { NODE_PATH = node_path_resolver(buf_dir, script.cwd, data) } }
+      )
       :wait()
 
     if output.stderr and not output.stderr:match("^%s*$") then

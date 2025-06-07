@@ -153,7 +153,7 @@ describe("export to Postman", function()
       name = "Request 3",
     })
 
-    assert.is_same(4, #collection.variable)
+    assert.is_same(10, #collection.variable)
   end)
 
   it("parses url and params", function()
@@ -308,6 +308,46 @@ describe("export to Postman", function()
     })
   end)
 
+  it("parses variables", function()
+    vim.cmd.edit(h.expand_path("fixtures/export/export_2.http"))
+
+    require("kulala").set_selected_env("dev")
+    vim.env.cookie_value = "session_id_value"
+
+    local collection = export.export_requests() or {}
+
+    local group = collection.item[1]
+    local item = group.item[4]
+
+    local variables = vim.iter(collection.variable):fold({}, function(acc, v)
+      acc[v.key] = v.value
+      return acc
+    end)
+
+    assert.has_properties(item.request, {
+      method = "POST",
+      url = { raw = "{{URL}}/post" },
+      header = {
+        { key = "Accept", value = "{{header_content_type}}", disabled = false },
+      },
+      body = {
+        mode = "raw",
+        raw = '{\n  "username": "{{USERNAME}}",\n  "password": "{{PASSWORD}}"\n}',
+      },
+    })
+
+    assert.has_properties(variables, {
+      PASSWORD = "bananas",
+      URL = "https://httpbin.org",
+      USERNAME = "gorillamoe",
+      cookie_name = "session_id",
+      cookie_value = "session_id_value",
+      header_content_type = "plain/text",
+      var_name_3 = "var_value_3",
+      var_name_4 = "var_value_4",
+    })
+  end)
+
   describe("parses authentication", function()
     it("basic authentication", function()
       local file = h.expand_path("fixtures/export/export_3.http")
@@ -353,7 +393,7 @@ describe("export to Postman", function()
       })
     end)
 
-    pending("it::#wip digest token", function()
+    pending("digest token", function()
       local file = h.expand_path("fixtures/export/export_3.http")
       vim.cmd.edit(file)
 
@@ -373,7 +413,7 @@ describe("export to Postman", function()
       })
     end)
 
-    pending("it::#wip oauth2 token", function()
+    pending("oauth2 token", function()
       local file = h.expand_path("fixtures/export/export_3.http")
       vim.cmd.edit(file)
 
