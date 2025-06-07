@@ -46,6 +46,7 @@ local M = {}
 ---@class ScriptData
 ---@field inline string[]
 ---@field files string[]
+---@field priority "inline"|"files"|nil -- execution order
 
 ---@type DocumentRequest
 local default_document_request = {
@@ -69,10 +70,12 @@ local default_document_request = {
     pre_request = {
       inline = {},
       files = {},
+      priority = nil,
     },
     post_request = {
       inline = {},
       files = {},
+      priority = nil,
     },
   },
   name = nil,
@@ -438,15 +441,18 @@ M.get_document = function(lines, path)
         is_postrequest_handler_script_inline = false
       -- inline scripting active: add the line to the response handler scripts
       elseif is_postrequest_handler_script_inline then
+        request.scripts.post_request.priority = request.scripts.post_request.priority or "inline"
         table.insert(request.scripts.post_request.inline, line)
       -- inline scripting active: add the line to the prerequest handler scripts
       elseif is_prerequest_handler_script_inline then
+        request.scripts.pre_request.priority = request.scripts.pre_request.priority or "inline"
         table.insert(request.scripts.pre_request.inline, line)
       -- we're still in(/before) the request line and we have a pre-request inline handler script
       elseif is_request_line and line:match("^< %{%%$") then
         is_prerequest_handler_script_inline = true
         -- we're still in(/before) the request line and we have a pre-request file handler script
       elseif is_request_line and line:match("^< (.*)$") then
+        request.scripts.pre_request.priority = request.scripts.pre_request.priority or "files"
         local scriptfile = line:match("^< (.*)$")
         table.insert(request.scripts.pre_request.files, scriptfile)
       elseif line == "" and not is_body_section then
@@ -459,6 +465,7 @@ M.get_document = function(lines, path)
         is_postrequest_handler_script_inline = true
         -- file scripting notation
       elseif line:match("^> (.*)$") then
+        request.scripts.post_request.priority = request.scripts.post_request.priority or "files"
         local scriptfile = line:match("^> (.*)$")
         table.insert(request.scripts.post_request.files, scriptfile)
       elseif line:match("^@([%w_]+)") then

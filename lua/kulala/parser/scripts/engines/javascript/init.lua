@@ -152,14 +152,17 @@ end
 ---@return JsScripts<table> -- paths to scripts
 local generate_all = function(script_type, scripts_data)
   local scripts = {}
-  local script_path, script_cwd = generate_one(script_type, false, scripts_data.inline)
-
-  if script_path and script_cwd then table.insert(scripts, { path = script_path, cwd = script_cwd }) end
+  local script_path, script_cwd
 
   for _, script_data in ipairs(scripts_data.files) do
     script_path, script_cwd = generate_one(script_type, true, script_data)
     if script_path and script_cwd then table.insert(scripts, { path = script_path, cwd = script_cwd }) end
   end
+
+  script_path, script_cwd = generate_one(script_type, false, scripts_data.inline)
+
+  local pos = scripts_data.priority == "inline" and 1 or (#scripts + 1)
+  if script_path and script_cwd then table.insert(scripts, pos, { path = script_path, cwd = script_cwd }) end
 
   return scripts
 end

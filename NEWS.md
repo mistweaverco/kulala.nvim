@@ -2,8 +2,12 @@
 
 ## Version 5.4.0
 
+### Enhancement: resolve NODE_PATH to nearest node_modules, add  `node_path_resolver` to options
+### Feature: GraphQL autocomplete
+### Enhancement: execute inline/file scripts in the order of declaration
+### Enhancement: add `Expires In` option to `Auth Config`
 ### Enhancement: option `ui.win_opts` to set custom Kulala UI buffer and window options
-### Feature: Export requests to [Postman](usage/import-export.md)
+### Feature: export requests to [Postman](usage/import-export.md)
 ### Enhancement: add `import|export` commands to CLI
 
 ## Version 5.3.0
