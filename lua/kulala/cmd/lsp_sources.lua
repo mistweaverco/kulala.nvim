@@ -326,7 +326,6 @@ M.curl = {
   { "curl-no-buffer", "curl-no-buffer", "Disable buffering" },
   { "curl-insecure", "curl-insecure", "Skip secure connection verification" },
   { "curl-data-urlencode", "curl-data-urlencode", "Urlencode payload" },
-  { "curl-connect-timeout", "curl-connect-timeout ${1:seconds})$0", "Maximum time in seconds" },
 }
 
 ---@type SourceTable

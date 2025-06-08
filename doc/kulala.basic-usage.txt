@@ -79,8 +79,10 @@ features:
 HTTP Formatter is disabled by default. You can enable it in your config with:
 
 >lua
-    ui = {
-      formatter = true
+    opts = {
+      lsp = {
+        formatter = true
+      }
     }
 <
 
@@ -99,7 +101,7 @@ in your config. For example:
 
 >lua
     require('lspsaga').setup({
-      lightbulb = { ignore = { ft = { 'http' } } }
+      lightbulb = { ignore = { clients = { 'kulala' } } }
     })
     
     require("nvim-lightbulb").setup({
