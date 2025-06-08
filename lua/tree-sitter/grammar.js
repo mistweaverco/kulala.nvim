@@ -234,7 +234,7 @@ module.exports = grammar({
       seq(
         field("name", $.identifier),
         WS,
-        "#",
+        optional("#"),
         field("value", prec.left($.value)), // Add precedence here
         optional(
           seq(

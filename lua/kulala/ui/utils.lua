@@ -33,8 +33,10 @@ local function highlight_column(bufnr, ns, start_pos, end_pos, hl_group, priorit
   end
 end
 
--- TODO: add function description, 1-indexed
--- { config.successHighlight, 40, 60, config.errorHighlight, 60, 80 },
+-- Higlights buffer according to template: (1-indexed)
+-- { [1] = { config.successHighlight, 40, 60, config.errorHighlight, 60, 80, ... }, [2] = .. }
+-- where each entry corresponds to a line number
+-- and each higlight is a triplet of hl_group, col_start, col_end
 local function highlight_buffer(bufnr, ns, highlights, priority)
   local hl, col_s, col_e
   local width = vim.api.nvim_win_get_width(vim.fn.bufwinid(bufnr))
@@ -126,6 +128,7 @@ local function pretty_ms(ms)
 end
 
 return {
+  kulala_highlight = kulala_highlight,
   clear_highlights = clear_highlights,
   highlight_range = highlight_range,
   highlight_column = highlight_column,

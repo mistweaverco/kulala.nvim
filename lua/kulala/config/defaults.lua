@@ -90,6 +90,12 @@ local M = {
       textHighlight = "WarningMsg", -- highlight group for request elapsed time
     },
 
+    -- highlight groups for http syntax highlighting
+    ---@type table<string, string|vim.api.keyset.highlight>
+    syntax_hl = {
+      ["@punctuation.bracket.kulala_http"] = "Number",
+    },
+
     -- enable/disable request summary in the output window
     show_request_summary = true,
     -- disable notifications of script output

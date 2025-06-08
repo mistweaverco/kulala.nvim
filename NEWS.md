@@ -1,6 +1,6 @@
 # Kulala News
 
-## Version 5.4.0
+## Version 5.3.1
 
 ### Enhancement: resolve NODE_PATH to nearest node_modules, add  `node_path_resolver` to options
 ### Feature: GraphQL autocomplete

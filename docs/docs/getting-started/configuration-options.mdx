@@ -499,11 +499,6 @@ Example:
 
 Kualala UI buffer and window options.
 
-You can set your own window options here.
-
-    -- window options to override win_config: width/height/split/vertical.., buffer/window options
-    win_opts = { bo = {}, wo = {} },
-
 Default: `{}`
 
 Example:
@@ -719,6 +714,23 @@ Example:
         lineHighlight = "Normal",
       },
     },
+  },
+}
+```
+
+### ui.syntax_hl
+
+Highlight groups for http syntax highlighting
+
+```lua
+{
+  opts = {
+    ui = {
+      ---@type table<string, string|vim.api.keyset.highlight>
+      syntax_hl = {
+        ["@punctuation.bracket.kulala_http"] = "Number",
+      },
+    }
   },
 }
 ```

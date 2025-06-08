@@ -38,9 +38,16 @@ local set_autocomands = function()
   })
 end
 
+local function get_parser_ver(parser_path)
+  local ts = Fs.read_json(parser_path .. "/tree-sitter.json") or {}
+  return ts.metadata and ts.metadata.version
+end
+
 local function set_kulala_parser()
   local parsers = vim.F.npcall(require, "nvim-treesitter.parsers")
   if not parsers then return Logger.warn("nvim-treesitter not found") end
+
+  local Db = require("kulala.db")
 
   local parser_config = parsers.get_parser_configs()
   local parser_path = Fs.get_plugin_path({ "..", "tree-sitter" })
@@ -50,28 +57,36 @@ local function set_kulala_parser()
   parser_config.kulala_http = {
     install_info = {
       url = parser_path,
-      files = { "src/parser.c" }, -- note that some parsers also require src/scanner.c or src/scanner.cc
-      -- optional entries:
-      branch = "main", -- default branch in case of git repo if different from master
-      generate_requires_npm = false, -- if stand-alone parser without npm dependencies
-      requires_generate_from_grammar = false, -- if folder contains pre-generated src/parser.c
+      files = { "src/parser.c" },
+      branch = "main",
+      generate_requires_npm = false,
+      requires_generate_from_grammar = false,
     },
-
-    filetype = "http", -- if filetype does not match the parser name
+    filetype = "http",
   }
 
-  if not parsers.has_parser("kulala_http") then
-    --TODO: add a check if parser need to be updated
+  if not parsers.has_parser("kulala_http") or Db.settings.parser_ver ~= get_parser_ver(parser_path) then
     require("nvim-treesitter.install").commands.TSInstall["run!"]("kulala_http")
+    Db.settings:write({ parser_ver = get_parser_ver(parser_path) })
   end
+
+  vim.treesitter.language.register("kulala_http", { "http", "rest" })
+end
+
+local function set_syntax_hl()
+  vim.iter(M.options.ui.syntax_hl or {}):each(function(hl, group)
+    group = type(group) == "string" and { link = group } or group
+    vim.api.nvim_set_hl(0, hl, group)
+  end)
 end
 
 M.setup = function(config)
   M.options = vim.tbl_deep_extend("force", M.defaults, config or {})
 
   set_legacy_options()
-  set_autocomands()
   set_kulala_parser()
+  set_syntax_hl()
+  set_autocomands()
 
   _ = M.options.show_icons == "signcolumn" and pcall(set_signcolumn_icons)
   M.options.global_keymaps, M.options.ft_keymaps = keymaps.setup_global_keymaps()
