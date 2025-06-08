@@ -1,3 +1,5 @@
+--TODO: this is deprecated, remove
+
 local Fs = require("kulala.utils.fs")
 local M = {}
 

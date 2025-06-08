@@ -1,3 +1,5 @@
+local Fs = require("kulala.utils.fs")
+local Logger = require("kulala.logger")
 local defaults = require("kulala.config.defaults")
 local keymaps = require("kulala.config.keymaps")
 
@@ -36,15 +38,42 @@ local set_autocomands = function()
   })
 end
 
+local function set_kulala_parser()
+  local parsers = vim.F.npcall(require, "nvim-treesitter.parsers")
+  if not parsers then return Logger.warn("nvim-treesitter not found") end
+
+  local parser_config = parsers.get_parser_configs()
+  local parser_path = Fs.get_plugin_path({ "..", "tree-sitter" })
+
+  vim.opt.rtp:append(parser_path)
+
+  parser_config.kulala_http = {
+    install_info = {
+      url = parser_path,
+      files = { "src/parser.c" }, -- note that some parsers also require src/scanner.c or src/scanner.cc
+      -- optional entries:
+      branch = "main", -- default branch in case of git repo if different from master
+      generate_requires_npm = false, -- if stand-alone parser without npm dependencies
+      requires_generate_from_grammar = false, -- if folder contains pre-generated src/parser.c
+    },
+
+    filetype = "http", -- if filetype does not match the parser name
+  }
+
+  if not parsers.has_parser("kulala_http") then
+    --TODO: add a check if parser need to be updated
+    require("nvim-treesitter.install").commands.TSInstall["run!"]("kulala_http")
+  end
+end
+
 M.setup = function(config)
   M.options = vim.tbl_deep_extend("force", M.defaults, config or {})
 
   set_legacy_options()
   set_autocomands()
+  set_kulala_parser()
 
-  _ = M.options.ui.lua_syntax_hl and require("kulala.ui.treesitter").set()
   _ = M.options.show_icons == "signcolumn" and pcall(set_signcolumn_icons)
-
   M.options.global_keymaps, M.options.ft_keymaps = keymaps.setup_global_keymaps()
 
   M.options.initialized = true

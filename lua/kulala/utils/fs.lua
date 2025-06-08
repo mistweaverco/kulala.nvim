@@ -326,7 +326,8 @@ end
 ---@param paths string[]
 ---@return string
 M.get_plugin_path = function(paths)
-  return M.get_plugin_root_dir() .. M.ps .. table.concat(paths, M.ps)
+  local path = M.get_plugin_root_dir() .. M.ps .. table.concat(paths or {}, M.ps)
+  return vim.fs.normalize(path)
 end
 
 ---Read a file with path absolute or relative to buffer dir
