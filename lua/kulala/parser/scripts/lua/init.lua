@@ -182,7 +182,7 @@ M.run = function(type, scripts, _request, _response)
 
   set_script_env(type, _request, _response)
 
-  status = #inline > 0 and eval(inline, "inline script") or status
+  status = #inline > 0 and scripts.priority == "inline" and eval(inline, "inline script") or status
 
   vim.iter(scripts.files):each(function(path)
     local script = Fs.read_file(path)
@@ -190,6 +190,8 @@ M.run = function(type, scripts, _request, _response)
 
     status = eval(script, "file script") or status
   end)
+
+  status = #inline > 0 and scripts.priority == "files" and eval(inline, "inline script") or status
 
   Fs.write_json(Fs.get_request_scripts_variables_file_path(), script_env.request.environment)
   Fs.write_json(Fs.get_global_scripts_variables_file_path(), script_env.client.global)

@@ -260,13 +260,34 @@ M.default_kulala_keymaps = {
   },
 }
 
+M.default_lsp_keymaps = {
+  ["<leader>ls"] = { vim.lsp.buf.document_symbol, desc = "Search Symbols" },
+  ["<leader>lv"] = {
+    function()
+      if not require("snacks") then return end
+      require("snacks").picker.lsp_symbols({ layout = { preset = "vscode", preview = "main" } })
+    end,
+    desc = "Search Symbols",
+  }, -- requires snacks.nvim
+  ["<leader>lt"] = { "<cmd>Trouble symbols toggle focus=false<cr>", desc = "Symbols outline" }, -- requires trouble.nvim
+  ["<leader>lS"] = {
+    function()
+      require("aerial").toggle()
+    end,
+    desc = "Symbols outline",
+  }, -- requires aerial.nvim (recommended)
+  ["K"] = { vim.lsp.buf.hover, desc = "Hover" },
+  ["<leader>la"] = { vim.lsp.buf.code_action, desc = "Code Action" },
+  ["<leader>lf"] = { vim.lsp.buf.format, desc = "Buffer Format" },
+}
+
 local function collect_global_keymaps()
   local config = require("kulala.config")
   local config_global_keymaps = config.options.global_keymaps
   local prefix = config.options.global_keymaps_prefix
   local global_keymaps, ft_keymaps = {}, {}
 
-  if not config_global_keymaps then return end
+  if not config_global_keymaps then return global_keymaps, ft_keymaps end
 
   local default_keymaps = vim.deepcopy(M.default_global_keymaps)
 
@@ -332,6 +353,28 @@ M.get_kulala_keymaps = function()
   return config_kulala_keymaps
 end
 
+M.get_lsp_keymaps = function()
+  local config = require("kulala.config")
+  local config_lsp_keymaps = config.options.lsp.keymaps
+
+  if not config_lsp_keymaps then return {} end
+
+  local default_keymaps = vim.deepcopy(M.default_lsp_keymaps)
+
+  config_lsp_keymaps = type(config_lsp_keymaps) == "table"
+      and vim.tbl_extend("force", default_keymaps, config_lsp_keymaps)
+    or default_keymaps
+
+  config_lsp_keymaps = vim
+    .iter(config_lsp_keymaps)
+    :map(function(key, map)
+      return { key, map[1], desc = map.desc }
+    end)
+    :totable()
+
+  return config_lsp_keymaps
+end
+
 M.setup_kulala_keymaps = function(buf)
   local keymaps = M.get_kulala_keymaps() or {}
 
@@ -347,6 +390,8 @@ end
 
 M.setup_global_keymaps = function()
   local global_keymaps, ft_keymaps = collect_global_keymaps()
+
+  ft_keymaps.http = vim.list_extend(ft_keymaps.http or {}, M.get_lsp_keymaps())
 
   vim.iter(global_keymaps or {}):each(function(map)
     set_keymap(map)

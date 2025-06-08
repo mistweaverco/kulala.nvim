@@ -65,8 +65,10 @@ Kulala includes a built-in in-process LSP server that provides the following fea
 HTTP Formatter is disabled by default. You can enable it in your config with:
 
 ```lua
-ui = {
-  formatter = true
+opts = {
+  lsp = {
+    formatter = true
+  }
 }
 ```
 
@@ -82,7 +84,7 @@ For example:
 
 ```lua
 require('lspsaga').setup({
-  lightbulb = { ignore = { ft = { 'http' } } }
+  lightbulb = { ignore = { clients = { 'kulala' } } }
 })
 
 require("nvim-lightbulb").setup({

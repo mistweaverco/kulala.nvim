@@ -430,6 +430,22 @@ Example:
 }
 ```
 
+## Scripts
+
+### scripts.node_path_resolver
+
+Resolves `NODE_PATH` environment variable for node scripts. Defaults to the first `node_modules` directory found upwards from `script_file_dir`.
+
+```lua
+{
+  opts = {
+    scripts = {
+      node_path_resolver = nil, ---@type fun(http_file_dir: string, script_file_dir: string, script_data: ScriptData): string|nil
+    }
+  }
+}
+```
+
 ## UI Options
 
 ### ui.display_mode
@@ -481,10 +497,12 @@ Example:
 
 ### ui.win_opts
 
-Kualala UI window options.
+Kualala UI buffer and window options.
 
 You can set your own window options here.
 
+    -- window options to override win_config: width/height/split/vertical.., buffer/window options
+    win_opts = { bo = {}, wo = {} },
 
 Default: `{}`
 
@@ -495,10 +513,13 @@ Example:
   "mistweaverco/kulala.nvim",
   opts = {
     ui = {
+      ---@type kulala.ui.win_config
       win_opts = {
         width = 80,
         height = 20,
         split = "vertical",
+        bo = { foldmethod = "indent" }, -- buffer options
+        wo = { number = true, wrap = true }, -- window options
       },
     },
   },
@@ -865,6 +886,10 @@ pickers = {
 
 Enable/disable Kulala LSP server.
 
+### lsp.keymaps
+
+Enable/disable/customize Kulala LSP keymaps
+
 ### lsp.formatter
 
 Enable/disable HTTP formatter.
@@ -873,6 +898,7 @@ Enable/disable HTTP formatter.
 {
   lsp = {
     enable = true,
+    keymaps = false, -- disabled by default, as Kulala relies on default Neovim LSP keymaps
     formatter = false,
   },
 }

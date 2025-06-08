@@ -36,6 +36,20 @@ All inline scripts are executed in the
 current working directory of the HTTP file,
 which is the `http` directory in this case.
 
+By default, the `NODE_PATH` environment variable is resolved to the first `node_modules` directory found upwards from the script working directory.
+
+You can provide a custom `node_path_resolver` function in your configuration, by setting the `scripts.node_path_resolver` option.
+
+```lua
+{
+  opts = {
+    scripts = {
+      node_path_resolver = nil, ---@type fun(http_file_dir: string, script_file_dir: string, script_data: ScriptData): string|nil
+    }
+  }
+}
+
+```
 ### Lua scripts
 
 Please read [Lua scripting](./lua-scripts) for more information.

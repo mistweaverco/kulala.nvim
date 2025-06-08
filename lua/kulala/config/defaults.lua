@@ -54,15 +54,20 @@ local M = {
     },
   },
 
+  scripts = {
+    -- Resolves "NODE_PATH" environment variable for node scripts. Defaults to the first "node_modules" directory found upwards from "script_file_dir".
+    node_path_resolver = nil, ---@type fun(http_file_dir: string, script_file_dir: string, script_data: ScriptData): string|nil
+  },
+
   ui = {
     -- display mode: possible values: "split", "float"
     display_mode = "split",
     -- split direction: possible values: "vertical", "horizontal"
     split_direction = "vertical",
-    -- window options to override defaults: width/height/split/vertical
-    win_opts = {},
+    -- window options to override win_config: width/height/split/vertical.., buffer/window options
+    win_opts = { bo = {}, wo = {} }, ---@type kulala.ui.win_config
     -- default view: "body" or "headers" or "headers_body" or "verbose" or fun(response: Response)
-    default_view = "body",
+    default_view = "body", ---@type "body"|"headers"|"headers_body"|"verbose"|fun(response: Response)
     -- enable winbar
     winbar = true,
     -- Specify the panes to be displayed by default
@@ -145,6 +150,10 @@ local M = {
   lsp = {
     -- enable/disable built-in LSP server
     enable = true,
+
+    --enable/disable/customize  LSP keymaps
+    ---@type boolean|table
+    keymaps = false, -- disabled by default, as Kulala relies on default Neovim LSP keymaps
 
     -- enable/disable HTTP formatter
     formatter = false,

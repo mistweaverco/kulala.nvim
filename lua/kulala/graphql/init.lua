@@ -3,13 +3,13 @@ local Fs = require("kulala.utils.fs")
 local Logger = require("kulala.logger")
 local Parser = require("kulala.parser.request")
 local Parserutils = require("kulala.parser.utils")
+local Shell = require("kulala.cmd.shell_utils")
 local Stringutils = require("kulala.utils.string")
 
 local M = {}
 
 M.download_schema = function()
   local req = Parser.parse()
-
   if not req then return Logger.error("No request found") end
 
   if not Parserutils.contains_header(req.headers, "x-request-type", "GraphQL") then
@@ -20,15 +20,10 @@ M.download_schema = function()
     req.headers["Content-Type"] = "application/json"
   end
 
-  local filename = vim.fn.expand("%:t:r") .. ".graphql-schema.json"
-  local cmd = {
-    Config.get().curl_path,
-    "-s",
-    "-o",
-    filename,
-    "-X",
-    "POST",
-  }
+  if req.name:match("/") then req.name = req.name:gsub("^.* ", ""):gsub("https?://", ""):match("([^/]+)") end
+
+  local filename = Fs.get_current_buffer_dir() .. "/" .. req.name .. ".graphql-schema.json"
+  local cmd = { Config.get().curl_path, "-s", "-o", filename, "-X", "POST" }
 
   for header_name, header_value in pairs(req.headers) do
     if header_name and header_value then
@@ -45,12 +40,11 @@ M.download_schema = function()
   table.insert(cmd, '{"query": "' .. gqlq .. '"}')
   table.insert(cmd, req.url)
 
-  vim.system(cmd, { text = true }, function(status)
-    if status.code == 0 then
-      Logger.info("Schema downloaded to " .. vim.fn.fnamemodify(filename, ":p"))
-    else
-      Logger.error("Failed to download schema: " .. (status.stderr or ""))
-    end
+  Shell.run(cmd, {
+    err_msg = "Failed to download GraphQL schema",
+    abort_on_stderr = true,
+  }, function()
+    Logger.info("Schema downloaded to " .. filename)
   end)
 end
 

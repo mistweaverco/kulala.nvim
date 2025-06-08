@@ -22,8 +22,8 @@ local queue = {
     self.status = "idle" -- "idle"|"running"|"paused"
     self.tasks = {}
     self.previous_task = nil
-    self.total = 0
-    self.done = 0
+    self.total = 0 -- total number of tasks added to the queue
+    self.done = 0 -- number of tasks done
 
     return self
   end,

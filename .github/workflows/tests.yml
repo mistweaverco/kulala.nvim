@@ -10,7 +10,9 @@ on:
       - develop
     types: ["labeled", "opened", "synchronize", "reopened"]
   push:
-    branches: develop
+    branches: 
+      - main
+      - develop
 
   workflow_dispatch:
 
