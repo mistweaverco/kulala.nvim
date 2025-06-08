@@ -4,6 +4,7 @@
 Table of Contents             *kulala.configuration-options-table-of-contents*
 
 1. Configuration Options  |kulala.configuration-options-configuration-options|
+  - Scripts       |kulala.configuration-options-configuration-options-scripts|
   - UI Options |kulala.configuration-options-configuration-options-ui-options|
   - LSP               |kulala.configuration-options-configuration-options-lsp|
   - Keymaps       |kulala.configuration-options-configuration-options-keymaps|
@@ -627,6 +628,25 @@ Example:
 <
 
 
+SCRIPTS           *kulala.configuration-options-configuration-options-scripts*
+
+
+SCRIPTS.NODE_PATH_RESOLVER
+
+Resolves `NODE_PATH` environment variable for node scripts. Defaults to the
+first `node_modules` directory found upwards from `script_file_dir`.
+
+>lua
+    {
+      opts = {
+        scripts = {
+          node_path_resolver = nil, ---@type fun(http_file_dir: string, script_file_dir: string, script_data: ScriptData): string|nil
+        }
+      }
+    }
+<
+
+
 UI OPTIONS     *kulala.configuration-options-configuration-options-ui-options*
 
 
@@ -681,9 +701,14 @@ Example:
 
 UI.WIN_OPTS
 
-Kualala UI window options.
+Kualala UI buffer and window options.
 
 You can set your own window options here.
+
+>
+    -- window options to override win_config: width/height/split/vertical.., buffer/window options
+    win_opts = { bo = {}, wo = {} },
+<
 
 Default: `{}`
 
@@ -694,10 +719,13 @@ Example:
       "mistweaverco/kulala.nvim",
       opts = {
         ui = {
+          ---@type kulala.ui.win_config
           win_opts = {
             width = 80,
             height = 20,
             split = "vertical",
+            bo = { foldmethod = "indent" }, -- buffer options
+            wo = { number = true, wrap = true }, -- window options
           },
         },
       },
@@ -1087,6 +1115,11 @@ LSP.ENABLE
 Enable/disable Kulala LSP server.
 
 
+LSP.KEYMAPS
+
+Enable/disable/customize Kulala LSP keymaps
+
+
 LSP.FORMATTER
 
 Enable/disable HTTP formatter.
@@ -1095,6 +1128,7 @@ Enable/disable HTTP formatter.
     {
       lsp = {
         enable = true,
+        keymaps = false, -- disabled by default, as Kulala relies on default Neovim LSP keymaps
         formatter = false,
       },
     }
