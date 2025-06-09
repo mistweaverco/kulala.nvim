@@ -66,7 +66,7 @@ local function set_kulala_parser()
   }
 
   if not parsers.has_parser("kulala_http") or Db.settings.parser_ver ~= get_parser_ver(parser_path) then
-    require("nvim-treesitter.install").commands.TSInstall["run!"]("kulala_http")
+    require("nvim-treesitter.install").commands.TSInstallSync["run!"]("kulala_http")
     Db.settings:write({ parser_ver = get_parser_ver(parser_path) })
   end
 

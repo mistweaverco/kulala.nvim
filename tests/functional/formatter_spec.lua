@@ -1,27 +1,18 @@
 ---@diagnostic disable: undefined-field, redefined-local
 
 local config = require("kulala.config")
-local db = require("kulala.db")
 local formatter = require("kulala.cmd.formatter")
-local logger = require("kulala.logger")
 
 local h = require("test_helper")
 
+-- set to true to update the parser in .tests
 local function setup_http_parser(update)
-  if update then
-    config.setup()
-    require("nvim-treesitter.install").commands.TSUpdateSync["run"]("kulala_http")
-  end
-
-  vim.wait(3000, function()
-    local parsers = vim.F.npcall(require, "nvim-treesitter.parsers")
-    return parsers.has_parser("kulala_http") and db.settings.parser_ver ~= "update"
-  end)
+  config.setup()
+  if update then require("nvim-treesitter.install").commands.TSUpdateSync["run"]("kulala_http") end
 end
 
 describe("format", function()
-  local buf
-  local result
+  local buf, result, document
 
   setup(function()
     setup_http_parser()
@@ -29,43 +20,158 @@ describe("format", function()
 
   before_each(function()
     h.delete_all_bufs()
-    -- stub(Logger, "info", true)
-  end)
-
-  after_each(function()
-    -- Logger.info:revert()
+    buf = h.create_buf(h.load_fixture("fixtures/format.http"):to_table(), "format.http")
   end)
 
   describe("formats buffer", function()
-    it("#wip formats request", function()
-      buf = h.create_buf(
+    before_each(function()
+      result, document = formatter.format(buf)
+      result = result[1].newText or {}
+    end)
+
+    it("formats request separator", function()
+      local section = document.sections[3]
+      assert.is_same(section.request_separator, "### Request name")
+    end)
+
+    it("formats variables", function()
+      local section = document.sections[1]
+      assert.is_same(section.variables[1], "@ENV_PROJECT = project_name")
+    end)
+
+    it("formats metadata", function()
+      local section = document.sections[2]
+      assert.is_same(section.metadata[1], "# @curl-conect-timeout 200")
+    end)
+
+    it("formats commands", function()
+      local section = document.sections[4]
+      assert.is_same(section.commands[1], "import ./export/simple.http")
+    end)
+
+    it("formats request", function()
+      local section = document.sections[3].request
+      assert.is_same(section.url, "GET http://httpbin.org/post HTTP/1.1")
+      assert.has_properties(section.headers, {
+        "Content-Type: application/json",
+        "Accept: application/json",
+      })
+    end)
+
+    it("formats pre_request", function()
+      local section = document.sections[4]
+
+      result = section.request.pre_request_script
+      assert.has_properties(result, {
+        "< ../scripts/post.js",
+        '< {%\n  client.log("post request executed");\n%}',
+      })
+
+      result = section.request.res_handler_script
+      assert.has_properties(result, {
+        "> ../scripts/post.js",
+        '> {%\n  client.log("post request executed");\n%}',
+      })
+    end)
+
+    it("formats raw body", function()
+      result = document.sections[6].request.body
+      assert.is_same(
+        result,
         ([[
-        ###Request  name
-        # @meta
-        @foobar=   bar
-        # @curl-conect-timeout 200
-        @user =   pass  
-        GET http://httpbin.org/post HTTP/1.1
-        content-type  : application/json
-        Accept: application/json
-
-        {
-          "results": [
-            { "id": 1, "desc": "some_username" },
-            { "id": 2, "desc": "another_username" }
-          ]
-        }
-
-        > {%
-          client.log("post request executed");
-        %}
-      ]]):to_table(true),
-        "basic.http"
+        grant_type=password&
+        username=foo&
+        password=bar&
+        client_id=foo]]):to_string(true)
       )
+    end)
 
-      result = formatter.format(buf)
-      vim.notify(result or "")
-      -- DevTools.log("result: ", result)
+    it("formats multi-part body", function()
+      result = document.sections[5].request.body
+      assert.is_same(
+        result,
+        ([[
+          ------WebKitFormBoundary{{$timestamp}}
+          Content-Disposition: form-data; name="file"; filename="{{filename}}"
+          Content-Type: {{content_type}}
+
+          < {{filepath}}
+
+          ------WebKitFormBoundary{{$timestamp}}--
+        ]]):deindent(10)
+      )
+    end)
+
+    it("formats json body", function()
+      result = document.sections[4].request.body
+      assert.is_same(
+        result,
+        ([[
+          {
+            "results": [
+              {
+                "desc": "some_username",
+                "id": 1
+              },
+              {
+                "desc": "another_username",
+                "id": 2
+              }
+            ]
+          }
+        ]]):deindent(10)
+      )
+    end)
+
+    it("formats xml body", function()
+      result = document.sections[8].request.body
+      assert.is_same(
+        result,
+        ([[
+          <?xml version="1.0"?>
+          <note>
+            <to>Tove</to>
+            <from>Jani</from>
+            <heading>Reminder</heading>
+            <body>Don't forget me this weekend!</body>
+          </note>
+        ]]):deindent(10)
+      )
+    end)
+
+    it("formats graphql body", function()
+      result = document.sections[7].request.body
+      assert.is_same(
+        result,
+        ([[
+          query GetCountry($code: ID!) {
+            country(code: $code) {
+              name
+              code
+              capital
+              capital
+              currency
+              languages {
+                code
+                name
+              }
+            }
+          }
+
+          {
+            "code": "US"
+          }
+        ]]):deindent(10)
+      )
+    end)
+
+    it("formats external body", function()
+      result = document.sections[9].request.body
+      assert.is_same(result, "< ./simple.json")
+    end)
+
+    it("formats buffer", function()
+      assert.is_same(result, h.load_fixture("fixtures/formatted.http"))
     end)
   end)
 end)

@@ -42,6 +42,12 @@ local M = {
         return require("kulala.parser.jsonpath").parse(...)
       end,
     },
+    ["application/graphql"] = {
+      ft = "graphql",
+      formatter = vim.fn.executable("prettier") == 1
+        and { "prettier", "--stdin-filepath", "graphql", "--parser", "graphql" },
+      pathresolver = nil,
+    },
     ["application/xml"] = {
       ft = "xml",
       formatter = vim.fn.executable("xmllint") == 1 and { "xmllint", "--format", "-" },

@@ -307,7 +307,7 @@ local function update_imported_request(request, imported_request, lnum)
 end
 
 local function run_file(path, variables, requests, request, lnum)
-  local imported_requests = import_requests(path, variables, request)
+  local imported_requests = import_requests(path, variables, request) or {}
 
   imported_requests = vim
     .iter(imported_requests)

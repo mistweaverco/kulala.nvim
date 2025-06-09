@@ -21,6 +21,24 @@ string.clean = function(str) --luacheck: ignore
 end
 
 ---@param self string
+string.deindent = function(self, indent)
+  local tbl = vim.split(tostring(self), "\n")
+  indent = indent or math.huge
+
+  vim.iter(tbl):each(function(line)
+    if not line:find("%w") then return end
+    local spaces = line:match("^(%s+)") or ""
+    indent = math.min(#spaces, indent)
+  end)
+
+  for i = 1, #tbl do
+    tbl[i] = tbl[i]:sub(indent + 1)
+  end
+
+  return table.concat(tbl, "\n"):gsub("\n$", "")
+end
+
+---@param self string
 string.to_string = function(self, clean)
   return h.to_string(self, clean)
 end
@@ -43,7 +61,6 @@ h.to_string = function(tbl, clean)
   tbl = type(tbl) == "table" and tbl or { tbl }
 
   tbl = clean and h.to_table(table.concat(tbl, "\n"), true) or tbl
-
   return table.concat(tbl, "\n")
 end
 

@@ -33,9 +33,6 @@
   value: (_) @keyword)
 
 ; Operators
-(comment
-  "=" @operator)
-
 (metadata
   "=" @operator)
 
@@ -88,7 +85,7 @@
 
 ; Scripts
 (pre_request_script
-  (path) @property.special.path)
+  (path) @number.special.path)
 
 (res_handler_script
-  (path) @property.special.path)
+  (path) @number.special.path)

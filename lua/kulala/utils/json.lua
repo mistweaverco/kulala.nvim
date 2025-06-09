@@ -9,12 +9,14 @@ M.format = function(json_string, opts)
     sort = true,
   })
 
+  json_string = type(json_string) == "table" and vim.json.encode(json_string, opts) or json_string
+
   local system_arg_limit = 1000
 
-  local jq_path = require("kulala.config").get().jq_path or "jq"
-  local jq_exists = vim.fn.executable(jq_path) == 1
+  local jq_path = require("kulala.config").get().contenttypes["application/json"]
+  jq_path = jq_path and jq_path.formatter and jq_path.formatter[1] or vim.fn.exepath("jq")
 
-  if not jq_exists then
+  if vim.fn.executable(jq_path) == 0 then
     _ = opts.versbose and Logger.warn("jq is not installed. JSON written unformatted.")
     return json_string
   end

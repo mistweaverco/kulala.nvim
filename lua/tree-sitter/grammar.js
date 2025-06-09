@@ -59,13 +59,23 @@ module.exports = grammar({
           COMMENT_PREFIX,
           token(prec(PREC.VAR_COMMENT_PREFIX, "@")),
           field("name", $.identifier),
+
           optional(
-            seq(
-              choice(WS, "="),
-              optional(token(prec(1, WS))),
-              field("value", $.value),
+            choice(
+              // Case: @field=value
+              prec.left(3, seq("=", optional(WS), field("value", $.value))),
+
+              // Case: @field =value or @field = value
+              prec.left(2, seq(WS, "=", optional(WS), field("value", $.value))),
+
+              // Case: @field value
+              prec.left(1, seq(WS, field("value", $.value))),
+
+              // Just whitespace with no value
+              prec.right(0, WS),
             ),
           ),
+
           NL,
         ),
       ),
@@ -238,7 +248,6 @@ module.exports = grammar({
       seq(
         field("name", alias(choice("run", "import"), $.command_name)),
         WS,
-        optional("#"),
         field("value", prec.left($.value)), // Add precedence here
         optional(
           seq(
@@ -247,13 +256,13 @@ module.exports = grammar({
             optional(WS),
             optional(
               seq(
-                $.variable_declaration_inline,
+                field("variable", $.variable_declaration_inline),
                 repeat(
                   seq(
                     optional(WS),
                     ",",
                     optional(WS),
-                    $.variable_declaration_inline,
+                    field("variable", $.variable_declaration_inline),
                   ),
                 ),
               ),

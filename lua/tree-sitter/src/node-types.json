@@ -22,17 +22,17 @@
             "named": true
           }
         ]
+      },
+      "variable": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "variable_declaration_inline",
+            "named": true
+          }
+        ]
       }
-    },
-    "children": {
-      "multiple": true,
-      "required": false,
-      "types": [
-        {
-          "type": "variable_declaration_inline",
-          "named": true
-        }
-      ]
     }
   },
   {
@@ -631,10 +631,6 @@
     "type": "xml_body",
     "named": true,
     "fields": {}
-  },
-  {
-    "type": "#",
-    "named": false
   },
   {
     "type": "%}",

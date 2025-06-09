@@ -24,6 +24,22 @@ M.remove_keys = function(tbl, keys)
   return tbl
 end
 
+M.filter = function(item, keys)
+  keys = type(keys) == "table" and keys or { keys }
+  if type(item) ~= "table" then return item end
+
+  local ret = {}
+
+  for k, v in pairs(item) do
+    if not vim.tbl_contains(keys, k) then
+      ret[k] = M.filter(v, keys)
+      if type(ret[k]) == "table" and not next(ret[k]) then ret[k] = nil end
+    end
+  end
+
+  return ret
+end
+
 --- TODO: make recursive for nested tables
 --- Merge table 2 into table 1
 --- @param mode "force" | "keep" -- force: overwrite existing keys, keep: only add new keys
