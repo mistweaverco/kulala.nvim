@@ -1,5 +1,6 @@
 local Config = require("kulala.config")
 local Db = require("kulala.db")
+local Diagnostics = require("kulala.cmd.diagnostics")
 local Dynamic_variables = require("kulala.parser.dynamic_vars")
 local Env = require("kulala.parser.env")
 local Export = require("kulala.cmd.export")
@@ -707,8 +708,9 @@ function M.start_lsp(buf, ft)
     cmd = server,
     root_dir = ft,
     bufnr = buf,
-    on_init = function(_client) end,
-    on_exit = function(_code, _signal) end,
+    on_attach = function(_, bufnr)
+      Diagnostics.setup(bufnr)
+    end,
     commands = vim.iter(actions):fold({}, function(acc, action)
       acc[action.command] = action.fn
       return acc
