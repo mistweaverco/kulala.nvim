@@ -49,21 +49,25 @@ module.exports = grammar({
     LINE_TAIL: (_) => LINE_TAIL,
     COMMENT_PREFIX: (_) => COMMENT_PREFIX,
 
-    comment: ($) => choice($._plain_comment, $._var_comment),
+    comment: ($) => $._plain_comment,
     _plain_comment: (_) => seq(COMMENT_PREFIX, LINE_TAIL),
-    _var_comment: ($) =>
-      seq(
-        COMMENT_PREFIX,
-        token(prec(PREC.VAR_COMMENT_PREFIX, "@")),
-        field("name", $.identifier),
-        optional(
-          seq(
-            choice(WS, "="),
-            optional(token(prec(1, WS))),
-            field("value", $.value),
+
+    metadata: ($) =>
+      prec(
+        PREC.COMMENT_PREFIX + 1,
+        seq(
+          COMMENT_PREFIX,
+          token(prec(PREC.VAR_COMMENT_PREFIX, "@")),
+          field("name", $.identifier),
+          optional(
+            seq(
+              choice(WS, "="),
+              optional(token(prec(1, WS))),
+              field("value", $.value),
+            ),
           ),
+          NL,
         ),
-        NL,
       ),
 
     request_separator: ($) =>
@@ -88,10 +92,10 @@ module.exports = grammar({
       choice(
         seq($._blank_line, optional($._section_content)),
         seq($.comment, optional($._section_content)),
+        seq($.metadata, optional($._section_content)),
         seq($.variable_declaration, optional($._section_content)),
         seq($.command, optional($._section_content)),
         seq($.pre_request_script, optional($._section_content)),
-        // field to easily find request node in each section
         field("request", $.request),
         field("response", $.response),
       ),
@@ -116,7 +120,7 @@ module.exports = grammar({
         prec.right(
           repeat(
             choice(
-              alias($._var_comment, $.comment),
+              alias($.metadata, $.comment),
               field(
                 "body",
                 choice(
@@ -232,7 +236,7 @@ module.exports = grammar({
 
     command: ($) =>
       seq(
-        field("name", $.identifier),
+        field("name", alias(choice("run", "import"), $.command_name)),
         WS,
         optional("#"),
         field("value", prec.left($.value)), // Add precedence here

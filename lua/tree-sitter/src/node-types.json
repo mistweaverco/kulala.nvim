@@ -8,7 +8,7 @@
         "required": true,
         "types": [
           {
-            "type": "identifier",
+            "type": "command_name",
             "named": true
           }
         ]
@@ -162,6 +162,32 @@
     "type": "json_body",
     "named": true,
     "fields": {}
+  },
+  {
+    "type": "metadata",
+    "named": true,
+    "fields": {
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
+      "value": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "value",
+            "named": true
+          }
+        ]
+      }
+    }
   },
   {
     "type": "multipart_form_data",
@@ -485,6 +511,10 @@
           "named": true
         },
         {
+          "type": "metadata",
+          "named": true
+        },
+        {
           "type": "pre_request_script",
           "named": true
         },
@@ -645,6 +675,10 @@
   {
     "type": "@",
     "named": false
+  },
+  {
+    "type": "command_name",
+    "named": true
   },
   {
     "type": "header_entity",

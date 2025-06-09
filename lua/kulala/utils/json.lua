@@ -3,22 +3,35 @@ local Shell = require("kulala.cmd.shell_utils")
 
 local M = {}
 
-M.format = function(json_string)
+M.format = function(json_string, opts)
+  opts = vim.tbl_deep_extend("keep", opts or {}, {
+    verbose = true,
+    sort = true,
+  })
+
   local system_arg_limit = 1000
 
   local jq_path = require("kulala.config").get().jq_path or "jq"
   local jq_exists = vim.fn.executable(jq_path) == 1
-  if not jq_exists then return json_string, Logger.warn("jq is not installed. JSON written unformatted.") end
 
-  local cmd, temp_file
+  if not jq_exists then
+    _ = opts.versbose and Logger.warn("jq is not installed. JSON written unformatted.")
+    return json_string
+  end
 
+  local cmd = { jq_path }
+  _ = opts.sort and table.insert(cmd, "--sort-keys")
+
+  local temp_file
   if #json_string > system_arg_limit then
     temp_file = os.tmpname()
     require("kulala.utils.fs").write_file(temp_file, json_string)
-    cmd = { "jq", "--sort-keys", ".", temp_file }
+
+    table.insert(cmd, temp_file)
+  else
+    vim.list_extend(cmd, { "-n", json_string })
   end
 
-  cmd = cmd or { "jq", "--sort-keys", "-n", json_string }
   local result = Shell.run(cmd, { sync = true, err_msg = "Failed to format JSON", abort_on_stderr = true })
 
   if not result then return json_string end

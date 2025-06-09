@@ -36,15 +36,20 @@
 (comment
   "=" @operator)
 
+(metadata
+  "=" @operator)
+
 (variable_declaration
   "=" @operator)
 
 ; keywords
-(comment
+(metadata
   "@" @keyword
-  name: (_) @keyword)
+   name: (_) @keyword)
 
-(comment
+(metadata
+  "@" @keyword
+  name: (_) @keyword
   value: (_) @constant)
 
 ; Literals

@@ -161,8 +161,10 @@ local M = {
     ---@type boolean|table
     keymaps = false, -- disabled by default, as Kulala relies on default Neovim LSP keymaps
 
-    -- enable/disable HTTP formatter
-    formatter = false,
+    -- enable/disable/customize HTTP formatter
+    formatter = {
+      json_sort = true, -- sort JSON keys in request body
+    },
   },
 
   -- enable/disable debug mode
