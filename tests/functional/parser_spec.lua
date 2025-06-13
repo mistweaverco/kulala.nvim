@@ -283,7 +283,7 @@ describe("requests", function()
           }, "GET", "httpbin.org/simple")
         end)
 
-        it("urlencodes correctly", function()
+        it("#wip urlencodes correctly", function()
           -- `!` `#` `$` `&` `'` `(` `)` `*` `+` `,` `/` `:` `;` `=` `?` `@` `[` `]` `%` reserved
           -- `?`, `&`, `=`, `/`, `#`, `:` special syntax
 
@@ -298,6 +298,11 @@ describe("requests", function()
             },
             "GET",
             [[https://my.server.com/api/v1/object?filter=owner.address.city%20in%20%5B%22Berlin%22%2C%20%22M%C3%BCnchen%22%2C%20%22N%C3%BCrnberg%22%5D%27]]
+          )
+          assert_url(
+            { 'httpbin.org/post?filter={"conditions":{}}' },
+            "GET",
+            "httpbin.org/post?filter=%7B%22conditions%22%3A%7B%7D%7D"
           )
         end)
       end)
