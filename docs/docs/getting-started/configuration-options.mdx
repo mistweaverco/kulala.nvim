@@ -322,6 +322,12 @@ contenttypes = {
   ["application/json"] = {
     formatter = { "jq", "." },
   },
+  ["application/graphql"] = {
+    ft = "graphql",
+    formatter = vim.fn.executable("prettier") == 1
+      and { "prettier", "--stdin-filepath", "graphql", "--parser", "graphql" },
+    pathresolver = nil,
+  },
   ["application/xml"] = {
     formatter = { "xmllint", "--format", "-" },
   },
@@ -904,14 +910,16 @@ Enable/disable/customize Kulala LSP keymaps
 
 ### lsp.formatter
 
-Enable/disable HTTP formatter.
+Enable/disable/customize HTTP formatter.
 
 ```lua
 {
   lsp = {
     enable = true,
     keymaps = false, -- disabled by default, as Kulala relies on default Neovim LSP keymaps
-    formatter = false,
+    formatter = {
+      json_sort = true, -- sort JSON keys in request body
+    }
   },
 }
 

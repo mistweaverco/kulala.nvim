@@ -283,7 +283,7 @@ describe("requests", function()
           }, "GET", "httpbin.org/simple")
         end)
 
-        it("#wip urlencodes correctly", function()
+        it("urlencodes correctly", function()
           -- `!` `#` `$` `&` `'` `(` `)` `*` `+` `,` `/` `:` `;` `=` `?` `@` `[` `]` `%` reserved
           -- `?`, `&`, `=`, `/`, `#`, `:` special syntax
 
