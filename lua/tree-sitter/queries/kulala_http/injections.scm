@@ -12,7 +12,7 @@
 ((graphql_data) @injection.content
   (#set! injection.language "graphql"))
 
-((comment
+((metadata
   name: (_) @_name
   (#eq? @_name "lang")
   value: (_) @injection.language)?
@@ -24,7 +24,7 @@
   (#set! injection.language "lua"))
 
 ; Script (default to javascript)
-((comment
+((metadata
   name: (_) @_name
   (#eq? @_name "lang")
   value: (_) @injection.language)?

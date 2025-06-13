@@ -55,7 +55,8 @@ const sidebars: SidebarsConfig = {
         "usage/import-export",
         "usage/api",
         "usage/cli-ci",
-        'usage/demos'
+        'usage/demos',
+        'usage/recipes'
       ],
     },
     {

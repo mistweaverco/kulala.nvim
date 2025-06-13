@@ -307,7 +307,7 @@ local function update_imported_request(request, imported_request, lnum)
 end
 
 local function run_file(path, variables, requests, request, lnum)
-  local imported_requests = import_requests(path, variables, request)
+  local imported_requests = import_requests(path, variables, request) or {}
 
   imported_requests = vim
     .iter(imported_requests)
@@ -479,7 +479,7 @@ M.get_document = function(lines, path)
       elseif line:match("^Host:") then
         parse_host(request, line)
         is_request_line = false
-      elseif line:match("^([^%[]+):%s*(.*)$") and not line:match("^[^:]+:[/%d]+.+") then
+      elseif line:match("^([^%[]+):%s*(.*)$") and not line:match("^[^:]+:[/%d]+.+") and not line:match("%?") then
         -- skip [:] ipv6, ://, scheme, :80 port
         parse_headers(request, line)
         is_request_line = false

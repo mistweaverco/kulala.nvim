@@ -488,6 +488,3 @@ M.export_requests = function(action)
 end
 
 return M
-
---TODO: different bodies (formdata, urlencoded, file)
---TODO: auth

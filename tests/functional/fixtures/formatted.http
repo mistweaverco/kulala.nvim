@@ -1,0 +1,172 @@
+# Document variables
+
+@ENV_PROJECT = project_name
+@ENV_USER = some_username
+@content_type = image/jpeg
+@filename = logo.png
+@filepath = /home/yaro/projects/kulala.nvim/assets/badge-discord.svg
+@foobar = bar
+
+
+###
+
+@url = https://httpbin.org/get
+
+# @curl-conect-timeout 200
+# @curl-conect-timeout 200
+# @curl-conect-timeout 200
+
+# Request comment 0
+
+
+### Request name
+
+# Request comment 1
+
+@foobar = bar
+@user = pass
+
+# Request comment 3
+
+# @curl-conect-timeout 200
+# @meta
+
+# Request comment 2
+
+GET http://httpbin.org/post HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+
+{
+  "results": [
+    {
+      "desc": "some_username",
+      "id": 1
+    },
+    {
+      "desc": "another_username",
+      "id": 2
+    }
+  ]
+}
+
+> {%
+   client.log("post request executed");
+%}
+
+
+### Request two and three
+
+@foobar = bar
+@user = pass
+
+# Request comment 5
+# Request comment 6
+
+import ./export/simple.http
+run #Multi-form (@host=example.com, @user=userName)
+run #Ndjson
+run ./export/simple.http
+
+# @curl-conect-timeout 200
+# @meta
+
+< ../scripts/post.js
+
+< {%
+  client.log("post request executed");
+%}
+
+GET http://httpbin.org/post HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+
+{
+  "results": [
+    {
+      "desc": "some_username",
+      "id": 1
+    },
+    {
+      "desc": "another_username",
+      "id": 2
+    }
+  ]
+}
+
+> ../scripts/post.js
+
+> {%
+  client.log("post request executed");
+%}
+
+
+### Request with form-data
+
+GET http://httpbin.org/post HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+
+------WebKitFormBoundary{{$timestamp}}
+Content-Disposition: form-data; name="file"; filename="{{filename}}"
+Content-Type: {{content_type}}
+
+< {{filepath}}
+
+------WebKitFormBoundary{{$timestamp}}--
+
+
+### Request with raw body
+
+GET http://httpbin.org/post HTTP/1.1
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=password&
+username=foo&
+password=bar&
+client_id=foo
+
+
+### Request with graphql
+
+GRAPHQL https://countries.trevorblades.com/ HTTP/1.1
+
+query GetCountry($code: ID!) {
+  country(code: $code) {
+    name
+    code
+    capital
+    capital
+    currency
+    languages {
+      code
+      name
+    }
+  }
+}
+
+{
+  "code": "US"
+}
+
+
+### Request with xml body
+
+GET http://httpbin.org/post HTTP/1.1
+Content-Type: application/xml
+
+<?xml version="1.0"?>
+<note>
+  <to>Tove</to>
+  <from>Jani</from>
+  <heading>Reminder</heading>
+  <body>Don't forget me this weekend!</body>
+</note>
+
+
+### Request with external body
+
+GET http://httpbin.org/post HTTP/1.1
+Content-Type: application/json
+
+< ./simple.json

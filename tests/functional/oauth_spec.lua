@@ -109,7 +109,7 @@ describe("oauth", function()
       end)
     end
 
-    kulala_config.setup({ default_view = "body", debug = 1, jq_path = "jq" })
+    kulala_config.setup({ default_view = "body", debug = 1 })
     http_buf = h.create_buf(
       ([[
         # @curl-global-verbose
@@ -663,6 +663,8 @@ describe("oauth", function()
     wait_for_requests(1, function()
       return get_request().url == "http://revoke.url"
     end)
+
+    if not get_request().url then vim.wait(3000) end
 
     assert.has_properties(get_request(), {
       token = "expired_access_token",

@@ -589,7 +589,6 @@ Writer.Block.Table = function(el)
 end
 
 Writer.Block.Div = function(el)
-  -- TODO: Add more special features here
   if IGNORE_RAWBLOCKS then
     return "\n"
   else

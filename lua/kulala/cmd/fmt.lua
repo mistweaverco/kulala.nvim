@@ -69,6 +69,8 @@ M.check_formatter = function(callback, wait)
 end
 
 M.format = function(text)
+  --INFO: deprecated
+
   text = type(text) == "table" and text or { text }
   text = table.concat(text, "\n") .. "\n"
 
