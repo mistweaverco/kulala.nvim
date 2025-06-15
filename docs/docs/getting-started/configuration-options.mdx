@@ -912,6 +912,10 @@ Enable/disable/customize Kulala LSP keymaps
 
 Enable/disable/customize HTTP formatter.
 
+### lsp.on_attach
+
+Function called when Kulala LSP attaches to the buffer
+
 ```lua
 {
   lsp = {
@@ -920,6 +924,9 @@ Enable/disable/customize HTTP formatter.
     formatter = {
       json_sort = true, -- sort JSON keys in request body
     }
+    on_attach = function(client, bufnr)
+      -- custom on_attach function
+    end,
   },
 }
 

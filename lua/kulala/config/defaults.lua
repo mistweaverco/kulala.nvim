@@ -171,6 +171,8 @@ local M = {
     formatter = {
       json_sort = true, -- sort JSON keys in request body
     },
+
+    on_attach = nil, -- function called when Kulala LSP attaches to the buffer
   },
 
   -- enable/disable debug mode

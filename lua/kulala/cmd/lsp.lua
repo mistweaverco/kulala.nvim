@@ -689,8 +689,9 @@ function M.start_lsp(buf, ft)
     cmd = server,
     root_dir = ft,
     bufnr = buf,
-    on_attach = function(_, bufnr)
+    on_attach = function(client, bufnr)
       Diagnostics.setup(bufnr)
+      _ = Config.options.lsp.on_attach and Config.options.lsp.on_attach(client, bufnr)
     end,
     commands = vim.iter(actions):fold({}, function(acc, action)
       acc[action.command] = action.fn
