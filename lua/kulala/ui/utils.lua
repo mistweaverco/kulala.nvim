@@ -85,7 +85,7 @@ local function highlight_request(request)
   local ns = vim.api.nvim_create_namespace("kulala_requests_flash")
 
   if request.start_line and request.end_line then
-    flash_highlight(DB.get_current_buffer(), ns, 100, request.start_line, request.end_line)
+    flash_highlight(DB.get_current_buffer(), ns, 100, request.start_line, request.end_line - 1)
   end
 end
 

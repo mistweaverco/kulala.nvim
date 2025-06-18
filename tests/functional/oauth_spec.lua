@@ -664,8 +664,6 @@ describe("oauth", function()
       return get_request().url == "http://revoke.url"
     end)
 
-    if not get_request().url then vim.wait(3000) end
-
     assert.has_properties(get_request(), {
       token = "expired_access_token",
       url = "http://revoke.url",

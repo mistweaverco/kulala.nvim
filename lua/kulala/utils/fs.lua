@@ -421,6 +421,8 @@ end
 ---@param file file* handle to file to append to
 ---@param path string path of file to include
 M.include_file = function(file, path)
+  path = M.get_file_path(path)
+
   local status = true
   local BUFSIZE = 2 ^ 13 -- 8K
 
