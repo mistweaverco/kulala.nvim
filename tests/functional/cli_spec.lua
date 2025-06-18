@@ -43,7 +43,7 @@ describe("cli", function()
       end,
     })
 
-    output = h.Output.stub()
+    output = h.Output.stub() -- change to h.Output.spy() to see output in tests
   end)
 
   after_each(function()

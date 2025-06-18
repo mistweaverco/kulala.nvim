@@ -53,7 +53,7 @@ local function set_response_summary(buf)
           .. "  Assert: "
           .. assert_status,
       },
-      { "Buffer: " .. response.buf_name .. "::" .. response.line },
+      { "Buffer: " .. response.buf_name .. "::" .. response.line .. "  Name: " .. response.name },
       { "" },
     })
     :flatten()

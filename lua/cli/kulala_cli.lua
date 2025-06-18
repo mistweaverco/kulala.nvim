@@ -182,7 +182,7 @@ local function run_file(file)
   local processing = true
   local status = true
 
-  Cmd.run_parser(requests, variables, nil, function()
+  Cmd.run_parser(requests, variables, 0, function()
     io.write("*")
 
     db.current_response_pos = #db.responses

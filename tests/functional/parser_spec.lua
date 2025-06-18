@@ -650,6 +650,7 @@ describe("requests", function()
           )
 
           _, result = doc_parser.get_document()
+          result = doc_parser.get_request_at(result, 0) or {}
 
           assert.is_same(4, #result)
 

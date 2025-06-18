@@ -123,6 +123,7 @@ describe("UI", function()
         method = "GET",
         line = 15,
         buf_name = "test.txt",
+        name = "Request 1",
         body = h.load_fixture("fixtures/request_2_headers_body.txt"),
         headers = "",
       })

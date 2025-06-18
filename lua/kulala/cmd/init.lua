@@ -373,17 +373,15 @@ function process_request(requests, request, variables, callback)
 end
 
 ---Parses and executes DocumentRequest/s:
----if requests are provided then runs the first request in the list
----if line_nr is provided then runs the request from current buffer within the line number
----if line_nr is 0, then runs visually selected requests
----or runs all requests in the document
+---if requests is nil then it parses the current document
+---if line_nr is nil then runs the first request in the list
+---if line_nr > 0 then runs the request from current buffer around the line number
+---if line_nr is 0 then runs all or visually selected requests
 ---@param requests? DocumentRequest[]|nil
 ---@param line_nr? number|nil
 ---@param callback function
 ---@return nil
 M.run_parser = function(requests, variables, line_nr, callback)
-  local reqs_to_process
-
   M.queue:reset()
 
   if not requests then
@@ -392,22 +390,16 @@ M.run_parser = function(requests, variables, line_nr, callback)
 
   if not requests then return Logger.error("No requests found in the document") end
 
-  if line_nr and line_nr > 0 then
-    local requests_l = DOCUMENT_PARSER.get_request_at(requests, line_nr)
-    if #requests_l == 0 then return Logger.error("No request found at current line") end
+  requests = DOCUMENT_PARSER.get_request_at(requests, line_nr)
+  if #requests == 0 then return Logger.error("No request found at current line") end
 
-    reqs_to_process = requests_l
-  end
-
-  reqs_to_process = reqs_to_process or requests
-
-  for _, req in ipairs(reqs_to_process) do
-    INLAY.show(DB.current_buffer, "loading", req.show_icon_line_number)
+  for _, request in ipairs(requests) do
+    INLAY.show(DB.current_buffer, "loading", request.show_icon_line_number)
 
     M.queue:add(function()
-      UI_utils.highlight_request(req)
+      UI_utils.highlight_request(request)
       initialize()
-      process_request(requests, req, variables, callback)
+      process_request(requests, request, variables, callback)
     end)
   end
 
