@@ -92,7 +92,7 @@ M.format = function(body, opts)
     abort_on_stderr = true,
   })
 
-  if not result or result.stdout == "" then return body end
+  if not result or result.code ~= 0 or result.stderr ~= "" or result.stdout == "" then return body end
   local formatted = result.stdout
 
   if json.variables and next(json.variables) then

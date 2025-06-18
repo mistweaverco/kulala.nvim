@@ -36,8 +36,8 @@ M.format = function(json_string, opts)
 
   local result = Shell.run(cmd, { sync = true, err_msg = "Failed to format JSON", abort_on_stderr = true })
 
-  if not result then return json_string end
   _ = temp_file and os.remove(temp_file)
+  if not result or result.code ~= 0 or result.stderr ~= "" or result.stdout == "" then return json_string end
 
   return result.stdout
 end

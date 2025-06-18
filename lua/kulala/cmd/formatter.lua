@@ -117,7 +117,7 @@ local function insert_comments(node_type)
   current_section().formatted = current_section().formatted .. "\n"
 end
 
----@param condition boolean
+---@param condition any
 ---@param content string
 ---@param node_type string - node_type
 local function insert_formatted(condition, content, node_type)
@@ -148,13 +148,19 @@ format_rules = {
     format_children(node)
 
     insert_comments("none")
-    insert_formatted(#Document.sections > 1, section.request_separator or "###", "request_separator")
+
+    section.request_separator = not section.request_separator and #Document.sections > 1 and "###"
+      or section.request_separator
+    insert_formatted(section.request_separator, section.request_separator, "request_separator")
+
     insert_formatted(#section.variables > 0, table.concat(section.variables, "\n"), "variable_declaration")
     insert_formatted(#section.commands > 0, table.concat(section.commands, "\n"), "command")
     insert_formatted(#section.metadata > 0, table.concat(section.metadata, "\n"), "metadata")
     insert_formatted(#section.request.formatted > 0, section.request.formatted, "request")
 
     section.formatted = section.formatted:gsub("\n*$", "")
+    if section.formatted == "" then table.remove(Document.sections) end
+
     return section.formatted
   end,
 

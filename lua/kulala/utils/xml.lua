@@ -37,8 +37,8 @@ M.format = function(xml_string, opts)
     abort_on_stderr = true,
   })
 
-  if not result then return xml_string end
   _ = temp_file and os.remove(temp_file)
+  if not result or result.code ~= 0 or result.stderr ~= "" or result.stdout == "" then return xml_string end
 
   return result.stdout
 end
