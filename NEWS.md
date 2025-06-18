@@ -3,7 +3,7 @@
 ## Version 5.3.1
 
 ### Enhancement: integrated LSP HTTP formatter
-### Enhancement: resolve NODE_PATH to nearest node_modules, add  `node_path_resolver` to options
+### Enhancement: resolve NODE_PATH to nearest node_modules, add `node_path_resolver` to options
 ### Feature: GraphQL autocompletion
 ### Enhancement: execute inline/file scripts in the order of declaration
 ### Enhancement: add `Expires In` option to `Auth Config`

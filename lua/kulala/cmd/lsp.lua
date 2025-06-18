@@ -589,6 +589,54 @@ local function format(params)
   return formatted_lines or {}
 end
 
+M.foldtext = function()
+  vim.api.nvim_set_option_value(
+    "foldtext",
+    "v:lua.require'kulala.cmd.lsp'.foldtext()",
+    { win = vim.api.nvim_get_current_win() }
+  )
+
+  local line = vim.fn.getline(vim.v.foldstart)
+  return "▶ " .. line .. " [" .. (vim.v.foldend - vim.v.foldstart + 1) .. " lines]"
+  -- return vim.fn.foldtext()
+end
+
+local function folding()
+  local tree = vim.treesitter.get_parser(state.current_buffer, "kulala_http"):parse()[1]
+  local root = tree:root()
+
+  local ranges = {}
+
+  local function traverse(node)
+    for child in node:iter_children() do
+      local start_row, _, end_row, _ = child:range()
+
+      local type = child:type()
+      local kind = type == "comment" and type or "region"
+
+      if type == "request_separator" then
+        start_row = start_row + 1
+        end_row = select(3, child:parent():range())
+      end
+
+      if end_row > start_row and child:type() ~= "section" then
+        table.insert(ranges, {
+          startLine = start_row,
+          endLine = end_row - 1,
+          kind = kind,
+          type = child:type(),
+        })
+      end
+
+      traverse(child)
+    end
+  end
+
+  traverse(root)
+
+  return ranges
+end
+
 local function initialize(params)
   local ft = params.rootPath:sub(2)
   if ft ~= "http" and ft ~= "rest" then return { capabilities = { codeActionProvider = true } } end
@@ -601,6 +649,10 @@ local function initialize(params)
       completionProvider = { triggerCharacters = trigger_chars },
       documentFormattingProvider = true,
       documentRangeFormattingProvider = true,
+      foldingRangeProvider = {
+        dynamicRegistration = false,
+        lineFoldingOnly = true,
+      },
     },
   }
 end
@@ -613,6 +665,7 @@ local handlers = {
   ["textDocument/codeAction"] = code_actions,
   ["textDocument/formatting"] = format,
   ["textDocument/rangeFormatting"] = format,
+  ["textDocument/foldingRange"] = folding,
   ["shutdown"] = function() end,
 }
 
