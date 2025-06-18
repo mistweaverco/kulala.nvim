@@ -22,7 +22,7 @@ describe("UI", function()
     notify = h.Notify.stub()
     dynamic_vars = h.Dynamic_vars.stub()
 
-    curl = h.Curl.stub({
+    curl = h.Curl.stub {
       ["*"] = {
         stats = h.load_fixture("fixtures/stats.json"),
       },
@@ -36,7 +36,7 @@ describe("UI", function()
         body = h.load_fixture("fixtures/request_2_body.txt"),
         errors = h.load_fixture("fixtures/request_2_errors.txt"),
       },
-    })
+    }
 
     system = h.System.stub({ "curl" }, {
       on_call = function(system)
@@ -51,14 +51,14 @@ describe("UI", function()
       end)
     end
 
-    kulala_config = CONFIG.setup({
+    kulala_config = CONFIG.setup {
       global_keymaps = true,
       ui = {
         default_view = "body",
         display_mode = "float",
         show_request_summary = true,
       },
-    })
+    }
 
     lines = h.to_table(
       [[
@@ -153,11 +153,11 @@ describe("UI", function()
     end)
 
     it("for current line in in non-http buffer and strips comments chars", function()
-      curl.stub({
+      curl.stub {
         ["https://httpbin.org/advanced_1"] = {
           body = h.load_fixture("fixtures/advanced_A_1_body.txt"),
         },
-      })
+      }
 
       h.create_buf(
         ([[
@@ -179,11 +179,11 @@ describe("UI", function()
     end)
 
     it("for current selection in in non-http buffer", function()
-      curl.stub({
+      curl.stub {
         ["https://httpbin.org/advanced_1"] = {
           body = h.load_fixture("fixtures/advanced_A_1_body.txt"),
         },
-      })
+      }
 
       h.create_buf(
         ([[
@@ -339,11 +339,11 @@ describe("UI", function()
       ]]):to_table(true)
       )
 
-      curl.stub({
+      curl.stub {
         ["https://httpbin.org/simple"] = {
           body = h.load_fixture("fixtures/simple_body.txt"),
         },
-      })
+      }
 
       kulala.run()
       wait_for_requests(1)
@@ -367,8 +367,8 @@ describe("UI", function()
       DB.global_update().responses = {}
       h.delete_all_bufs()
 
-      input.stub({ ["PROMPT_VAR prompt"] = "TEST_PROMPT_VAR" })
-      curl.stub({
+      input.stub { ["PROMPT_VAR prompt"] = "TEST_PROMPT_VAR" }
+      curl.stub {
         ["https://httpbin.org/advanced_e1"] = {
           headers = h.load_fixture("fixtures/advanced_E_headers.txt"),
           body = h.load_fixture("fixtures/advanced_E1_body.txt"),
@@ -384,7 +384,7 @@ describe("UI", function()
           body = h.load_fixture("fixtures/advanced_E3_body.txt"),
           errors = h.load_fixture("fixtures/request_2_errors.txt"),
         },
-      })
+      }
     end)
 
     it("stores responses of consecutive requests", function()
@@ -469,13 +469,13 @@ describe("UI", function()
     it("shows failed requests and errors", function()
       kulala_config.halt_on_error = false
 
-      curl.stub({
+      curl.stub {
         ["https://request_1"] = {
           boby = '{ "data": { "foo": "baz" } }',
           stats = '{"response_code": 500}',
           errors = "Curt error",
         },
-      })
+      }
 
       h.create_buf(
         ([[

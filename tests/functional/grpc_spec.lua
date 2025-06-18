@@ -17,11 +17,11 @@ describe("grpc", function()
         return 1
       end)
 
-      curl = h.Curl.stub({
+      curl = h.Curl.stub {
         ["*"] = {
           stdout = [[ { "message": "Hello World" } ]],
         },
-      })
+      }
 
       system = h.System.stub({ "grpcurl" }, {
         on_call = function(system)
@@ -36,7 +36,7 @@ describe("grpc", function()
         end)
       end
 
-      kulala_config.setup({ default_view = "headers_body" })
+      kulala_config.setup { default_view = "headers_body" }
     end)
 
     after_each(function()

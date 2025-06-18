@@ -25,7 +25,7 @@ describe("cli", function()
       exit_code = code
     end)
 
-    curl = h.Curl.stub({
+    curl = h.Curl.stub {
       ["https://httpbin.org/advanced_1"] = {
         body = h.load_fixture("fixtures/advanced_A_1_body.txt"),
       },
@@ -35,7 +35,7 @@ describe("cli", function()
       ["https://httpbin.org/advanced_b"] = {
         body = h.load_fixture("fixtures/advanced_B_body.txt"),
       },
-    })
+    }
 
     system = h.System.stub({ "curl" }, {
       on_call = function(system)
@@ -57,7 +57,7 @@ describe("cli", function()
 
   it("runs all requests in file", function()
     local path = h.expand_path("requests/advanced_A.http")
-    run_cli({ path })
+    run_cli { path }
 
     assert.is_same(0, exit_code)
     assert.is_same(2, curl.requests_no)
@@ -69,7 +69,7 @@ describe("cli", function()
   it("runs requests in several files", function()
     local path = h.expand_path("requests/advanced_A.http")
     local path_2 = h.expand_path("requests/advanced_B.http")
-    run_cli({ path, path_2 })
+    run_cli { path, path_2 }
 
     assert.is_same(3, curl.requests_no)
     assert.has_string(output.log, "URL: POST https://httpbin.org/advanced_1")
@@ -79,7 +79,7 @@ describe("cli", function()
 
   it("runs all request files in directory", function()
     local path = h.expand_path("requests")
-    run_cli({ path, "--list" })
+    run_cli { path, "--list" }
 
     result = vim
       .iter(output.log)
@@ -94,7 +94,7 @@ describe("cli", function()
   it("filters requests", function()
     local path = h.expand_path("requests/advanced_A.http")
     local path_2 = h.expand_path("requests/advanced_B.http")
-    run_cli({ path, path_2, "-n", "REQUEST_FOOBAR", "-l", "32" })
+    run_cli { path, path_2, "-n", "REQUEST_FOOBAR", "-l", "32" }
 
     assert.is_same("https://httpbin.org/advanced_2", curl.requests[1])
     assert.is_same("https://httpbin.org/advanced_b", curl.requests[2])
@@ -102,7 +102,7 @@ describe("cli", function()
 
   it("lists requests", function()
     local path = h.expand_path("requests/advanced_A.http")
-    run_cli({ path, "--list" })
+    run_cli { path, "--list" }
 
     assert.has_string(output.log, "requests/advanced_A.http")
     assert.has_string(output.log, "8    Request 1")
@@ -113,13 +113,13 @@ describe("cli", function()
 
   it("uses different environments", function()
     local path = h.expand_path("requests/advanced_A.http")
-    run_cli({ path, "-e", "prod" })
+    run_cli { path, "-e", "prod" }
     assert.is_same("prod", Config.options.default_env)
   end)
 
   it("shows with different views", function()
     local path = h.expand_path("requests/advanced_A.http")
-    run_cli({ path, "-v", "report" })
+    run_cli { path, "-v", "report" }
 
     assert.has_string(output.log, "Line URL")
     assert.has_string(output.log, "Line URL")
@@ -132,15 +132,15 @@ describe("cli", function()
   end)
 
   it("halts on error", function()
-    curl.stub({
+    curl.stub {
       ["https://httpbin.org/advanced_1"] = {
         code = 124,
         body = "",
       },
-    })
+    }
 
     local path = h.expand_path("requests/advanced_A.http")
-    run_cli({ path, "--halt" })
+    run_cli { path, "--halt" }
 
     assert.is_same(1, exit_code)
     assert.is_same(1, curl.requests_no)
@@ -150,7 +150,7 @@ describe("cli", function()
   -- pending, as fmt-dependencies install in minit.lua gives weird errors in lazy.nvim async runner
   pending("it::imports HTTP files", function()
     local file = h.expand_path("fixtures/export/export.json")
-    run_cli({ "import", "--from", "postman", file })
+    run_cli { "import", "--from", "postman", file }
 
     Fs.delete_file(h.expand_path("fixtures/export/export.http"))
     assert.has_string(output.log, "Converted PostMan Collection")
@@ -159,7 +159,7 @@ describe("cli", function()
   it("exports HTTP file", function()
     stub(Fs, "write_json", true)
 
-    run_cli({ "export", h.expand_path("fixtures/export") })
+    run_cli { "export", h.expand_path("fixtures/export") }
     assert.has_string(output.log, "Exported collection:")
 
     Fs.write_json:revert()

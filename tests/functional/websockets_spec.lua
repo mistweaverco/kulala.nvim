@@ -20,16 +20,16 @@ describe("websockets", function()
         system.async = true
       end,
       write = function(_, data)
-        system.add_log({ "write", data })
+        system.add_log { "write", data }
       end,
       kill = function(_, signal)
-        system.add_log({ "kill", signal })
-        system.add_log({ "on_exit" })
+        system.add_log { "kill", signal }
+        system.add_log { "on_exit" }
         system.args.opts.on_exit(system)
       end,
       write_to = function(event, data)
         system.args.opts[event](data, data)
-        system.add_log({ event, data })
+        system.add_log { event, data }
       end,
     })
 
@@ -47,7 +47,7 @@ describe("websockets", function()
       end)
     end
 
-    kulala_config.setup({ default_view = "body" })
+    kulala_config.setup { default_view = "body" }
 
     h.create_buf(
       ([[

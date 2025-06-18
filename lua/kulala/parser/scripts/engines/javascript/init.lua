@@ -80,7 +80,7 @@ M.install_dependencies = function(wait)
     )
     Async.co_yield(co)
 
-    DB.settings:write({ js_build_ver_local = DB.session.js_build_ver_repo })
+    DB.settings:write { js_build_ver_local = DB.session.js_build_ver_repo }
     vim.g.kulala_js_installing = false
 
     progress.hide()

@@ -585,7 +585,7 @@ Writer.Block.RawBlock = function(el)
 end
 
 Writer.Block.Table = function(el)
-  return pandoc.write(pandoc.Pandoc({ el }), "plain")
+  return pandoc.write(pandoc.Pandoc { el }, "plain")
 end
 
 Writer.Block.Div = function(el)
@@ -615,7 +615,7 @@ end
 Writer.Block.LineBlock = function(el)
   local buffer = {}
   el.content:map(function(item)
-    table.insert(buffer, table.concat({ "| ", inlines(item) }))
+    table.insert(buffer, table.concat { "| ", inlines(item) })
   end)
   return "\n" .. table.concat(buffer, "\n") .. "\n"
 end

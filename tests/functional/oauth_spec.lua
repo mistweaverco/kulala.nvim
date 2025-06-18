@@ -61,7 +61,7 @@ describe("oauth", function()
 
   before_each(function()
     restore_http_client_files()
-    curl = h.Curl.stub({ ["https://www.secure.com"] = {} })
+    curl = h.Curl.stub { ["https://www.secure.com"] = {} }
 
     stub(cmd.queue, "resume", function() end)
 
@@ -109,7 +109,7 @@ describe("oauth", function()
       end)
     end
 
-    kulala_config.setup({ default_view = "body", debug = 1 })
+    kulala_config.setup { default_view = "body", debug = 1 }
     http_buf = h.create_buf(
       ([[
         # @curl-global-verbose
@@ -139,7 +139,7 @@ describe("oauth", function()
   end)
 
   it("returns stored access token if it is not expired", function()
-    update_auth_data({ access_token = "stored_access_token", acquired_at = os.time(), expires_in = os.time() + 3600 })
+    update_auth_data { access_token = "stored_access_token", acquired_at = os.time(), expires_in = os.time() + 3600 }
 
     kulala.run()
     wait_for_requests(1)
@@ -155,7 +155,7 @@ describe("oauth", function()
         Authorization: Bearer {{$auth.idToken("GAPI")}}
       ]]):to_table(true)
     )
-    update_auth_data({ id_token = "stored_id_token", acquired_at = os.time(), expires_in = os.time() + 3600 })
+    update_auth_data { id_token = "stored_id_token", acquired_at = os.time(), expires_in = os.time() + 3600 }
 
     kulala.run()
     wait_for_requests(1)
@@ -166,18 +166,18 @@ describe("oauth", function()
   it("refreshes access token if it is expired", function()
     cmd.queue.resume:revert()
 
-    curl.stub({
+    curl.stub {
       ["https://token.url"] = { stdout = '{ "access_token": "refreshed_access_token"}' },
-    })
+    }
 
-    update_auth_data({
+    update_auth_data {
       access_token = "expired_access_token",
       acquired_at = os.time() - 10,
       expires_in = 1,
       refresh_token = "refresh_token",
       refresh_token_acquired_at = os.time(),
       refresh_token_expires_in = os.time() + 3600,
-    })
+    }
     kulala.run()
     wait_for_requests(1)
 
@@ -193,16 +193,16 @@ describe("oauth", function()
 
   describe("acquires new access token if it is expired", function()
     before_each(function()
-      curl.stub({
+      curl.stub {
         ["https://token.url"] = {
           stdout = '{ "access_token": "new_access_token", "refresh_token":"new_refresh_token"}',
         },
-      })
-      update_env({ access_token = "expired_access_token" })
+      }
+      update_env { access_token = "expired_access_token" }
     end)
 
     it("grant type - Password", function()
-      update_env({ ["Grant Type"] = "Password" })
+      update_env { ["Grant Type"] = "Password" }
 
       kulala.run()
       wait_for_requests(1)
@@ -229,10 +229,10 @@ describe("oauth", function()
       it("basic auth", function()
         cmd.queue.resume:revert()
 
-        update_env({
+        update_env {
           ["Grant Type"] = "Client Credentials",
           ["Client Credentials"] = "basic",
-        })
+        }
 
         kulala.run()
         wait_for_requests(1)
@@ -255,10 +255,10 @@ describe("oauth", function()
       it("in body auth", function()
         cmd.queue.resume:revert()
 
-        update_env({
+        update_env {
           ["Grant Type"] = "Client Credentials",
           ["Client Credentials"] = "in body",
-        })
+        }
 
         kulala.run()
         wait_for_requests(1)
@@ -282,7 +282,7 @@ describe("oauth", function()
       it("generate JWT - HS256", function()
         cmd.queue.resume:revert()
 
-        update_env({
+        update_env {
           ["Grant Type"] = "Client Credentials",
           ["Client Credentials"] = "jwt",
           JWT = {
@@ -298,7 +298,7 @@ describe("oauth", function()
               scope = "devstorage.read_only",
             },
           },
-        })
+        }
 
         update_env({
           ["Client Secret"] = "client_secret_client_secret_client_secret_client_secret",
@@ -325,7 +325,7 @@ describe("oauth", function()
       it("generate JWT - RS256", function()
         cmd.queue.resume:revert()
 
-        update_env({
+        update_env {
           ["Grant Type"] = "Client Credentials",
           ["Client Credentials"] = "jwt",
           private_key = "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC5cHDxLOlZKpgT\nLNEF18AlQkxOHwYuP3VOuAeCxwCMlICSmfVRCzl5Zv+36fVTnvSF5tp1J46JI6jD\nM3WIE9UmjcRA13TVfzkoRuEKOfd20/PVEoxAXt4h5xgT4yuuJB1+C+R4xcZY4ul7\neCar1YJ12JJEt8vnZRGEhpjE8FtGvCBdDQ2+d7Qhr2LL8PIYW6mS6++5uCBAno+4\nevOmE2GkeQAfosrkDLSjOtNzF9pEYA5BzW1ZuZJJyWukUvaze4MqFH/6XfqzFPtr\n5XfQo8Olifljteic6JQx9KcvhXI7v1owtCpjkqcXMtiXtR23mRws0h//outYR0o4\nfJuOmouVAgMBAAECggEALJ/lXfRb1yxL2llvl4Na5tx0dlw65Yg5146rqAnxlOLr\nqdvI0A7ubsudgAmaEtxupYZvTcAOKexd4VOR1gRHx/ZXou72W6Y4//tGjmpypbLN\nu5myDI+HzwrInYiOa2KfgkSkX3fgimVYoHDChZlkwq0yTb0ZIX8N3yFww/u/S17y\n4sP3/+94dR6KWZTuufsmknAvByVGtVe3bGszYo77DC3m7+Kx2mR88anuP9a2H3Jf\nldzVCPvJ4bboncTFItxERRiHX/N7xwmNO7MzL5WZRL+GPe9+P/Hr/PKokeQc+yEg\n0cfWqKG0tyTLArRGOOHZ3wHLGuqjSFc+RZiXoL3dxQKBgQDwGSMjdhKa+Ck6SwkU\n26vvTLN5XTwleG9w5Mhj3esKs0DROEGfksFmSCCkFNboDl11RJuUldNwa4AVyZoc\nPbA96jRJGK7AEcNOV9FwdEs8rc0Berfn6klQuE66gsVonIM9fRiq8pYnnZ552Urh\nuHxgQoQL5iWCdl/IZ4kai8FHJwKBgQDFuI/Dv7HjFS9bOkIP7pg/KKYzl6VsUSlp\nEkd67V9TLHwIToq+k2cjmPMRCKD6KYkhbyOMN3GJpk348h9xdY9reIOBAb7hotbs\nQCRYFmuiksKeDoaP8N7MSIjs2C1AMO80RbyB2jLF8R9VIE64xZmUs0RBki5vqvtZ\naqQbpqxs4wKBgQCMbmd7Ckh/k76pddHt/T5nTPl8dugDEpo78dSzdM1RCN9UgA8C\nAphT9sQAtJ+uQxiuyl4lXiy5iGb2V2BoPDylOiMyzdkIRltxqzO5DowjBZTu1JRU\ndVhEekiyFmLYeRLaGB0hf5oLuclDg7CkrX8x3jXVr9son4wOb2BlwnBd6QKBgALs\nZKvHRNEPuiCGLv3fUD720eZHYrnERXF5RLdLlTI8oSTaTHDe6xJ6q3VgBElOnelx\npDvpgfNAEz0QD2j1DQbQxFj+9pyNdNIPbLoksri3pMsDeffc3t50YBnoZFrjnlXO\nhigBWujUVNtEXAWdXlT1hZfWmnsqMwcybXS/NSNzAoGBAJekqSCvUQHdiNWq1BPp\nM998rdujTGmfYCdKLT+c0i1/s3YuGu/h87tTSjXi7Jmq/iNVM2+RoTaGvvD1b+ZC\nGLcVcsqa6qD77WRQZ3q+2sF8v2vSd9oHT0R2jA4U/zVyF9dFOV4tT09xrFh7vLXM\nfYsrQTaSEta7ynoUI5/9NJTJ\n-----END PRIVATE KEY-----\n",
@@ -342,7 +342,7 @@ describe("oauth", function()
               scope = "devstorage.read_only",
             },
           },
-        })
+        }
 
         update_env({
           ["Client Secret"] = "client_secret_client_secret_client_secret_client_secret",
@@ -369,11 +369,11 @@ describe("oauth", function()
       it("use provided assertion", function()
         cmd.queue.resume:revert()
 
-        update_env({
+        update_env {
           ["Grant Type"] = "Client Credentials",
           ["Client Credentials"] = "jwt",
           Assertion = "custom_assertion",
-        })
+        }
 
         kulala.run()
         wait_for_requests(1)
@@ -395,7 +395,7 @@ describe("oauth", function()
     it("grant type - Implicit", function()
       cmd.queue.resume:revert()
 
-      update_env({ ["Grant Type"] = "Implicit" })
+      update_env { ["Grant Type"] = "Implicit" }
       redirect_request = "access_token=new_access_token"
 
       kulala.run()
@@ -423,7 +423,7 @@ describe("oauth", function()
     it("grant type - Authorization code", function()
       cmd.queue.resume:revert()
 
-      update_env({ ["Grant Type"] = "Authorization Code" })
+      update_env { ["Grant Type"] = "Authorization Code" }
       redirect_request = "code=auth_code&state=state"
 
       kulala.run()
@@ -474,7 +474,7 @@ describe("oauth", function()
     it("grant type - Device code", function()
       cmd.queue.resume:revert()
 
-      curl.stub({
+      curl.stub {
         ["https://device.url"] = {
           stdout = [[
             { 
@@ -486,8 +486,8 @@ describe("oauth", function()
             }
           ]],
         },
-      })
-      update_env({ ["Grant Type"] = "Device Authorization", ["Device Auth URL"] = "https://device.url" })
+      }
+      update_env { ["Grant Type"] = "Device Authorization", ["Device Auth URL"] = "https://device.url" }
       on_request = function() end
 
       kulala.run()
@@ -535,7 +535,7 @@ describe("oauth", function()
     end)
 
     it("adds custom response_type to Auth request", function()
-      update_env({ ["Grant Type"] = "Authorization Code", ["Response Type"] = "code token" })
+      update_env { ["Grant Type"] = "Authorization Code", ["Response Type"] = "code token" }
       redirect_request = "code=auth_code&state=state"
 
       kulala.run()
@@ -548,13 +548,13 @@ describe("oauth", function()
 
     describe("adds PKCE params to Auth request", function()
       it("adds PKCE params to Auth request from config", function()
-        update_env({
+        update_env {
           ["Grant Type"] = "Authorization Code",
           PKCE = {
             ["Code Verifier"] = "YYLzIBzrXpVaH5KRx86itubKLXHNGnJBPAogEwkhveM",
             ["Code Challenge Method"] = "S256",
           },
-        })
+        }
         redirect_request = "code=auth_code"
 
         kulala.run()
@@ -569,10 +569,10 @@ describe("oauth", function()
       end)
 
       it("adds PKCE params to Auth request calculated", function()
-        update_env({
+        update_env {
           ["Grant Type"] = "Authorization Code",
           PKCE = true,
-        })
+        }
         redirect_request = "code=auth_code&state=state"
 
         kulala.run()
@@ -586,7 +586,7 @@ describe("oauth", function()
     end)
 
     it("adds custom params to requests", function()
-      update_env({
+      update_env {
         ["Grant Type"] = "Authorization Code",
         ["Expires In"] = 3500,
         ["Custom Request Parameters"] = {
@@ -605,7 +605,7 @@ describe("oauth", function()
             Value = "state",
           },
         },
-      })
+      }
       redirect_request = "code=auth_code&state=state"
 
       kulala.run()
@@ -632,7 +632,7 @@ describe("oauth", function()
     end)
 
     it("takes into account curl flags", function()
-      update_env({ ["Grant Type"] = "Password" })
+      update_env { ["Grant Type"] = "Password" }
 
       kulala_config.options.additional_curl_options = { "--location" }
 
@@ -646,16 +646,16 @@ describe("oauth", function()
   end)
 
   it("revokes token", function()
-    curl.stub({ ["http://revoke.url"] = { stdout = "{}" } })
-    update_env({ ["Revoke URL"] = "http://revoke.url" })
-    update_auth_data({
+    curl.stub { ["http://revoke.url"] = { stdout = "{}" } }
+    update_env { ["Revoke URL"] = "http://revoke.url" }
+    update_auth_data {
       access_token = "expired_access_token",
       acquired_at = os.time(),
       expires_in = 1,
       refresh_token = "refresh_token",
       refresh_token_acquired_at = os.time(),
       refresh_token_expires_in = os.time() + 3600,
-    })
+    }
 
     kulala.open()
     oauth.revoke_token("GAPI")

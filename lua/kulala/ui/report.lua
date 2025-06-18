@@ -124,10 +124,10 @@ local function get_report_summary(stats)
   local config = CONFIG.get().ui.report
   local summary = {}
 
-  local tbl = UI_utils.Ptable:new({
+  local tbl = UI_utils.Ptable:new {
     header = { "Summary", "Total", "Successful", "Failed" },
     widths = { 20, 20, 20, 20 },
-  })
+  }
 
   table.insert(summary, { tbl:get_headers(), config.headersHighlight })
   table.insert(summary, {
@@ -175,10 +175,10 @@ local function generate_requests_report()
   local row, report = "", {}
   local stats
 
-  local tbl = UI_utils.Ptable:new({
+  local tbl = UI_utils.Ptable:new {
     header = { "Line", "URL", "Status", "Time", "Duration" },
     widths = { 5, 50, 8, 10, 15 },
-  })
+  }
 
   table.insert(report, { tbl:get_headers(), config.headersHighlight })
   table.insert(report, { "" })

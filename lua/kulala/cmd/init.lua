@@ -378,9 +378,9 @@ end
 ---if line_nr > 0 then runs the request from current buffer around the line number
 ---if line_nr is 0 then runs all or visually selected requests
 ---@param requests? DocumentRequest[]|nil
+---@param variables? DocumentVariables|nil
 ---@param line_nr? number|nil
 ---@param callback function
----@return nil
 M.run_parser = function(requests, variables, line_nr, callback)
   M.queue:reset()
 

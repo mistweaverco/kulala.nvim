@@ -963,7 +963,7 @@ function Parser:get_help()
   for _, group in ipairs(self._groups) do
     local group_types = get_group_types(group)
 
-    for _, mt in ipairs({ Argument, Option, Command }) do
+    for _, mt in ipairs { Argument, Option, Command } do
       if group_types[mt] then
         table.insert(groups_by_type[mt], group)
         break
@@ -1542,9 +1542,9 @@ local function get_tip(context, wrong_name)
   end
 end
 
-local ElementState = class({
+local ElementState = class {
   invocations = 0,
-})
+}
 
 function ElementState:__call(state, element)
   self.state = state
@@ -1685,7 +1685,7 @@ function ElementState:close()
   end
 end
 
-local ParseState = class({
+local ParseState = class {
   result = {},
   options = {},
   arguments = {},
@@ -1693,7 +1693,7 @@ local ParseState = class({
   element_to_mutexes = {},
   mutex_to_element_state = {},
   command_actions = {},
-})
+}
 
 function ParseState:__call(parser, error_handler)
   self.parser = parser

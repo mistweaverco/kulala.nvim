@@ -333,7 +333,7 @@ local function get_nodes_in_range(line_s, line_e, node)
     return start_row >= line_s and end_row <= line_e + 1
   end
 
-  node = node or ts.get_node({ bufnr = buf, pos = { line_s, 0 } })
+  node = node or ts.get_node { bufnr = buf, pos = { line_s, 0 } }
 
   local parent = node:parent()
   if parent and contains(parent) then return get_nodes_in_range(line_s, line_e, parent) end

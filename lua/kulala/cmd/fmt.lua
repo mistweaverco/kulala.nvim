@@ -51,7 +51,7 @@ M.check_formatter = function(callback, wait)
     )
     Async.co_yield(co)
 
-    Db.settings:write({ fmt_build_ver_local = Db.session.fmt_build_ver_repo })
+    Db.settings:write { fmt_build_ver_local = Db.session.fmt_build_ver_repo }
     vim.g.kulala_fmt_installing = false
 
     _ = callback and callback()

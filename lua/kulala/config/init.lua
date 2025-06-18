@@ -16,12 +16,12 @@ M.default_contenttype = {
 M.options = M.defaults
 
 local function set_signcolumn_icons()
-  vim.fn.sign_define({
+  vim.fn.sign_define {
     { name = "kulala.done", text = M.options.icons.inlay.done },
     { name = "kulala.error", text = M.options.icons.inlay.error },
     { name = "kulala.loading", text = M.options.icons.inlay.loading },
     { name = "kulala.space", text = " " },
-  })
+  }
 end
 
 local function set_legacy_options()
@@ -50,7 +50,7 @@ local function set_kulala_parser()
   local Db = require("kulala.db")
 
   local parser_config = parsers.get_parser_configs()
-  local parser_path = Fs.get_plugin_path({ "..", "tree-sitter" })
+  local parser_path = Fs.get_plugin_path { "..", "tree-sitter" }
 
   vim.opt.rtp:append(parser_path)
 
@@ -67,7 +67,7 @@ local function set_kulala_parser()
 
   if not parsers.has_parser("kulala_http") or Db.settings.parser_ver ~= get_parser_ver(parser_path) then
     require("nvim-treesitter.install").commands.TSInstallSync["run!"]("kulala_http")
-    if parsers.has_parser("kulala_http") then Db.settings:write({ parser_ver = get_parser_ver(parser_path) }) end
+    if parsers.has_parser("kulala_http") then Db.settings:write { parser_ver = get_parser_ver(parser_path) } end
   end
 
   vim.treesitter.language.register("kulala_http", { "http", "rest" })

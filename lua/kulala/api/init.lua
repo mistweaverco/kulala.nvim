@@ -21,7 +21,7 @@ M.trigger = function(name)
   if not events then return Logger.error("Invalid event name: " .. name) end
 
   for _, callback in ipairs(events) do
-    callback({ headers = response.headers, body = response.body, response = response })
+    callback { headers = response.headers, body = response.body, response = response }
   end
 
   if name == "after_next_request" then M.events[name] = {} end

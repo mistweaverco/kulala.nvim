@@ -64,24 +64,24 @@ end
 local function get_args()
   Argparse = require("cli.argparse")
 
-  local parser = Argparse()({
+  local parser = Argparse() {
     name = "Kulala CLI",
     description = "Kulala REST client CLI",
     epilog = "For more info, see https://neovim.getkulala.net\n",
-  })
+  }
 
   parser:argument("input", "Path to folder or HTTP file/s"):args("+")
   parser:option("-n --name", "Filter requests by name"):args("*")
   parser:option("-l --line", "Filter requests by line #"):convert(tonumber):args("*")
   parser:option("-e --env", "Environment")
-  parser:option("-v --view", "Response view"):choices({
+  parser:option("-v --view", "Response view"):choices {
     "body",
     "headers",
     "headers_body",
     "verbose",
     "script_output",
     "report",
-  })
+  }
 
   parser:flag("--list", "List requests in HTTP file")
   parser:flag("--halt", "Halt on error")
@@ -91,11 +91,11 @@ local function get_args()
   parser:command("export"):summary("Export HTTP file or folder to Postman collection")
   parser:command("import"):summary("Import HTTP files from Postman/OpenAPI/Bruno")
 
-  parser:option("-f --from", "Import from"):choices({
+  parser:option("-f --from", "Import from"):choices {
     "postman",
     "openapi",
     "bruno",
-  })
+  }
 
   args = parser:parse(_G.arg)
 
@@ -112,10 +112,10 @@ local function get_kulala_buf()
 end
 
 local function print_requests(file, requests)
-  local tbl = UI_utils.Ptable:new({
+  local tbl = UI_utils.Ptable:new {
     header = { "Line", "Name", "URL" },
     widths = { 5, 40, 50 },
-  })
+  }
 
   Colors.print("File: " .. file, Config.ui.report.headersHighlight)
   Colors.print(tbl:get_headers(), Config.ui.report.headersHighlight)

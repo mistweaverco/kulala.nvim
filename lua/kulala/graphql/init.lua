@@ -34,7 +34,7 @@ M.download_schema = function()
 
   table.insert(cmd, "-d")
 
-  local fp = Fs.get_plugin_path({ "graphql", "introspection.graphql" })
+  local fp = Fs.get_plugin_path { "graphql", "introspection.graphql" }
   local gqlq = Stringutils.remove_extra_space(Stringutils.remove_newline(Fs.read_file(fp)))
 
   table.insert(cmd, '{"query": "' .. gqlq .. '"}')

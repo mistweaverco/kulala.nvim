@@ -62,7 +62,7 @@ local open_snacks = function()
     return acc
   end)
 
-  snacks_picker({
+  snacks_picker {
     title = "Select Environment",
     items = items,
     layout = Config.options.ui.pickers.snacks.layout,
@@ -89,7 +89,7 @@ local open_snacks = function()
       select_env(item.label)
       ctx:close()
     end,
-  })
+  }
 
   return true
 end
@@ -111,9 +111,9 @@ local open_telescope = function()
     .new({}, {
       prompt_title = "Select Environment",
 
-      finder = finders.new_table({
+      finder = finders.new_table {
         results = envs,
-      }),
+      },
 
       attach_mappings = function(prompt_bufnr)
         actions.select_default:replace(function()
@@ -125,14 +125,14 @@ local open_telescope = function()
         return true
       end,
 
-      previewer = previewers.new_buffer_previewer({
+      previewer = previewers.new_buffer_previewer {
         title = "Environment",
         define_preview = function(self, entry)
           set_buffer(self.state.bufnr, http_client_env[entry.value])
         end,
-      }),
+      },
 
-      sorter = config.generic_sorter({}),
+      sorter = config.generic_sorter {},
     })
     :find()
 end

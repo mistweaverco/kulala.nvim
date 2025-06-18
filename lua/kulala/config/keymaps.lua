@@ -265,7 +265,7 @@ M.default_lsp_keymaps = {
   ["<leader>lv"] = {
     function()
       if not require("snacks") then return end
-      require("snacks").picker.lsp_symbols({ layout = { preset = "vscode", preview = "main" } })
+      require("snacks").picker.lsp_symbols { layout = { preset = "vscode", preview = "main" } }
     end,
     desc = "Search Symbols",
   }, -- requires snacks.nvim

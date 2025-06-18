@@ -45,12 +45,12 @@ end
 ---@return string
 M.join_paths = function(...)
   if M.os == "windows" then
-    for _, v in ipairs({ ... }) do
+    for _, v in ipairs { ... } do
       -- if the path contains at least one forward slash,
       -- then it needs to be converted to backslashes
       if v:match("/") then
         local parts = {}
-        for _, p in ipairs({ ... }) do
+        for _, p in ipairs { ... } do
           p = p:gsub("/", "\\")
           table.insert(parts, p)
         end

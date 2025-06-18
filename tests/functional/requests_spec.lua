@@ -33,7 +33,7 @@ describe("requests", function()
       notify = h.Notify.stub()
       dynamic_vars = h.Dynamic_vars.stub()
 
-      curl = h.Curl.stub({
+      curl = h.Curl.stub {
         ["*"] = {
           stats = h.load_fixture("fixtures/stats.json"),
           headers = h.load_fixture("fixtures/request_2_headers.txt"),
@@ -46,7 +46,7 @@ describe("requests", function()
           body = h.load_fixture("fixtures/request_2_body.txt"),
           errors = h.load_fixture("fixtures/request_2_errors.txt"),
         },
-      })
+      }
 
       system = h.System.stub({ "curl" }, {
         on_call = function(system)
@@ -61,11 +61,11 @@ describe("requests", function()
         end)
       end
 
-      kulala_config = CONFIG.setup({
+      kulala_config = CONFIG.setup {
         default_view = "body",
         display_mode = "split",
         debug = true,
-      })
+      }
     end)
 
     after_each(function()
@@ -80,11 +80,11 @@ describe("requests", function()
     it("it substitutes document variables and does authorization", function()
       vim.cmd.edit(h.expand_path("requests/simple.http"))
 
-      curl.stub({
+      curl.stub {
         ["https://httpbin.org/simple"] = {
           body = h.load_fixture("fixtures/simple_body.txt"),
         },
-      })
+      }
 
       kulala.run()
       wait_for_requests(1)
@@ -104,14 +104,14 @@ describe("requests", function()
     it("sets env variable with @env-stdin-cmd", function()
       vim.cmd.edit(h.expand_path("requests/chain.http"))
 
-      curl.stub({
+      curl.stub {
         ["https://httpbin.org/chain_1"] = {
           body = h.load_fixture("fixtures/chain_1_body.txt"),
         },
         ["https://httpbin.org/chain_2"] = {
           body = h.load_fixture("fixtures/chain_2_body.txt"),
         },
-      })
+      }
 
       kulala.run_all()
       wait_for_requests(2)
@@ -136,11 +136,11 @@ describe("requests", function()
         "test.http"
       )
 
-      curl.stub({
+      curl.stub {
         ["https://httpbin.org/simple"] = {
           body = h.load_fixture("fixtures/simple_body.txt"),
         },
-      })
+      }
 
       kulala.run_all()
       wait_for_requests(1)
@@ -158,14 +158,14 @@ describe("requests", function()
     it("sets environment variables from response", function()
       vim.cmd.edit(h.expand_path("requests/advanced_A.http"))
 
-      curl.stub({
+      curl.stub {
         ["https://httpbin.org/advanced_1"] = {
           body = h.load_fixture("fixtures/advanced_A_1_body.txt"),
         },
         ["https://httpbin.org/advanced_2"] = {
           body = h.load_fixture("fixtures/advanced_A_2_body.txt"),
         },
-      })
+      }
 
       kulala.run_all()
       wait_for_requests(2)
@@ -184,11 +184,11 @@ describe("requests", function()
     it("substitutes http.client.json variables, accesses request/response from js and logs to client", function()
       vim.cmd.edit(h.expand_path("requests/advanced_B.http"))
 
-      curl.stub({
+      curl.stub {
         ["https://httpbin.org/advanced_b"] = {
           body = h.load_fixture("fixtures/advanced_B_body.txt"),
         },
-      })
+      }
 
       kulala.run_all()
       wait_for_requests(1)
@@ -209,12 +209,12 @@ describe("requests", function()
     it("prompts for vars, computes request vars, logs to client", function()
       vim.cmd.edit(h.expand_path("requests/advanced_D.http"))
 
-      input.stub({ ["Password prompt"] = "TEST_PASSWORD" })
-      curl.stub({
+      input.stub { ["Password prompt"] = "TEST_PASSWORD" }
+      curl.stub {
         ["https://httpbin.org/advanced_d"] = {
           body = h.load_fixture("fixtures/advanced_D_body.txt"),
         },
-      })
+      }
 
       kulala.run_all()
       wait_for_requests(1)
@@ -235,13 +235,13 @@ describe("requests", function()
     it("has access to request and response data through request variables", function()
       vim.cmd.edit(h.expand_path("requests/advanced_F.http"))
 
-      curl.stub({
+      curl.stub {
         ["*"] = {
           headers = h.load_fixture("fixtures/advanced_F_headers.txt"),
           body = h.load_fixture("fixtures/advanced_F_body.txt"),
           cookies = h.load_fixture("fixtures/cookies.txt"),
         },
-      })
+      }
 
       kulala.run_all()
       wait_for_requests(2)
@@ -260,8 +260,8 @@ describe("requests", function()
     it("makes named requests, prompts for vars, uses scripts, uses env json", function()
       vim.cmd.edit(h.expand_path("requests/advanced_E.http"))
 
-      input.stub({ ["PROMPT_VAR prompt"] = "TEST_PROMPT_VAR" })
-      curl.stub({
+      input.stub { ["PROMPT_VAR prompt"] = "TEST_PROMPT_VAR" }
+      curl.stub {
         ["*"] = {
           headers = h.load_fixture("fixtures/advanced_E_headers.txt"),
         },
@@ -274,7 +274,7 @@ describe("requests", function()
         ["https://httpbin.org/advanced_e3"] = {
           body = h.load_fixture("fixtures/advanced_E3_body.txt"),
         },
-      })
+      }
 
       kulala.run_all()
       wait_for_requests(3)
@@ -292,7 +292,7 @@ describe("requests", function()
 
     it("skips request conditionally", function()
       kulala_config.halt_on_error = false
-      curl.stub({ ["*"] = { body = '{ "foo": "bar" }' } })
+      curl.stub { ["*"] = { body = '{ "foo": "bar" }' } }
 
       h.create_buf(
         ([[
@@ -320,10 +320,10 @@ describe("requests", function()
     end)
 
     it("replays request conditionally", function()
-      curl.stub({
+      curl.stub {
         ["http://localhost:3001/request_1"] = { headers = "HTTP/2 500" },
         ["http://localhost:3001/request_2"] = { headers = "HTTP/2 200" },
-      })
+      }
 
       h.create_buf(
         ([[
@@ -358,7 +358,7 @@ describe("requests", function()
 
       local last_result = "none"
       local assert_chunk = function(system, errors, chunk, expected)
-        curl.stub({ ["*"] = { body = chunk } })
+        curl.stub { ["*"] = { body = chunk } }
         curl.request(system)
 
         system.args.opts.stderr(_, errors)
@@ -402,11 +402,11 @@ describe("requests", function()
     end)
 
     it("downloads GraphQL schema", function()
-      curl.stub({
+      curl.stub {
         ["https://countries.trevorblades.com"] = {
           body = h.load_fixture("fixtures/graphql_schema_body.txt"),
         },
-      })
+      }
 
       h.create_buf(
         ([[
@@ -447,11 +447,11 @@ describe("requests", function()
     end)
 
     it("parses GraphQL request", function()
-      curl.stub({
+      curl.stub {
         ["https://countries.trevorblades.com"] = {
           body = h.load_fixture("fixtures/graphql_schema_body.txt"),
         },
-      })
+      }
 
       h.create_buf(
         ([[
@@ -481,11 +481,11 @@ describe("requests", function()
     end)
 
     it("runs GraphQL request method", function()
-      curl.stub({
+      curl.stub {
         ["https://countries.trevorblades.com"] = {
           body = h.load_fixture("fixtures/graphql_schema_body.txt"),
         },
-      })
+      }
 
       h.create_buf(
         ([[
@@ -519,11 +519,11 @@ describe("requests", function()
     end)
 
     it("runs API callbacks", function()
-      curl.stub({
+      curl.stub {
         ["https://httpbin.org/simple"] = {
           body = h.load_fixture("fixtures/simple_body.txt"),
         },
-      })
+      }
 
       h.create_buf(([[ GET https://httpbin.org/simple ]]):to_table(true), "test.http")
       local cb_result = ""
@@ -558,7 +558,7 @@ describe("requests", function()
 
     describe("it runs lua scripts", function()
       it("runs inline scripts", function()
-        curl.stub({ ["*"] = { body = "{}" } })
+        curl.stub { ["*"] = { body = "{}" } }
 
         h.create_buf(
           ([[
@@ -590,7 +590,7 @@ describe("requests", function()
       end)
 
       it("runs file scripts", function()
-        curl.stub({ ["*"] = { body = "{}" } })
+        curl.stub { ["*"] = { body = "{}" } }
 
         h.create_buf(
           ([[
@@ -621,11 +621,11 @@ describe("requests", function()
         kulala_config.debug = true
 
         curl.reset()
-        curl.stub({
+        curl.stub {
           ["https://request_2"] = {
             body = h.load_fixture("fixtures/request_1_body.txt"),
           },
-        })
+        }
 
         h.create_buf(
           ([[
@@ -641,11 +641,11 @@ describe("requests", function()
       end)
 
       it("it halts on command error", function()
-        curl.stub({
+        curl.stub {
           ["https://request_1"] = {
             code = 124,
           },
-        })
+        }
 
         kulala.run_all()
         wait_for_requests(2)
@@ -658,11 +658,11 @@ describe("requests", function()
       it("it halts on response error", function()
         kulala_config.halt_on_error = true
 
-        curl.stub({
+        curl.stub {
           ["https://request_1"] = {
             stats = '{ "response_code": 500 }',
           },
-        })
+        }
 
         kulala.run_all()
         wait_for_requests(2)
@@ -675,11 +675,11 @@ describe("requests", function()
       it("it halts on assert error", function()
         kulala_config.halt_on_error = true
 
-        curl.stub({
+        curl.stub {
           ["https://request_1"] = {
             boby = '{ "data": { "foo": "baz" } }',
           },
-        })
+        }
 
         h.delete_all_bufs()
         h.create_buf(

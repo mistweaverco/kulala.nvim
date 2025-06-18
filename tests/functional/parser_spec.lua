@@ -20,7 +20,7 @@ describe("requests", function()
 
     describe("parser", function()
       it("processes document variables", function()
-        dynamic_vars.stub({ ["$timestamp"] = "$TIMESTAMP" })
+        dynamic_vars.stub { ["$timestamp"] = "$TIMESTAMP" }
 
         h.create_buf(
           ([[
@@ -135,7 +135,7 @@ describe("requests", function()
         result = parser.parse() or {}
         assert.is_same("https://typicode.com/todos?date=2020-01-01%2012%3A34%3A56", result.url)
 
-        result = parser.parse({ result }) or {}
+        result = parser.parse { result } or {}
         assert.is_same("https://typicode.com/todos?date=2020-01-01%2012%3A34%3A56", result.url)
       end)
 
