@@ -28,7 +28,7 @@ describe("keymaps", function()
 
   describe("global keymaps", function()
     before_each(function()
-      CONFIG.setup({
+      CONFIG.setup {
         global_keymaps_prefix = "",
         global_keymaps = {
           ["Inspect current request"] = {
@@ -37,7 +37,7 @@ describe("keymaps", function()
           },
           ["Open scratchpad"] = false,
         },
-      })
+      }
 
       keymaps_n = vim.tbl_keys(h.get_maps())
       keymaps_v = vim.tbl_keys(h.get_maps(nil, "v"))
@@ -75,7 +75,7 @@ describe("keymaps", function()
 
   describe("global keymaps", function()
     it("disables default keymaps", function()
-      CONFIG.setup({ global_keymaps = false })
+      CONFIG.setup { global_keymaps = false }
 
       local keymaps_n = vim.tbl_keys(h.get_maps())
       expected = global_keymaps["Open kulala"][1]
@@ -97,12 +97,13 @@ describe("keymaps", function()
           method = "GET",
           line = 1,
           buf_name = "test.txt",
+          name = "Test Request",
           body = h.load_fixture("fixtures/request_2_headers_body.txt"),
           headers = "",
         },
       }
 
-      CONFIG.setup({
+      CONFIG.setup {
         default_view = "body",
         kulala_keymaps = {
           ["Show headers"] = {
@@ -111,7 +112,7 @@ describe("keymaps", function()
           },
           ["Show headers and body"] = false,
         },
-      })
+      }
 
       kulala.open()
       ui_buf = vim.fn.bufnr(kulala_name)
@@ -137,7 +138,7 @@ describe("keymaps", function()
 
     it("disbales default keymaps", function()
       kulala.close()
-      CONFIG.setup({ kulala_keymaps = false })
+      CONFIG.setup { kulala_keymaps = false }
 
       kulala.open()
       keymaps_n = vim.tbl_keys(h.get_maps(h.get_kulala_buf()))

@@ -114,9 +114,9 @@ local function open_auth_telescope()
     .new({}, {
       results_title = "Auth Configurations",
       prompt_title = keys_hint,
-      finder = finders.new_table({
+      finder = finders.new_table {
         results = config_names,
-      }),
+      },
 
       attach_mappings = function(prompt_bufnr, map)
         local function run_cmd(cmd)
@@ -147,14 +147,14 @@ local function open_auth_telescope()
         return true
       end,
 
-      previewer = previewers.new_buffer_previewer({
+      previewer = previewers.new_buffer_previewer {
         title = "Configuration Details",
         define_preview = function(self, entry)
           set_buffer(self.state.bufnr, env[entry.value])
         end,
-      }),
+      },
 
-      sorter = config.generic_sorter({}),
+      sorter = config.generic_sorter {},
     })
     :find()
 end
@@ -199,7 +199,7 @@ local function open_auth_snacks()
   local env_file_path = get_env_file()
   if not env_file_path then return Logger.warn("http-client.env.json not found") end
 
-  snacks_picker({
+  snacks_picker {
     title = "Auth Configurations",
     items = items,
     actions = _actions,
@@ -236,7 +236,7 @@ local function open_auth_snacks()
     confirm = function(picker, item)
       run_cmd("e", picker, item)
     end,
-  })
+  }
 end
 
 M.open_auth_config = function()

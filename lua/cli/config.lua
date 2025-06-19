@@ -4,6 +4,8 @@ local M = {
   request_timeout = nil,
   halt_on_error = false,
 
+  lsp = { enable = false },
+
   ui = {
     default_view = "body",
     -- enable/disable request summary in the output window

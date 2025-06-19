@@ -1,9 +1,11 @@
 local Config = require("kulala.config")
 local Db = require("kulala.db")
+local Diagnostics = require("kulala.cmd.diagnostics")
 local Dynamic_variables = require("kulala.parser.dynamic_vars")
 local Env = require("kulala.parser.env")
 local Export = require("kulala.cmd.export")
 local Fmt = require("kulala.cmd.fmt")
+local Formatter = require("kulala.cmd.formatter")
 local Fs = require("kulala.utils.fs")
 local Inspect = require("kulala.parser.inspect")
 local Kulala = require("kulala")
@@ -66,7 +68,6 @@ local state = {
   current_buffer = 0,
   current_line = 0, -- 1-based line number
   current_ft = nil,
-  formatter = false,
 }
 
 local cache = {
@@ -582,33 +583,62 @@ local function get_hover(_)
 end
 
 local function format(params)
-  if not state.formatter then return end
+  if not Config.options.lsp.formatter then return end
 
-  params.range = params.range or { start = { line = 0 }, ["end"] = { line = -2 } }
+  local formatted_lines = Formatter.format(state.current_buffer, params)
+  return formatted_lines or {}
+end
 
-  local l_start, l_end = params.range.start.line, params.range["end"].line + 1
-  local lines = vim.api.nvim_buf_get_lines(state.current_buffer, l_start, l_end, false)
+M.foldtext = function()
+  vim.api.nvim_set_option_value(
+    "foldtext",
+    "v:lua.require'kulala.cmd.lsp'.foldtext()",
+    { win = vim.api.nvim_get_current_win() }
+  )
 
-  local formatted_lines = Fmt.format(lines)
-  if not formatted_lines then return end
+  local line = vim.fn.getline(vim.v.foldstart)
+  return "▶ " .. line .. " [" .. (vim.v.foldend - vim.v.foldstart + 1) .. " lines]"
+  -- return vim.fn.foldtext()
+end
 
-  return {
-    {
-      range = {
-        start = { line = l_start, character = 0 },
-        ["end"] = { line = #lines, character = 0 },
-      },
-      newText = formatted_lines,
-    },
-  }
+local function folding()
+  local tree = vim.treesitter.get_parser(state.current_buffer, "kulala_http"):parse()[1]
+  local root = tree:root()
+
+  local ranges = {}
+
+  local function traverse(node)
+    for child in node:iter_children() do
+      local start_row, _, end_row, _ = child:range()
+
+      local type = child:type()
+      local kind = type == "comment" and type or "region"
+
+      if type == "request_separator" then
+        start_row = start_row + 1
+        end_row = select(3, child:parent():range())
+      end
+
+      if end_row > start_row and child:type() ~= "section" then
+        table.insert(ranges, {
+          startLine = start_row,
+          endLine = end_row - 1,
+          kind = kind,
+          type = child:type(),
+        })
+      end
+
+      traverse(child)
+    end
+  end
+
+  traverse(root)
+
+  return ranges
 end
 
 local function initialize(params)
   local ft = params.rootPath:sub(2)
-  state.formatter = Config.options.lsp.formatter and Fmt.check_formatter(function()
-    state.formatter = true
-  end)
-
   if ft ~= "http" and ft ~= "rest" then return { capabilities = { codeActionProvider = true } } end
 
   return {
@@ -619,6 +649,10 @@ local function initialize(params)
       completionProvider = { triggerCharacters = trigger_chars },
       documentFormattingProvider = true,
       documentRangeFormattingProvider = true,
+      foldingRangeProvider = {
+        dynamicRegistration = false,
+        lineFoldingOnly = true,
+      },
     },
   }
 end
@@ -631,6 +665,7 @@ local handlers = {
   ["textDocument/codeAction"] = code_actions,
   ["textDocument/formatting"] = format,
   ["textDocument/rangeFormatting"] = format,
+  ["textDocument/foldingRange"] = folding,
   ["shutdown"] = function() end,
 }
 
@@ -707,8 +742,10 @@ function M.start_lsp(buf, ft)
     cmd = server,
     root_dir = ft,
     bufnr = buf,
-    on_init = function(_client) end,
-    on_exit = function(_code, _signal) end,
+    on_attach = function(client, bufnr)
+      _ = (ft == "http" or ft == "rest") and Diagnostics.setup(bufnr)
+      _ = Config.options.lsp.on_attach and Config.options.lsp.on_attach(client, bufnr)
+    end,
     commands = vim.iter(actions):fold({}, function(acc, action)
       acc[action.command] = action.fn
       return acc

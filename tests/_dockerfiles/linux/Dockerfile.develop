@@ -18,9 +18,22 @@ RUN ln -s /usr/local/nvim/bin/nvim /usr/bin/nvim
 RUN ln -s /usr/local/bin/stylua /usr/bin/stylua
 RUN ln -s /usr/local/bin/vale /usr/bin/vale
 
+RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+ENV NVM_DIR=/root/.nvm
+RUN . "$NVM_DIR/nvm.sh" && nvm install --lts
+
+RUN apt-get install -y jq
+RUN apt-get install -y libxml2-utils
+RUN . "$NVM_DIR/nvm.sh" && npm install -g prettier
+
+ENV XDG_DATA_HOME=/root/.local/share
+RUN git clone https://github.com/nvim-treesitter/nvim-treesitter.git $XDG_DATA_HOME/nvim/nvim-treesitter
 RUN git clone --recurse-submodules https://github.com/YaroSpace/kulala.nvim /app/kulala.nvim
+WORKDIR /app/kulala.nvim
+
+RUN git checkout develop
+RUN . "$NVM_DIR/nvm.sh" && nvim -l tests/minit.lua tests --filter tests # to install JS dependencies
+
 
 # for xclip and neovim to work, see :h clipboard in neovim
 ENV DISPLAY=:0
-
-WORKDIR /app

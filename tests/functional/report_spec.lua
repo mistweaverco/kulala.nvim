@@ -16,7 +16,7 @@ describe("requests report", function()
     db.responses = {}
     h.delete_all_bufs()
 
-    curl = h.Curl.stub({
+    curl = h.Curl.stub {
       ["*"] = {
         headers = h.load_fixture("fixtures/advanced_E_headers.txt"),
         stats = h.load_fixture("fixtures/stats.json"),
@@ -27,7 +27,7 @@ describe("requests report", function()
       ["https://httpbin.org/html"] = {
         body = h.load_fixture("fixtures/request_2_body.txt"),
       },
-    })
+    }
 
     system = h.System.stub({ "curl" }, {
       on_call = function(system)
@@ -51,7 +51,7 @@ describe("requests report", function()
 
   describe("report outtput", function()
     before_each(function()
-      kulala_config = CONFIG.setup({
+      kulala_config = CONFIG.setup {
         default_view = "report",
         display_mode = "split",
         halt_on_error = false,
@@ -64,7 +64,7 @@ describe("requests report", function()
             show_summary = true,
           },
         },
-      })
+      }
 
       report_config = kulala_config.ui.report
       vim.cmd.edit(h.expand_path("requests/report.http"))

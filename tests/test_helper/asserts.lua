@@ -24,10 +24,10 @@ end
 ---@param args table { table|string, string }
 ---@return boolean
 local has_string = function(state, args)
-  vim.validate({
+  vim.validate {
     arg_1 = { args[1], { "string", "table" } },
     arg_2 = { args[2], { "string", "table" } },
-  })
+  }
 
   local mod = state.mod
   local o, pattern = args[1], args[2]
@@ -73,10 +73,10 @@ end
 ---@param state table
 ---@param args table { table, table { property_name = value } }
 local has_properties = function(state, args)
-  vim.validate({
+  vim.validate {
     arg_1 = { args[1], "table" },
     arg_2 = { args[2], "table" },
-  })
+  }
 
   local mod = state.mod
   local o, properties = args[1], args[2]

@@ -49,6 +49,8 @@ Assertions, automated testing and reporting
 
 Built-in LSP completion and formatting
 
+Import/export to/from Postman, OpenAPI, Bruno
+
 CLI tooling and CI hooks
 
 Scratchpad: for making requests
@@ -57,7 +59,7 @@ Scratchpad: for making requests
 
 # •
 
-Together with [Kulala Language Server](https://github.com/mistweaverco/kulala-ls) and [Kulala Formatter](https://github.com/mistweaverco/kulala-fmt), we aim to provide the best REST Client experience on the web without leaving your favourite editor!
+Together with our standalone products [Kulala Language Server](https://github.com/mistweaverco/kulala-ls) and [Kulala Formatter](https://github.com/mistweaverco/kulala-fmt), we aim to provide the best REST Client experience on the web without leaving your favourite editor!
 
 # ••
 

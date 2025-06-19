@@ -163,7 +163,7 @@ end
 
 logging.output = function(...)
   local need_newline = false
-  for i, item in ipairs({ ... }) do
+  for i, item in ipairs { ... } do
     -- XXX space logic could be cleverer, e.g. no space after newline
     local maybe_space = i > 1 and " " or ""
     local text = ({ table = 1, userdata = 1 })[type(item)] and logging.dump(item) or tostring(item)

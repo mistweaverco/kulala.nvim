@@ -7,7 +7,7 @@ local GLOBALS = require("kulala.globals")
 local GRAPHQL_PARSER = require("kulala.parser.graphql")
 local PARSER_UTILS = require("kulala.parser.utils")
 local STRING_UTILS = require("kulala.utils.string")
-local CURL_FORMAT_FILE = FS.get_plugin_path({ "parser", "curl-format.json" })
+local CURL_FORMAT_FILE = FS.get_plugin_path { "parser", "curl-format.json" }
 local Logger = require("kulala.logger")
 local Scripts = require("kulala.parser.scripts")
 local StringVariablesParser = require("kulala.parser.string_variables_parser")
@@ -184,7 +184,7 @@ local process_variables = function(request, document_variables, silent)
   request.cookie = StringVariablesParser.parse(request.cookie, unpack(params))
   request.body = StringVariablesParser.parse(request.body_raw, unpack(params))
   request.body_display = StringVariablesParser.parse(request.body_display, unpack(params))
-  request.body_computed = StringVariablesParser.parse(request.body_computed or request.body, unpack(params))
+  request.body_computed = StringVariablesParser.parse(request.body_raw, unpack(params))
 
   request.environment = vim.tbl_extend("keep", env, document_variables)
 

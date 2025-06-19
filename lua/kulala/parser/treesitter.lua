@@ -101,7 +101,7 @@ local REQUEST_VISITORS = {
 
   ["body.external"] = function(req, args)
     local contents = FS.read_file(args.fields.path)
-    local filetype, _ = vim.filetype.match({ filename = args.fields.path })
+    local filetype, _ = vim.filetype.match { filename = args.fields.path }
     if filetype == "graphql" then
       if req.method == "POST" then
         req.body = string.format('{ "query": %q }', STRING_UTILS.remove_newline(contents))

@@ -45,12 +45,12 @@ end
 ---@return string
 M.join_paths = function(...)
   if M.os == "windows" then
-    for _, v in ipairs({ ... }) do
+    for _, v in ipairs { ... } do
       -- if the path contains at least one forward slash,
       -- then it needs to be converted to backslashes
       if v:match("/") then
         local parts = {}
-        for _, p in ipairs({ ... }) do
+        for _, p in ipairs { ... } do
           p = p:gsub("/", "\\")
           table.insert(parts, p)
         end
@@ -326,7 +326,10 @@ end
 ---@param paths string[]
 ---@return string
 M.get_plugin_path = function(paths)
-  return M.get_plugin_root_dir() .. M.ps .. table.concat(paths, M.ps)
+  local root = M.get_plugin_root_dir()
+  root = paths and #paths > 0 and (root .. M.ps .. table.concat(paths, M.ps)) or root
+
+  return vim.fs.normalize(root)
 end
 
 ---Read a file with path absolute or relative to buffer dir
@@ -418,6 +421,8 @@ end
 ---@param file file* handle to file to append to
 ---@param path string path of file to include
 M.include_file = function(file, path)
+  path = M.get_file_path(path)
+
   local status = true
   local BUFSIZE = 2 ^ 13 -- 8K
 

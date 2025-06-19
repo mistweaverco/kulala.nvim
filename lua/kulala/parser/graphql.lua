@@ -1,4 +1,6 @@
 local Json = require("kulala.utils.json")
+local Logger = require("kulala.logger")
+local Shell = require("kulala.cmd.shell_utils")
 
 local M = {}
 
@@ -53,7 +55,7 @@ local function parse(body)
 end
 
 ---Get GraphQL JSON from the request body
----@return string|nil, table|nil
+---@return string|nil, table|nil -- json string, json table
 M.get_json = function(body)
   local query, variables = parse(body)
   local json = { query = "" }
@@ -63,13 +65,41 @@ M.get_json = function(body)
   json.query = query
 
   if variables then
-    local result, error = Json.parse(variables, { verbose = true })
+    local result = Json.parse(variables, { verbose = true })
     if not result then return end
 
     json.variables = result
   end
 
   return vim.json.encode(json), json
+end
+
+M.format = function(body, opts)
+  opts = vim.tbl_extend("keep", opts or {}, { sort = false })
+
+  local path = require("kulala.config").get().contenttypes["text/graphql"]
+  path = path and path.formatter and path.formatter[1] or vim.fn.exepath("prettier")
+
+  if vim.fn.executable(path) == 0 then return Logger.warn("Prettier is required to format GRAPHQL") end
+
+  local _, json = M.get_json(body)
+  if not json then return body end
+
+  local result = Shell.run({ path, "--stdin-filepath", "graphql", "--parser", "graphql" }, {
+    stdin = json.query,
+    sync = true,
+    err_msg = "Failed to format GraphQL",
+    abort_on_stderr = true,
+  })
+
+  if not result or result.code ~= 0 or result.stderr ~= "" or result.stdout == "" then return body end
+  local formatted = result.stdout
+
+  if json.variables and next(json.variables) then
+    formatted = formatted .. "\n" .. Json.format(json.variables, { sort = opts.sort })
+  end
+
+  return formatted
 end
 
 return M

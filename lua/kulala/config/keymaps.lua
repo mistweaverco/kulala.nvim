@@ -265,7 +265,7 @@ M.default_lsp_keymaps = {
   ["<leader>lv"] = {
     function()
       if not require("snacks") then return end
-      require("snacks").picker.lsp_symbols({ layout = { preset = "vscode", preview = "main" } })
+      require("snacks").picker.lsp_symbols { layout = { preset = "vscode", preview = "main" } }
     end,
     desc = "Search Symbols",
   }, -- requires snacks.nvim
@@ -278,7 +278,7 @@ M.default_lsp_keymaps = {
   }, -- requires aerial.nvim (recommended)
   ["K"] = { vim.lsp.buf.hover, desc = "Hover" },
   ["<leader>la"] = { vim.lsp.buf.code_action, desc = "Code Action" },
-  ["<leader>lf"] = { vim.lsp.buf.format, desc = "Buffer Format" },
+  ["<leader>lf"] = { vim.lsp.buf.format, desc = "Buffer Format", mode = { "n", "v" } },
 }
 
 local function collect_global_keymaps()

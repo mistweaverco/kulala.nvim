@@ -89,7 +89,7 @@ local open_snacks = function()
     return acc
   end)
 
-  snacks_picker({
+  snacks_picker {
     title = "Document Requests",
     items = items,
     actions = actions,
@@ -121,7 +121,7 @@ local open_snacks = function()
       ctx:close()
       goto_request(requests[item.label])
     end,
-  })
+  }
 end
 
 local open_telescope = function()
@@ -138,9 +138,9 @@ local open_telescope = function()
     .new({}, {
       prompt_title = "Search document requests",
       results_title = "Requests",
-      finder = finders.new_table({
+      finder = finders.new_table {
         results = names,
-      }),
+      },
 
       attach_mappings = function(prompt_bufnr)
         actions.select_default:replace(function()
@@ -152,14 +152,14 @@ local open_telescope = function()
         return true
       end,
 
-      previewer = previewers.new_buffer_previewer({
+      previewer = previewers.new_buffer_previewer {
         title = "Request Preview",
         define_preview = function(self, entry)
           set_request(self.state.bufnr, requests, entry.value)
         end,
-      }),
+      },
 
-      sorter = config.generic_sorter({}),
+      sorter = config.generic_sorter {},
     })
     :find()
 end

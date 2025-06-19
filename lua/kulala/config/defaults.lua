@@ -42,6 +42,12 @@ local M = {
         return require("kulala.parser.jsonpath").parse(...)
       end,
     },
+    ["application/graphql"] = {
+      ft = "graphql",
+      formatter = vim.fn.executable("prettier") == 1
+        and { "prettier", "--stdin-filepath", "graphql", "--parser", "graphql" },
+      pathresolver = nil,
+    },
     ["application/xml"] = {
       ft = "xml",
       formatter = vim.fn.executable("xmllint") == 1 and { "xmllint", "--format", "-" },
@@ -88,6 +94,12 @@ local M = {
       },
       lualine = "🐼",
       textHighlight = "WarningMsg", -- highlight group for request elapsed time
+    },
+
+    -- highlight groups for http syntax highlighting
+    ---@type table<string, string|vim.api.keyset.highlight>
+    syntax_hl = {
+      ["@punctuation.bracket.kulala_http"] = "Number",
     },
 
     -- enable/disable request summary in the output window
@@ -155,8 +167,12 @@ local M = {
     ---@type boolean|table
     keymaps = false, -- disabled by default, as Kulala relies on default Neovim LSP keymaps
 
-    -- enable/disable HTTP formatter
-    formatter = false,
+    -- enable/disable/customize HTTP formatter
+    formatter = {
+      json_sort = true, -- sort JSON keys in request body
+    },
+
+    on_attach = nil, -- function called when Kulala LSP attaches to the buffer
   },
 
   -- enable/disable debug mode

@@ -20,7 +20,7 @@ describe("requests", function()
 
     describe("parser", function()
       it("processes document variables", function()
-        dynamic_vars.stub({ ["$timestamp"] = "$TIMESTAMP" })
+        dynamic_vars.stub { ["$timestamp"] = "$TIMESTAMP" }
 
         h.create_buf(
           ([[
@@ -135,7 +135,7 @@ describe("requests", function()
         result = parser.parse() or {}
         assert.is_same("https://typicode.com/todos?date=2020-01-01%2012%3A34%3A56", result.url)
 
-        result = parser.parse({ result }) or {}
+        result = parser.parse { result } or {}
         assert.is_same("https://typicode.com/todos?date=2020-01-01%2012%3A34%3A56", result.url)
       end)
 
@@ -298,6 +298,11 @@ describe("requests", function()
             },
             "GET",
             [[https://my.server.com/api/v1/object?filter=owner.address.city%20in%20%5B%22Berlin%22%2C%20%22M%C3%BCnchen%22%2C%20%22N%C3%BCrnberg%22%5D%27]]
+          )
+          assert_url(
+            { 'httpbin.org/post?filter={"conditions":{}}' },
+            "GET",
+            "httpbin.org/post?filter=%7B%22conditions%22%3A%7B%7D%7D"
           )
         end)
       end)
@@ -645,6 +650,7 @@ describe("requests", function()
           )
 
           _, result = doc_parser.get_document()
+          result = doc_parser.get_request_at(result, 0) or {}
 
           assert.is_same(4, #result)
 

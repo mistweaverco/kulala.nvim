@@ -19,7 +19,7 @@ The importer will try to detect the format automatically, but if it fails, you c
 
 ### Exporting
 
-Currently, Kulala supports exporting to Postman collections format only.
+Kulala supports exporting to Postman collections format only.
 
 Export can be run either through `Export file` or `Export folder` code action, which is available in `http` and `rest` files, or directly 
 with `require("kulala").export(path)` command, where `path=file|folder|nil`, while inside the buffer with the HTTP collection to export.

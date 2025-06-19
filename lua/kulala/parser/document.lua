@@ -30,8 +30,9 @@ local M = {}
 ---
 ---@field scripts Scripts
 ---
----@field name string|nil -- The name of the request, used for run()
+---@field name string|nil
 ---@field file string|nil -- The file the request was imported from, used for run()
+---@field nested_requests DocumentRequest[] -- The nested requests, used for run()
 
 ---@alias DocumentVariables table<string, string|number|boolean>
 
@@ -52,7 +53,6 @@ local M = {}
 local default_document_request = {
   metadata = {},
   comments = {},
-  variables = {},
   method = "",
   url = "",
   request_target = nil,
@@ -80,6 +80,7 @@ local default_document_request = {
   },
   name = nil,
   file = nil,
+  nested_requests = {},
 }
 
 local function split_content_by_blocks(lines, line_offset)
@@ -298,55 +299,6 @@ local function import_requests(path, variables, request)
   return requests
 end
 
-local function update_imported_request(request, imported_request, lnum)
-  imported_request.start_line = request.start_line
-  imported_request.end_line = request.end_line
-  imported_request.show_icon_line_number = lnum
-
-  return imported_request
-end
-
-local function run_file(path, variables, requests, request, lnum)
-  local imported_requests = import_requests(path, variables, request)
-
-  imported_requests = vim
-    .iter(imported_requests)
-    :map(function(imported_request)
-      return update_imported_request(request, imported_request, lnum)
-    end)
-    :totable()
-
-  vim.list_extend(requests, imported_requests)
-end
-
---- Processes the run command
----@param name string name of the request
----@param variables DocumentVariables document variables
----@param requests DocumentRequest[] document requests
----@param request DocumentRequest current request
----@param imported_requests DocumentRequest[] imported requests
----@param variables_to_replace string|nil variables to replace
----@param lnum number line number of current request
-local function run_request(name, variables, requests, request, imported_requests, variables_to_replace, lnum)
-  vim.iter(requests):each(function(_request)
-    _ = _request.name == name and update_imported_request(request, _request, lnum)
-  end)
-
-  local imported_request = vim.iter(imported_requests):find(function(imported_request)
-    return imported_request.name == name
-  end)
-
-  if not imported_request then return end
-
-  update_imported_request(request, imported_request, lnum)
-  table.insert(requests, imported_request)
-
-  -- replace variables in the calling request
-  vim.iter(vim.split(variables_to_replace or "", ",%s*")):each(function(variable)
-    parse_variables(variables, variable)
-  end)
-end
-
 local function parse_import_command(variables, request, imported_requests, line)
   local path = line:match("^import (.+)%s*") or ""
   if not path:match("%.http$") then return end
@@ -354,15 +306,33 @@ local function parse_import_command(variables, request, imported_requests, line)
   vim.list_extend(imported_requests, import_requests(path, variables, request) or {})
 end
 
-local function parse_run_command(variables, requests, request, imported_requests, line, lnum)
-  local variables_to_replace = line:match("^run .+ %((@.+)%)%s*$")
+local function parse_run_command(requests, imported_requests, variables, request, line, lnum)
+  local variables_to_replace = line:match("^run .+%((@.+)%)%s*$")
   if variables_to_replace then line = line:gsub("%s*%(" .. variables_to_replace .. "%)%s*", "") end
 
   local path = line:gsub("^run ", "")
+  local _requests = {}
 
-  _ = path:match("^#")
-    and run_request(path:sub(2), variables, requests, request, imported_requests, variables_to_replace, lnum)
-  _ = path:match("%.http$") and run_file(path, variables, requests, request, lnum)
+  if path:match("^#") then
+    _requests = vim.list_extend(vim.deepcopy(requests), imported_requests)
+
+    local _request = vim.iter(_requests):find(function(_request)
+      return _request.name == path:sub(2)
+    end)
+
+    _requests = { _request }
+  elseif path:match("%.http$") then
+    _requests = import_requests(path, variables, request) or {}
+  end
+
+  vim.iter(_requests):each(function(_request)
+    _request.show_icon_line_number = lnum
+    table.insert(request.nested_requests, _request)
+  end)
+
+  vim.iter(vim.split(variables_to_replace or "", ",%s*")):each(function(variable)
+    parse_variables(variables, variable)
+  end)
 end
 
 -- expand path for included files, so can be used in request replay(), when cwd has changed
@@ -433,7 +403,7 @@ M.get_document = function(lines, path)
       elseif is_request_line and line:match("^import ") then
         parse_import_command(variables, request, imported_requests, line)
       elseif is_request_line and line:match("^run ") then
-        parse_run_command(variables, requests, request, imported_requests, line, request.start_line + relative_linenr)
+        parse_run_command(requests, imported_requests, variables, request, line, request.start_line + relative_linenr)
       elseif is_request_line and line:match("^%%}$") then
         is_prerequest_handler_script_inline = false
       -- end of inline scripting
@@ -479,7 +449,7 @@ M.get_document = function(lines, path)
       elseif line:match("^Host:") then
         parse_host(request, line)
         is_request_line = false
-      elseif line:match("^([^%[]+):%s*(.*)$") and not line:match("^[^:]+:[/%d]+.+") then
+      elseif line:match("^([^%[]+):%s*(.*)$") and not line:match("^[^:]+:[/%d]+.+") and not line:match("%?") then
         -- skip [:] ipv6, ://, scheme, :80 port
         parse_headers(request, line)
         is_request_line = false
@@ -494,43 +464,71 @@ M.get_document = function(lines, path)
       request.body_display = vim.trim(request.body_display)
     end
 
-    if request.url and #request.url > 0 then table.insert(requests, request) end
+    if request.url and #request.url > 0 then
+      table.insert(requests, request)
+    elseif #request.nested_requests > 0 then
+      vim.list_extend(requests, request.nested_requests)
+    end
   end
 
   return variables, requests, imported_requests
 end
 
----Returns DocumentRequests within specified line number from a list of DocumentRequests
----or returns the first DocumentRequest in the list if no line number is provided
----@param requests DocumentRequest[]
----@param linenr? number|nil
----@return DocumentRequest[]|nil
-M.get_request_at = function(requests, linenr)
-  if not linenr then return { requests[1] } end
-  local line = vim.fn.getline(linenr)
+local function expand_nested_requests(requests, lnum)
+  requests = vim.islist(requests) and requests or { requests }
 
+  local expanded = {}
+
+  vim.iter(requests):each(function(request)
+    vim.iter(request.nested_requests):each(function(nested_request)
+      nested_request.show_icon_line_number = lnum or nested_request.show_icon_line_number
+      vim.list_extend(expanded, expand_nested_requests(nested_request, nested_request.show_icon_line_number))
+    end)
+    table.insert(expanded, request)
+  end)
+
+  return expanded
+end
+
+local function get_run_requests(request, line)
   local request_name = line:match("^run #(.+)$")
   request_name = request_name and request_name:gsub("%s*%(.+%)%s*$", "")
 
   local file = line:match("^run (.+%.http)%s*$")
   file = file and vim.fn.fnamemodify(file, ":t")
 
-  if request_name or file then
-    return vim
-      .iter(requests)
-      :filter(function(request)
-        return (request_name and request.name == request_name)
-          or (file and vim.fn.fnamemodify(request.file, ":t") == file)
-      end)
-      :totable()
-  end
+  if not (request_name or file) then return {} end
 
   return vim
-    .iter(requests)
-    :filter(function(request)
-      return linenr >= request.start_line and linenr <= request.end_line
+    .iter(request.nested_requests)
+    :filter(function(_request)
+      return (request_name and _request.name == request_name)
+        or (file and vim.fn.fnamemodify(_request.file, ":t") == file)
     end)
     :totable()
+end
+
+---Returns DocumentRequests around specified line number from a list of DocumentRequests
+---or the first DocumentRequest in the list if no line number is provided
+---or all requests if linenr = 0
+---or requests specified by `run` at specified line number
+---@param requests DocumentRequest[]
+---@param linenr? number|nil
+---@return DocumentRequest[]|nil
+M.get_request_at = function(requests, linenr)
+  if not linenr then return expand_nested_requests(requests[1]) end
+  if linenr == 0 then return expand_nested_requests(requests) end
+
+  local request = vim.iter(requests):find(function(_request)
+    return linenr >= _request.start_line and linenr <= _request.end_line
+  end)
+
+  if not request then return {} end
+
+  local line = vim.fn.getline(linenr)
+  if line:match("^run") then return get_run_requests(request, line) end
+
+  return expand_nested_requests(request)
 end
 
 M.get_previous_request = function(requests)

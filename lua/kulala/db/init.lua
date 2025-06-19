@@ -149,6 +149,9 @@ local mt_settings
 
 mt_settings = {
   __index = {
+    --- @param self table,
+    --- @param update table <string, any>
+    --- @return table
     write = function(self, update)
       Table.merge("force", self, update or {})
       FS.write_json(GLOBAL.SETTINGS_FILE, vim.deepcopy(self))
