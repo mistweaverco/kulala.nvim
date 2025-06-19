@@ -37,7 +37,7 @@ can specify it explicitly by passing the format as an argument.
 
 EXPORTING
 
-Currently, Kulala supports exporting to Postman collections format only.
+Kulala supports exporting to Postman collections format only.
 
 Export can be run either through `Export file` or `Export folder` code action,
 which is available in `http` and `rest` files, or directly with
