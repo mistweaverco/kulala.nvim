@@ -743,7 +743,7 @@ function M.start_lsp(buf, ft)
     root_dir = ft,
     bufnr = buf,
     on_attach = function(client, bufnr)
-      Diagnostics.setup(bufnr)
+      _ = (ft == "http" or ft == "rest") and Diagnostics.setup(bufnr)
       _ = Config.options.lsp.on_attach and Config.options.lsp.on_attach(client, bufnr)
     end,
     commands = vim.iter(actions):fold({}, function(acc, action)

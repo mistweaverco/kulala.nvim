@@ -91,7 +91,7 @@ M.install_dependencies = function(wait)
 
   Async.co_resume(co)
 
-  _ = wait and cmd_install:wait()
+  _ = wait and cmd_install and cmd_install:wait()
   if not cmd_build then return false end
 
   _ = wait and cmd_build:wait()
