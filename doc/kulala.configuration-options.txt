@@ -517,6 +517,12 @@ Default:
       ["application/json"] = {
         formatter = { "jq", "." },
       },
+      ["application/graphql"] = {
+        ft = "graphql",
+        formatter = vim.fn.executable("prettier") == 1
+          and { "prettier", "--stdin-filepath", "graphql", "--parser", "graphql" },
+        pathresolver = nil,
+      },
       ["application/xml"] = {
         formatter = { "xmllint", "--format", "-" },
       },
@@ -702,13 +708,6 @@ Example:
 UI.WIN_OPTS
 
 Kualala UI buffer and window options.
-
-You can set your own window options here.
-
->
-    -- window options to override win_config: width/height/split/vertical.., buffer/window options
-    win_opts = { bo = {}, wo = {} },
-<
 
 Default: `{}`
 
@@ -937,6 +936,24 @@ Example:
 <
 
 
+UI.SYNTAX_HL
+
+Highlight groups for http syntax highlighting
+
+>lua
+    {
+      opts = {
+        ui = {
+          ---@type table<string, string|vim.api.keyset.highlight>
+          syntax_hl = {
+            ["@punctuation.bracket.kulala_http"] = "Number",
+          },
+        }
+      },
+    }
+<
+
+
 UI.DISABLE_SCRIPT_PRINT_OUTPUT
 
 Disable the vim.print output of the scripts as they are executed. The output
@@ -1122,14 +1139,24 @@ Enable/disable/customize Kulala LSP keymaps
 
 LSP.FORMATTER
 
-Enable/disable HTTP formatter.
+Enable/disable/customize HTTP formatter.
+
+
+LSP.ON_ATTACH
+
+Function called when Kulala LSP attaches to the buffer
 
 >lua
     {
       lsp = {
         enable = true,
         keymaps = false, -- disabled by default, as Kulala relies on default Neovim LSP keymaps
-        formatter = false,
+        formatter = {
+          json_sort = true, -- sort JSON keys in request body
+        },
+        on_attach = function(client, bufnr)
+          -- custom on_attach function
+        end,
       },
     }
 <

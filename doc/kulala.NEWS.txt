@@ -4,7 +4,7 @@
 Table of Contents                              *kulala.NEWS-table-of-contents*
 
 1. Kulala News                                       |kulala.NEWS-kulala-news|
-  - Version 5.4.0                      |kulala.NEWS-kulala-news-version-5.4.0|
+  - Version 5.3.1                      |kulala.NEWS-kulala-news-version-5.3.1|
   - Version 5.3.0                      |kulala.NEWS-kulala-news-version-5.3.0|
   - Version 5.2.0                      |kulala.NEWS-kulala-news-version-5.2.0|
   - Version 5.1.0                      |kulala.NEWS-kulala-news-version-5.1.0|
@@ -14,13 +14,16 @@ Table of Contents                              *kulala.NEWS-table-of-contents*
 1. Kulala News                                       *kulala.NEWS-kulala-news*
 
 
-VERSION 5.4.0                          *kulala.NEWS-kulala-news-version-5.4.0*
+VERSION 5.3.1                          *kulala.NEWS-kulala-news-version-5.3.1*
+
+
+ENHANCEMENT: INTEGRATED LSP HTTP FORMATTER
 
 
 ENHANCEMENT: RESOLVE NODE_PATH TO NEAREST NODE_MODULES, ADD NODE_PATH_RESOLVER TO OPTIONS
 
 
-FEATURE: GRAPHQL AUTOCOMPLETE
+FEATURE: GRAPHQL AUTOCOMPLETION
 
 
 ENHANCEMENT: EXECUTE INLINE/FILE SCRIPTS IN THE ORDER OF DECLARATION

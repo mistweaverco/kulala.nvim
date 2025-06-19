@@ -54,6 +54,7 @@ USAGE - LEARN ABOUT THE MOST IMPORTANT KULALA.NVIM FEATURES!
 - Api.txt |kulala.api.txt|
 - Cli ci.txt |kulala.cli-ci.txt|
 - Demos.txt |kulala.demos.txt|
+- Recipes.txt |kulala.recipes.txt|
 
 
 SCRIPTS - LEARN ABOUT THE SCRIPTING CAPABILITIES!
