@@ -97,7 +97,6 @@ require("nvim-lightbulb").setup({
 
 #### Directives
 
-- `# @graphql` allows you to run a GraphQL query.
 - `# @accept chunked` allows you to accept Transfer-Encoding: chunked responses and streamed responses.
 - `# @curl-global-...` and `# @curl-...` allows you to set global and per-request flags for curl requests.
 - `# @grpc-global-...` and `# @grpc-...` allows you to set global and per-request flags for gRPC requests.
