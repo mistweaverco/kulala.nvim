@@ -137,7 +137,8 @@ local function set_syntax_hl()
 end
 
 M.setup = function(config)
-  M.options = vim.tbl_deep_extend("force", M.defaults, config or {})
+  M.user_config = config or {}
+  M.options = vim.tbl_deep_extend("force", M.defaults, M.user_config)
 
   set_legacy_options()
   set_kulala_parser()

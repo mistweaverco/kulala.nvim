@@ -129,7 +129,7 @@ You can download the schema of a GraphQL server with:
 You need to have your cursor on a line with a GraphQL request.
 
 The file will be downloaded to
-the the directory where the current file is located.
+the directory where the current file is located.
 
 The filename will be
 `[request name].graphql-schema.json`.
@@ -166,3 +166,8 @@ select an environment or fallback to using `vim.ui.select`.
 
 [scratchpad_default_contents]: ../getting-started/configuration-options#uiscratchpad_default_contents
 [env-files]: https://learn.microsoft.com/en-us/aspnet/core/test/http-files?view=aspnetcore-8.0#environment-files
+
+### generate_bug_report
+
+`require('kulala').generate_bug_report()`
+Generates a bug report and opens a GitHub issue with it.

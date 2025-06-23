@@ -34,6 +34,9 @@ local M = {}
 ---
 ---@field close_keymaps string[]? List of keymaps to close the floating window
 ---@field auto_close boolean? Whether the floating window should close automatically
+---
+---@field bo table? Buffer options
+---@field wo table? Window options
 
 ---@param opts FloatOpts
 local function float_defaults(opts)
@@ -45,10 +48,19 @@ local function float_defaults(opts)
   local row = opts.relative == "cursor" and 1 or height - (opts.row_offset or 0)
   local col = opts.relative == "cursor" and 1 or width - (opts.col_offset or 0)
 
-  local win_opts = Table.remove_keys(
-    vim.deepcopy(opts),
-    { "buf", "name", "auto_size", "row_offset", "col_offset", "hl_group", "ft", "close_keymaps", "auto_close" }
-  )
+  local win_opts = Table.remove_keys(vim.deepcopy(opts), {
+    "buf",
+    "name",
+    "auto_size",
+    "row_offset",
+    "col_offset",
+    "hl_group",
+    "ft",
+    "close_keymaps",
+    "auto_close",
+    "bo",
+    "wo",
+  })
 
   return vim.tbl_extend("keep", win_opts, {
     relative = "win",
@@ -98,6 +110,18 @@ local function set_autosize(text, opts)
   return opts
 end
 
+local function set_buffer_options(buf, bo)
+  vim.iter(bo):each(function(opt, value)
+    vim.api.nvim_set_option_value(opt, value, { buf = buf })
+  end)
+end
+
+local function set_window_options(win, wo)
+  vim.iter(wo):each(function(opt, value)
+    vim.api.nvim_set_option_value(opt, value, { win = win })
+  end)
+end
+
 ---@param text string|string[] Text to display
 ---@param opts FloatOpts Options for the floating window
 M.create = function(text, opts)
@@ -125,6 +149,8 @@ M.create = function(text, opts)
 
   _ = opts.auto_close and set_autoclose(opts.buf, win)
   _ = opts.close_keymaps and set_close_keymaps(buf, win, opts.close_keymaps)
+  _ = opts.bo and set_buffer_options(buf, opts.bo)
+  _ = opts.wo and set_window_options(win, opts.wo)
 
   return {
     buf = buf,

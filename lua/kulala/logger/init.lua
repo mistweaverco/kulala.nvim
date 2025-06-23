@@ -11,6 +11,11 @@ local function debug_level()
   return debug == nil and 0 or (debug == false and 3 or (debug == true and 4 or debug))
 end
 
+local function generate_bug_report(message)
+  local choice = vim.fn.confirm("This looks like a bug. Would you like to generate a bug report?", "&Yes\n&No", 1)
+  if choice == 1 then require("kulala.logger.bug_report").generate_bug_report(message) end
+end
+
 M.log = function(message, level)
   level = level or log_levels.INFO
   local notify = vim.notify
@@ -34,7 +39,8 @@ end
 
 ---@param message string
 ---@param lines_no number|nil -- no of error lines to show
-M.error = function(message, lines_no)
+---@param report boolean|nil -- whether to generate a bug report
+M.error = function(message, lines_no, report)
   local debug = debug_level()
   if debug == 0 then return end
 
@@ -43,6 +49,8 @@ M.error = function(message, lines_no)
   message = table.concat(lines, "\n", 1, lines_no)
 
   M.log(message, log_levels.ERROR)
+
+  if require("kulala.config").options.generate_bug_report or report then generate_bug_report(message) end
 end
 
 return M

@@ -112,4 +112,9 @@ M.export = function(path)
   Export.export_requests(path)
 end
 
+--- Generate a bug report and open a GitHub issue with it
+M.generate_bug_report = function()
+  require("kulala.logger.bug_report").generate_bug_report()
+end
+
 return M
