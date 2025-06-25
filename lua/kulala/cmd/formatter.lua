@@ -238,7 +238,8 @@ format_rules = {
 
     local method = get_fields(node, "method") or "GET"
     local target_url = get_fields(node, "url") or ""
-    local http_version = get_fields(node, "version") or "HTTP/1.1"
+    local http_version = get_fields(node, "version")
+      or (method ~= "GRPC" and method ~= "WEBSOCKET" and method ~= "WS" and "HTTP/1.1" or "")
 
     local request = current_section().request
     request.url = ("%s %s %s"):format(method, target_url, http_version)

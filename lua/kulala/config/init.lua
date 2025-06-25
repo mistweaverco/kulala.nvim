@@ -101,7 +101,7 @@ local function setup_treesitter_master()
     filetype = "http",
   }
 
-  if parsers.has_parser("kulala_http") or Db.settings.parser_ver == get_parser_ver(parser_path) then
+  if parsers.has_parser("kulala_http") and Db.settings.parser_ver == get_parser_ver(parser_path) then
     return vim.treesitter.language.register("kulala_http", { "http", "rest" })
   end
 
