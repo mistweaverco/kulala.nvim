@@ -40,3 +40,47 @@ Content-Type: {{content_type}}
 
 ------WebKitFormBoundary{{$timestamp}}--
 ```
+
+### Authenticating with browser-based auth
+
+```http
+
+### Acquire_XSRF_TOKEN
+
+GET localhost:8000/login
+
+> {%
+  -- lua
+  client.global.token = response.cookies["XSRF-TOKEN"].value
+  client.global.decoded_token = vim.uri_decode(client.global.token)
+  client.global.session = response.cookies["laravel_session"].value
+%}
+
+### Authentication
+
+POST localhost:8000/login
+Content-Type: application/json
+X-Xsrf-Token: {{decoded_token}}
+Cookie: XSRF-TOKEN={{token}}
+Cookie: laravel_session={{session}}
+Referer: http://localhost:8000/login
+
+{
+  "email": "mail@mail.com",
+  "password": "passpass"
+}
+
+> {%
+  -- lua
+  -- save the new set authenticated session
+  client.global.session = response.cookies["laravel_session"].value
+%}
+
+### Dashboard
+
+run #Acquire_XSRF_TOKEN
+run #Authentication
+
+GET http://localhost:8000/dashboard
+Cookie: laravel_session={{session}}
+```
