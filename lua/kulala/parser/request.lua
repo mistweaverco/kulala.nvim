@@ -483,7 +483,7 @@ local function parse_grpc_command(request)
   return vim.iter(vim.split(request.url, " ")):fold(grpc_cmd, function(cmd, part)
     if part:find("GRPC") then -- method
       -- skip
-    elseif part:find(":") then -- address
+    elseif part:find(":") and not part:find("=") then -- address
       cmd.address = part
       address_parsed = true
     elseif part:match("^describe$") or part:match("^list$") then -- command

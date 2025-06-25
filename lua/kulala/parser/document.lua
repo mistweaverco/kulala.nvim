@@ -449,7 +449,7 @@ M.get_document = function(lines, path)
       elseif line:match("^Host:") then
         parse_host(request, line)
         is_request_line = false
-      elseif line:match("^([^%[]+):%s*(.*)$") and not line:match("^[^:]+:[/%d]+.+") and not line:match("%?") then
+      elseif line:match("^([^%[%s]+):%s*(.*)$") and not line:match("^[^:]+:[/%d]+.+") and not line:match("%?") then
         -- skip [:] ipv6, ://, scheme, :80 port
         parse_headers(request, line)
         is_request_line = false
