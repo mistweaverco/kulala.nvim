@@ -169,7 +169,12 @@ local M = {
 
     -- enable/disable/customize HTTP formatter
     formatter = {
-      json_sort = true, -- sort JSON keys in request body
+      sort = { -- enable/disable alphabetical sorting in request body
+        metadata = true,
+        variables = true,
+        commands = true,
+        json = true,
+      },
     },
 
     on_attach = nil, -- function called when Kulala LSP attaches to the buffer
