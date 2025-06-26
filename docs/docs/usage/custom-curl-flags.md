@@ -22,6 +22,7 @@ Local flags take precedence over global flags.
 
 If you need to apply curl flags to OAuth requests, you have to use `# @curl-global-..` flags.
 
+In order for global flags to take effect, the request where they are defined must be run at least once.
 :::
 
 ### Some common curl flags you might want to use:
