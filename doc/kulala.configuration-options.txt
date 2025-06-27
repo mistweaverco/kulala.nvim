@@ -634,6 +634,13 @@ Example:
 <
 
 
+GENERATE_BUG_REPORT
+
+Generate a bug report on error.
+
+Default: `false`
+
+
 SCRIPTS           *kulala.configuration-options-configuration-options-scripts*
 
 
@@ -1152,7 +1159,12 @@ Function called when Kulala LSP attaches to the buffer
         enable = true,
         keymaps = false, -- disabled by default, as Kulala relies on default Neovim LSP keymaps
         formatter = {
-          json_sort = true, -- sort JSON keys in request body
+          sort = { -- enable/disable alphabetical sorting in request body
+            metadata = true,
+            variables = true,
+            commands = true,
+            json = true,
+          },
         },
         on_attach = function(client, bufnr)
           -- custom on_attach function
