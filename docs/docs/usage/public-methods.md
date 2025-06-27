@@ -129,14 +129,12 @@ You can download the schema of a GraphQL server with:
 You need to have your cursor on a line with a GraphQL request.
 
 The file will be downloaded to
-the the directory where the current file is located.
+the directory where the current file is located.
 
 The filename will be
-`[http-file-name-without-extension].graphql-schema.json`.
+`[request name].graphql-schema.json`.
 
-This file can be used in conjunction with
-the [kulala-cmp-graphql][kulala-cmp-graphql] plugin to
-provide autocompletion and type checking.
+This is required for the autocompletion and type checking to work.
 
 ### get_selected_env
 
@@ -167,5 +165,9 @@ it'll try to load up a telescope prompt to
 select an environment or fallback to using `vim.ui.select`.
 
 [scratchpad_default_contents]: ../getting-started/configuration-options#uiscratchpad_default_contents
-[kulala-cmp-graphql]: https://github.com/mistweaverco/kulala-cmp-graphql.nvim
 [env-files]: https://learn.microsoft.com/en-us/aspnet/core/test/http-files?view=aspnetcore-8.0#environment-files
+
+### generate_bug_report
+
+`require('kulala').generate_bug_report()`
+Generates a bug report and opens a GitHub issue with it.

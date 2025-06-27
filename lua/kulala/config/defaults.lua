@@ -169,7 +169,12 @@ local M = {
 
     -- enable/disable/customize HTTP formatter
     formatter = {
-      json_sort = true, -- sort JSON keys in request body
+      sort = { -- enable/disable alphabetical sorting in request body
+        metadata = true,
+        variables = true,
+        commands = true,
+        json = true,
+      },
     },
 
     on_attach = nil, -- function called when Kulala LSP attaches to the buffer
@@ -177,6 +182,8 @@ local M = {
 
   -- enable/disable debug mode
   debug = 3,
+  -- enable/disable bug reports on error
+  generate_bug_report = false,
 
   -- set to true to enable default keymaps (check docs or {plugins_path}/kulala.nvim/lua/kulala/config/keymaps.lua for details)
   -- or override default keymaps as shown in the example below.

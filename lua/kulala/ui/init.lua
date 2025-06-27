@@ -212,7 +212,7 @@ local function format_body()
   local filetype
 
   if body and contenttype.formatter then
-    body = FORMATTER.format(contenttype.formatter, body)
+    body = FORMATTER.format(contenttype.formatter, body, { verbose = false })
     filetype = contenttype.ft
   end
 

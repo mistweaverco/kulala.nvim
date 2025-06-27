@@ -70,5 +70,6 @@ Content-Type: application/json
 :::warning
 
 Flags set in variables override flags set in metatadata, which in turn override global flags.
+In order for global flags to take effect, the request where they are defined must be run at least once.
 
 :::

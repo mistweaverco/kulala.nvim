@@ -186,6 +186,10 @@ local process_variables = function(request, document_variables, silent)
   request.body_display = StringVariablesParser.parse(request.body_display, unpack(params))
   request.body_computed = StringVariablesParser.parse(request.body_raw, unpack(params))
 
+  vim.iter(request.metadata):each(function(metadata)
+    metadata.value = StringVariablesParser.parse(metadata.value, unpack(params))
+  end)
+
   request.environment = vim.tbl_extend("keep", env, document_variables)
 
   return env
@@ -235,13 +239,12 @@ end
 
 local function set_variables(request, document_variables)
   document_variables = document_variables or {}
+  local has_pre_request_scripts = (#request.scripts.pre_request.inline + #request.scripts.pre_request.files) > 0
 
+  local variables = process_variables(request, document_variables, has_pre_request_scripts)
   parse_metadata(request)
 
-  -- INFO: if has_pre_request_script: silently replace the variables,
-  -- otherwise warn the user for non existing variables
-  local has_pre_request_scripts = (#request.scripts.pre_request.inline + #request.scripts.pre_request.files) > 0
-  return process_variables(request, document_variables, has_pre_request_scripts)
+  return variables
 end
 
 local function set_headers(request, document_variables, env)
@@ -483,7 +486,7 @@ local function parse_grpc_command(request)
   return vim.iter(vim.split(request.url, " ")):fold(grpc_cmd, function(cmd, part)
     if part:find("GRPC") then -- method
       -- skip
-    elseif part:find(":") then -- address
+    elseif part:find(":") and not part:find("=") then -- address
       cmd.address = part
       address_parsed = true
     elseif part:match("^describe$") or part:match("^list$") then -- command

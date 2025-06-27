@@ -1,34 +1,5 @@
 {
   "$schema": "https://tree-sitter.github.io/tree-sitter/assets/schemas/config.schema.json",
-  "grammars": [
-    {
-      "name": "kulala_http",
-      "camelcase": "KulalaHttp",
-      "title": "Kulala HTTP",
-      "scope": "source.kulala_http",
-      "file-types": [
-        "rest",
-        "http,"
-      ],
-      "injection-regex": "^kulala_http$",
-      "class-name": "TreeSitterKulalaHttp"
-    }
-  ],
-  "metadata": {
-    "version": "0.1.0",
-    "license": "MIT",
-    "description": "Kulala HTTP Parser",
-    "authors": [
-      {
-        "name": "Yaro Apletov",
-        "email": "yaro@dream-it.es"
-      }
-    ],
-    "links": {
-      "repository": "https://github.com/mistweaverco/kulala.nvim/lua/tree-sitter",
-      "funding": "https://github.com/mistweaverco/kulala.nvim"
-    }
-  },
   "bindings": {
     "c": true,
     "go": true,
@@ -37,5 +8,35 @@
     "rust": true,
     "swift": true,
     "zig": false
+  },
+  "grammars": [
+    {
+      "camelcase": "KulalaHttp",
+      "class-name": "TreeSitterKulalaHttp",
+      "file-types": [
+        "rest",
+        "http,"
+      ],
+      "injection-regex": "^kulala_http$",
+      "name": "kulala_http",
+      "scope": "source.kulala_http",
+      "title": "Kulala HTTP"
+    }
+  ],
+  "metadata": {
+    "authors": [
+      {
+        "email": "yaro@dream-it.es",
+        "name": "Yaro Apletov"
+      }
+    ],
+    "description": "Kulala HTTP Parser",
+    "license": "MIT",
+    "links": {
+      "funding": "https://github.com/mistweaverco/kulala.nvim",
+      "repository": "https://github.com/mistweaverco/kulala.nvim/lua/tree-sitter"
+    },
+    "version": "0.1.1"
   }
 }
+

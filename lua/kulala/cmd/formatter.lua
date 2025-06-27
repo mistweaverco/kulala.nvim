@@ -4,7 +4,7 @@ local Json = require("kulala.utils.json")
 local Xml = require("kulala.utils.xml")
 
 local format_opts = Config.options.lsp.formatter
-format_opts = type(format_opts) == "table" and format_opts or { json_sort = true }
+format_opts = type(format_opts) == "table" and format_opts or { sort = { json = true } }
 
 local M = {}
 
@@ -191,7 +191,7 @@ format_rules = {
     local variable_declaration = ("@%s = %s"):format(name or "", value or "")
 
     table.insert(current_section().variables, variable_declaration)
-    table.sort(current_section().variables)
+    _ = format_opts.sort.variables and table.sort(current_section().variables)
 
     return variable_declaration
   end,
@@ -215,7 +215,7 @@ format_rules = {
     local metadata = str:format(name, value)
 
     table.insert(current_section().metadata, metadata)
-    table.sort(current_section().metadata)
+    _ = format_opts.sort.metadata and table.sort(current_section().metadata)
 
     return metadata
   end,
@@ -228,7 +228,7 @@ format_rules = {
     formatted = vars and formatted .. " (" .. vars .. ")" or formatted
 
     table.insert(current_section().commands, formatted)
-    table.sort(current_section().commands)
+    _ = format_opts.sort.commands and table.sort(current_section().commands)
 
     return formatted
   end,
@@ -238,7 +238,8 @@ format_rules = {
 
     local method = get_fields(node, "method") or "GET"
     local target_url = get_fields(node, "url") or ""
-    local http_version = get_fields(node, "version") or "HTTP/1.1"
+    local http_version = get_fields(node, "version")
+      or (method ~= "GRPC" and method ~= "WEBSOCKET" and method ~= "WS" and "HTTP/1.1" or "")
 
     local request = current_section().request
     request.url = ("%s %s %s"):format(method, target_url, http_version)
@@ -289,7 +290,7 @@ format_rules = {
 
   ["json_body"] = function(node)
     local json = get_text(node)
-    local formatted = Json.format(json, { sort = format_opts.json_sort }) or json
+    local formatted = Json.format(json, { sort = format_opts.sort.json }) or json
 
     current_section().request.body = formatted:gsub("\n*$", "")
     return formatted
@@ -297,7 +298,7 @@ format_rules = {
 
   ["graphql_body"] = function(node)
     local body = get_text(node)
-    local formatted = Graphql.format(body, { sort = format_opts.json_sort }) or body
+    local formatted = Graphql.format(body, { sort = format_opts.sort.json }) or body
 
     current_section().request.body = formatted:gsub("\n*$", "")
     return formatted

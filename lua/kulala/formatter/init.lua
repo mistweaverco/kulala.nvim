@@ -2,7 +2,11 @@ local Logger = require("kulala.logger")
 
 local M = {}
 
-M.format = function(formatter, contents)
+M.format = function(formatter, contents, opts)
+  opts = vim.tbl_deep_extend("keep", opts or {}, {
+    verbose = true,
+  })
+
   if type(formatter) == "function" then
     return formatter(contents)
   elseif type(formatter) == "table" then
@@ -13,7 +17,8 @@ M.format = function(formatter, contents)
     end)
 
     if not status or result.code ~= 0 then
-      Logger.warn(("Error running external formatter: %s"):format(not status and result or result.stderr))
+      _ = opts.verbose
+        and Logger.warn(("Error running external formatter: %s"):format(not status and result or result.stderr))
       return contents
     end
 

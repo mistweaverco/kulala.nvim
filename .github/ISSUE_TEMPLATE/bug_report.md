@@ -2,10 +2,18 @@
 name: Bug report
 about: Create a report to help us improve
 title: "[BUG] "
-labels: ''
+labels: bug
 assignees: ''
 
 ---
+
+The easiest way to submit a bug report is to set the option `generate_bug_report` in the config.
+
+This will offer to generate a bug report and open a GitHub Issue with it, when an error is encountered. 
+
+Alternatively, you can generate the report manually with `require("kulala").generate_bug_report()` or follow the template below.
+
+#
 
 **Describe the bug**
 A clear and concise description of what the bug is.

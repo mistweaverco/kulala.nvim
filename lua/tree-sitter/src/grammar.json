@@ -617,7 +617,7 @@
     },
     "method": {
       "type": "PATTERN",
-      "value": "(OPTIONS|GET|HEAD|POST|PUT|DELETE|TRACE|CONNECT|PATCH|LIST|GRAPHQL|WEBSOCKET)"
+      "value": "(OPTIONS|GET|HEAD|POST|PUT|DELETE|TRACE|CONNECT|PATCH|LIST|GRAPHQL|GRPC|WEBSOCKET)"
     },
     "http_version": {
       "type": "PREC_DYNAMIC",

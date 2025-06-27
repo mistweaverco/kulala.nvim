@@ -1,4 +1,6 @@
+local Config = require("kulala.config")
 local Logger = require("kulala.logger")
+local Shell = require("kulala.cmd.shell_utils")
 
 local M = {}
 
@@ -79,5 +81,42 @@ M.server = setmetatable(M.server, {
     return self:run(...)
   end,
 })
+
+---@class RequestParams: ShellOpts
+---@field method string|nil -- HTTP method (default: "GET")
+---@field headers table<string, string>|nil -- HTTP headers (default: {})
+---@field body string|nil -- HTTP body (default: "")
+
+---@param url string -- URL to request
+---@param params RequestParams|nil -- Request parameters
+---@param on_exit fun(system: vim.SystemCompleted)|nil -- Callback on exit
+---@return vim.SystemObj|vim.SystemCompleted|nil
+local function request(url, params, on_exit)
+  params = vim.tbl_deep_extend("keep", params or {}, {
+    method = "GET",
+    headers = {},
+    body = "",
+    sync = true,
+    err_msg = "Request error",
+    abort_on_stderr = true,
+  })
+
+  local cmd = { Config.get().curl_path, "-s", "-X", params.method }
+
+  if next(params.headers) then
+    vim.iter(params.headers):each(function(key, value)
+      vim.list_extend(cmd, { "-H", ("%s: %s"):format(key, value) })
+    end)
+  end
+
+  cmd = #params.body > 0 and vim.list_extend(cmd, { "-d", params.body }) or cmd
+  cmd = vim.list_extend(cmd, { url })
+
+  return Shell.run(cmd, params, on_exit)
+end
+
+M.client = {
+  request = request,
+}
 
 return M
