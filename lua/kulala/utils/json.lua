@@ -1,46 +1,6 @@
 local Logger = require("kulala.logger")
-local Shell = require("kulala.cmd.shell_utils")
 
 local M = {}
-
-M.format = function(json_string, opts)
-  opts = vim.tbl_deep_extend("keep", opts or {}, {
-    verbose = true,
-    sort = true,
-  })
-
-  json_string = type(json_string) == "table" and vim.json.encode(json_string, opts) or json_string
-
-  local system_arg_limit = 1000
-
-  local jq_path = require("kulala.config").get().contenttypes["application/json"]
-  jq_path = jq_path and jq_path.formatter and jq_path.formatter[1] or vim.fn.exepath("jq")
-
-  if vim.fn.executable(jq_path) == 0 then
-    _ = opts.versbose and Logger.warn("jq is not installed. JSON written unformatted.")
-    return json_string
-  end
-
-  local cmd = { jq_path }
-  _ = opts.sort and table.insert(cmd, "--sort-keys")
-
-  local temp_file
-  if #json_string > system_arg_limit then
-    temp_file = os.tmpname()
-    require("kulala.utils.fs").write_file(temp_file, json_string)
-
-    table.insert(cmd, temp_file)
-  else
-    vim.list_extend(cmd, { "-n", json_string })
-  end
-
-  local result = Shell.run(cmd, { sync = true, err_msg = "Failed to format JSON", abort_on_stderr = true })
-
-  _ = temp_file and os.remove(temp_file)
-  if not result or result.code ~= 0 or result.stderr ~= "" or result.stdout == "" then return json_string end
-
-  return result.stdout
-end
 
 ---Parse a JSON string into a Lua table
 ---@param str string
