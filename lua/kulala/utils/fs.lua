@@ -373,7 +373,7 @@ M.write_json = function(filename, data, format, escape)
   local content = vim.json.encode(data)
   if not content then return end
 
-  content = format and Json.format(content) or content
+  content = format and require("kulala.formatter").json(content) or content
   content = escape == true and content or content:gsub("\\/", "/"):gsub('\\"', '"')
 
   return M.write_file(filename, content)

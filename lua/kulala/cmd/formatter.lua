@@ -1,7 +1,5 @@
 local Config = require("kulala.config")
-local Graphql = require("kulala.parser.graphql")
-local Json = require("kulala.utils.json")
-local Xml = require("kulala.utils.xml")
+local Formatter = require("kulala.formatter")
 
 local format_opts = Config.options.lsp.formatter
 format_opts = type(format_opts) == "table" and format_opts or { sort = { json = true } }
@@ -282,7 +280,7 @@ format_rules = {
 
   ["xml_body"] = function(node)
     local body = get_text(node)
-    local formatted = Xml.format(body) or body
+    local formatted = Formatter.xml(body) or body
 
     current_section().request.body = formatted:gsub("\n*$", "")
     return formatted
@@ -290,7 +288,7 @@ format_rules = {
 
   ["json_body"] = function(node)
     local json = get_text(node)
-    local formatted = Json.format(json, { sort = format_opts.sort.json }) or json
+    local formatted = Formatter.json(json, { sort = format_opts.sort.json }) or json
 
     current_section().request.body = formatted:gsub("\n*$", "")
     return formatted
@@ -298,7 +296,7 @@ format_rules = {
 
   ["graphql_body"] = function(node)
     local body = get_text(node)
-    local formatted = Graphql.format(body, { sort = format_opts.sort.json }) or body
+    local formatted = Formatter.graphql(body, { sort = format_opts.sort.json }) or body
 
     current_section().request.body = formatted:gsub("\n*$", "")
     return formatted

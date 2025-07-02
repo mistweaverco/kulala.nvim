@@ -89,6 +89,8 @@ describe("requests report", function()
     end)
 
     it("has request summary", function()
+      vim.uv.os_setenv("TZ", "UTC")
+
       db.responses[1].duration = 220223
       db.responses[1].time = 1741034503
 

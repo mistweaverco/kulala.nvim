@@ -5,7 +5,6 @@ local Fmt = require("kulala.cmd.fmt")
 local Fs = require("kulala.utils.fs")
 local GLOBALS = require("kulala.globals")
 local Graphql = require("kulala.graphql")
-local JUMPS = require("kulala.jumps")
 local Logger = require("kulala.logger")
 local ScriptsUtils = require("kulala.parser.scripts.utils")
 local UI = require("kulala.ui")
@@ -55,11 +54,11 @@ M.version = function()
 end
 
 M.jump_next = function()
-  JUMPS.jump_next()
+  UI:jump_next()
 end
 
 M.jump_prev = function()
-  JUMPS.jump_prev()
+  UI:jump_prev()
 end
 
 M.toggle_view = function()

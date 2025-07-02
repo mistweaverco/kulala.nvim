@@ -1,7 +1,14 @@
 #!/usr/bin/env -S nvim -l
 
 vim.env.LAZY_STDPATH = ".tests"
-load(vim.fn.system("curl -s https://raw.githubusercontent.com/folke/lazy.nvim/main/bootstrap.lua"))()
+
+local bootstrap = "./" .. vim.env.LAZY_STDPATH .. "/data/nvim/lazy/lazy.nvim/bootstrap.lua"
+
+if vim.fn.filereadable(bootstrap) == 1 then
+  load(io.open(bootstrap, "r"):read("*all"))()
+else
+  load(vim.fn.system("curl -s https://raw.githubusercontent.com/folke/lazy.nvim/main/bootstrap.lua"))()
+end
 
 package.path = "./tests/?.lua;./tests/?/?.lua;" .. package.path
 vim.opt.rtp:append(vim.uv.cwd())
