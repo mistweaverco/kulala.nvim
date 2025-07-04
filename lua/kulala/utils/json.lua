@@ -29,6 +29,7 @@ M.format = function(json_string, opts)
     temp_file = os.tmpname()
     require("kulala.utils.fs").write_file(temp_file, json_string)
 
+    table.insert(cmd, ".")
     table.insert(cmd, temp_file)
   else
     vim.list_extend(cmd, { "-n", json_string })
