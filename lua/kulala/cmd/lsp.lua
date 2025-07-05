@@ -356,8 +356,8 @@ local sources = {
   auth_configs = auth_configs,
   methods = { Lsp_sources.methods, "Method" },
   schemes = { Lsp_sources.schemes, "Scheme" },
-  header_names = { Lsp_sources.header_names, "Header" },
-  header_values = { Lsp_sources.header_values, "Header" },
+  header_names = { Lsp_sources.header_names, "Header name" },
+  header_values = { Lsp_sources.header_values, "Header value" },
   metadata = { Lsp_sources.metadata, "Metadata" },
   curl = { Lsp_sources.curl, "Curl" },
   grpc = { Lsp_sources.grpc, "Grpc" },
@@ -398,7 +398,8 @@ local function source_type(params)
   if find_upwards(params.position.line, "query.*{") or find_upwards(params.position.line, "mutation.*{") then
     return { "graphql", "urls" }
   end
-  if find_upwards(params.position.line, "{%%") then return { "scripts", "urls", "headers_names", "header_values" } end
+
+  if find_upwards(params.position.line, "{%%") then return { "scripts", "urls", "header_names", "header_values" } end
 
   return { "commands", "methods", "schemes", "urls", "header_names", "snippets" }
 end
