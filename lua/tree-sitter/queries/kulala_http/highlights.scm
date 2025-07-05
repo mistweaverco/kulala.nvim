@@ -25,6 +25,9 @@
   "@" @character.special)
 
 (variable_declaration_inline
+  "=" @character.special)
+
+(variable_declaration_inline
   (value) @string)
 
 ; Commands

@@ -100,6 +100,7 @@ local M = {
     ---@type table<string, string|vim.api.keyset.highlight>
     syntax_hl = {
       ["@punctuation.bracket.kulala_http"] = "Number",
+      ["@variable.kulala_http"] = "String",
     },
 
     -- enable/disable request summary in the output window
