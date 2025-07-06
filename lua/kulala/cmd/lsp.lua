@@ -694,7 +694,10 @@ local function new_server()
         _ = handlers[method] and handler(nil, handlers[method](params))
       end, debug.traceback)
 
-      if not status then require("kulala.logger").error("Errors in Kulala LSP:\n" .. (error or ""), 2, true) end
+      if not status then
+        require("kulala.logger").error("Errors in Kulala LSP:\n" .. (error or ""), 2, { report = true })
+      end
+
       return true
     end
 

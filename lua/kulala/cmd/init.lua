@@ -65,7 +65,7 @@ function queue.run_next(self)
 
     if not (status and cb_status) then
       self:reset()
-      Logger.error(("Errors running a scheduled task: %s %s"):format(errors or "", cb_errors), 1, true)
+      Logger.error(("Errors running a scheduled task: %s %s"):format(errors or "", cb_errors), 1, { report = true })
     end
 
     self.done = self.done + 1
@@ -261,7 +261,7 @@ local function process_errors(request, request_status, processing_errors)
   )
 
   Logger.error(message, 2)
-  _ = processing_errors and Logger.error(processing_errors, 2, true)
+  _ = processing_errors and Logger.error(processing_errors, 2, { report = true })
 
   request_status.errors = processing_errors and request_status.errors .. "\n" .. processing_errors
     or request_status.errors

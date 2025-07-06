@@ -362,10 +362,11 @@ M.format = function(buffer, params)
   params = params or {}
   buf = buffer or vim.api.nvim_get_current_buf()
 
-  local diag = vim.diagnostic.get(buf)
-  if #diag > 0 and vim.fn.input("Document contains errors.  Do you still want to format it? (y/n): ") ~= "y" then
-    return
-  end
+  local diag = vim.iter(vim.diagnostic.get(buf) or {}):find(function(d)
+    return d.type == "treesitter"
+  end)
+
+  if diag and vim.fn.input("Document contains errors.  Do you still want to format it? (y/n): ") ~= "y" then return end
 
   local lang = "kulala_http"
   local tree = ts.get_parser(buf, lang):parse()[1]
