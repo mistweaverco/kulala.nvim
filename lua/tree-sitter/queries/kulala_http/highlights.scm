@@ -25,9 +25,6 @@
   "@" @character.special)
 
 (variable_declaration_inline
-  "=" @character.special)
-
-(variable_declaration_inline
   (value) @string)
 
 ; Commands
@@ -42,13 +39,16 @@
 (variable_declaration
   "=" @operator)
 
+(variable_declaration_inline
+  "=" @operator)
+
 ; keywords
 (metadata
-  "@" @keyword
+  "@" @character.special
    name: (_) @keyword)
 
 (metadata
-  "@" @keyword
+  "@" @character.special
   name: (_) @keyword
   value: (_) @constant)
 

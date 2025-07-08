@@ -100,6 +100,8 @@ local M = {
     ---@type table<string, string|vim.api.keyset.highlight>
     syntax_hl = {
       ["@punctuation.bracket.kulala_http"] = "Number",
+      ["@character.special.kulala_http"] = "Special",
+      ["@operator.kulala_http"] = "Special",
       ["@variable.kulala_http"] = "String",
     },
 
