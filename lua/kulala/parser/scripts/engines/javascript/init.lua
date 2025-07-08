@@ -210,7 +210,7 @@ M.run = function(type, data)
     end
 
     if output.stdout and not output.stdout:match("^%s*$") then
-      _ = not disable_output and Logger.log("JS: " .. output.stdout)
+      _ = not disable_output and Logger.info(output.stdout, { title = "Kulala JS Script Output" })
       if not FS.write_file(files[type], output.stdout) then return Logger.error("write " .. files[type] .. " fail") end
     end
   end

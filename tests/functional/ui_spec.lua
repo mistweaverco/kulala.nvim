@@ -111,6 +111,8 @@ describe("UI", function()
       db.responses = {}
       db.current_response_pos = 1
 
+      vim.uv.os_setenv("TZ", "UTC")
+
       ---@diagnostic disable-next-line: missing-fields
       table.insert(db.responses, {
         status = true,

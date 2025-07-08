@@ -39,13 +39,16 @@
 (variable_declaration
   "=" @operator)
 
+(variable_declaration_inline
+  "=" @operator)
+
 ; keywords
 (metadata
-  "@" @keyword
+  "@" @character.special
    name: (_) @keyword)
 
 (metadata
-  "@" @keyword
+  "@" @character.special
   name: (_) @keyword
   value: (_) @constant)
 

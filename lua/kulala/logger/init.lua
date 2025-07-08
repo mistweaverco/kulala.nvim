@@ -16,8 +16,10 @@ local function generate_bug_report(message)
   if choice == 1 then require("kulala.logger.bug_report").generate_bug_report(message) end
 end
 
-M.log = function(message, level)
+M.log = function(message, level, opts)
+  opts = vim.tbl_extend("force", default_options, opts or {})
   level = level or log_levels.INFO
+
   local notify = vim.notify
 
   if not vim.fn.has("gui_running") then
@@ -26,21 +28,23 @@ M.log = function(message, level)
     notify = vim.schedule_wrap(vim.notify)
   end
 
-  notify(message, level, default_options)
+  notify(message, level, opts)
 end
 
-M.info = function(message)
-  _ = debug_level() > 2 and M.log(message, log_levels.INFO)
+M.info = function(message, opts)
+  _ = debug_level() > 2 and M.log(message, log_levels.INFO, opts)
 end
 
-M.warn = function(message)
-  _ = debug_level() > 1 and M.log(message, log_levels.WARN)
+M.warn = function(message, opts)
+  _ = debug_level() > 1 and M.log(message, log_levels.WARN, opts)
 end
 
 ---@param message string
 ---@param lines_no number|nil -- no of error lines to show
 ---@param report boolean|nil -- whether to generate a bug report
-M.error = function(message, lines_no, report)
+M.error = function(message, lines_no, opts)
+  opts = opts or {}
+
   local debug = debug_level()
   if debug == 0 then return end
 
@@ -50,7 +54,7 @@ M.error = function(message, lines_no, report)
 
   M.log(message, log_levels.ERROR)
 
-  if require("kulala.config").options.generate_bug_report or report then generate_bug_report(message) end
+  if require("kulala.config").options.generate_bug_report or opts.report then generate_bug_report(message) end
 end
 
 return M

@@ -3,6 +3,7 @@ local CMD = require("kulala.cmd")
 local CONFIG = require("kulala.config")
 local CURL_PARSER = require("kulala.parser.curl")
 local DB = require("kulala.db")
+local DOC_PARSER = require("kulala.parser.document")
 local Ext_processing = require("kulala.external_processing")
 local FORMATTER = require("kulala.formatter")
 local FS = require("kulala.utils.fs")
@@ -454,6 +455,18 @@ M.open_all = function(_, line_nr)
 
     return true
   end)
+end
+
+M.jump_next = function()
+  local _, reqs = DOC_PARSER.get_document()
+  local next = DOC_PARSER.get_next_request(reqs)
+  if next then vim.api.nvim_win_set_cursor(0, { next.start_line + 1, 0 }) end
+end
+
+M.jump_prev = function()
+  local _, reqs = DOC_PARSER.get_document()
+  local prev = DOC_PARSER.get_previous_request(reqs)
+  if prev then vim.api.nvim_win_set_cursor(0, { prev.start_line + 1, 0 }) end
 end
 
 M.keymap_enter = function()

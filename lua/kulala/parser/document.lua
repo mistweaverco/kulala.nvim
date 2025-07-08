@@ -1,4 +1,5 @@
 local DB = require("kulala.db")
+local Diagnostics = require("kulala.cmd.diagnostics")
 local FS = require("kulala.utils.fs")
 local Logger = require("kulala.logger")
 local PARSER_UTILS = require("kulala.parser.utils")
@@ -228,7 +229,7 @@ local function parse_query_params(request, line)
   request.http_version = http_version or request.http_version
 end
 
-local function parse_body(request, line)
+local function parse_body(request, line, lnum)
   request.body = request.body or ""
   request.body_display = request.body_display or ""
 
@@ -237,7 +238,7 @@ local function parse_body(request, line)
   content_type = content_type or ""
 
   if line:find("^< [^{]") then
-    line = M.expand_included_filepath(line)
+    line = M.expand_included_filepath(line, lnum)
   elseif content_type:find("^application/x%-www%-form%-urlencoded") then
     -- should be no line endings or they should be urlencoded
     line_ending = ""
@@ -276,10 +277,10 @@ local function parse_host(request, line)
   request.url = (request.url == "" or request.url:match("^/")) and (line .. request.url) or request.url
 end
 
-local function parse_request_urL_method(request, line, relative_linenr)
+local function parse_request_urL_method(request, line, lnum)
   request.method, request.url, request.http_version = parse_url(request, line)
   request.name = request.name or (request.method or "") .. " " .. (request.url or "")
-  request.show_icon_line_number = request.start_line + relative_linenr
+  request.show_icon_line_number = lnum
 end
 
 local function parse_multiline_url(request, line)
@@ -287,11 +288,16 @@ local function parse_multiline_url(request, line)
   if request.url and path then request.url = request.url .. path end
 end
 
-local function import_requests(path, variables, request)
+local function import_requests(path, variables, request, lnum)
   path = FS.get_file_path(path, request.file)
 
   local file = FS.read_file(path)
-  if not file then return Logger.warn("The file '" .. path .. "' was not found. Skipping ...") end
+  if not file then
+    local msg = "The file '" .. path .. "' was not found."
+
+    Diagnostics.add_diagnostics(DB.get_current_buffer(), msg, vim.diagnostic.WARN, lnum - 2, 0, lnum - 2, #path)
+    return Logger.warn(msg)
+  end
 
   local r_variables, requests = M.get_document(vim.split(file, "\n"), path)
   Table.merge("keep", variables, r_variables)
@@ -299,11 +305,11 @@ local function import_requests(path, variables, request)
   return requests
 end
 
-local function parse_import_command(variables, request, imported_requests, line)
+local function parse_import_command(variables, request, imported_requests, line, lnum)
   local path = line:match("^import (.+)%s*") or ""
   if not path:match("%.http$") then return end
 
-  vim.list_extend(imported_requests, import_requests(path, variables, request) or {})
+  vim.list_extend(imported_requests, import_requests(path, variables, request, lnum) or {})
 end
 
 local function parse_run_command(requests, imported_requests, variables, request, line, lnum)
@@ -322,7 +328,7 @@ local function parse_run_command(requests, imported_requests, variables, request
 
     _requests = { _request }
   elseif path:match("%.http$") then
-    _requests = import_requests(path, variables, request) or {}
+    _requests = import_requests(path, variables, request, lnum) or {}
   end
 
   vim.iter(_requests):each(function(_request)
@@ -336,14 +342,18 @@ local function parse_run_command(requests, imported_requests, variables, request
 end
 
 -- expand path for included files, so can be used in request replay(), when cwd has changed
-M.expand_included_filepath = function(line)
+M.expand_included_filepath = function(line, lnum)
   local path = line:match("^< ([^\r\n]+)[\r\n]*$")
   path = path and FS.get_file_path(path)
 
   if FS.read_file(path, true) then
     line = "< " .. path
   else
-    Logger.warn("The file '" .. path .. "' was not found. Skipping ...")
+    local msg = "The file '" .. path .. "' was not found."
+
+    Logger.warn(msg)
+    Diagnostics.add_diagnostics(DB.get_current_buffer(), msg, vim.diagnostic.WARN, lnum - 2, 0, lnum - 2, #path)
+
     line = "< [file not found] " .. path
   end
 
@@ -357,6 +367,7 @@ end
 ---@return DocumentVariables|nil, DocumentRequest[]|nil, DocumentRequest[]|nil
 M.get_document = function(lines, path)
   local buf = DB.get_current_buffer()
+  if not path then Diagnostics.clear_diagnostics(buf, "parser") end
 
   local content_lines, line_offset = get_visual_selection() -- first: try to get the visual selection
 
@@ -393,6 +404,8 @@ M.get_document = function(lines, path)
     request.file = path or vim.fn.fnamemodify(vim.fn.bufname(DB.get_current_buffer()), ":p")
 
     for relative_linenr, line in ipairs(block.lines) do
+      local lnum = request.start_line + relative_linenr
+
       if line:match("^# @") then
         parse_metadata(request, line)
       -- collect comments
@@ -401,9 +414,9 @@ M.get_document = function(lines, path)
         table.insert(request.comments, comment)
       -- end of inline scripting
       elseif is_request_line and line:match("^import ") then
-        parse_import_command(variables, request, imported_requests, line)
+        parse_import_command(variables, request, imported_requests, line, lnum)
       elseif is_request_line and line:match("^run ") then
-        parse_run_command(requests, imported_requests, variables, request, line, request.start_line + relative_linenr)
+        parse_run_command(requests, imported_requests, variables, request, line, lnum)
       elseif is_request_line and line:match("^%%}$") then
         is_prerequest_handler_script_inline = false
       -- end of inline scripting
@@ -441,7 +454,7 @@ M.get_document = function(lines, path)
       elseif line:match("^@([%w_]+)") then
         parse_variables(variables, line)
       elseif is_body_section then
-        parse_body(request, line)
+        parse_body(request, line, lnum)
       elseif not is_request_line and line:match("^%s*/%a+") then
         parse_multiline_url(request, line)
       elseif not is_request_line and line:match("^%s*[?&]") and #request.headers == 0 and request.url then
@@ -454,7 +467,7 @@ M.get_document = function(lines, path)
         parse_headers(request, line)
         is_request_line = false
       elseif is_request_line then
-        parse_request_urL_method(request, line, relative_linenr)
+        parse_request_urL_method(request, line, lnum)
         is_request_line = false
       end
     end
