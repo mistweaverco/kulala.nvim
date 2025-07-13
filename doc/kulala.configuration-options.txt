@@ -1159,7 +1159,7 @@ Function called when Kulala LSP attaches to the buffer
         enable = true,
         keymaps = false, -- disabled by default, as Kulala relies on default Neovim LSP keymaps
         formatter = {
-          sort = { -- enable/disable alphabetical sorting in request body
+          sort = { -- enable/disable alphabetical sorting
             metadata = true,
             variables = true,
             commands = true,
