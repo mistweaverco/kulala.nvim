@@ -29,9 +29,10 @@ local function get_diagnostics(bufnr, parser)
         end_lnum = end_lnum,
         col = col,
         end_col = end_col,
-        severity = 1, -- Error severity in LSP
+        severity = vim.diagnostic.ERROR,
         source = "kulala",
         message = "Parsing error" .. (parent_type and " in " .. parent_type or ""),
+        type = "treesitter",
       })
     end
 
@@ -46,7 +47,16 @@ end
 
 local function update_diagnostics(bufnr)
   local parser = ts.get_parser(bufnr, "kulala_http")
-  local diags = get_diagnostics(bufnr, parser)
+
+  local existing_diags = vim.diagnostic.get(bufnr) or {}
+  local parser_diags = vim
+    .iter(existing_diags)
+    :filter(function(diag)
+      return diag.type == "parser"
+    end)
+    :totable()
+
+  local diags = vim.list_extend(get_diagnostics(bufnr, parser), parser_diags)
   vim.diagnostic.set(kulala_diag_ns(), bufnr, diags, {})
 end
 
@@ -60,6 +70,42 @@ function M.setup(bufnr)
       update_diagnostics(bufnr)
     end,
   })
+end
+
+M.add_diagnostics = function(bufnr, message, severity, ls, cs, le, ce)
+  local diags = vim.diagnostic.get(bufnr)
+  ls = math.max(0, ls or 0)
+  le = math.max(0, le or ls or 0)
+
+  if vim.iter(diags):find(function(diag)
+    return diag.message == message and diag.lnum == ls
+  end) then return end
+
+  table.insert(diags, {
+    bufnr = bufnr,
+    lnum = ls,
+    end_lnum = le,
+    col = cs or 0,
+    end_col = ce or cs or 0,
+    severity = severity or vim.diagnostic.ERROR,
+    source = "kulala",
+    message = message,
+    type = "parser",
+  })
+
+  vim.diagnostic.set(kulala_diag_ns(), bufnr, diags, {})
+end
+
+M.clear_diagnostics = function(bufnr, type)
+  local diags = not type and {}
+    or vim
+      .iter(vim.diagnostic.get(bufnr))
+      :filter(function(diag)
+        return diag.type ~= type
+      end)
+      :totable()
+
+  vim.diagnostic.set(kulala_diag_ns(), bufnr, diags, {})
 end
 
 return M

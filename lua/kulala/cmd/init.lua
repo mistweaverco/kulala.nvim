@@ -65,7 +65,7 @@ function queue.run_next(self)
 
     if not (status and cb_status) then
       self:reset()
-      Logger.error(("Errors running a scheduled task: %s %s"):format(errors or "", cb_errors), 1, true)
+      Logger.error(("Errors running a scheduled task: %s %s"):format(errors or "", cb_errors), 1, { report = true })
     end
 
     self.done = self.done + 1
@@ -147,6 +147,7 @@ local function set_request_stats(response)
   response.stats = Json.parse(response.stats) or {}
   response.response_code = tonumber(response.stats.response_code) or response.code
   response.status = response.code == 0 and response.response_code < 400
+  response.assert_status = response.status and response.assert_status
 
   return response
 end
@@ -179,7 +180,7 @@ local function save_response(request_status, parsed_request)
 
   local responses = DB.global_update().responses
   if #responses > 0 and responses[#responses].id == id and responses[#responses].code == -1 then
-    table.remove(responses) -- remove the last response if it's the same request and status was unfinished
+    table.remove(responses) -- remove the last response if it's the same request and status was unfinished (for chunked response)
   end
 
   ---@type Response
@@ -261,7 +262,7 @@ local function process_errors(request, request_status, processing_errors)
   )
 
   Logger.error(message, 2)
-  _ = processing_errors and Logger.error(processing_errors, 2, true)
+  _ = processing_errors and Logger.error(processing_errors, 2, { report = true })
 
   request_status.errors = processing_errors and request_status.errors .. "\n" .. processing_errors
     or request_status.errors

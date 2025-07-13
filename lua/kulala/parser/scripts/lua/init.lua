@@ -98,7 +98,7 @@ local client = {
   log = function(msg)
     msg = vim.inspect(msg)
     script_env.output[script_env.type] = script_env.output[script_env.type] .. msg .. "\n"
-    _ = not Config.options.ui.disable_script_print_output and Logger.info(msg)
+    _ = not Config.options.ui.disable_script_print_output and Logger.info(msg, { title = "Kulala Lua Script Output" })
   end,
   global = {},
   responses = setmetatable({}, { __index = get_response }),

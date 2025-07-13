@@ -181,6 +181,8 @@ local open_fzf = function()
 end
 
 local function open_selector()
+  if not get_http_client_env() then return end
+
   local envs = get_env()
   local opts = { prompt = "Select env" }
 
