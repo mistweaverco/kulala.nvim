@@ -49,13 +49,6 @@ local function setup_treesitter_main()
   local ts_config = require("nvim-treesitter.config")
   local parser_path = Fs.get_plugin_path { "..", "tree-sitter" }
 
-  if
-    vim.tbl_contains(ts_config.get_installed("parsers"), "kulala_http")
-    and Db.settings.parser_ver == get_parser_ver(parser_path)
-  then
-    return vim.treesitter.language.register("kulala_http", { "http", "rest" })
-  end
-
   vim.api.nvim_create_autocmd("User", {
     pattern = "TSUpdate",
     callback = function()
@@ -71,6 +64,13 @@ local function setup_treesitter_main()
       }
     end,
   })
+
+  if
+    vim.tbl_contains(ts_config.get_installed("parsers"), "kulala_http")
+    and Db.settings.parser_ver == get_parser_ver(parser_path)
+  then
+    return vim.treesitter.language.register("kulala_http", { "http", "rest" })
+  end
 
   require("nvim-treesitter").install({ "kulala_http" }):wait(10000)
 
