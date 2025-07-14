@@ -75,14 +75,29 @@ local function make_request(url, body, request_desc, params)
   return result
 end
 
----@return table - get the auth config for the current environment, under Security.Auth
-local function get_auth_config(config_id)
-  local cur_env = Env.get_current_env()
-  local env = Async.co_wrap(co, function()
-    return Env.get_env() and DB.find_unique("http_client_env") or {}
+local function parse_variables(config, env)
+  local parser = require("kulala.parser.string_variables_parser")
+
+  vim.iter(config):each(function(key, value)
+    if type(value) == "string" then
+      config[key] = parser.parse(value, {}, env, false)
+    elseif type(value) == "table" then
+      config[key] = parse_variables(value, env)
+    end
   end)
 
-  local auth_config = vim.tbl_get(env, cur_env, "Security", "Auth", config_id) or {}
+  return config
+end
+
+---@return table - get the auth config for the current environment, under Security.Auth
+local function get_auth_config(config_id)
+  local env = Async.co_wrap(co, function()
+    return Env.get_env() or {}
+  end) or {}
+
+  local auth_config = vim.tbl_get(env, "Security", "Auth", config_id) or {}
+  auth_config = parse_variables(auth_config, env)
+
   auth_config.auth_data = auth_config.auth_data or {}
 
   return auth_config
