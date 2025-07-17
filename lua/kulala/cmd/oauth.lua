@@ -58,6 +58,9 @@ local function make_request(url, body, request_desc, params)
     Async.co_resume(co, system)
   end)
 
+  Logger.debug("Executing request: " .. table.concat({ request_desc, "Url: " .. url, "Payload: " .. body }, "\n"))
+  _ = params and Logger.debug("Params: " .. table.concat(params, "\n"))
+
   if not request then return end
   local status, result = Async.co_yield(co, request_timeout)
 
@@ -68,7 +71,7 @@ local function make_request(url, body, request_desc, params)
   if not result then error = "Error parsing authentication response:\n" .. error end
 
   if result and result.error and result.error ~= "authorization_pending" then
-    error = result.error .. "\n" .. result.error_description
+    error = result.error .. "\n" .. (result.error_description or "")
   end
   if error then return Logger.error("Failed to: " .. request_desc .. ". " .. error, 2), error end
 
