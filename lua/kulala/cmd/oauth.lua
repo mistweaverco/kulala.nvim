@@ -465,6 +465,7 @@ M.acquire_auth = function(config_id)
   local uri = url .. "?" .. body
 
   Logger.info("Acquiring code for config: " .. config_id)
+  Logger.debug("Auth URL: " .. uri)
 
   local browser, status = vim.ui.open(uri)
   if not browser then return Logger.error("Failed to open browser: " .. status) end
