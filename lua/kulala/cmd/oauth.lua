@@ -58,8 +58,10 @@ local function make_request(url, body, request_desc, params)
     Async.co_resume(co, system)
   end)
 
-  Logger.debug("Executing request: " .. table.concat({ request_desc, "Url: " .. url, "Payload: " .. body }, "\n"))
-  _ = params and Logger.debug("Params: " .. table.concat(params, "\n"))
+  local debug_msg = { "Executing request: ", request_desc, "Url: " .. url, "Payload: " .. body }
+  _ = params and params.headers and table.insert(debug_msg, "Headers: " .. params.headers)
+
+  Logger.debug(table.concat(debug_msg, "\n"))
 
   if not request then return end
   local status, result = Async.co_yield(co, request_timeout)
@@ -167,6 +169,28 @@ local function add_pkce(config_id, body, request_type)
   end
 
   return body
+end
+
+local function add_client_credentials(config_id, body, headers)
+  local config = get_auth_config(config_id)
+  local type = config["Client Credentials"] or "basic"
+
+  if type == "none" then return body, headers end
+  -- if type == "jwt" then return M.acquire_jwt_token(config_id) end
+
+  local required_params = { "Client ID", "Client Secret" }
+  if not validate_auth_params(config_id, required_params) then return body, headers end
+
+  if type == "basic" then
+    headers = "Authorization: Basic "
+      .. Crypto.base64_encode(vim.uri_encode(config["Client ID"]) .. ":" .. vim.uri_encode(config["Client Secret"]))
+  end
+
+  if type == "in body" then
+    body = body .. "&client_id=" .. config["Client ID"] .. "&client_secret=" .. config["Client Secret"]
+  end
+
+  return body, headers
 end
 
 ---Add custom request parameters to the reuqest body
@@ -507,6 +531,7 @@ M.acquire_token = function(config_id)
   if not code or not validate_auth_params(config_id, required_params) then return end
 
   local url = config["Token URL"]
+  local headers
   local body = "client_id="
     .. config["Client ID"]
     .. "&code="
@@ -518,11 +543,12 @@ M.acquire_token = function(config_id)
   body = config["Client Secret"] and body .. "&client_secret=" .. config["Client Secret"] or body
 
   body = add_pkce(config_id, body, "token")
+  body, headers = add_client_credentials(config_id, body, headers)
   body = add_custom_params(config_id, body, "In Token Request")
 
   Logger.info("Acquiring new token for config: " .. config_id)
 
-  local out = make_request(url, body, "acquire token")
+  local out = make_request(url, body, "acquire token", { headers = headers })
   if not out then return end
 
   out.acquired_at = os.time()
