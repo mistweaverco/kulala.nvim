@@ -50,11 +50,16 @@ M.error = function(message, lines_no, opts)
 
   local lines = vim.split(message, "\n")
   lines_no = debug > 3 and #lines or lines_no or 1
-  message = table.concat(lines, "\n", 1, lines_no)
 
-  M.log(message, log_levels.ERROR)
+  local short_message = table.concat(lines, "\n", 1, lines_no)
+  M.log(short_message, log_levels.ERROR)
 
   if require("kulala.config").options.generate_bug_report or opts.report then generate_bug_report(message) end
+end
+
+M.debug = function(message, opts)
+  if debug_level() < 4 then return end
+  M.log(message, log_levels.DEBUG, opts)
 end
 
 return M

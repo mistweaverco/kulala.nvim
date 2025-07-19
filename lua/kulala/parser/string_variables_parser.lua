@@ -45,27 +45,28 @@ local parse_counter = 0
 
 function get_var_value(variable_name, variables, env, silent)
   local value
+  local max_retries = 3
 
   if variable_name:find("^%$") then
     value = DYNAMIC_VARS.read(variable_name)
   elseif env[variable_name] then
     value = env[variable_name]
   elseif variables[variable_name] then
-    value = parse_string_variables(variables[variable_name], variables, env)
+    value = variables[variable_name]
   elseif REQUEST_VARIABLES.parse(variable_name) then
     value = REQUEST_VARIABLES.parse(variable_name)
   else
     value = "{{" .. variable_name .. "}}"
 
     local msg = "The variable " .. variable_name .. " was not found in the document or in the environment."
-    _ = not silent and parse_counter > 0 and Logger.info(msg)
+    _ = not silent and parse_counter == max_retries and Logger.info(msg)
   end
 
   if contains_binary_data(value) then return value end
 
   value = tostring(value or "")
 
-  if value:match("{{") and parse_counter < 1 then -- parse again for recursive variables
+  if value:match("{{") and parse_counter < max_retries then -- parse again for recursive variables
     parse_counter = parse_counter + 1
     value = parse_string_variables(value, variables, env, silent)
   else

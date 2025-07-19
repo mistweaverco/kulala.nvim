@@ -90,7 +90,7 @@ M.get_selected_env = function()
 end
 
 M.set_selected_env = function(env)
-  vim.g.kulala_selected_env = env or require("kulala.ui.env_manager").open()
+  vim.g.kulala_selected_env = env or require("kulala.ui.env_manager").open() or vim.g.kulala_selected_env
 end
 
 ---Clears all cached files

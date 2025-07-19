@@ -25,6 +25,7 @@ describe("format", function()
 
   describe("formats buffer", function()
     before_each(function()
+      config.options.lsp.formatter.sort.commands = true
       result, document = formatter.format(buf)
       result = result[1].newText or {}
     end)

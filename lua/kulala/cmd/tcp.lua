@@ -30,12 +30,10 @@ M.server = {
     port = tonumber(port) or 80
 
     local server = vim.uv.new_tcp() or {}
-    local status, err = pcall(server.bind, server, host, port)
-    if not status then return Logger.error("Failed to start TCP server: " .. err) end
+    local status = server:bind(host, port)
+    if not status then Logger.warn("Failed to start TCP server: on " .. host .. ":" .. port) end
 
-    Logger.info("Server listening for code/token on " .. host .. ":" .. port)
-
-    server:listen(128, function(err)
+    status = server:listen(128, function(err)
       if err then return Logger.error("Failed to process request: " .. err) end
 
       local client = vim.uv.new_tcp() or {}
@@ -63,15 +61,23 @@ M.server = {
       end)
     end)
 
+    if not status then return Logger.error("Failed to start TCP server on " .. host .. ":" .. port) end
+
+    local socket = server:getsockname() or {}
+    Logger.info("Server listening for code/token on " .. host .. ":" .. socket.port)
+
     vim.uv.run()
+    self.server = server
 
     return self
   end,
 
-  stop = function(_, tcp)
-    pcall(function()
-      tcp:shutdown()
-      tcp:close()
+  stop = function(self, tcp)
+    tcp = tcp or self.server
+
+    return pcall(function()
+      _ = tcp.shutdown and tcp:shutdown()
+      _ = tcp.close and tcp:close()
     end)
   end,
 }

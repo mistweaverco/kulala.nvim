@@ -44,7 +44,7 @@ M.pkce_challenge = function(verifier, method)
   method = method or "S256"
 
   if method == "Plain" then return verifier end
-  if method ~= "S256" then return Logger.error("Unsupported PKCE method: " .. method) end
+  if method:lower() ~= "s256" then return Logger.error("Unsupported PKCE method: " .. method) end
 
   local err_msg = "Failure to generate PKCE challenge: "
 

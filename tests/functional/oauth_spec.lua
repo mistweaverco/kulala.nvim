@@ -585,6 +585,37 @@ describe("oauth", function()
       end)
     end)
 
+    describe("adds Client Credentials params to requests", function()
+      it("in headers", function()
+        update_env {
+          ["Grant Type"] = "Authorization Code",
+          ["Client Credentials"] = "basic",
+        }
+        redirect_request = "code=auth_code&state=state"
+
+        kulala.run()
+        wait_for_requests(1)
+
+        assert.has_string(get_request().headers, "Authorization: Basic")
+      end)
+
+      it("in body", function()
+        update_env {
+          ["Grant Type"] = "Authorization Code",
+          ["Client Credentials"] = "in body",
+        }
+        redirect_request = "code=auth_code&state=state"
+
+        kulala.run()
+        wait_for_requests(1)
+
+        assert.has_properties(get_request(), {
+          client_id = "client_id client_id",
+          client_secret = "client_secret client_secret",
+        })
+      end)
+    end)
+
     it("adds custom params to requests", function()
       update_env {
         ["Grant Type"] = "Authorization Code",

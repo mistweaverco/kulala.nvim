@@ -104,7 +104,6 @@ end
 
 M.parse = function(path)
   local path_name, path_method, path_type, path_subpath = get_match(path)
-
   if not (path_name and path_method and path_type and path_subpath) then return end
 
   if path_type == "headers" then

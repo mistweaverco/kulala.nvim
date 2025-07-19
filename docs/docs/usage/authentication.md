@@ -243,6 +243,15 @@ Specify the authentication parameters. The required parameters depend on the sel
 
 2. To edit `http-client.env.json` file, press `e` in the Authentication Manager. Press `p` for `http-client.private.env.json` file and press `m` to remove the authentication configuration.
 
+:::info
+
+It is recommended to store public authentication variables in the `http-client.env.json` file and private authentication variables, like `Client Secret`,  in the `http-client.private.env.json` file. 
+Auth configurations from both files get merged during authentications.
+
+Kulala will also use `http-client.private.env.json` file to store authentication data, such as access token, refresh token, and expiration time.
+
+:::
+
 ### Use authentication configuration in HTTP requests
 
 Once an authentication configuration is created, you can use it to get an access token and authenticate your requests.

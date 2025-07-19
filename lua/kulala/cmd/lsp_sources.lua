@@ -308,6 +308,7 @@ M.header_values = {
 ---@type SourceTable
 M.metadata = {
   { "prompt", "prompt ", "Prompt" },
+  { "secret", "secret ", "Secret prompt" },
   { "curl", "curl", "Curl flag" },
   { "curl-global", "curl-global", "Curl global flag" },
   { "grpc", "grpc", "Grpc flag" },
