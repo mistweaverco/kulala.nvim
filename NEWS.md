@@ -1,5 +1,17 @@
 # Kulala News
 
+## Version 5.3.2
+
+### Feature: add `# @secret` metadata to prompt for sensitive data
+### Enhancement: create `http-client.env.json` and `http-client.private.env.json` if not found
+### Enhancement: add `Client Credentials` to all grant types
+### Enhancement: expand variables in `Security.Auth` configs
+### Enhancement: generate bug report on error and with `require("kulala").generate_bug_report()`
+### Enhancement: add `kulala_http` parser to markdown code blocks
+### Enhancement: update syntax highlighting for `kulala_http` parser
+### Enhancement: add sorting options to [Formatter](getting-started/configuration-options.mdx)
+### Enhancement: allow variables in curl and grpc flags
+
 ## Version 5.3.1
 
 ### Enhancement: integrated LSP HTTP formatter

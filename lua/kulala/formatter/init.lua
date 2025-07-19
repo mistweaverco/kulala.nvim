@@ -33,7 +33,7 @@ M.format = function(formatter, contents, opts)
 end
 
 M.json = function(contents, opts)
-  local formatter = Config.get().contenttypes["application/json"]
+  local formatter = vim.deepcopy(Config.get().contenttypes["application/json"])
   if not formatter then return contents end
 
   opts = vim.tbl_deep_extend("keep", opts or {}, { sort = true })
