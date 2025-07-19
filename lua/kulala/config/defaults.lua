@@ -188,7 +188,7 @@ local M = {
 
   -- enable/disable debug mode
   debug = 3,
-  -- enable/disable bug reports on error
+  -- enable/disable bug reports on all errors
   generate_bug_report = false,
 
   -- set to true to enable default keymaps (check docs or {plugins_path}/kulala.nvim/lua/kulala/config/keymaps.lua for details)

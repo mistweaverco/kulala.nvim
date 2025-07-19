@@ -366,7 +366,7 @@ M.format = function(buffer, params)
     return d.type == "treesitter"
   end)
 
-  if diag and vim.fn.confirm("Document contains errors.  Do you still want to format it?", "&Yes\n&No", 2) ~= 1 then
+  if diag and vim.fn.confirm("Document contains errors.  Do you still want to format it?", "&Yes\n&No", 2) == 2 then
     return
   end
 

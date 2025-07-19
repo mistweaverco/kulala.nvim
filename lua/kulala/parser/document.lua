@@ -85,6 +85,8 @@ local default_document_request = {
   nested_requests = {},
 }
 
+local parse_document
+
 local function split_content_by_blocks(lines, line_offset)
   local new_block = { lines = {}, name = nil, start_lnum = math.max(1, line_offset), end_lnum = 1 }
   local delimiter = "###"
@@ -299,6 +301,8 @@ local function parse_multiline_url(request, line)
   if request.url and path then request.url = request.url .. path end
 end
 
+local imports = {}
+
 local function import_requests(path, variables, request, lnum)
   path = FS.get_file_path(path, request.file)
 
@@ -310,8 +314,17 @@ local function import_requests(path, variables, request, lnum)
     return Logger.warn(msg)
   end
 
-  local r_variables, requests = M.get_document(vim.split(file, "\n"), path)
-  Table.merge("keep", variables, r_variables)
+  local r_variables, requests
+  imports[tostring(request)] = true
+
+  if vim.tbl_count(imports) < 10 then
+    r_variables, requests = parse_document(vim.split(file, "\n"), path)
+    Table.merge("keep", variables, r_variables)
+  else
+    Logger.warn("More than 10 nested run/imports detected, skipping, to prevent infinite loop")
+  end
+
+  imports[tostring(request)] = nil
 
   return requests
 end
@@ -376,7 +389,7 @@ end
 ---@param lines string[]|nil
 ---@param path string|nil
 ---@return DocumentVariables|nil, DocumentRequest[]|nil, DocumentRequest[]|nil
-M.get_document = function(lines, path)
+function parse_document(lines, path)
   local buf = DB.get_current_buffer()
   if not path then Diagnostics.clear_diagnostics(buf, "parser") end
 
@@ -497,6 +510,22 @@ M.get_document = function(lines, path)
   end
 
   return variables, requests, imported_requests
+end
+
+---Parses given lines or DB.current_buffer document
+---returns a list of DocumentVariables, DocumentRequests, imported DocumentRequests or nil if no valid requests found
+---@param lines string[]|nil
+---@param path string|nil
+---@return DocumentVariables|nil, DocumentRequest[]|nil, DocumentRequest[]|nil
+M.get_document = function(lines, path)
+  local status, result = xpcall(function()
+    return { parse_document(lines, path) }
+  end, debug.traceback, lines, path)
+
+  if not status then return Logger.error(("Errors parsing the document: %s"):format(result), 1, { report = true }) end
+
+  ---@diagnostic disable-next-line: redundant-return-value
+  return unpack(result)
 end
 
 local function expand_nested_requests(requests, lnum)

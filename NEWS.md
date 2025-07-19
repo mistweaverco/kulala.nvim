@@ -11,6 +11,7 @@
 ### Enhancement: update syntax highlighting for `kulala_http` parser
 ### Enhancement: add sorting options to [Formatter](getting-started/configuration-options.mdx)
 ### Enhancement: allow variables in curl and grpc flags
+### Feature: add LSP diagnostics
 
 ## Version 5.3.1
 
