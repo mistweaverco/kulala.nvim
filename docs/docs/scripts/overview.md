@@ -54,6 +54,12 @@ You can provide a custom `node_path_resolver` function in your configuration, by
 
 Please read [Lua scripting](./lua-scripts) for more information.
 
+:::warning
+
+Mixing inline Lua scripts with JavaScript scripts in the same request is not supported.  Script language is determined by the first script in the pre-request or post-request section.
+
+:::
+
 ### Using node modules
 
 You can use any Node.js module in your scripts.

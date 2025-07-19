@@ -33,6 +33,9 @@ local M = {
   -- possible values: always, skipencoded = keep %xx as is
   urlencode = "always",
 
+  -- Infer content type from the body and add it to the request headers
+  infer_content_type = true,
+
   -- default formatters/pathresolver for different content types
   contenttypes = {
     ["application/json"] = {

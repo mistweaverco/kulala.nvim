@@ -1,6 +1,7 @@
 local DB = require("kulala.db")
 local Diagnostics = require("kulala.cmd.diagnostics")
 local FS = require("kulala.utils.fs")
+local Json = require("kulala.utils.json")
 local Logger = require("kulala.logger")
 local PARSER_UTILS = require("kulala.parser.utils")
 local Table = require("kulala.utils.table")
@@ -251,6 +252,16 @@ local function parse_body(request, line, lnum)
   request.body_display = request.body_display .. line .. line_ending
 end
 
+local function infer_headers_from_body(request)
+  if PARSER_UTILS.get_header(request.headers, "content-type") then return end
+
+  if Json.parse(request.body) then
+    request.headers["Content-Type"] = "application/json"
+  elseif request.body:match(".+=.+") then
+    request.headers["Content-Type"] = "application/x-www-form-urlencoded"
+  end
+end
+
 local function parse_url(request, line)
   local method, http_version
 
@@ -475,6 +486,7 @@ M.get_document = function(lines, path)
     if request.body then
       request.body = vim.trim(request.body)
       request.body_display = vim.trim(request.body_display)
+      infer_headers_from_body(request)
     end
 
     if request.url and #request.url > 0 then

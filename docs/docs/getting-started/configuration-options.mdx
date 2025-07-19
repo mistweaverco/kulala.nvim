@@ -237,6 +237,12 @@ Example:
 }
 ```
 
+### infer_content_type
+
+Infer content type from the body and add it to the request headers
+
+Default: `true`
+
 ### contenttypes
 
 Filetypes, formatters and path resolvers are
@@ -931,7 +937,7 @@ Function called when Kulala LSP attaches to the buffer
       sort = { -- enable/disable alphabetical sorting
         metadata = true,
         variables = true,
-        commands = true,
+        commands = false,
         json = true,
       },
     },
