@@ -175,7 +175,7 @@ local M = {
       sort = { -- enable/disable alphabetical sorting in request body
         metadata = true,
         variables = true,
-        commands = true,
+        commands = false,
         json = true,
       },
     },

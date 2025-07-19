@@ -176,7 +176,6 @@ local function add_client_credentials(config_id, body, headers)
   local type = config["Client Credentials"] or "basic"
 
   if type == "none" then return body, headers end
-  -- if type == "jwt" then return M.acquire_jwt_token(config_id) end
 
   local required_params = { "Client ID", "Client Secret" }
   if not validate_auth_params(config_id, required_params) then return body, headers end
@@ -219,15 +218,17 @@ M.get_device_code = function(config_id)
   local config = get_auth_config(config_id)
   if not validate_auth_params(config_id, { "Client ID", "Device Auth URL" }) then return end
 
+  local headers
   local url = config["Device Auth URL"]
   local body = "client_id=" .. config["Client ID"]
 
   body = config["Scope"] and body .. "&scope=" .. config["Scope"] or body
+  body, headers = add_client_credentials(config_id, body, headers)
   body = add_custom_params(config_id, body, "In Auth Request")
 
   Logger.info("Acquiring device code for config: " .. config_id)
 
-  local out = make_request(url, body, "acquire device code")
+  local out = make_request(url, body, "acquire device code", { headers = headers })
   if not out then return end
 
   out.acquired_at = os.time()
@@ -250,7 +251,7 @@ M.verify_device_code = function(config_id)
   vim.fn.setreg("+", config.auth_data.user_code)
 end
 
-local function poll_token_server(config, url, body)
+local function poll_token_server(config, url, body, headers)
   local auth = config.auth_data
   local interval = auth.interval and tonumber(auth.interval) * 1000 or request_interval
   local tries = 10
@@ -261,7 +262,7 @@ local function poll_token_server(config, url, body)
   for count = 1, tries do
     Async.co_sleep(co, interval)
 
-    out, err = make_request(url, body, "acquire device token")
+    out, err = make_request(url, body, "acquire device token", { headers = headers })
     err = err or ""
 
     if not out and not err:match("authorization_pending") and not err:match("slow_down") then break end
@@ -286,6 +287,7 @@ M.acquire_device_token = function(config_id)
 
   M.verify_device_code(config_id)
 
+  local headers
   local url = config["Token URL"]
   local body = "client_id="
     .. config["Client ID"]
@@ -294,11 +296,12 @@ M.acquire_device_token = function(config_id)
     .. "&grant_type=urn:ietf:params:oauth:grant-type:device_code"
 
   body = config["Client Secret"] and body .. "&client_secret=" .. config["Client Secret"] or body
+  body, headers = add_client_credentials(config_id, body, headers)
   body = add_custom_params(config_id, body, "In Token Request")
 
   Logger.info("Acquiring device token for config: " .. config_id)
 
-  local out = poll_token_server(config, url, body) or {}
+  local out = poll_token_server(config, url, body, headers) or {}
   if not out.access_token then return Logger.error("Timeout acquiring device token for config: " .. config_id) end
 
   out.acquired_at = os.time()
@@ -389,13 +392,16 @@ M.acquire_jwt_token = function(config_id)
 
   if not assertion or not validate_auth_params(config_id, { "Grant Type", "Token URL" }) then return end
 
+  local headers
   local url = config["Token URL"]
   local body = "grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=" .. assertion
+
+  body, headers = add_client_credentials(config_id, body, headers)
   body = add_custom_params(config_id, body, "In Token Request")
 
   Logger.info("Acquiring token for config: " .. config_id)
 
-  local out = make_request(url, body, "acquire token")
+  local out = make_request(url, body, "acquire token", { headers = headers })
   if not out then return end
 
   out.acquired_at = os.time()
@@ -416,17 +422,12 @@ M.acquire_client_credentials = function(config_id)
   local required_params = { "Client ID", "Client Secret", "Token URL" }
   if not validate_auth_params(config_id, required_params) then return end
 
+  local headers
   local url = config["Token URL"]
-  local headers = type == "basic"
-    and "Authorization: Basic "
-      .. Crypto.base64_encode(vim.uri_encode(config["Client ID"]) .. ":" .. vim.uri_encode(config["Client Secret"]))
-
   local body = "grant_type=client_credentials"
-  body = type == "in body"
-      and body .. "&client_id=" .. config["Client ID"] .. "&client_secret=" .. config["Client Secret"]
-    or body
 
   body = config["Scope"] and body .. "&scope=" .. config["Scope"] or body
+  body, headers = add_client_credentials(config_id, body, headers)
   body = add_custom_params(config_id, body, "In Auth Request")
 
   Logger.info("Acquiring token for config: " .. config_id)
@@ -450,6 +451,7 @@ M.acquire_auth = function(config_id)
   local required_params = { "Grant Type", "Client ID", "Redirect URL", "Auth URL" }
   if not validate_auth_params(config_id, required_params) then return end
 
+  local headers
   local url = config["Auth URL"]
   local body = "redirect_uri=" .. config["Redirect URL"] .. "&client_id=" .. config["Client ID"]
 
@@ -460,6 +462,7 @@ M.acquire_auth = function(config_id)
   body = config["Scope"] and body .. "&scope=" .. config["Scope"] or body
 
   body = add_pkce(config_id, body, "auth")
+  body, headers = add_client_credentials(config_id, body, headers)
   body = add_custom_params(config_id, body, "In Auth Request")
 
   local uri = url .. "?" .. body
@@ -483,6 +486,7 @@ M.acquire_password_token = function(config_id)
   local required_params = { "Client ID", "Client Secret", "Token URL", "Username", "Password" }
   if not validate_auth_params(config_id, required_params) then return end
 
+  local headers
   local url = config["Token URL"]
   local body = "client_id="
     .. config["Client ID"]
@@ -495,11 +499,12 @@ M.acquire_password_token = function(config_id)
   body = config["Client Secret"] and body .. "&client_secret=" .. config["Client Secret"] or body
   body = config["Scope"] and body .. "&scope=" .. config["Scope"] or body
 
+  body, headers = add_client_credentials(config_id, body, headers)
   body = add_custom_params(config_id, body, "In Token Request")
 
   Logger.info("Acquiring token for config: " .. config_id)
 
-  local out = make_request(url, body, "acquire token")
+  local out = make_request(url, body, "acquire token", { headers = headers })
   if not out then return end
 
   out.acquired_at = os.time()
@@ -573,15 +578,17 @@ local function refresh_token_co(config_id)
 
   if not validate_auth_params(config_id, { "Client ID", "Token URL" }) then return end
 
+  local headers
   local url = config["Token URL"]
   local body = "client_id=" .. config["Client ID"] .. "&refresh_token=" .. refresh_token .. "&grant_type=refresh_token"
 
   body = config["Client Secret"] and body .. "&client_secret=" .. config["Client Secret"] or body
+  body, headers = add_client_credentials(config_id, body, headers)
   body = add_custom_params(config_id, body, "In Token Request")
 
   Logger.info("Refreshing token for config: " .. config_id)
 
-  local out = make_request(url, body, "refresh token")
+  local out = make_request(url, body, "refresh token", { headers = headers })
   if not out then return end
 
   out.acquired_at = os.time()
