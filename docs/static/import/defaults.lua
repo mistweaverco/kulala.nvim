@@ -33,6 +33,9 @@ local M = {
   -- possible values: always, skipencoded = keep %xx as is
   urlencode = "always",
 
+  -- Infer content type from the body and add it to the request headers
+  infer_content_type = true,
+
   -- default formatters/pathresolver for different content types
   contenttypes = {
     ["application/json"] = {
@@ -41,6 +44,12 @@ local M = {
       pathresolver = function(...)
         return require("kulala.parser.jsonpath").parse(...)
       end,
+    },
+    ["application/graphql"] = {
+      ft = "graphql",
+      formatter = vim.fn.executable("prettier") == 1
+        and { "prettier", "--stdin-filepath", "graphql", "--parser", "graphql" },
+      pathresolver = nil,
     },
     ["application/xml"] = {
       ft = "xml",
@@ -54,15 +63,20 @@ local M = {
     },
   },
 
+  scripts = {
+    -- Resolves "NODE_PATH" environment variable for node scripts. Defaults to the first "node_modules" directory found upwards from "script_file_dir".
+    node_path_resolver = nil, ---@type fun(http_file_dir: string, script_file_dir: string, script_data: ScriptData): string|nil
+  },
+
   ui = {
     -- display mode: possible values: "split", "float"
     display_mode = "split",
     -- split direction: possible values: "vertical", "horizontal"
     split_direction = "vertical",
-    -- window options to override defaults: width/height/split/vertical
-    win_opts = {},
+    -- window options to override win_config: width/height/split/vertical.., buffer/window options
+    win_opts = { bo = {}, wo = {} }, ---@type kulala.ui.win_config
     -- default view: "body" or "headers" or "headers_body" or "verbose" or fun(response: Response)
-    default_view = "body",
+    default_view = "body", ---@type "body"|"headers"|"headers_body"|"verbose"|fun(response: Response)
     -- enable winbar
     winbar = true,
     -- Specify the panes to be displayed by default
@@ -83,6 +97,15 @@ local M = {
       },
       lualine = "🐼",
       textHighlight = "WarningMsg", -- highlight group for request elapsed time
+    },
+
+    -- highlight groups for http syntax highlighting
+    ---@type table<string, string|vim.api.keyset.highlight>
+    syntax_hl = {
+      ["@punctuation.bracket.kulala_http"] = "Number",
+      ["@character.special.kulala_http"] = "Special",
+      ["@operator.kulala_http"] = "Special",
+      ["@variable.kulala_http"] = "String",
     },
 
     -- enable/disable request summary in the output window
@@ -107,6 +130,7 @@ local M = {
     scratchpad_default_contents = {
       "@MY_TOKEN_NAME=my_token_value",
       "",
+      "# @name scratchpad",
       "POST https://httpbin.org/post HTTP/1.1",
       "accept: application/json",
       "content-type: application/json",
@@ -118,15 +142,54 @@ local M = {
 
     disable_news_popup = false,
 
-    -- enable/disable built-in autocompletion
-    autocomplete = true,
-
-    -- enable/disable lua syntax highlighting in HTTP scripts
+    -- enable/disable lua syntax highlighting
     lua_syntax_hl = true,
+
+    -- Settings for pickers used for Environment, Authentication and Requests Managers
+    pickers = {
+      snacks = {
+        layout = function()
+          local has_snacks, snacks_picker = pcall(require, "snacks.picker")
+          return not has_snacks and {}
+            or vim.tbl_deep_extend("force", snacks_picker.config.layout("telescope"), {
+              reverse = true,
+              layout = {
+                { { win = "list" }, { height = 1, win = "input" }, box = "vertical" },
+                { win = "preview", width = 0.6 },
+                box = "horizontal",
+                width = 0.8,
+              },
+            })
+        end,
+      },
+    },
+  },
+
+  lsp = {
+    -- enable/disable built-in LSP server
+    enable = true,
+
+    --enable/disable/customize  LSP keymaps
+    ---@type boolean|table
+    keymaps = false, -- disabled by default, as Kulala relies on default Neovim LSP keymaps
+
+    -- enable/disable/customize HTTP formatter
+    formatter = {
+      sort = { -- enable/disable alphabetical sorting in request body
+        metadata = true,
+        variables = true,
+        commands = false,
+        json = true,
+      },
+    },
+
+    on_attach = nil, -- function called when Kulala LSP attaches to the buffer
   },
 
   -- enable/disable debug mode
   debug = 3,
+  -- enable/disable bug reports on error
+  generate_bug_report = false,
 
   -- set to true to enable default keymaps (check docs or {plugins_path}/kulala.nvim/lua/kulala/config/keymaps.lua for details)
   -- or override default keymaps as shown in the example below.
@@ -155,6 +218,9 @@ local M = {
     },
   ]]
 
+  -- Prefix for global keymaps
+  global_keymaps_prefix = "<leader>R",
+
   -- Kulala UI keymaps, override with custom keymaps as required (check docs or {plugins_path}/kulala.nvim/lua/kulala/config/keymaps.lua for details)
   ---@type boolean|table
   kulala_keymaps = true,
@@ -163,6 +229,8 @@ local M = {
       ["Show headers"] = { "H", function() require("kulala.ui").show_headers() end, },
     }
   ]]
+
+  kulala_keymaps_prefix = "",
 }
 
 return M
