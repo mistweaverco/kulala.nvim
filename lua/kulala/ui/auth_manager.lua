@@ -11,7 +11,32 @@ local Table = require("kulala.utils.table")
 
 local M = {}
 
-local function get_env()
+local template = {
+  ["$schema"] = "https://raw.githubusercontent.com/mistweaverco/kulala.nvim/main/schemas/http-client.env.schema.json",
+  ["$shared"] = {
+    ["$default_headers"] = {},
+  },
+  dev = {
+    Security = { Auth = {} },
+  },
+  prod = {},
+}
+
+local function create_env_file(name)
+  name = name or "http-client.env.json"
+
+  local path = Fs.find_file_in_parent_dirs(name)
+  if path or vim.fn.confirm("Create " .. name .. "?", "&Yes\n&No") == 2 then return path end
+
+  path = Fs.get_current_buffer_dir() .. "/" .. name
+  Fs.write_json(path, template)
+  Logger.info("Created env file: " .. path)
+
+  return path
+end
+
+local function get_env(create)
+  if create then create_env_file() end
   DB.set_current_buffer(vim.fn.bufnr())
 
   local cur_env = Env.get_current_env()
@@ -26,12 +51,6 @@ end
 local function update_auth_config(name, value)
   local file_name = "http-client.env.json"
   local public_env_path = Fs.find_file_in_parent_dirs(file_name)
-
-  if not public_env_path then
-    public_env_path = Fs.get_current_buffer_dir() .. "/" .. file_name
-    Fs.write_json(public_env_path, {})
-    Logger.info("Created public env file: " .. public_env_path)
-  end
 
   local cur_env = Env.get_current_env()
   local public_env = Fs.read_json(public_env_path) or {}
@@ -60,7 +79,7 @@ end
 
 local get_env_file = function(name)
   local file = name or "http-client.env.json"
-  return Fs.find_file_in_parent_dirs(file)
+  return Fs.find_file_in_parent_dirs(file) or create_env_file(name)
 end
 
 local function edit_env_file(config, picker, name)
@@ -101,7 +120,7 @@ local keys_hint = " a:Add e:Edit p:Edit private m:Remove g:Get new f:Refresh r:R
 local function open_auth_telescope()
   local actions = require("telescope.actions")
 
-  local env = get_env()
+  local env = get_env(true)
   local config_names = vim.tbl_keys(env)
 
   local action_state = require("telescope.actions.state")
@@ -160,7 +179,7 @@ local function open_auth_telescope()
 end
 
 local function open_auth_snacks()
-  local env, cur_env = get_env()
+  local env, cur_env = get_env(true)
   local config_names = vim.tbl_keys(env)
 
   local items = vim.iter(config_names):fold({}, function(acc, name)
