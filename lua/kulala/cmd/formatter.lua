@@ -366,7 +366,9 @@ M.format = function(buffer, params)
     return d.type == "treesitter"
   end)
 
-  if diag and vim.fn.input("Document contains errors.  Do you still want to format it? (y/n): ") ~= "y" then return end
+  if diag and vim.fn.confirm("Document contains errors.  Do you still want to format it?", "&Yes\n&No", 2) == 2 then
+    return
+  end
 
   local lang = "kulala_http"
   local tree = ts.get_parser(buf, lang):parse()[1]

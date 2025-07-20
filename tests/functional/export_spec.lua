@@ -324,11 +324,14 @@ describe("export to Postman", function()
       return acc
     end)
 
+    sort(item.request.header, "key")
+
     assert.has_properties(item.request, {
       method = "POST",
       url = { raw = "{{URL}}/post" },
       header = {
         { key = "Accept", value = "{{header_content_type}}", disabled = false },
+        { disabled = false, key = "Content-Type", value = "application/json" },
       },
       body = {
         mode = "raw",

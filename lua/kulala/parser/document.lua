@@ -1,6 +1,7 @@
 local DB = require("kulala.db")
 local Diagnostics = require("kulala.cmd.diagnostics")
 local FS = require("kulala.utils.fs")
+local Json = require("kulala.utils.json")
 local Logger = require("kulala.logger")
 local PARSER_UTILS = require("kulala.parser.utils")
 local Table = require("kulala.utils.table")
@@ -83,6 +84,8 @@ local default_document_request = {
   file = nil,
   nested_requests = {},
 }
+
+local parse_document
 
 local function split_content_by_blocks(lines, line_offset)
   local new_block = { lines = {}, name = nil, start_lnum = math.max(1, line_offset), end_lnum = 1 }
@@ -251,6 +254,16 @@ local function parse_body(request, line, lnum)
   request.body_display = request.body_display .. line .. line_ending
 end
 
+local function infer_headers_from_body(request)
+  if PARSER_UTILS.get_header(request.headers, "content-type") then return end
+
+  if Json.parse(request.body) then
+    request.headers["Content-Type"] = "application/json"
+  elseif request.body:match(".+=.+") then
+    request.headers["Content-Type"] = "application/x-www-form-urlencoded"
+  end
+end
+
 local function parse_url(request, line)
   local method, http_version
 
@@ -288,6 +301,8 @@ local function parse_multiline_url(request, line)
   if request.url and path then request.url = request.url .. path end
 end
 
+local imports = {}
+
 local function import_requests(path, variables, request, lnum)
   path = FS.get_file_path(path, request.file)
 
@@ -299,8 +314,17 @@ local function import_requests(path, variables, request, lnum)
     return Logger.warn(msg)
   end
 
-  local r_variables, requests = M.get_document(vim.split(file, "\n"), path)
-  Table.merge("keep", variables, r_variables)
+  local r_variables, requests
+  imports[tostring(request)] = true
+
+  if vim.tbl_count(imports) < 10 then
+    r_variables, requests = parse_document(vim.split(file, "\n"), path)
+    Table.merge("keep", variables, r_variables)
+  else
+    Logger.warn("More than 10 nested run/imports detected, skipping, to prevent infinite loop")
+  end
+
+  imports[tostring(request)] = nil
 
   return requests
 end
@@ -365,7 +389,7 @@ end
 ---@param lines string[]|nil
 ---@param path string|nil
 ---@return DocumentVariables|nil, DocumentRequest[]|nil, DocumentRequest[]|nil
-M.get_document = function(lines, path)
+function parse_document(lines, path)
   local buf = DB.get_current_buffer()
   if not path then Diagnostics.clear_diagnostics(buf, "parser") end
 
@@ -475,6 +499,7 @@ M.get_document = function(lines, path)
     if request.body then
       request.body = vim.trim(request.body)
       request.body_display = vim.trim(request.body_display)
+      infer_headers_from_body(request)
     end
 
     if request.url and #request.url > 0 then
@@ -485,6 +510,22 @@ M.get_document = function(lines, path)
   end
 
   return variables, requests, imported_requests
+end
+
+---Parses given lines or DB.current_buffer document
+---returns a list of DocumentVariables, DocumentRequests, imported DocumentRequests or nil if no valid requests found
+---@param lines string[]|nil
+---@param path string|nil
+---@return DocumentVariables|nil, DocumentRequest[]|nil, DocumentRequest[]|nil
+M.get_document = function(lines, path)
+  local status, result = xpcall(function()
+    return { parse_document(lines, path) }
+  end, debug.traceback, lines, path)
+
+  if not status then return Logger.error(("Errors parsing the document: %s"):format(result), 1, { report = true }) end
+
+  ---@diagnostic disable-next-line: redundant-return-value
+  return unpack(result)
 end
 
 local function expand_nested_requests(requests, lnum)

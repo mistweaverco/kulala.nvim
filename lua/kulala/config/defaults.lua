@@ -33,6 +33,9 @@ local M = {
   -- possible values: always, skipencoded = keep %xx as is
   urlencode = "always",
 
+  -- Infer content type from the body and add it to the request headers
+  infer_content_type = true,
+
   -- default formatters/pathresolver for different content types
   contenttypes = {
     ["application/json"] = {
@@ -175,7 +178,7 @@ local M = {
       sort = { -- enable/disable alphabetical sorting in request body
         metadata = true,
         variables = true,
-        commands = true,
+        commands = false,
         json = true,
       },
     },
@@ -185,7 +188,7 @@ local M = {
 
   -- enable/disable debug mode
   debug = 3,
-  -- enable/disable bug reports on error
+  -- enable/disable bug reports on all errors
   generate_bug_report = false,
 
   -- set to true to enable default keymaps (check docs or {plugins_path}/kulala.nvim/lua/kulala/config/keymaps.lua for details)
