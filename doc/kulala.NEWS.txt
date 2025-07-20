@@ -4,6 +4,7 @@
 Table of Contents                              *kulala.NEWS-table-of-contents*
 
 1. Kulala News                                       |kulala.NEWS-kulala-news|
+  - Version 5.3.2                      |kulala.NEWS-kulala-news-version-5.3.2|
   - Version 5.3.1                      |kulala.NEWS-kulala-news-version-5.3.1|
   - Version 5.3.0                      |kulala.NEWS-kulala-news-version-5.3.0|
   - Version 5.2.0                      |kulala.NEWS-kulala-news-version-5.2.0|
@@ -12,6 +13,39 @@ Table of Contents                              *kulala.NEWS-table-of-contents*
 
 ==============================================================================
 1. Kulala News                                       *kulala.NEWS-kulala-news*
+
+
+VERSION 5.3.2                          *kulala.NEWS-kulala-news-version-5.3.2*
+
+
+FEATURE: ADD # @SECRET METADATA TO PROMPT FOR SENSITIVE DATA
+
+
+ENHANCEMENT: CREATE HTTP-CLIENT.ENV.JSON AND HTTP-CLIENT.PRIVATE.ENV.JSON IF NOT FOUND
+
+
+ENHANCEMENT: ADD CLIENT CREDENTIALS TO ALL GRANT TYPES
+
+
+ENHANCEMENT: EXPAND VARIABLES IN SECURITY.AUTH CONFIGS
+
+
+ENHANCEMENT: GENERATE BUG REPORT ON ERROR AND WITH REQUIRE("KULALA").GENERATE_BUG_REPORT()
+
+
+ENHANCEMENT: ADD KULALA_HTTP PARSER TO MARKDOWN CODE BLOCKS
+
+
+ENHANCEMENT: UPDATE SYNTAX HIGHLIGHTING FOR KULALA_HTTP PARSER
+
+
+ENHANCEMENT: ADD SORTING OPTIONS TO FORMATTER  |kulala.configuration-options.txt|
+
+
+ENHANCEMENT: ALLOW VARIABLES IN CURL AND GRPC FLAGS
+
+
+FEATURE: ADD LSP DIAGNOSTICS
 
 
 VERSION 5.3.1                          *kulala.NEWS-kulala-news-version-5.3.1*

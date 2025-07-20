@@ -290,6 +290,14 @@ selected "Grant Type". Remove unnecessary parameters from the template.
 
 1. To edit `http-client.env.json` file, press `e` in the Authentication Manager. Press `p` for `http-client.private.env.json` file and press `m` to remove the authentication configuration.
 
+It is recommended to store public authentication variables in the
+`http-client.env.json` file and private authentication variables, like `Client
+Secret`, in the `http-client.private.env.json` file. Auth configurations from
+both files get merged during authentications.
+
+Kulala will also use `http-client.private.env.json` file to store
+authentication data, such as access token, refresh token, and expiration time.
+
 
 USE AUTHENTICATION CONFIGURATION IN HTTP REQUESTS
 
