@@ -65,6 +65,10 @@ LUA SCRIPTS
 
 Please read |kulala.lua-scripts| for more information.
 
+Mixing inline Lua scripts with JavaScript scripts in the same request is not
+supported. Script language is determined by the first script in the pre-request
+or post-request section.
+
 
 USING NODE MODULES
 
