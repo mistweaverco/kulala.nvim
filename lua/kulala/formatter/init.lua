@@ -33,20 +33,22 @@ M.format = function(formatter, contents, opts)
 end
 
 M.json = function(contents, opts)
-  local formatter = vim.deepcopy(Config.get().contenttypes["application/json"])
-  if not formatter then return contents end
+  local formatter = Config.get().contenttypes["application/json"]
+  if not (formatter and type(formatter.formatter) == "table") then return contents end
+
+  formatter = vim.deepcopy(formatter.formatter)
 
   opts = vim.tbl_deep_extend("keep", opts or {}, { sort = true })
-  _ = opts.sort and formatter and table.insert(formatter.formatter, 2, "--sort-keys")
+  _ = opts.sort and table.insert(formatter, 2, "--sort-keys")
 
   contents = type(contents) == "table" and vim.json.encode(contents, opts) or contents
 
-  return M.format(formatter.formatter, contents, opts)
+  return M.format(formatter, contents, opts)
 end
 
 M.graphql = function(contents, opts)
   local formatter = Config.get().contenttypes["application/graphql"]
-  if not formatter then return contents end
+  if not (formatter and type(formatter.formatter) == "table") then return contents end
 
   local _, json = Graphql.get_json(contents)
   if not json then return contents end
@@ -62,13 +64,13 @@ end
 
 M.html = function(contents, opts)
   local formatter = Config.get().contenttypes["application/html"]
-  if not formatter then return contents end
+  if not (formatter and type(formatter.formatter) == "table") then return contents end
   return M.format(formatter.formatter, contents, opts)
 end
 
 M.xml = function(contents, opts)
   local formatter = Config.get().contenttypes["application/xml"]
-  if not formatter then return contents end
+  if not (formatter and type(formatter.formatter) == "table") then return contents end
   return M.format(formatter.formatter, contents, opts)
 end
 

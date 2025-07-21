@@ -94,6 +94,7 @@ require("nvim-lightbulb").setup({
 
 - `# @meta-name meta-value` is used to add arbitrary metadata to a request or file.
 - `# @prompt variable-name prompt-string` is used to prompt the user for input and store it in a variable.
+- `# @secret variable-name prompt-string` same as `@prompt`, but the input is hidden (useful for passwords).
 
 #### Directives
 

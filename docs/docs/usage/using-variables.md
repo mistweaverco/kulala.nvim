@@ -28,6 +28,7 @@ These are variables that you can set when you run the request.
 
 ```http title="examples.http"
 # @prompt pokemon
+# @secret password
 GET https://pokeapi.co/api/v2/pokemon/{{pokemon}} HTTP/1.1
 Accept: application/json
 ```
