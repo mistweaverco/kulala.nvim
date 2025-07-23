@@ -213,7 +213,12 @@ local function save_body_with_files(request)
     local path = line:match("^< ([^%[\r\n]+)[\r\n]*$")
 
     if path then
-      if vim.fn.fnamemodify(path, ":e") == "json" then path = get_file_with_replaced_variables(path, request) end
+      local ext = vim.fn.fnamemodify(path, ":e")
+      if ext == "json" or ext == "graphql" then path = get_file_with_replaced_variables(path, request) end
+      if ext == "graphql" then
+        local query = GRAPHQL_PARSER.get_json(FS.read_file(path)) or "{}"
+        FS.write_file(path, query)
+      end
 
       if not FS.include_file(result, path) then
         Logger.warn("The file '" .. path .. "' could not be included. Skipping ...")
@@ -270,17 +275,14 @@ local function process_graphql(request)
   local is_graphql = request.method == "GRAPHQL" or has_graphql_meta_tag or has_graphql_header
 
   if is_graphql and request.body and #request.body > 0 then
+    local content_type_header_name = PARSER_UTILS.get_header(request.headers, "Content-Type") or "Content-Type"
+
     request.method = "POST"
+    request.headers[content_type_header_name] = "application/json"
     if not has_graphql_header then request.headers["x-request-type"] = "GraphQL" end
 
     local gql_json = GRAPHQL_PARSER.get_json(request.body)
-
-    if gql_json then
-      local content_type_header_name = PARSER_UTILS.get_header(request.headers, "Content-Type") or "Content-Type"
-
-      request.headers[content_type_header_name] = "application/json"
-      request.body_computed = gql_json
-    end
+    if gql_json then request.body_computed = gql_json end
   end
 
   return request
