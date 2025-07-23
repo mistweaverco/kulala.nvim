@@ -1,4 +1,5 @@
 ---@diagnostic disable: undefined-field, redefined-local
+local config = require("kulala.config")
 local fs = require("kulala.utils.fs")
 local h = require("test_helper")
 local parser = require("kulala.parser.request")
@@ -288,22 +289,35 @@ describe("requests", function()
           -- `?`, `&`, `=`, `/`, `#`, `:` special syntax
 
           assert_url(
-            { "https://my.server.com/api/v1/object?filter=A B&C:D&E?F&G#H&I=J/K&L%M#fragment" },
+            { "https://my.server.com/api/v1/object?filter=A BC:D&EF&G#HI=J/K&L%M#fragment" },
             "GET",
-            "https://my.server.com/api/v1/object?filter=A%20B&C%3AD&E%3FF&G%23H&I=J%2FK&L%25M#fragment"
+            "https://my.server.com/api/v1/object?filter=A%20BC%3AD&EF&G%23HI=J/K&L%25M#fragment"
           )
           assert_url(
             {
               [[https://my.server.com/api/v1/object?filter=owner.address.city in ["Berlin", "München", "Nürnberg"]']],
             },
             "GET",
-            [[https://my.server.com/api/v1/object?filter=owner.address.city%20in%20%5B%22Berlin%22%2C%20%22M%C3%BCnchen%22%2C%20%22N%C3%BCrnberg%22%5D%27]]
+            [[https://my.server.com/api/v1/object?filter=owner.address.city%20in%20[%22Berlin%22,%20%22M%C3%BCnchen%22,%20%22N%C3%BCrnberg%22]']]
           )
           assert_url(
             { 'httpbin.org/post?filter={"conditions":{}}' },
             "GET",
             "httpbin.org/post?filter=%7B%22conditions%22%3A%7B%7D%7D"
           )
+          assert_url(
+            { "httpbin.org/post(with space)/?filter=A eq 'XYZ'" },
+            "GET",
+            "httpbin.org/post(with%20space)/?filter=A%20eq%20'XYZ'"
+          )
+
+          config.options.urlencode = "skipencoded"
+          assert_url(
+            { "https://httpbin.org/Company%27WITH%20SPACE%27" },
+            "GET",
+            "https://httpbin.org/Company%27WITH%20SPACE%27"
+          )
+          config.options.urlencode = "always"
         end)
       end)
 

@@ -211,7 +211,7 @@ local function scripts()
 end
 
 local function find_upwards(cur_line, pattern)
-  for i = cur_line - 1, 1, -1 do
+  for i = cur_line - 1, 0, -1 do
     local line = vim.api.nvim_buf_get_lines(state.current_buffer, i, i + 1, false)[1] or ""
     local match = line:match(pattern)
 
@@ -305,11 +305,17 @@ local function graphql()
   local req_name = find_upwards(state.current_line - 1, "### ([^%s]+)")
   req_name = req_name or req_url:gsub("https?://", ""):match("([^/]+)")
 
-  if not cache.graphql[req_name] then
+  if not cache.graphql[req_name] or cache.graphql[req_name] == "no_schema" then
     local schema_path = Fs.get_current_buffer_dir() .. "/" .. req_name .. ".graphql-schema.json"
     local schema = Fs.read_json(schema_path)
 
-    if not schema then return {} end
+    if not schema then
+      -- show warining only once
+      _ = not cache.graphql[req_name]
+        and Logger.warn("Cannot find " .. schema_path .. ". LSP GraphQL features will not be available.")
+      cache.graphql[req_name] = "no_schema"
+      return {}
+    end
 
     cache.graphql[req_name] = { queryType = schema.data.__schema.queryType.name, types = {}, field_types = {} }
     cache.graphql[req_name].types = get_graphql_types(req_name, schema.data.__schema.types)
