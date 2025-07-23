@@ -51,11 +51,18 @@ query Query {
 You can download the schema of a GraphQL server with:
 default keymap `<leader>Rg` or the relevant code action.
 
-You need to have your cursor on a line within the GraphQL request.
-
-This is required for the autocompletion and type checking to work.
+You need to have your cursor within then section with the GraphQL request.
 
 The file will be downloaded to the the
 directory where the current file is located.
 
 The filename will be `"request_name"|"request_host".graphql-schema.json`.
+
+## Autocompletion
+
+For autocompletion and type checking to work, make sure:
+
+1. Request method is `GRAPHQL`
+2. Request is named, i.e., `### My GraphQL Request`
+3. GraphQL schema is downloaded
+
