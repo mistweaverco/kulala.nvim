@@ -87,7 +87,7 @@ local open_kulala_buffer = function(filetype)
   local buf = get_kulala_buffer()
 
   if not buf then
-    buf = vim.api.nvim_create_buf(true, true)
+    buf = vim.api.nvim_create_buf(false, true)
     set_maps_autocommands(buf)
 
     local bo = vim.tbl_extend("keep", config.ui.win_opts.bo or {}, {
