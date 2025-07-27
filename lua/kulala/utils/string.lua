@@ -1,3 +1,5 @@
+local Config = require("kulala.config")
+
 local M = {}
 
 M.trim = function(str)
@@ -19,25 +21,24 @@ M.remove_newline = function(str)
   return str
 end
 
-M.url_encode = function(str)
-  if str then
-    str = string.gsub(str, "\n", "\r\n")
-    str = string.gsub(str, "([^%w._~-])", function(c)
-      return string.format("%%%02X", string.byte(c))
-    end)
-  end
-  return str
+M.url_encode = function(str, skip)
+  local pattern = "([^%w%.%-_~" .. (skip or "") .. "])"
+  if not str then return end
+
+  return string.gsub(str, "\n", "\r\n").gsub(str, pattern, function(c)
+    return string.format("%%%02X", string.byte(c))
+  end)
 end
 
-M.url_encode_skipencoded = function(str)
+M.url_encode_skipencoded = function(str, skip)
   local res = ""
   repeat
     local startpos, endpos = str:find("%%%x%x")
     if startpos and endpos then
-      res = res .. M.url_encode(str:sub(1, startpos - 1)) .. str:sub(startpos, endpos)
+      res = res .. M.url_encode(str:sub(1, startpos - 1), skip) .. str:sub(startpos, endpos)
       str = str:sub(endpos + 1)
     else
-      res = res .. M.url_encode(str)
+      res = res .. M.url_encode(str, skip)
       str = ""
     end
   until str == ""
