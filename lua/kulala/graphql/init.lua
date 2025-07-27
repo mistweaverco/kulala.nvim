@@ -20,15 +20,9 @@ M.download_schema = function()
     req.headers["Content-Type"] = "application/json"
   end
 
-  req.name = req.name
-    :gsub("GRAPHQL ", "")
-    :gsub("GET ", "")
-    :gsub("POST ", "")
-    :gsub("https?://", "")
-    :gsub("[{}]", "")
-    :match("([^/]+)")
+  local filename = req.url:gsub("https?://", ""):gsub("[{}]", ""):match("([^/]+)")
+  filename = Fs.get_current_buffer_dir() .. "/" .. filename .. ".graphql-schema.json"
 
-  local filename = Fs.get_current_buffer_dir() .. "/" .. req.name .. ".graphql-schema.json"
   local cmd = { Config.get().curl_path, "-s", "-o", filename, "-X", "POST" }
 
   for header_name, header_value in pairs(req.headers) do

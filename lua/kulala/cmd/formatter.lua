@@ -268,44 +268,62 @@ format_rules = {
 
   ["raw_body"] = function(node)
     local body = get_text(node)
-    current_section().request.body = body
+
+    local request = current_section().request
+    request.body = #request.body > 0 and (request.body .. "\n\n" .. body) or body
+
     return body
   end,
 
   ["multipart_form_data"] = function(node)
     local body = get_text(node)
-    current_section().request.body = body
+
+    local request = current_section().request
+    request.body = #request.body > 0 and (request.body .. "\n\n" .. body) or body
+
     return body
   end,
 
   ["xml_body"] = function(node)
     local body = get_text(node)
-    local formatted = Formatter.xml(body) or body
 
-    current_section().request.body = formatted:gsub("\n*$", "")
+    local formatted = Formatter.xml(body) or body
+    formatted = formatted:gsub("\n*$", "")
+
+    local request = current_section().request
+    request.body = #request.body > 0 and (request.body .. "\n\n" .. formatted) or formatted
+
     return formatted
   end,
 
   ["json_body"] = function(node)
     local json = get_text(node)
     local formatted = Formatter.json(json, { sort = format_opts.sort.json }) or json
+    formatted = formatted:gsub("\n*$", "")
 
-    current_section().request.body = formatted:gsub("\n*$", "")
+    local request = current_section().request
+    request.body = #request.body > 0 and (request.body .. "\n\n" .. formatted) or formatted
+
     return formatted
   end,
 
   ["graphql_body"] = function(node)
     local body = get_text(node)
     local formatted = Formatter.graphql(body, { sort = format_opts.sort.json }) or body
+    formatted = formatted:gsub("\n*$", "")
 
-    current_section().request.body = formatted:gsub("\n*$", "")
+    local request = current_section().request
+    request.body = #request.body > 0 and (request.body .. "\n\n" .. formatted) or formatted
+
     return formatted
   end,
 
   ["external_body"] = function(node)
     local formatted = get_text(node)
 
-    current_section().request.body = formatted
+    local request = current_section().request
+    request.body = #request.body > 0 and (request.body .. "\n\n" .. formatted) or formatted
+
     return formatted
   end,
 

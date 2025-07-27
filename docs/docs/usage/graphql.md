@@ -63,6 +63,5 @@ The filename will be `"request_name"|"request_host".graphql-schema.json`.
 For autocompletion and type checking to work, make sure:
 
 1. Request method is `GRAPHQL`
-2. Request is named, i.e., `### My GraphQL Request`
 3. GraphQL schema is downloaded
 

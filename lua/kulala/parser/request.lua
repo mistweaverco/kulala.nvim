@@ -200,7 +200,10 @@ end
 ---@return boolean|nil status
 ---@return string|nil result_path path
 local function save_body_with_files(request)
+  local extensions = { "json", "graphql", "gql" }
+
   local status = true
+  local graphql = false
   local result_path = FS.get_binary_temp_file("")
 
   local result = io.open(result_path, "a+b")
@@ -214,14 +217,16 @@ local function save_body_with_files(request)
 
     if path then
       local ext = vim.fn.fnamemodify(path, ":e")
-      if ext == "json" or ext == "graphql" then path = get_file_with_replaced_variables(path, request) end
-      if ext == "graphql" then
-        local query = GRAPHQL_PARSER.get_json(FS.read_file(path)) or "{}"
-        FS.write_file(path, query)
-      end
+
+      if vim.tbl_contains(extensions, ext) then path = get_file_with_replaced_variables(path, request) end
 
       if not FS.include_file(result, path) then
         Logger.warn("The file '" .. path .. "' could not be included. Skipping ...")
+      end
+
+      if ext == "graphql" or ext == "gql" then
+        graphql = true
+        result:write("\n") -- to sepatate query and variables
       end
     else
       line = (i ~= #lines or line:find("\r$")) and (line .. "\n") or line -- add newline only for multipart/form-data and if not last line
@@ -231,6 +236,12 @@ local function save_body_with_files(request)
   end
 
   status = status and result:close()
+
+  if graphql then
+    local query = GRAPHQL_PARSER.get_json(FS.read_file(result_path))
+    FS.write_file(result_path, query or "{}")
+  end
+
   return status, result_path
 end
 

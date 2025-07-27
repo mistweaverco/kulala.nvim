@@ -7,6 +7,7 @@ local Export = require("kulala.cmd.export")
 local Fmt = require("kulala.cmd.fmt")
 local Formatter = require("kulala.cmd.formatter")
 local Fs = require("kulala.utils.fs")
+local Globals = require("kulala.globals")
 local Inspect = require("kulala.parser.inspect")
 local Kulala = require("kulala")
 local Logger = require("kulala.logger")
@@ -14,6 +15,7 @@ local Lsp_sources = require("kulala.cmd.lsp_sources")
 local Oauth = require("kulala.ui.auth_manager")
 local Parser = require("kulala.parser.document")
 local Ui = require("kulala.ui")
+local VarParser = require("kulala.parser.string_variables_parser")
 
 local M = {}
 
@@ -299,41 +301,55 @@ local function get_graphql_types(req_name, types)
 end
 
 local function graphql()
-  local req_url = find_upwards(state.current_line - 1, "GRAPHQL (.+)")
-  if not req_url then return {} end
+  get_document()
 
-  local req_name = find_upwards(state.current_line - 1, "### ([^%s]+)")
-  req_name = req_name or req_url:gsub("https?://", ""):match("([^/]+)")
+  vim.treesitter.get_parser(state.current_buffer):parse()
 
-  if not cache.graphql[req_name] or cache.graphql[req_name] == "no_schema" then
-    local schema_path = Fs.get_current_buffer_dir() .. "/" .. req_name .. ".graphql-schema.json"
+  local node = vim.treesitter.get_node()
+  if node and node:type() == "json_body" then return {} end
+
+  local request = vim.iter(cache.requests or {}):find(function(r)
+    return state.current_line >= r.start_line - 1 and state.current_line <= r.end_line - 1
+  end)
+
+  if not request then return {} end
+
+  local schema_name = request.url
+  if schema_name:find("{{") then
+    schema_name = VarParser.parse(schema_name, cache.document_variables or {}, cache.env_variables or {})
+  end
+
+  schema_name = schema_name:gsub("https?://", ""):match("([^/]+)")
+
+  if not cache.graphql[schema_name] or cache.graphql[schema_name] == "no_schema" then
+    local schema_path = Fs.get_current_buffer_dir() .. "/" .. schema_name .. ".graphql-schema.json"
     local schema = Fs.read_json(schema_path)
 
     if not schema then
       -- show warining only once
-      _ = not cache.graphql[req_name]
+      _ = not cache.graphql[schema_name]
         and Logger.warn("Cannot find " .. schema_path .. ". LSP GraphQL features will not be available.")
-      cache.graphql[req_name] = "no_schema"
+      cache.graphql[schema_name] = "no_schema"
       return {}
     end
 
-    cache.graphql[req_name] = { queryType = schema.data.__schema.queryType.name, types = {}, field_types = {} }
-    cache.graphql[req_name].types = get_graphql_types(req_name, schema.data.__schema.types)
+    cache.graphql[schema_name] = { queryType = schema.data.__schema.queryType.name, types = {}, field_types = {} }
+    cache.graphql[schema_name].types = get_graphql_types(schema_name, schema.data.__schema.types)
   end
 
   local lnum, cnum = state.current_line - 1, vim.fn.col(".") - 1
   local is_args = vim.api.nvim_buf_get_text(state.current_buffer, lnum, 0, lnum, cnum, {})[1]:match("%s*(.+)%s*%(")
 
   local parent = find_upwards(lnum, "%s*([^%s%(]+).*{")
-  parent = parent == "query" and cache.graphql[req_name].queryType
-    or cache.graphql[req_name].field_types[parent]
+  parent = parent == "query" and cache.graphql[schema_name].queryType
+    or cache.graphql[schema_name].field_types[parent]
     or parent
 
-  local parent_type = vim.iter(cache.graphql[req_name].types):find(function(item)
+  local parent_type = vim.iter(cache.graphql[schema_name].types):find(function(item)
     return item.label:lower() == parent:lower()
   end)
 
-  if not parent_type or not parent_type.fields then return cache.graphql[req_name].types end
+  if not parent_type or not parent_type.fields then return cache.graphql[schema_name].types end
 
   if is_args then
     local field = vim.iter(parent_type.fields):find(function(item)
@@ -646,9 +662,19 @@ end
 
 local function initialize(params)
   local ft = params.rootPath:sub(2)
-  if ft ~= "http" and ft ~= "rest" then return { capabilities = { codeActionProvider = true } } end
+  local server_info = {
+    name = "Kulala LSP",
+    version = Globals.VERSION,
+  }
+  if ft ~= "http" and ft ~= "rest" then
+    return {
+      serverInfo = server_info,
+      capabilities = { codeActionProvider = true },
+    }
+  end
 
   return {
+    serverInfo = server_info,
     capabilities = {
       codeActionProvider = true,
       documentSymbolProvider = true,
