@@ -127,7 +127,6 @@ describe("format", function()
     it("formats xml body", function()
       result = document.sections[8].request.body
       assert.is_same(
-        result,
         ([[
           <?xml version="1.0"?>
           <note>
@@ -136,7 +135,8 @@ describe("format", function()
             <heading>Reminder</heading>
             <body>Don't forget me this weekend!</body>
           </note>
-        ]]):deindent(10)
+        ]]):deindent(10),
+        result
       )
     end)
 

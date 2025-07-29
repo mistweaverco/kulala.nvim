@@ -308,6 +308,10 @@ format_rules = {
   end,
 
   ["graphql_body"] = function(node)
+    format_children(node)
+  end,
+
+  ["graphql_data"] = function(node)
     local body = get_text(node)
     local formatted = Formatter.graphql(body, { sort = format_opts.sort.json }) or body
     formatted = formatted:gsub("\n*$", "")
@@ -345,7 +349,6 @@ format_rules = {
 
   ["res_redirect"] = function(node)
     local redirect = get_text(node)
-    redirect = ">> " .. redirect:gsub(">>%s*", "")
 
     local request = current_section().request
     request.body = #request.body > 0 and (request.body .. "\n\n" .. redirect) or redirect

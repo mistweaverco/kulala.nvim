@@ -290,9 +290,15 @@ local function process_graphql(request)
 
     request.method = "POST"
     request.headers[content_type_header_name] = "application/json"
+
     if not has_graphql_header then request.headers["x-request-type"] = "GraphQL" end
 
-    local gql_json = GRAPHQL_PARSER.get_json(request.body)
+    request.body_computed = request.body:gsub("\n<%s([^\n]+)", function(path)
+      local file = FS.read_file(path)
+      return file and ("\n" .. file) or ""
+    end)
+
+    local gql_json = GRAPHQL_PARSER.get_json(request.body_computed)
     if gql_json then request.body_computed = gql_json end
   end
 

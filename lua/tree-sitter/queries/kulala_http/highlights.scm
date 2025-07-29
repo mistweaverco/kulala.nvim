@@ -76,9 +76,8 @@
 (header
   ":" @punctuation.delimiter)
 
-; external JSON body
 (external_body
-  path: (_) @string.special.path)
+  path: (_) @external_body_path)
 
 ; redirect
 (res_redirect

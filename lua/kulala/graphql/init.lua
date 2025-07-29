@@ -20,7 +20,7 @@ M.download_schema = function()
     req.headers["Content-Type"] = "application/json"
   end
 
-  local filename = req.url:gsub("https?://", ""):gsub("[{}]", ""):match("([^/]+)")
+  local filename = req.url:gsub("https?://", ""):match("([^/]+)")
   filename = Fs.get_current_buffer_dir() .. "/" .. filename .. ".graphql-schema.json"
 
   local cmd = { Config.get().curl_path, "-s", "-o", filename, "-X", "POST" }

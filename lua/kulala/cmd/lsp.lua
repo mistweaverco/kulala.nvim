@@ -316,6 +316,7 @@ local function graphql()
 
   local schema_name = request.url
   if schema_name:find("{{") then
+    env_variables()
     schema_name = VarParser.parse(schema_name, cache.document_variables or {}, cache.env_variables or {})
   end
 

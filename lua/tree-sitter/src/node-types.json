@@ -81,16 +81,6 @@
     "type": "external_body",
     "named": true,
     "fields": {
-      "name": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "identifier",
-            "named": true
-          }
-        ]
-      },
       "path": {
         "multiple": false,
         "required": true,
@@ -111,6 +101,10 @@
       "multiple": true,
       "required": true,
       "types": [
+        {
+          "type": "external_body",
+          "named": true
+        },
         {
           "type": "graphql_data",
           "named": true

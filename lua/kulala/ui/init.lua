@@ -155,6 +155,7 @@ local function open_kulala_window(buf)
     signcolumn = "yes:1",
     number = false,
     relativenumber = false,
+    foldmethod = "indent",
   })
 
   vim.iter(wo):each(function(key, value)
