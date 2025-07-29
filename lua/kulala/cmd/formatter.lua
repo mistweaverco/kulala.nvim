@@ -342,6 +342,16 @@ format_rules = {
     table.insert(current_section().request.res_handler_script, script)
     return script
   end,
+
+  ["res_redirect"] = function(node)
+    local redirect = get_text(node)
+    redirect = ">> " .. redirect:gsub(">>%s*", "")
+
+    local request = current_section().request
+    request.body = #request.body > 0 and (request.body .. "\n\n" .. redirect) or redirect
+
+    return redirect
+  end,
 }
 
 local function get_nodes_in_range(line_s, line_e, node)

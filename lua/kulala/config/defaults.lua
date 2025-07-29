@@ -106,6 +106,7 @@ local M = {
       ["@character.special.kulala_http"] = "Special",
       ["@operator.kulala_http"] = "Special",
       ["@variable.kulala_http"] = "String",
+      ["@redirect_path.kulala_http"] = "Number",
     },
 
     -- enable/disable request summary in the output window

@@ -80,6 +80,10 @@
 (external_body
   path: (_) @string.special.path)
 
+; redirect
+(res_redirect
+  path: (_) @redirect_path)
+
 ; Comments
 [
   (comment)
