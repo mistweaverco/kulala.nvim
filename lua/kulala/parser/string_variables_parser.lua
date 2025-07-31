@@ -41,6 +41,24 @@ local function parse_string_variables(str, variables, env, silent)
   return result
 end
 
+---Function to read nested value from env
+---@param env table -- The environment table
+---@param key string -- The key to look for, can be nested (e.g., "key.subkey")
+local function get_nested_value_from_env(env, key)
+  if not env or type(env) ~= "table" then return nil end
+
+  local keys = vim.split(key, "%.")
+  local value = env
+
+  for _, k in ipairs(keys) do
+    if value[k] == nil then return nil end
+
+    value = value[k]
+  end
+
+  return value
+end
+
 local parse_counter = 0
 
 function get_var_value(variable_name, variables, env, silent)
@@ -51,6 +69,8 @@ function get_var_value(variable_name, variables, env, silent)
     value = DYNAMIC_VARS.read(variable_name)
   elseif env[variable_name] then
     value = env[variable_name]
+  elseif get_nested_value_from_env(env, variable_name) then
+    value = get_nested_value_from_env(env, variable_name)
   elseif variables[variable_name] then
     value = variables[variable_name]
   elseif REQUEST_VARIABLES.parse(variable_name) then
