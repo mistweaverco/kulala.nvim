@@ -268,44 +268,73 @@ format_rules = {
 
   ["raw_body"] = function(node)
     local body = get_text(node)
-    current_section().request.body = body
+
+    local request = current_section().request
+    request.body = #request.body > 0 and (request.body .. "\n\n" .. body) or body
+
     return body
   end,
 
   ["multipart_form_data"] = function(node)
     local body = get_text(node)
-    current_section().request.body = body
+
+    local request = current_section().request
+    request.body = #request.body > 0 and (request.body .. "\n\n" .. body) or body
+
     return body
   end,
 
   ["xml_body"] = function(node)
     local body = get_text(node)
-    local formatted = Formatter.xml(body) or body
 
-    current_section().request.body = formatted:gsub("\n*$", "")
+    local formatted = Formatter.xml(body) or body
+    formatted = formatted:gsub("\n*$", "")
+
+    local request = current_section().request
+    request.body = #request.body > 0 and (request.body .. "\n\n" .. formatted) or formatted
+
     return formatted
   end,
 
   ["json_body"] = function(node)
     local json = get_text(node)
-    local formatted = Formatter.json(json, { sort = format_opts.sort.json }) or json
 
-    current_section().request.body = formatted:gsub("\n*$", "")
+    if format_opts.quote_json_variables then
+      json = json:gsub('([^"])({{.*}})([^"])', function(cl, variable, cr)
+        return cl .. '"' .. variable .. '"' .. cr
+      end)
+    end
+
+    local formatted = Formatter.json(json, { sort = format_opts.sort.json }) or json
+    formatted = formatted:gsub("\n*$", "")
+
+    local request = current_section().request
+    request.body = #request.body > 0 and (request.body .. "\n\n" .. formatted) or formatted
+
     return formatted
   end,
 
   ["graphql_body"] = function(node)
+    format_children(node)
+  end,
+
+  ["graphql_data"] = function(node)
     local body = get_text(node)
     local formatted = Formatter.graphql(body, { sort = format_opts.sort.json }) or body
+    formatted = formatted:gsub("\n*$", "")
 
-    current_section().request.body = formatted:gsub("\n*$", "")
+    local request = current_section().request
+    request.body = #request.body > 0 and (request.body .. "\n\n" .. formatted) or formatted
+
     return formatted
   end,
 
   ["external_body"] = function(node)
     local formatted = get_text(node)
 
-    current_section().request.body = formatted
+    local request = current_section().request
+    request.body = #request.body > 0 and (request.body .. "\n\n" .. formatted) or formatted
+
     return formatted
   end,
 
@@ -323,6 +352,15 @@ format_rules = {
 
     table.insert(current_section().request.res_handler_script, script)
     return script
+  end,
+
+  ["res_redirect"] = function(node)
+    local redirect = get_text(node)
+
+    local request = current_section().request
+    request.body = #request.body > 0 and (request.body .. "\n\n" .. redirect) or redirect
+
+    return redirect
   end,
 }
 

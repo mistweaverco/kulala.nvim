@@ -441,7 +441,7 @@ describe("requests", function()
       end, { predicate = true }))
 
       expected = h.load_fixture("fixtures/graphql_schema_body.txt")
-      result = h.load_fixture(vim.uv.cwd() .. "/Countries.graphql-schema.json")
+      result = h.load_fixture(vim.uv.cwd() .. "/countries.trevorblades.com.graphql-schema.json")
 
       assert.has_string(result, expected)
     end)

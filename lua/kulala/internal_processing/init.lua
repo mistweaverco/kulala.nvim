@@ -125,7 +125,10 @@ M.get_config_contenttype = function(headers)
     content_type = vim.trim(content_type)
 
     local config = CONFIG.get().contenttypes[content_type]
+
+    if config and type(config) == "string" then config = CONFIG.get().contenttypes[config] end
     if config then return config end
+
     if content_type == "kulala/verbose" then return { ft = "kulala_verbose_result" } end
   end
 
