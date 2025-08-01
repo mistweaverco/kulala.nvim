@@ -498,6 +498,23 @@ describe("requests", function()
         assert.has_string(h.load_fixture(result.body_temp_file, true), expected)
       end)
 
+      it("replaces nested variables", function()
+        h.create_buf(
+          ([[
+            POST https://httpbin.org/post
+            Token: {{deep.nested.var}}
+          ]]):to_table(true),
+          h.expand_path("requests/simple.http")
+        )
+
+        result = parser.parse() or {}
+        assert.has_properties(result, {
+          headers = {
+            ["Token"] = "deep-nested-variable",
+          },
+        })
+      end)
+
       it("replaces variables in .json files", function()
         h.create_buf(
           ([[
