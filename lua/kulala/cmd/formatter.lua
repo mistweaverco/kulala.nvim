@@ -300,9 +300,14 @@ format_rules = {
     local json = get_text(node)
 
     if format_opts.quote_json_variables then
-      json = json:gsub('([^"])({{.*}})([^"])', function(cl, variable, cr)
-        return cl .. '"' .. variable .. '"' .. cr
+      local lcurly, rcurly = "X7BX7B", "X7DX7D"
+
+      local encoded_braces = json:gsub('%b""', function(quoted_string)
+        return quoted_string:gsub("{{", lcurly):gsub("}}", rcurly)
       end)
+
+      local quoted_variables = encoded_braces:gsub("{{.-}}", '"%1"')
+      json = quoted_variables:gsub(lcurly, "{{"):gsub(rcurly, "}}")
     end
 
     local formatted = Formatter.json(json, { sort = format_opts.sort.json }) or json

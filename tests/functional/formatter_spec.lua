@@ -175,4 +175,61 @@ describe("format", function()
       assert.is_same(result, h.load_fixture("fixtures/formatted.http"))
     end)
   end)
+
+  describe("formats json", function()
+    it("quotes variables in json body", function()
+      h.delete_all_bufs()
+      buf = h.create_buf(
+        ([[
+          http://httpbin.org/post
+
+          {
+            "test": {{TEST}},
+            "example": "example {{EXAMPLE}}",
+            "whatever":     "{{WHATEVER}} whatever",
+            "another": [
+              {
+                "test": 1,
+                "some": "thing {{THING}}",
+                "foo": "{{BAR}}"
+              }
+            ],
+            "foo": {{BAR}},
+            "array": [ {{THING}}, "some {{THING}}"]
+          }
+
+        ]]):to_table(true),
+        "format.http"
+      )
+
+      h.get_buf_lines(buf)
+      result, document = formatter.format(buf)
+      result = result[1].newText or {}
+
+      assert.is_same(
+        ([[
+          GET http://httpbin.org/post HTTP/1.1
+
+          {
+            "another": [
+              {
+                "foo": "{{BAR}}",
+                "some": "thing {{THING}}",
+                "test": 1
+              }
+            ],
+            "array": [
+              "{{THING}}",
+              "some {{THING}}"
+            ],
+            "example": "example {{EXAMPLE}}",
+            "foo": "{{BAR}}",
+            "test": "{{TEST}}",
+            "whatever": "{{WHATEVER}} whatever"
+          }
+        ]]):deindent(10),
+        result
+      )
+    end)
+  end)
 end)
