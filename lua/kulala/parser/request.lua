@@ -192,7 +192,7 @@ local function get_file_with_replaced_variables(path, request)
   contents = StringVariablesParser.parse(contents, request.environment, request.environment)
   contents = contents:gsub("[\n\r]", "")
 
-  return FS.get_temp_file(contents)
+  return FS.get_temp_file(contents), contents
 end
 
 ---Save body to a temporary file, including files specified with "< /path" syntax into request body
@@ -226,7 +226,7 @@ local function save_body_with_files(request)
 
       if ext == "graphql" or ext == "gql" then
         graphql = true
-        result:write("\n") -- to sepatate query and variables
+        result:write("\n") -- to separate query and variables
       end
     else
       line = (i ~= #lines or line:find("\r$")) and (line .. "\n") or line -- add newline only for multipart/form-data and if not last line
@@ -237,7 +237,7 @@ local function save_body_with_files(request)
 
   status = status and result:close()
 
-  if graphql then
+  if graphql then -- to process GraphQL query included from external file
     local query = GRAPHQL_PARSER.get_json(FS.read_file(result_path))
     FS.write_file(result_path, query or "{}")
   end
@@ -294,8 +294,8 @@ local function process_graphql(request)
     if not has_graphql_header then request.headers["x-request-type"] = "GraphQL" end
 
     request.body_computed = request.body:gsub("\n<%s([^\n]+)", function(path)
-      local file = FS.read_file(path)
-      return file and ("\n" .. file) or ""
+      local _, contents = get_file_with_replaced_variables(path, request)
+      return contents and ("\n" .. contents) or ""
     end)
 
     local gql_json = GRAPHQL_PARSER.get_json(request.body_computed)
