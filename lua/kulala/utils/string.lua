@@ -3,29 +3,22 @@ local Config = require("kulala.config")
 local M = {}
 
 M.trim = function(str)
-  str = string.gsub(str, "^%s+", "")
-  str = string.gsub(str, "%s+$", "")
-  return str
+  return str:gsub("^%s+", ""):gsub("%s+$", "")
 end
 
 M.remove_extra_space = function(str)
-  str = string.gsub(str, "%s+", " ")
-  str = string.gsub(str, "^%s+", "")
-  str = string.gsub(str, "%s+$", "")
-  return str
+  return M.trim(str):gsub("%s+", " ")
 end
 
 M.remove_newline = function(str)
-  str = string.gsub(str, "\n", "")
-  str = string.gsub(str, "\r", "")
-  return str
+  return str:gsub("[\n\r]", "")
 end
 
 M.url_encode = function(str, skip)
   local pattern = "([^%w%.%-_~" .. (skip or "") .. "])"
   if not str then return end
 
-  return string.gsub(str, "\n", "\r\n").gsub(str, pattern, function(c)
+  return str:gsub("\n", "\r\n"):gsub(pattern, function(c)
     return string.format("%%%02X", string.byte(c))
   end)
 end
@@ -46,13 +39,13 @@ M.url_encode_skipencoded = function(str, skip)
 end
 
 M.url_decode = function(str)
-  if str then
-    str = string.gsub(str, "%%(%x%x)", function(h)
+  if not str then return str end
+
+  return str
+    :gsub("%%(%x%x)", function(h)
       return string.char(tonumber(h, 16))
     end)
-    str = string.gsub(str, "+", " ")
-  end
-  return str
+    :gsub("+", " ")
 end
 
 M.cut = function(str, delimiter)

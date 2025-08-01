@@ -298,6 +298,13 @@ format_rules = {
 
   ["json_body"] = function(node)
     local json = get_text(node)
+
+    if format_opts.quote_json_variables then
+      json = json:gsub('([^"])({{.*}})([^"])', function(cl, variable, cr)
+        return cl .. '"' .. variable .. '"' .. cr
+      end)
+    end
+
     local formatted = Formatter.json(json, { sort = format_opts.sort.json }) or json
     formatted = formatted:gsub("\n*$", "")
 

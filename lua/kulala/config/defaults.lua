@@ -184,6 +184,7 @@ local M = {
         commands = false,
         json = true,
       },
+      quote_json_variables = true, -- add quotes around {{variable}} in JSON bodies
     },
 
     on_attach = nil, -- function called when Kulala LSP attaches to the buffer
