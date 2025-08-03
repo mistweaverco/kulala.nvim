@@ -11,7 +11,7 @@ const PREC = {
   VAR_COMMENT_PREFIX: 2,
   BODY_PREFIX: 2,
   RAW_BODY: 3,
-  GRAPQL_JSON_PREFIX: 4,
+  GRAPHQL_JSON_PREFIX: 4,
   COMMENT_PREFIX: 5,
   REQ_SEPARATOR: 9,
 };
@@ -281,29 +281,36 @@ module.exports = grammar({
 
     graphql_body: ($) =>
       prec.right(
-        seq($.graphql_data, optional(alias($.graphql_json_body, $.json_body))),
+        seq(
+          $.graphql_data,
+          optional(alias($.graphql_json_body, $.json_body)),
+          optional(alias($.graphql_external_body, $.external_body)),
+        ),
       ),
     graphql_data: ($) =>
       seq(
         token(
           prec(
             PREC.BODY_PREFIX,
-            seq(choice("query", "mutation"), WS, /.*\{/, NL),
+            seq(choice("query", "mutation"), WS, /.*\{\s*/, NL),
           ),
         ),
         $._raw_body,
       ),
     graphql_json_body: ($) =>
-      seq(token(prec(PREC.GRAPQL_JSON_PREFIX, /[{\[]\s+/)), $._raw_body),
+      seq(token(prec(PREC.GRAPHQL_JSON_PREFIX, /[{\[]\s*/)), $._raw_body),
+
+    graphql_external_body: ($) =>
+      seq(
+        token(prec(PREC.GRAPHQL_JSON_PREFIX, "<")),
+        WS,
+        field("path", $.path),
+        NL,
+      ),
 
     _external_body: ($) => seq($.external_body, NL),
     external_body: ($) =>
-      seq(
-        token(prec(PREC.BODY_PREFIX, "<")),
-        optional(seq("@", optional(field("name", $.identifier)))),
-        WS,
-        field("path", $.path),
-      ),
+      seq(token(prec(PREC.BODY_PREFIX, "<")), WS, field("path", $.path)),
 
     multipart_form_data: ($) =>
       prec.right(

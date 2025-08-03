@@ -940,6 +940,7 @@ Function called when Kulala LSP attaches to the buffer
         commands = false,
         json = true,
       },
+      quote_json_variables = true, -- add quotes around {{variable}} in JSON bodies
     },
     on_attach = function(client, bufnr)
       -- custom on_attach function

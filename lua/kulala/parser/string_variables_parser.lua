@@ -41,6 +41,23 @@ local function parse_string_variables(str, variables, env, silent)
   return result
 end
 
+---Get nested variable from env
+---@param env table
+---@param key string -- The key of type "a.b.c"
+local function get_nested_variable(env, key)
+  if type(env) ~= "table" then return end
+
+  local keys = vim.split(key, "%.")
+  local value = env
+
+  for _, k in ipairs(keys) do
+    if not value[k] then return end
+    value = value[k]
+  end
+
+  return value
+end
+
 local parse_counter = 0
 
 function get_var_value(variable_name, variables, env, silent)
@@ -51,6 +68,8 @@ function get_var_value(variable_name, variables, env, silent)
     value = DYNAMIC_VARS.read(variable_name)
   elseif env[variable_name] then
     value = env[variable_name]
+  elseif get_nested_variable(env, variable_name) then
+    value = get_nested_variable(env, variable_name)
   elseif variables[variable_name] then
     value = variables[variable_name]
   elseif REQUEST_VARIABLES.parse(variable_name) then
@@ -58,7 +77,7 @@ function get_var_value(variable_name, variables, env, silent)
   else
     value = "{{" .. variable_name .. "}}"
 
-    local msg = "The variable " .. variable_name .. " was not found in the document or in the environment."
+    local msg = "The variable " .. value .. " was not found in the document or in the environment."
     _ = not silent and parse_counter == max_retries and Logger.info(msg)
   end
 

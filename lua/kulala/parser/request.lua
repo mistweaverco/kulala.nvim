@@ -112,56 +112,48 @@ local function parse_metadata(request)
   end
 end
 
-local function url_encode(str)
-  if CONFIG.get().urlencode == "skipencoded" then
-    return STRING_UTILS.url_encode_skipencoded(str)
-  else
-    return STRING_UTILS.url_encode(str)
-  end
-end
+-- Reserved Characters: ! # $ & ' ( ) * + , / : ; = ? @ [ ]
+local function encode_url(url, method)
+  local urlencode = CONFIG.get().urlencode == "always"
+  if urlencode and vim.uri_decode(url) ~= url then return url end
 
-local function encode_url_params(url)
-  if vim.uri_decode(url) ~= url then return url end
+  local index
+  local scheme, authority, path, query, fragment = "", "", "", "", ""
+  local url_encode = urlencode and STRING_UTILS.url_encode or STRING_UTILS.url_encode_skipencoded
 
-  local anchor = ""
-  local _, index = url:find(".*#")
+  if method == "GRPC" then return url_encode(url, "/:%s") end
 
+  _, index = url:find(".*#")
   if index then
-    anchor = "#" .. url_encode(url:sub(index + 1))
+    fragment = url_encode(url:sub(index), "#/%[%]%(%)!$',*")
     url = url:sub(1, index - 1)
   end
 
-  index = url:find("?")
-  if not index then return url .. anchor end
-
-  local query = url:sub(index + 1)
-  url = url:sub(1, index - 1)
-
-  local query_parts = {}
-  if query then query_parts = vim.split(query, "&") end
-
-  local query_params = ""
-  for _, query_part in ipairs(query_parts) do
-    index = query_part:find("=")
-    if index then
-      query_params = query_params
-        .. "&"
-        .. url_encode(query_part:sub(1, index - 1))
-        .. "="
-        .. url_encode(query_part:sub(index + 1))
-    else
-      query_params = query_params .. "&" .. url_encode(query_part)
-    end
+  _, index = url:find(".*?")
+  if index then
+    query = url_encode(url:sub(index), "%?/=&%[%]%(%)!$',*")
+    url = url:sub(1, index - 1)
   end
 
-  if query_params ~= "" then url = url .. "?" .. query_params:sub(2) end
-  return url .. anchor
+  _, index = url:find(".*://")
+  if index then
+    scheme = url_encode(url:sub(1, index - 3), "+") .. "://"
+    url = url:sub(index + 1)
+  end
+
+  index = url:find("/")
+  if index then
+    authority = url_encode(url:sub(1, index - 1), "@:%[%]")
+    url = url:sub(index)
+  end
+
+  path = url_encode(url, "/:;=%[%]%(%)!$',*")
+
+  return scheme .. authority .. path .. query .. fragment
 end
 
 local function parse_url(url, variables, env, silent)
-  url = StringVariablesParser.parse(url, variables, env, silent)
-  url = encode_url_params(url)
-  return url:gsub('"', "")
+  return StringVariablesParser.parse(url, variables, env, silent)
 end
 
 local function parse_headers(headers, variables, env, silent)
@@ -200,7 +192,7 @@ local function get_file_with_replaced_variables(path, request)
   contents = StringVariablesParser.parse(contents, request.environment, request.environment)
   contents = contents:gsub("[\n\r]", "")
 
-  return FS.get_temp_file(contents)
+  return FS.get_temp_file(contents), contents
 end
 
 ---Save body to a temporary file, including files specified with "< /path" syntax into request body
@@ -208,7 +200,10 @@ end
 ---@return boolean|nil status
 ---@return string|nil result_path path
 local function save_body_with_files(request)
+  local extensions = { "json", "graphql", "gql" }
+
   local status = true
+  local graphql = false
   local result_path = FS.get_binary_temp_file("")
 
   local result = io.open(result_path, "a+b")
@@ -221,10 +216,17 @@ local function save_body_with_files(request)
     local path = line:match("^< ([^%[\r\n]+)[\r\n]*$")
 
     if path then
-      if vim.fn.fnamemodify(path, ":e") == "json" then path = get_file_with_replaced_variables(path, request) end
+      local ext = vim.fn.fnamemodify(path, ":e")
+
+      if vim.tbl_contains(extensions, ext) then path = get_file_with_replaced_variables(path, request) end
 
       if not FS.include_file(result, path) then
         Logger.warn("The file '" .. path .. "' could not be included. Skipping ...")
+      end
+
+      if ext == "graphql" or ext == "gql" then
+        graphql = true
+        result:write("\n") -- to separate query and variables
       end
     else
       line = (i ~= #lines or line:find("\r$")) and (line .. "\n") or line -- add newline only for multipart/form-data and if not last line
@@ -234,6 +236,12 @@ local function save_body_with_files(request)
   end
 
   status = status and result:close()
+
+  if graphql then -- to process GraphQL query included from external file
+    local query = GRAPHQL_PARSER.get_json(FS.read_file(result_path))
+    FS.write_file(result_path, query or "{}")
+  end
+
   return status, result_path
 end
 
@@ -278,17 +286,20 @@ local function process_graphql(request)
   local is_graphql = request.method == "GRAPHQL" or has_graphql_meta_tag or has_graphql_header
 
   if is_graphql and request.body and #request.body > 0 then
+    local content_type_header_name = PARSER_UTILS.get_header(request.headers, "Content-Type") or "Content-Type"
+
     request.method = "POST"
+    request.headers[content_type_header_name] = "application/json"
+
     if not has_graphql_header then request.headers["x-request-type"] = "GraphQL" end
 
-    local gql_json = GRAPHQL_PARSER.get_json(request.body)
+    request.body_computed = request.body:gsub("\n<%s([^\n]+)", function(path)
+      local _, contents = get_file_with_replaced_variables(path, request)
+      return contents and ("\n" .. contents) or ""
+    end)
 
-    if gql_json then
-      local content_type_header_name = PARSER_UTILS.get_header(request.headers, "Content-Type") or "Content-Type"
-
-      request.headers[content_type_header_name] = "application/json"
-      request.body_computed = gql_json
-    end
+    local gql_json = GRAPHQL_PARSER.get_json(request.body_computed)
+    if gql_json then request.body_computed = gql_json end
   end
 
   return request
@@ -605,6 +616,8 @@ M.parse = function(requests, document_variables, document_request)
 
   local env = set_variables(request, document_variables)
   set_headers(request, document_variables, env)
+
+  request.url = encode_url(request.url, request.method)
   process_graphql(request)
 
   local json = vim.json.encode(request)
