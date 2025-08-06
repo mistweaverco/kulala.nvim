@@ -29,6 +29,7 @@ describe("requests", function()
             @REQ_USERNAME = Test_user
             @REQ_PASSWORD = Test_password
             @MY_COOKIE = awesome=me
+            @page = ONE
 
             POST https://httpbingo.org/basic-auth/{{REQ_USERNAME}}/{{REQ_PASSWORD}} HTTP/1.1
             Content-Type: application/json
@@ -41,6 +42,8 @@ describe("requests", function()
               "Timeout": {{DEFAULT_TIMEOUT}},
               "Timestamp": {{$timestamp}}
             }
+
+            >> institutions_{{page}}.json
       ]]):to_table(true),
           "test.http"
         )
@@ -60,6 +63,11 @@ describe("requests", function()
               "Timeout": 5000,
               "Timestamp": $TIMESTAMP
             }]]):to_string(true),
+          redirect_response_body_to_files = {
+            {
+              file = "institutions_ONE.json",
+            },
+          },
         })
       end)
 

@@ -3,9 +3,7 @@ local Diagnostics = require("kulala.cmd.diagnostics")
 local FS = require("kulala.utils.fs")
 local Json = require("kulala.utils.json")
 local Logger = require("kulala.logger")
-local ENV_PARSER = require("kulala.parser.env")
 local PARSER_UTILS = require("kulala.parser.utils")
-local StringVariablesParser = require("kulala.parser.string_variables_parser")
 local Table = require("kulala.utils.table")
 
 local M = {}
@@ -172,9 +170,8 @@ local function get_visual_selection()
   return contents, line_s - 1
 end
 
-local function parse_redirect_response(request, line, variables)
+local function parse_redirect_response(request, line)
   local overwrite, write_to_file = line:match("^>>(!?) (.*)$")
-  write_to_file = StringVariablesParser.parse(write_to_file, variables, ENV_PARSER.get_env())
 
   table.insert(request.redirect_response_body_to_files, {
     file = write_to_file,
@@ -469,7 +466,7 @@ function parse_document(lines, path)
         if not is_request_line then is_body_section = true end
         -- redirect response body to file
       elseif line:match("^>>(!?) (.*)$") then
-        parse_redirect_response(request, line, variables)
+        parse_redirect_response(request, line)
         -- start of inline scripting
       elseif line:match("^> {%%$") then
         is_postrequest_handler_script_inline = true
