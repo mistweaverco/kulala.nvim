@@ -26,17 +26,17 @@ local trigger_chars = { "@", "#", "-", ":", "{", "$", ">", "<", ".", "(", '"' }
 
 local function make_item(label, description, kind, detail, documentation, text, format, score)
   return {
-    label = label,
+    label = label or "",
     labelDetails = {
-      description = description,
+      description = description or "",
     },
-    kind = kind,
-    detail = detail,
+    kind = kind or "",
+    detail = detail or "",
     documentation = {
-      value = documentation,
+      value = documentation or "",
       kind = vim.lsp.protocol.MarkupKind.Markdown,
     },
-    insertText = text,
+    insertText = text or "",
     insertTextFormat = format or lsp_format.PlainText,
     sortText = score or tostring(1.02), -- fix for blink.cmp
   }
