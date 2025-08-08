@@ -116,6 +116,9 @@ local M = {
     -- disable notifications of script output
     disable_script_print_output = false,
 
+    -- do not show responses over maximum size, in bytes
+    max_response_size = 32000,
+
     report = {
       -- possible values: true | false | "on_error"
       show_script_output = true,
