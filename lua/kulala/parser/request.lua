@@ -443,6 +443,31 @@ local function process_cookies(request)
   end
 end
 
+local function process_proxy_settings(request)
+  local proxy_config = CONFIG.get().proxy
+  if not proxy_config then return end
+
+  if proxy_config.server then
+    table.insert(request.cmd, "--proxy")
+    table.insert(request.cmd, proxy_config.server)
+    
+    if proxy_config.username and proxy_config.password then
+      table.insert(request.cmd, "--proxy-user")
+      table.insert(request.cmd, proxy_config.username .. ":" .. proxy_config.password)
+    end
+  end
+
+  if proxy_config.socks_proxy then
+    table.insert(request.cmd, "--socks5")
+    table.insert(request.cmd, proxy_config.socks_proxy)
+  end
+
+  if proxy_config.no_proxy then
+    table.insert(request.cmd, "--noproxy")
+    table.insert(request.cmd, proxy_config.no_proxy)
+  end
+end
+
 local function process_custom_curl_flags(request)
   local env = DB.find_unique("http_client_env") or {}
 
@@ -562,6 +587,7 @@ local function build_curl_command(request)
   process_headers(request)
   process_body(request)
   process_cookies(request)
+  process_proxy_settings(request)
   process_custom_curl_flags(request)
 
   table.insert(request.cmd, "-A")

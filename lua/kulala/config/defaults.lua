@@ -6,6 +6,19 @@ local M = {
   -- additional cURL options
   -- see: https://curl.se/docs/manpage.html
   additional_curl_options = {},
+  -- proxy configuration
+  proxy = {
+    -- HTTP/HTTPS proxy server (e.g., "http://proxy.example.com:8080")
+    server = nil,
+    -- proxy username (optional)
+    username = nil,
+    -- proxy password (optional)
+    password = nil,
+    -- SOCKS proxy server (e.g., "socks5://proxy.example.com:1080")
+    socks_proxy = nil,
+    -- bypass proxy for these hosts (comma-separated list)
+    no_proxy = nil,
+  },
   -- gRPCurl path, get from https://github.com/fullstorydev/grpcurl.git
   grpcurl_path = "grpcurl",
   -- websocat path, get from https://github.com/vi/websocat.git
