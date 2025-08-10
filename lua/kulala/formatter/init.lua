@@ -50,14 +50,8 @@ M.graphql = function(contents, opts)
   local formatter = Config.get().contenttypes["application/graphql"]
   if not (formatter and type(formatter.formatter) == "table") then return contents end
 
-  local _, json = Graphql.get_json(contents)
-  if not json then return contents end
-
-  local formatted = M.format(formatter.formatter, json.query, opts)
-
-  if json.variables and next(json.variables) then
-    formatted = formatted .. "\n" .. M.json(json.variables, { sort = opts.sort })
-  end
+  local formatted = M.format(formatter.formatter, contents, opts)
+  Logger.debug("GraphQL in: " .. contents .. "\nout: " .. formatted)
 
   return formatted
 end

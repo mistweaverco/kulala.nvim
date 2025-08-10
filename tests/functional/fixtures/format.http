@@ -37,7 +37,7 @@ Accept: application/json
 }
 
 > {%
-         client.log("post request executed");
+client.log("post request executed");
 %}
 
 ###   Request  two and   three
