@@ -32,6 +32,12 @@ List of requirements for using kulala.
 
 (Only required for formatted JSON responses)
 
+## prettier
+
+- [prettier](https://prettier.io)
+
+(Only required for formatting GraphQL)
+
 ## xmllint
 
 - [xmllint][xmllint] (tested with libxml v20914)
