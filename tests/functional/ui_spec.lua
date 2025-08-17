@@ -691,7 +691,8 @@ describe("UI", function()
       wait_for_requests(1)
 
       result = vim.api.nvim_get_option_value("winbar", { win = vim.fn.bufwinid(ui_buf) })
-      expected = "%#KulalaTabSel# Body (B) %* %#KulalaTab# Report (R) %* %#KulalaTab# Help (?) %* <- [ ] ->"
+      expected =
+        "%#KulalaTabSel# %1@v:lua.require'kulala.ui.winbar'.select_winbar_tab@Body (B) %*%X %#KulalaTab# %2@v:lua.require'kulala.ui.winbar'.select_winbar_tab@Report (R) %*%X %#KulalaTab# %3@v:lua.require'kulala.ui.winbar'.select_winbar_tab@Help (?) %*%X <- [ ] ->"
       assert.same(expected, result)
     end)
   end)

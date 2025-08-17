@@ -45,6 +45,12 @@ M.winbar_sethl = function()
   vim.api.nvim_set_hl(0, "KulalaTabSel", { link = "TabLineSel" })
 end
 
+M.select_winbar_tab = function(pane)
+  local default_panes = CONFIG.get().default_winbar_panes
+  local func_name = "show_" .. default_panes[pane]
+  require("kulala.ui")[func_name]()
+end
+
 ---@param win_id integer|nil Window id
 ---@param view string Body or headers
 M.toggle_winbar_tab = function(buf, win_id, view)
@@ -56,11 +62,11 @@ M.toggle_winbar_tab = function(buf, win_id, view)
   local winbar = config.default_winbar_panes
   local winbar_title = {}
 
-  for _, key in ipairs(winbar) do
+  for i, key in ipairs(winbar) do
     local info = winbar_info[key]
 
     if info then
-      local desc = info.desc
+      local desc = "%" .. i .. "@v:lua.require'kulala.ui.winbar'.select_winbar_tab@" .. info.desc
       local map = keymaps[info.keymap]
         and keymaps[info.keymap][1]
           :gsub("<[Ll]eader>", vim.g.mapleader or "%1")
@@ -68,7 +74,7 @@ M.toggle_winbar_tab = function(buf, win_id, view)
 
       desc = map and desc .. " (" .. map .. ")" or desc
       desc = view == key and "%#KulalaTabSel# " .. desc or "%#KulalaTab# " .. desc
-      desc = desc .. " %*"
+      desc = desc .. " %*%X"
 
       table.insert(winbar_title, desc)
     end
