@@ -32,6 +32,12 @@ List of requirements for using kulala.
 
 (Only required for formatted JSON responses)
 
+## prettier
+
+- [prettier](https://prettier.io)
+
+(Only required for formatting GraphQL)
+
 ## xmllint
 
 - [xmllint][xmllint] (tested with libxml v20914)
@@ -54,5 +60,20 @@ vim.filetype.add({
 
 This will make Neovim recognize files with the `.http` extension as HTTP files.
 
-[ts]: https://github.com/nvim-treesitter/nvim-treesitter?tab=readme-ov-file#supported-languages
+[ts]: https://github.com/nvim-treesitter/nvim-treesitter
+
+Kulala.nvim comes with a parser compiled with the latest version of treesitter. 
+
+If you have Neovim `0.10.x`, you might get an error `ABI version mismatch for kulala_http.so: supported between 13 and 14, found 15`.
+
+You need to install `tree-sitter CLI` and recompile the parser:
+
+1. Delete the existing parser at `nvim-treesitter/parser/kulala_http`
+2. Install the `tree-sitter CLI` (if not installed already):
+    - from distribution repositories
+    - or from https://github.com/tree-sitter/tree-sitter/tree/master/crates/cli
+3. Recompile the parser:
+    - Open a  `http` file in Neovim (this will load Kulala)
+    - Run `:TSInstallFromGrammar kulala_http`
+   
 [xmllint]: https://packages.ubuntu.com/noble/libxml2-utils

@@ -1965,7 +1965,7 @@
                 },
                 {
                   "type": "PATTERN",
-                  "value": ".*\\{\\s*"
+                  "value": ".*[\\{\\(]\\s*"
                 },
                 {
                   "type": "TOKEN",

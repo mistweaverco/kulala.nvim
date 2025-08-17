@@ -178,6 +178,10 @@ local process_variables = function(request, document_variables, silent)
   request.body_display = StringVariablesParser.parse(request.body_display, unpack(params))
   request.body_computed = StringVariablesParser.parse(request.body_raw, unpack(params))
 
+  vim.iter(request.redirect_response_body_to_files):each(function(redirect)
+    redirect.file = StringVariablesParser.parse(redirect.file, unpack(params))
+  end)
+
   vim.iter(request.metadata):each(function(metadata)
     metadata.value = StringVariablesParser.parse(metadata.value, unpack(params))
   end)

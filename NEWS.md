@@ -1,5 +1,11 @@
 # Kulala News
 
+## Version 5.3.3
+
+### Feature: support variables in redirect response path
+### Feature: do not display big responses + `max_response_size` config option
+### Feature: format json response on redirect
+
 ## Version 5.3.2
 
 ### Enhancement: support url encoding in scheme, authority, path

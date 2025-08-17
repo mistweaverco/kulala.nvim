@@ -1,5 +1,4 @@
 local Config = require("kulala.config")
-local Graphql = require("kulala.parser.graphql")
 local Logger = require("kulala.logger")
 local Shell = require("kulala.cmd.shell_utils")
 
@@ -7,6 +6,7 @@ local M = {}
 
 M.format = function(formatter, contents, opts)
   opts = vim.tbl_deep_extend("keep", opts or {}, {
+    escape = true,
     verbose = true,
   })
 
@@ -29,7 +29,7 @@ M.format = function(formatter, contents, opts)
 
   if not result or result.code ~= 0 or result.stderr ~= "" or result.stdout == "" then return contents end
 
-  return result.stdout
+  return opts.escape and result.stdout or result.stdout:gsub("\\/", "/"):gsub('\\"', '"')
 end
 
 M.json = function(contents, opts)
@@ -50,16 +50,7 @@ M.graphql = function(contents, opts)
   local formatter = Config.get().contenttypes["application/graphql"]
   if not (formatter and type(formatter.formatter) == "table") then return contents end
 
-  local _, json = Graphql.get_json(contents)
-  if not json then return contents end
-
-  local formatted = M.format(formatter.formatter, json.query, opts)
-
-  if json.variables and next(json.variables) then
-    formatted = formatted .. "\n" .. M.json(json.variables, { sort = opts.sort })
-  end
-
-  return formatted
+  return M.format(formatter.formatter, contents, opts)
 end
 
 M.html = function(contents, opts)

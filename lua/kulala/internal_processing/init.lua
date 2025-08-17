@@ -4,6 +4,7 @@ local FS = require("kulala.utils.fs")
 local GLOBALS = require("kulala.globals")
 local Json = require("kulala.utils.json")
 local Logger = require("kulala.logger")
+local Shell = require("kulala.cmd.shell_utils")
 
 local M = {}
 
@@ -146,19 +147,33 @@ M.env_header_key = function(cmd)
   DB.update().env[variable_name] = value
 end
 
+local function format_json_response(fp)
+  local formatter = CONFIG.get().contenttypes["application/json"].formatter
+  if not formatter then return end
+
+  local cmd = { "sh", "-c", table.concat(formatter, " ") .. " '" .. GLOBALS.BODY_FILE .. "' " .. " > '" .. fp .. "'" }
+
+  Shell.run(cmd, {
+    err_msg = "Failed to format json while redirecting to " .. fp,
+    abort_on_stderr = true,
+  }, function()
+    Logger.info("Formatted JSON response in: " .. fp)
+  end)
+end
+
 M.redirect_response_body_to_file = function(data)
   if not FS.file_exists(GLOBALS.BODY_FILE) then return end
+
   for _, redirect in ipairs(data) do
-    local fp = FS.join_paths(FS.get_current_buffer_dir(), redirect.file)
-    if FS.file_exists(fp) then
-      if redirect.overwrite then
-        FS.copy_file(GLOBALS.BODY_FILE, fp)
-      else
-        Logger.warn("File already exists and overwrite is disabled: " .. fp)
-      end
+    local fp = FS.get_file_path(redirect.file)
+
+    if FS.file_exists(fp) and not redirect.overwrite then
+      return Logger.warn("File already exists,  use `>>!` to overwrite: " .. fp)
     else
       FS.copy_file(GLOBALS.BODY_FILE, fp)
     end
+
+    if vim.fn.fnamemodify(fp, ":e") == "json" and CONFIG.get().format_json_on_redirect then format_json_response(fp) end
   end
 end
 

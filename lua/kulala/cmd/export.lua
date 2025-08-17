@@ -482,7 +482,7 @@ M.export_requests = function(action)
   local file = vim.fn.fnamemodify(path, ":t:r") .. ".json"
   file = (export_type == "folder" and path or vim.fn.fnamemodify(path, ":p:h")) .. "/" .. file
 
-  if Fs.write_json(file, collection, true, true) then Logger.info("Exported collection: " .. file) end
+  if Fs.write_json(file, collection, { escape = true }) then Logger.info("Exported collection: " .. file) end
 
   return collection
 end

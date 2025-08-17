@@ -401,6 +401,35 @@ describe("requests", function()
       assert.has_string(result, expected)
     end)
 
+    it("does not show big size responses", function()
+      curl.stub {
+        ["https://httpbin.org/big_response"] = {
+          body = "BIG SIZE RESPONSE",
+        },
+      }
+
+      h.create_buf(
+        ([[
+          POST https://httpbin.org/big_response
+      ]]):to_table(true),
+        "test.http"
+      )
+
+      stub(vim.fn, "getfsize", function()
+        return 65536 -- 64Kb
+      end)
+
+      kulala.run()
+      wait_for_requests(1)
+
+      vim.fn.getfsize:revert()
+
+      expected = "The size of response is > 32Kb.\nPath to response: " .. GLOBALS.BODY_FILE
+      result = h.get_buf_lines(ui_buf):to_string()
+
+      assert.has_string(result, expected)
+    end)
+
     it("downloads GraphQL schema", function()
       curl.stub {
         ["https://countries.trevorblades.com"] = {
