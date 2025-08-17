@@ -292,7 +292,7 @@ module.exports = grammar({
         token(
           prec(
             PREC.BODY_PREFIX,
-            seq(choice("query", "mutation"), WS, /.*\{\s*/, NL),
+            seq(choice("query", "mutation"), WS, /.*[\{\(]\s*/, NL),
           ),
         ),
         $._raw_body,
