@@ -192,10 +192,6 @@
       "required": false,
       "types": [
         {
-          "type": "comment",
-          "named": true
-        },
-        {
           "type": "external_body",
           "named": true
         }

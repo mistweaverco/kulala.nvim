@@ -36,6 +36,6 @@
       "funding": "https://github.com/mistweaverco/kulala.nvim",
       "repository": "https://github.com/mistweaverco/kulala.nvim/lua/tree-sitter"
     },
-    "version": "0.1.4"
+    "version": "0.1.5"
   }
 }

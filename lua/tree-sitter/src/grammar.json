@@ -88,7 +88,7 @@
       "type": "TOKEN",
       "content": {
         "type": "PREC",
-        "value": 5,
+        "value": 1,
         "content": {
           "type": "CHOICE",
           "members": [
@@ -115,7 +115,7 @@
           "type": "TOKEN",
           "content": {
             "type": "PREC",
-            "value": 5,
+            "value": 1,
             "content": {
               "type": "CHOICE",
               "members": [
@@ -171,7 +171,7 @@
     },
     "metadata": {
       "type": "PREC",
-      "value": 6,
+      "value": 2,
       "content": {
         "type": "SEQ",
         "members": [
@@ -179,7 +179,7 @@
             "type": "TOKEN",
             "content": {
               "type": "PREC",
-              "value": 5,
+              "value": 1,
               "content": {
                 "type": "CHOICE",
                 "members": [
@@ -2202,10 +2202,6 @@
               "type": "CHOICE",
               "members": [
                 {
-                  "type": "SYMBOL",
-                  "name": "comment"
-                },
-                {
                   "type": "SEQ",
                   "members": [
                     {
@@ -2406,35 +2402,6 @@
                   ]
                 }
               }
-            },
-            {
-              "type": "SEQ",
-              "members": [
-                {
-                  "type": "TOKEN",
-                  "content": {
-                    "type": "PREC",
-                    "value": 5,
-                    "content": {
-                      "type": "CHOICE",
-                      "members": [
-                        {
-                          "type": "PATTERN",
-                          "value": "#\\s*"
-                        },
-                        {
-                          "type": "PATTERN",
-                          "value": "\\/\\/\\s*"
-                        }
-                      ]
-                    }
-                  }
-                },
-                {
-                  "type": "SYMBOL",
-                  "name": "_not_comment"
-                }
-              ]
             }
           ]
         },
@@ -2500,35 +2467,6 @@
                   }
                 }
               }
-            },
-            {
-              "type": "SEQ",
-              "members": [
-                {
-                  "type": "TOKEN",
-                  "content": {
-                    "type": "PREC",
-                    "value": 5,
-                    "content": {
-                      "type": "CHOICE",
-                      "members": [
-                        {
-                          "type": "PATTERN",
-                          "value": "#\\s*"
-                        },
-                        {
-                          "type": "PATTERN",
-                          "value": "\\/\\/\\s*"
-                        }
-                      ]
-                    }
-                  }
-                },
-                {
-                  "type": "SYMBOL",
-                  "name": "_not_comment"
-                }
-              ]
             }
           ]
         },

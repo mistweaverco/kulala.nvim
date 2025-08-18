@@ -167,10 +167,10 @@ describe("requests", function()
         h.create_buf(
           ([[
             # @name SIMPLE REQUEST
+            # GET https://httpbingo.org/simple
             POST https://httpbingo.org/simple
 
             {
-              # "skip": "true",
               "test": "value"
             }
       ]]):to_table(true),
@@ -178,17 +178,17 @@ describe("requests", function()
         )
 
         result = parser.parse() or {}
-        assert.is_same(result.body:gsub("\n", ""), '{"test": "value"}')
+        assert.is_same("POST", result.method)
       end)
 
       it("skips lines commented out with //", function()
         h.create_buf(
           ([[
             # @name SIMPLE REQUEST
+            // GET request
             POST https://httpbingo.org/simple
 
             {
-              // "skip": "true",
               "test": "value"
             }
       ]]):to_table(true),
@@ -196,7 +196,7 @@ describe("requests", function()
         )
 
         result = parser.parse() or {}
-        assert.is_same(result.body:gsub("\n", ""), '{"test": "value"}')
+        assert.is_same("POST", result.method)
       end)
 
       describe("processes url", function()
