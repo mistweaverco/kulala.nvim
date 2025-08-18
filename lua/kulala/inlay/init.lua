@@ -56,20 +56,22 @@ M.show = function(buf, event, linenr, text)
 
   local icon = config.icons.inlay[event] or ""
   linenr = math.max(linenr + (line_offset[show_icons] or 0), 1)
-  text = text or ""
 
   M.clear_if_marked(buf, linenr)
+
+  local virt_text = { { text or "", config.icons.textHighlight } }
+  local color = event == "error" and "ErrorMsg" or (event == "done" and "String" or "Normal")
 
   if show_icons == "signcolumn" then
     set_signcolumn()
     vim.fn.sign_place(linenr, "kulala", "kulala." .. event, buf, { lnum = linenr })
   else
-    text = icon .. " " .. text
+    table.insert(virt_text, 1, { icon .. " ", color })
   end
 
   vim.api.nvim_buf_set_extmark(buf, NS, linenr - 1, 0, {
     hl_mode = "combine",
-    virt_text = { { text, config.icons.textHighlight } },
+    virt_text = virt_text,
   })
 end
 
