@@ -4,6 +4,7 @@
 Table of Contents                              *kulala.NEWS-table-of-contents*
 
 1. Kulala News                                       |kulala.NEWS-kulala-news|
+  - Version 5.3.3                      |kulala.NEWS-kulala-news-version-5.3.3|
   - Version 5.3.2                      |kulala.NEWS-kulala-news-version-5.3.2|
   - Version 5.3.1                      |kulala.NEWS-kulala-news-version-5.3.1|
   - Version 5.3.0                      |kulala.NEWS-kulala-news-version-5.3.0|
@@ -13,6 +14,18 @@ Table of Contents                              *kulala.NEWS-table-of-contents*
 
 ==============================================================================
 1. Kulala News                                       *kulala.NEWS-kulala-news*
+
+
+VERSION 5.3.3                          *kulala.NEWS-kulala-news-version-5.3.3*
+
+
+FEATURE: SUPPORT VARIABLES IN REDIRECT RESPONSE PATH
+
+
+FEATURE: DO NOT DISPLAY BIG RESPONSES + MAX_RESPONSE_SIZE CONFIG OPTION
+
+
+FEATURE: FORMAT JSON RESPONSE ON REDIRECT
 
 
 VERSION 5.3.2                          *kulala.NEWS-kulala-news-version-5.3.2*

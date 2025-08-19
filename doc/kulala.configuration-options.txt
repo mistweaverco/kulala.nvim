@@ -716,6 +716,13 @@ Generate a bug report on error.
 Default: `false`
 
 
+FORMAT_JSON_ON_REDIRECT
+
+Format json response when redirecting to file
+
+Default: `true`
+
+
 SCRIPTS           *kulala.configuration-options-configuration-options-scripts*
 
 
@@ -805,8 +812,8 @@ Example:
             width = 80,
             height = 20,
             split = "vertical",
-            bo = { foldmethod = "indent" }, -- buffer options
-            wo = { number = true, wrap = true }, -- window options
+            bo = { number = true, wrap = true }, -- buffer options
+            wo = { foldmethod = "indent" }, -- window options
           },
         },
       },
@@ -1059,6 +1066,13 @@ Example:
       },
     }
 <
+
+
+UI.MAX_RESPONSE_SIZE
+
+Do not show responses over maximum size, in bytes
+
+Default: `32000`
 
 
 UI.SHOW_REQUEST_SUMMARY
