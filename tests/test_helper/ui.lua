@@ -20,7 +20,6 @@ string.clean = function(str) --luacheck: ignore
   return tostring(str)
 end
 
----@param self string --
 ---@param indent? integer -- number of spaces to remove
 string.deindent = function(self, indent)
   local tbl = vim.split(tostring(self), "\n")

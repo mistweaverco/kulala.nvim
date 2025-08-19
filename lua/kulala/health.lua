@@ -40,7 +40,8 @@ M.check = function(health)
   Health.start("Formatters:")
 
   for format_type, cfg in pairs(config.contenttypes) do
-    local formatter = cfg.formatter
+    local formatter = type(cfg) == "string" and config.contenttypes[cfg] or cfg
+    formatter = formatter and formatter.formatter
 
     if not formatter then
       Health.warn(("{%s} formatter not found"):format(format_type))

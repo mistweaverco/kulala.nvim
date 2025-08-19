@@ -41,27 +41,16 @@ M.normalize_path = function(path)
 end
 
 ---Join paths -- similar to os.path.join in python
----@vararg string
----@return string
 M.join_paths = function(...)
-  if M.os == "windows" then
-    for _, v in ipairs { ... } do
-      -- if the path contains at least one forward slash,
-      -- then it needs to be converted to backslashes
-      if v:match("/") then
-        local parts = {}
-        for _, p in ipairs { ... } do
-          p = p:gsub("/", "\\")
-          table.insert(parts, p)
-        end
-        return table.concat(parts, M.ps)
-      end
-    end
+  local parts = { ... }
 
-    return table.concat({ ... }, M.ps)
+  if M.os == "windows" then
+    for i, part in ipairs(parts) do
+      parts[i] = part:gsub("/", "\\")
+    end
   end
 
-  return table.concat({ ... }, M.ps)
+  return table.concat(parts, M.ps)
 end
 
 ---Returns true if the path is absolute, false otherwise
@@ -112,7 +101,7 @@ M.find_file_in_parent_dirs = function(filename)
 end
 
 M.copy_file = function(source, destination)
-  return vim.loop.fs_copyfile(source, destination, 0)
+  return vim.uv.fs_copyfile(source, destination, 0)
 end
 
 ---Get the current buffer directory or current working dir if path is not valid
@@ -366,15 +355,15 @@ end
 ---Write JSON to file
 ---@param filename string
 ---@param data table
----@param format boolean|nil -- format the JSON with jq
----@param escape boolean|nil -- escape [/"]
-M.write_json = function(filename, data, format, escape)
+---@param format_opts table|boolean|nil -- {verbose|escape|sort}
+M.write_json = function(filename, data, format_opts)
   data = next(data) and data or { _ = "" }
+  format_opts = format_opts == true and {} or vim.tbl_extend("keep", format_opts or {}, { escape = false })
+
   local content = vim.json.encode(data)
   if not content then return end
 
-  content = format and require("kulala.formatter").json(content) or content
-  content = escape == true and content or content:gsub("\\/", "/"):gsub('\\"', '"')
+  content = format_opts and require("kulala.formatter").json(content, format_opts) or content
 
   return M.write_file(filename, content)
 end

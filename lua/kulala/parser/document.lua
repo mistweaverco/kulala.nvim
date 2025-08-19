@@ -433,7 +433,7 @@ function parse_document(lines, path)
       if line:match("^# @") then
         parse_metadata(request, line)
       -- collect comments
-      elseif line:match("^%s*#") or line:match("^%s*//") then
+      elseif not is_body_section and (line:match("^%s*#") or line:match("^%s*//")) then
         local comment = line:gsub("^%s*[#/]+%s*", "")
         table.insert(request.comments, comment)
       -- end of inline scripting

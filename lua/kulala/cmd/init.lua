@@ -176,6 +176,16 @@ local function inject_payload(errors, request)
   return table.concat(lines, "\n")
 end
 
+local function get_body()
+  local max_size = CONFIG.get().ui.max_response_size
+  if vim.fn.getfsize(GLOBALS.BODY_FILE) > max_size then
+    FS.write_file(GLOBALS.HEADERS_FILE, "Content-Type: text/plain", true)
+    return "The size of response is > " .. max_size / 1000 .. "Kb.\nPath to response: " .. GLOBALS.BODY_FILE
+  else
+    return FS.read_file(GLOBALS.BODY_FILE) or ""
+  end
+end
+
 local function save_response(request_status, parsed_request)
   local buf = DB.get_current_buffer()
   local line = parsed_request.show_icon_line_number or 0
@@ -202,7 +212,7 @@ local function save_response(request_status, parsed_request)
     time = vim.fn.localtime(),
     duration = request_status.duration or 0,
     body = "",
-    body_raw = FS.read_file(GLOBALS.BODY_FILE) or "",
+    body_raw = get_body(),
     json = {},
     filtered = nil,
     headers = FS.read_file(GLOBALS.HEADERS_FILE) or "",

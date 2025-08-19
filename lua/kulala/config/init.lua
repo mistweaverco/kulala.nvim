@@ -17,8 +17,8 @@ M.options = M.defaults
 
 local function set_signcolumn_icons()
   vim.fn.sign_define {
-    { name = "kulala.done", text = M.options.icons.inlay.done },
-    { name = "kulala.error", text = M.options.icons.inlay.error },
+    { name = "kulala.done", text = M.options.icons.inlay.done, texthl = "String" },
+    { name = "kulala.error", text = M.options.icons.inlay.error, texthl = "ErrorMsg" },
     { name = "kulala.loading", text = M.options.icons.inlay.loading },
     { name = "kulala.space", text = " " },
   }
