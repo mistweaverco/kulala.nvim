@@ -180,7 +180,7 @@ local function get_body()
   local max_size = CONFIG.get().ui.max_response_size
   if vim.fn.getfsize(GLOBALS.BODY_FILE) > max_size then
     FS.write_file(GLOBALS.HEADERS_FILE, "Content-Type: text/plain", true)
-    return "The size of response is > " .. max_size / 1000 .. "Kb.\nPath to response: " .. GLOBALS.BODY_FILE
+    return "The size of response is > " .. max_size / 1024 .. "Kb.\nPath to response: " .. GLOBALS.BODY_FILE
   else
     return FS.read_file(GLOBALS.BODY_FILE) or ""
   end
