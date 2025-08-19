@@ -926,7 +926,11 @@ pickers = {
 
 ### lsp.enable
 
-Enable/disable Kulala LSP server.
+Enable/disable Kulala LSP server
+
+### lsp.filetypes
+
+Filetypes to attach Kulala LSP to
 
 ### lsp.keymaps
 
@@ -934,7 +938,7 @@ Enable/disable/customize Kulala LSP keymaps
 
 ### lsp.formatter
 
-Enable/disable/customize HTTP formatter.
+Enable/disable/customize HTTP formatter
 
 ### lsp.on_attach
 
@@ -944,6 +948,7 @@ Function called when Kulala LSP attaches to the buffer
 {
   lsp = {
     enable = true,
+    filetypes = { "http", "rest", "json", "yaml", "bruno" },
     keymaps = false, -- disabled by default, as Kulala relies on default Neovim LSP keymaps
     formatter = {
       sort = { -- enable/disable alphabetical sorting

@@ -178,6 +178,9 @@ local M = {
     -- enable/disable built-in LSP server
     enable = true,
 
+    -- filetypes to attach Kulala LSP to
+    filetypes = { "http", "rest", "json", "yaml", "bruno" },
+
     --enable/disable/customize  LSP keymaps
     ---@type boolean|table
     keymaps = false, -- disabled by default, as Kulala relies on default Neovim LSP keymaps
