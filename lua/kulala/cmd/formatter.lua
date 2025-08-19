@@ -347,7 +347,7 @@ format_rules = {
 
   ["pre_request_script"] = function(node)
     local script = get_text(node, false)
-    script = script:gsub("\n", "\n  "):gsub("\n%s+%%}", "\n%%}")
+    script = script:gsub("\n([^\n%s])", "\n  %1"):gsub("\n%s+%%}", "\n%%}")
 
     table.insert(current_section().request.pre_request_script, script)
     return script
@@ -355,7 +355,7 @@ format_rules = {
 
   ["res_handler_script"] = function(node)
     local script = get_text(node, false)
-    script = script:gsub("\n", "\n  "):gsub("\n%s+%%}", "\n%%}")
+    script = script:gsub("\n([^\n%s])", "\n  %1"):gsub("\n%s+%%}", "\n%%}")
 
     table.insert(current_section().request.res_handler_script, script)
     return script

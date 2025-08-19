@@ -96,8 +96,8 @@ local M = {
     icons = {
       inlay = {
         loading = "⏳",
-        done = "✅",
-        error = "❌",
+        done = "✔",
+        error = "✘",
       },
       lualine = "🐼",
       textHighlight = "WarningMsg", -- highlight group for request elapsed time
@@ -120,7 +120,7 @@ local M = {
     disable_script_print_output = false,
 
     -- do not show responses over maximum size, in bytes
-    max_response_size = 32000,
+    max_response_size = 32768,
 
     report = {
       -- possible values: true | false | "on_error"
