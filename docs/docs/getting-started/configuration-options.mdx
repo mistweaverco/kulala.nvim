@@ -454,6 +454,17 @@ Format json response when redirecting to file
 
 Default: `true`
 
+### before_request
+
+Enable/disable/customize before_request hook.  Default hook is request highlight.
+
+```lua
+{
+  opts = {
+    before_request = true, ---@type boolean|fun(request: DocumentRequest):boolean - return true to continue request execution, false to stop
+  }
+}
+```
 ## Scripts
 
 ### scripts.node_path_resolver

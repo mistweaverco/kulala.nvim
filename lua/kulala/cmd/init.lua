@@ -386,6 +386,20 @@ function process_request(requests, request, variables, callback)
   end)
 end
 
+---@param request DocumentRequest
+---@return boolean
+local function execute_before_request(request)
+  local before_request = CONFIG.get().before_request
+  if not before_request then return true end
+
+  if type(before_request) == "function" then
+    return before_request(request)
+  else
+    UI_utils.highlight_request(request)
+    return true
+  end
+end
+
 ---Parses and executes DocumentRequest/s:
 ---if requests is nil then it parses the current document
 ---if line_nr is nil then runs the first request in the list
@@ -411,9 +425,10 @@ M.run_parser = function(requests, variables, line_nr, callback)
     INLAY.show(DB.current_buffer, "loading", request.show_icon_line_number)
 
     M.queue:add(function()
-      UI_utils.highlight_request(request)
-      initialize()
-      process_request(requests, request, variables, callback)
+      if execute_before_request(request) then
+        initialize()
+        process_request(requests, request, variables, callback)
+      end
     end)
   end
 
