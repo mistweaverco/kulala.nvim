@@ -104,6 +104,9 @@ local M = {
       },
       lualine = "🐼",
       textHighlight = "WarningMsg", -- highlight group for request elapsed time
+      loadingHighlight = "Normal",
+      doneHighlight = "String",
+      errorHighlight = "ErrorMsg",
     },
 
     -- highlight groups for http syntax highlighting

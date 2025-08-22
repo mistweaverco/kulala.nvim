@@ -57,6 +57,7 @@ Kulala includes a built-in in-process LSP server that provides the following fea
 - Hover information for requests: equivalent to Kulala's inspect command - `K`.
 - Code actions: a list of all available Kulala commands - `gra/<leader>ca`.
 - Formatting: format buffer/range - `gq/<leader>cf/<leader>lf`. 
+- Folding
 
 - In `json/yaml/bruno` files, code actions will be available to convert collections into HTTP format.
 
