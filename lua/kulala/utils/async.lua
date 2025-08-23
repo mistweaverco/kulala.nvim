@@ -11,7 +11,11 @@ M.co_resume = function(co, ...)
   if not co or coroutine.status(co) ~= "suspended" then return false end
 
   local result = { coroutine.resume(co, ...) }
-  if not result[1] then return Logger.error("Error in coroutine: " .. result[2], 1, { report = true }) end
+  if not result[1] then
+    local trace = debug.traceback(co, result[2])
+    return Logger.error("Error in coroutine: " .. trace, 1, { report = true })
+  end
+
   return unpack(result)
 end
 
