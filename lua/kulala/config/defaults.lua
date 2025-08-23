@@ -67,8 +67,11 @@ local M = {
   -- format json response when redirecting to file
   format_json_on_redirect = true,
 
+  -- enable/disable/customize before_request hook.  Default hook is request highlight.
+  before_request = true, ---@type boolean|fun(request: DocumentRequest):boolean - return true to continue request execution, false to stop
+
   scripts = {
-    -- Resolves "NODE_PATH" environment variable for node scripts. Defaults to the first "node_modules" directory found upwards from "script_file_dir".
+    -- resolves "NODE_PATH" environment variable for node scripts. Defaults to the first "node_modules" directory found upwards from "script_file_dir".
     node_path_resolver = nil, ---@type fun(http_file_dir: string, script_file_dir: string, script_data: ScriptData): string|nil
   },
 
@@ -101,6 +104,9 @@ local M = {
       },
       lualine = "🐼",
       textHighlight = "WarningMsg", -- highlight group for request elapsed time
+      loadingHighlight = "Normal",
+      doneHighlight = "String",
+      errorHighlight = "ErrorMsg",
     },
 
     -- highlight groups for http syntax highlighting
@@ -177,6 +183,9 @@ local M = {
   lsp = {
     -- enable/disable built-in LSP server
     enable = true,
+
+    -- filetypes to attach Kulala LSP to
+    filetypes = { "http", "rest", "json", "yaml", "bruno" },
 
     --enable/disable/customize  LSP keymaps
     ---@type boolean|table

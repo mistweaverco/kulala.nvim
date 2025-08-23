@@ -37,8 +37,6 @@ local function set_signcolumn()
   local buf = DB.get_current_buffer()
   local win = vim.fn.win_findbuf(buf)[1]
   if win == -1 then return end
-
-  vim.api.nvim_set_option_value("signcolumn", "number", { win = win })
 end
 
 local line_offset = {
@@ -60,7 +58,8 @@ M.show = function(buf, event, linenr, text)
   M.clear_if_marked(buf, linenr)
 
   local virt_text = { { text or "", config.icons.textHighlight } }
-  local color = event == "error" and "ErrorMsg" or (event == "done" and "String" or "Normal")
+  local color = event == "error" and config.icons.errorHighlight
+    or (event == "done" and config.icons.doneHighlight or config.icons.loadingHighlight)
 
   if show_icons == "signcolumn" then
     set_signcolumn()

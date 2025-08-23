@@ -27,11 +27,17 @@ M.stdin_cmd = function(cmdstring, response)
   -- Append the command string to the command table
   table.insert(cmd, cmdstring)
 
-  local result =
-    Shell.run(cmd, { sync = true, stdin = response.body, err_msg = "Failed to run stdin_cmd", abort_on_stderr = true })
+  local result = Shell.run(cmd, {
+    sync = true,
+    stdin = (response and response.body or nil),
+    err_msg = "Failed to run stdin_cmd",
+    abort_on_stderr = true,
+  })
 
   return result and result.stdout:gsub("[\r\n]$", "")
 end
+
+M.stdin_cmd_pre = M.stdin_cmd
 
 M.env_stdin_cmd = function(cmd, response)
   -- Extract environment variable name (first token)
@@ -45,6 +51,8 @@ M.env_stdin_cmd = function(cmd, response)
   -- save the result to the environment variable
   DB.update().env[env_name] = M.stdin_cmd(cmd_string, response)
 end
+
+M.env_stdin_cmd_pre = M.env_stdin_cmd
 
 M.jq = function(filter, response)
   if vim.tbl_keys(response.json) == 0 then return end

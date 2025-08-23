@@ -60,6 +60,22 @@ Mixing inline Lua scripts with JavaScript scripts in the same request is not sup
 
 :::
 
+### LSP support for auto completion
+
+For external scripts, you can use the `kulala` LSP to get auto completion for the `client`, `request`, `response`, `test` and `assert` objects.
+
+To do this, add `javascript`/`lua` to `lsp.filetypes` in your [Configuration options](../getting-started/configuration-options.mdx):
+
+```lua
+{
+  opts = {
+    lsp = {
+      filetypes = { "http", "rest", "json", "yaml", "bruno", "javascript" }
+    },
+  },
+}
+```
+
 ### Using node modules
 
 You can use any Node.js module in your scripts.

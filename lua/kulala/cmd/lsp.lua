@@ -414,6 +414,8 @@ local function source_type(params)
     { ">", "snippets" },
   }
 
+  if state.current_ft == "javascript" then return { "scripts" } end
+
   for _, match in ipairs(matches) do
     if line:match(match[1]) then return match[2] end
   end
@@ -663,19 +665,13 @@ end
 
 local function initialize(params)
   local ft = params.rootPath:sub(2)
-  local server_info = {
-    name = "Kulala LSP",
-    version = Globals.VERSION,
-  }
-  if ft ~= "http" and ft ~= "rest" then
-    return {
-      serverInfo = server_info,
-      capabilities = { codeActionProvider = true },
-    }
-  end
+  local capabilities
 
-  return {
-    serverInfo = server_info,
+  if ft == "javascript" then
+    capabilities = { completionProvider = { triggerCharacters = trigger_chars } }
+  elseif ft ~= "http" and ft ~= "rest" then
+    capabilities = { codeActionProvider = true }
+  else
     capabilities = {
       codeActionProvider = true,
       documentSymbolProvider = true,
@@ -687,7 +683,12 @@ local function initialize(params)
         dynamicRegistration = false,
         lineFoldingOnly = true,
       },
-    },
+    }
+  end
+
+  return {
+    server_info = { name = "Kulala LSP", version = Globals.VERSION },
+    capabilities = capabilities,
   }
 end
 

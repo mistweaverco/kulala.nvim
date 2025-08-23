@@ -47,7 +47,7 @@ local function set_response_summary(buf)
         "URL: "
           .. response.method
           .. " "
-          .. response.url
+          .. response.url:gsub("\n", "")
           .. "  Status: "
           .. response.response_code
           .. "  Assert: "

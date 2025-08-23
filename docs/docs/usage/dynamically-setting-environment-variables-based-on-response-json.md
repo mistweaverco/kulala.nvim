@@ -38,9 +38,11 @@ Authorization: Bearer {{REQUEST_ONE.response.body.$.json.token}}
 
 ## With external command
 
-If the response is a *complex* JSON object,
-you can use the `@env-stdin-cmd` directive to
+If the response is a *complex* JSON object, you can use the `@env-stdin-cmd` directive to
 set environment variables using an external command (e.g., `jq`).
+
+Response is passed to the command via standard input (stdin) and the result is assigned to a variable,
+which can be used in subsequent requests.
 
 JSON Web Tokens (JWT) are a common example where the response JSON is complex.
 

@@ -627,6 +627,8 @@ end
 ---Grant Type - all
 ---Entry point to get the token for the given config_id
 M.get_token = function(type, config_id)
+  if not config_id then return Logger.error("Auth config key not found.") end
+
   local config = get_auth_config(config_id)
 
   local token_type = (type == "idToken" or config["Use ID Token"]) and "id_token" or "access_token"
