@@ -102,6 +102,7 @@ require("nvim-lightbulb").setup({
 - `# @accept chunked` allows you to accept Transfer-Encoding: chunked responses and streamed responses.
 - `# @curl-global-...` and `# @curl-...` allows you to set global and per-request flags for curl requests.
 - `# @grpc-global-...` and `# @grpc-...` allows you to set global and per-request flags for gRPC requests.
+- `# @stdin-cmd-pre` allows you to execute an external command before the request is sent.
 - `# @stdin-cmd` allows you to execute an external command
 - `# @jq` allows you to filter the response body using jq.
 
@@ -110,6 +111,7 @@ require("nvim-lightbulb").setup({
 - `@variable-name=variable-value` is used to define variables that can be used in request URL, headers and body.
 - `{{variable}}` allows you to use variables defined in `metadata`, `system environment` variables, `http-client.env.json` file or `.env` file.
 - `{{$dynamic-variable}}` allows you to use predefined dynamic, aka `magic` variables.
+- `# @env-stdin-cmd-pre` allows you to set environment variables using an external command, before the request is sent.
 - `# @env-stdin-cmd` allows you to set environment variables using an external command.
 - `# @env-json-key` allows you to set environment variables using a JSON path on the response body.
 - `# @env-header-key` allows you to set environment variables from the response headers.

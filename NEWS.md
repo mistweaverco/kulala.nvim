@@ -2,6 +2,7 @@
 
 ## Version 5.3.3
 
+### Feature: add `# @env-stdin-cmd-pre` and `# @stdin-cmd-pre` to run shell commands before requests
 ### Feature: support Kulala LSP auto completion in external scripts
 ### Feature: support variables in redirect response path
 ### Feature: do not display big responses + `max_response_size` config option

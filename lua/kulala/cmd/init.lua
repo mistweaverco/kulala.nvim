@@ -303,10 +303,25 @@ local function received_unbffured(request, response)
   return unbuffered and response:find("Connected") and FS.file_exists(GLOBALS.BODY_FILE)
 end
 
-local function parse_request(requests, request, variables)
+local function process_pre_request_commands(request)
   if not process_prompt_vars(request) then
     return Logger.warn("Prompt failed. Skipping this and all following requests.")
   end
+
+  local ext_meta_processors = {
+    ["stdin-cmd-pre"] = "stdin_cmd",
+    ["env-stdin-cmd-pre"] = "env_stdin_cmd",
+  }
+
+  local processor
+  for _, metadata in ipairs(request.metadata) do
+    processor = ext_meta_processors[metadata.name]
+    _ = processor and EXT_PROCESSING[processor](metadata.value, response)
+  end
+end
+
+local function parse_request(requests, request, variables)
+  process_pre_request_commands(request)
 
   local parsed_request, status = REQUEST_PARSER.parse(requests, variables, request)
   if not parsed_request then
