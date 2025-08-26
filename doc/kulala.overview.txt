@@ -70,6 +70,25 @@ supported. Script language is determined by the first script in the pre-request
 or post-request section.
 
 
+LSP SUPPORT FOR AUTO COMPLETION
+
+For external scripts, you can use the `kulala` LSP to get auto completion for
+the `client`, `request`, `response`, `test` and `assert` objects.
+
+To do this, add `javascript`/`lua` to `lsp.filetypes` in your
+|kulala.configuration-options.txt|:
+
+>lua
+    {
+      opts = {
+        lsp = {
+          filetypes = { "http", "rest", "json", "yaml", "bruno", "javascript" }
+        },
+      },
+    }
+<
+
+
 USING NODE MODULES
 
 You can use any Node.js module in your scripts.
