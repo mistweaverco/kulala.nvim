@@ -723,6 +723,20 @@ Format json response when redirecting to file
 Default: `true`
 
 
+BEFORE_REQUEST
+
+Enable/disable/customize before_request hook. Default hook is request
+highlight.
+
+>lua
+    {
+      opts = {
+        before_request = true, ---@type boolean|fun(request: DocumentRequest):boolean - return true to continue request execution, false to stop
+      }
+    }
+<
+
+
 SCRIPTS           *kulala.configuration-options-configuration-options-scripts*
 
 
@@ -1225,7 +1239,12 @@ LSP                   *kulala.configuration-options-configuration-options-lsp*
 
 LSP.ENABLE
 
-Enable/disable Kulala LSP server.
+Enable/disable Kulala LSP server
+
+
+LSP.FILETYPES
+
+Filetypes to attach Kulala LSP to
 
 
 LSP.KEYMAPS
@@ -1235,7 +1254,7 @@ Enable/disable/customize Kulala LSP keymaps
 
 LSP.FORMATTER
 
-Enable/disable/customize HTTP formatter.
+Enable/disable/customize HTTP formatter
 
 
 LSP.ON_ATTACH
@@ -1246,6 +1265,7 @@ Function called when Kulala LSP attaches to the buffer
     {
       lsp = {
         enable = true,
+        filetypes = { "http", "rest", "json", "yaml", "bruno" },
         keymaps = false, -- disabled by default, as Kulala relies on default Neovim LSP keymaps
         formatter = {
           sort = { -- enable/disable alphabetical sorting
