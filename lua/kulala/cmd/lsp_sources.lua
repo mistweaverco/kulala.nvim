@@ -317,8 +317,8 @@ M.metadata = {
   { "env-stdin-cmd-pre", "env-stdin-cmd-pre ", "Set env variable with external cmd before request" },
   { "env-stdin-cmd", "env-stdin-cmd ", "Set env variable with external cmd" },
   { "env-json-key", "env-json-key ", "Set env variable with json key" },
-  { "stdin-cmd-pre", "env-stdin-cmd-pre ", "Run external command before request" },
-  { "stdin-cmd", "env-stdin-cmd ", "Run external command" },
+  { "stdin-cmd-pre", "stdin-cmd-pre ", "Run external command before request" },
+  { "stdin-cmd", "stdin-cmd ", "Run external command" },
   { "jq", "jq ", "Filter response body with jq" },
 }
 

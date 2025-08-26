@@ -353,6 +353,33 @@ describe("requests", function()
         })
       end)
 
+      it("processes auth headers", function()
+        local credentials = {
+          "myuser:mypassword",
+          "my user:mypassword",
+          "myuser:my password",
+        }
+
+        vim.iter(credentials):each(function(cred)
+          h.create_buf(
+            ([[
+            POST https://httpbingo.org/simple
+            content-type: application/json
+            Authorization: Basic %s
+          ]]):format(cred):to_table(true),
+            h.expand_path("requests/simple.http")
+          )
+
+          result = parser.parse() or {}
+
+          assert.has_properties(result.headers, { ["Authorization"] = nil })
+          assert.has_string(result.cmd, "-u")
+          assert.has_string(result.cmd, cred)
+
+          h.delete_all_bufs()
+        end)
+      end)
+
       it("sets headers from http-client", function()
         h.create_buf(
           ([[

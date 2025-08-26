@@ -349,16 +349,16 @@ local function process_auth_headers(request)
   local auth_header_name, auth_header_value = PARSER_UTILS.get_header(request.headers, "authorization")
   if not (auth_header_name and auth_header_value) then return end
 
-  local authtype = auth_header_value:match("^(%w+)%s+.*")
-  if not authtype then authtype = auth_header_value:match("^(%w+)%s*$") end
+  local _, index, authtype = auth_header_value:find("^(%w+)%s*")
 
   if authtype then
     authtype = authtype:lower()
-
     if vim.tbl_contains({ "ntlm", "negotiate", "digest", "basic" }, authtype) then
-      local match, authuser, authpw = auth_header_value:match("^(%w+)%s+([^%s:]+)%s*[:%s]%s*([^%s]+)%s*$")
+      local authvalue = auth_header_value:sub(index + 1)
 
-      if match or (authtype == "ntlm" or authtype == "negotiate") then
+      local authuser, authpw = authvalue:match("^(.*):(.+)$")
+
+      if authuser or (authtype == "ntlm" or authtype == "negotiate") then
         table.insert(request.cmd, "--" .. authtype)
         table.insert(request.cmd, "-u")
         table.insert(request.cmd, (authuser or "") .. ":" .. (authpw or ""))
