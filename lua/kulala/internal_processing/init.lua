@@ -201,6 +201,10 @@ M.prompt_var = function(metadata_value, secret)
   return true
 end
 
+M.delay = function(ms)
+  vim.wait(ms)
+end
+
 M.get_cookies = get_cookies_as_table
 M.get_headers = get_last_headers_as_table
 

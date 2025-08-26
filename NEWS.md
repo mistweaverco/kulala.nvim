@@ -2,6 +2,9 @@
 
 ## Version 5.3.3
 
+### Feature: add `# @delay` to delay request execution
+### Feature: add `# @env-stdin-cmd-pre` and `# @stdin-cmd-pre` to run shell commands before requests
+### Feature: support Kulala LSP auto completion in external scripts
 ### Feature: support variables in redirect response path
 ### Feature: do not display big responses + `max_response_size` config option
 ### Feature: format json response on redirect
@@ -19,7 +22,7 @@
 ### Feature: support `kulala_http` parser in markdown code blocks
 ### Enhancement: update syntax highlighting for `kulala_http` parser
 ### Enhancement: add sorting options to [Formatter](getting-started/configuration-options.mdx)
-### Enhancement: allow variables in curl and grpc flags
+### Enhancement: allow variables in Curl and GRPC flags
 ### Feature: add LSP diagnostics
 
 ## Version 5.3.1

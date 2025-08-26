@@ -358,7 +358,9 @@ end
 ---@param format_opts table|boolean|nil -- {verbose|escape|sort}
 M.write_json = function(filename, data, format_opts)
   data = next(data) and data or { _ = "" }
-  format_opts = format_opts == true and {} or vim.tbl_extend("keep", format_opts or {}, { escape = false })
+
+  format_opts = format_opts and format_opts == true and {}
+  format_opts = format_opts and vim.tbl_extend("keep", format_opts, { escape = false })
 
   local content = vim.json.encode(data)
   if not content then return end

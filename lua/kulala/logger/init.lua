@@ -12,8 +12,10 @@ local function debug_level()
 end
 
 local function generate_bug_report(message)
-  local choice = vim.fn.confirm("This looks like a bug. Would you like to generate a bug report?", "&Yes\n&No", 1)
-  if choice == 1 then require("kulala.logger.bug_report").generate_bug_report(message) end
+  vim.schedule(function()
+    local choice = vim.fn.confirm("This looks like a bug. Would you like to generate a bug report?", "&Yes\n&No", 1)
+    if choice == 1 then require("kulala.logger.bug_report").generate_bug_report(message) end
+  end)
 end
 
 M.log = function(message, level, opts)

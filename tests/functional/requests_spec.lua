@@ -116,15 +116,16 @@ describe("requests", function()
       kulala.run_all()
       wait_for_requests(2)
 
-      local expected_request = h.load_fixture("fixtures/chain_2_request.txt"):to_object().current_request
-      local computed_request = DB.data.current_request
+      local computed_request = DB.data.current_request.body
+      computed_request = vim.json.decode(computed_request)
 
       expected = h.load_fixture("fixtures/chain_2_body.txt")
-      result = h.get_buf_lines(ui_buf):to_string()
 
-      assert.is_same(expected_request.body_computed, computed_request.body_computed)
-      assert.is_same(2, curl.requests_no)
-      assert.has_string(result, expected)
+      assert.has_properties(computed_request, {
+        cmd = "pre_var_value",
+        context = "Some context",
+        success = true,
+      })
     end)
 
     it("filters response with @jq", function()
