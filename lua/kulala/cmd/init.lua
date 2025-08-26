@@ -308,12 +308,21 @@ local function process_pre_request_commands(request)
     return Logger.warn("Prompt failed. Skipping this and all following requests.")
   end
 
+  local int_meta_processors = {
+    ["delay"] = "delay",
+  }
+
   local ext_meta_processors = {
     ["stdin-cmd-pre"] = "stdin_cmd",
     ["env-stdin-cmd-pre"] = "env_stdin_cmd",
   }
 
   local processor
+  for _, metadata in ipairs(request.metadata) do
+    processor = int_meta_processors[metadata.name]
+    _ = processor and INT_PROCESSING[processor](metadata.value, response)
+  end
+
   for _, metadata in ipairs(request.metadata) do
     processor = ext_meta_processors[metadata.name]
     _ = processor and EXT_PROCESSING[processor](metadata.value, response)

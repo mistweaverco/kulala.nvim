@@ -320,6 +320,7 @@ M.metadata = {
   { "stdin-cmd-pre", "stdin-cmd-pre ", "Run external command before request" },
   { "stdin-cmd", "stdin-cmd ", "Run external command" },
   { "jq", "jq ", "Filter response body with jq" },
+  { "delay", "delay ", "Delay running request for .. ms" },
 }
 
 ---@type SourceTable

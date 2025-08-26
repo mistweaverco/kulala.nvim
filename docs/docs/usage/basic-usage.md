@@ -105,6 +105,7 @@ require("nvim-lightbulb").setup({
 - `# @stdin-cmd-pre` allows you to execute an external command before the request is sent.
 - `# @stdin-cmd` allows you to execute an external command
 - `# @jq` allows you to filter the response body using jq.
+- `# @delay` allows you to set a delay (in milliseconds) before sending the request.
 
 #### Variables
 
