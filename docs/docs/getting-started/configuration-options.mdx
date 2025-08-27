@@ -226,6 +226,14 @@ Possible values:
 
 Default: `always`
 
+### urlencode_skip
+
+Skip urlencoding charachters, specified as lua regex pattern.
+
+### urlencode_force
+
+Force urlencoding charachters, specified as lua regex pattern.
+
 Example:
 
 ```lua
@@ -233,6 +241,8 @@ Example:
   "mistweaverco/kulala.nvim",
   opts = {
     urlencode = "skipencoded",
+    urlencode_skip = "%[%]",
+    urlencode_force = "%(%)",
   },
 }
 ```

@@ -29,9 +29,16 @@ local M = {
 
   -- certificates
   certificates = {},
+
   -- Specify how to escape query parameters
   -- possible values: always, skipencoded = keep %xx as is
   urlencode = "always",
+
+  -- skip urlencoding charachters, specified as lua regex pattern, e.g. "%[%]"
+  urlencode_skip = "",
+
+  -- force urlencoding charachters, specified as lua regex pattern, e.g. "%[%]"
+  urlencode_force = "",
 
   -- Infer content type from the body and add it to the request headers
   infer_content_type = true,
