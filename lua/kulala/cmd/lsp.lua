@@ -687,7 +687,7 @@ local function initialize(params)
   end
 
   return {
-    server_info = { name = "Kulala LSP", version = Globals.VERSION },
+    serverInfo = { name = "Kulala LSP", version = Globals.VERSION },
     capabilities = capabilities,
   }
 end
