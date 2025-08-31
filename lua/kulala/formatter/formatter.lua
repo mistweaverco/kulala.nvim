@@ -534,7 +534,7 @@ local function make_text_edit(text, ls, cs, le, ce)
   }
 end
 
-local function add_request_separatora(buf)
+local function add_request_separator(buf)
   for i, line in ipairs(vim.api.nvim_buf_get_lines(buf, 0, -1, false)) do
     if line:match("^###") then return end
     if not line:match("^%s*$") then return vim.api.nvim_buf_set_lines(buf, i - 1, i - 1, false, { "###" }) end
@@ -553,7 +553,7 @@ M.format = function(buffer, params)
     return
   end
 
-  add_request_separatora(buf) -- ensure at least one request separator exists
+  add_request_separator(buf) -- ensure at least one request separator exists
 
   local lang = "kulala_http"
   local tree = ts.get_parser(buf, lang):parse()[1]

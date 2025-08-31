@@ -34,10 +34,10 @@ local M = {
   -- possible values: always, skipencoded = keep %xx as is
   urlencode = "always",
 
-  -- skip urlencoding charachters, specified as lua regex pattern, e.g. "%[%]"
+  -- skip urlencoding characters, specified as lua regex pattern, e.g. "%[%]"
   urlencode_skip = "",
 
-  -- force urlencoding charachters, specified as lua regex pattern, e.g. "%[%]"
+  -- force urlencoding characters, specified as lua regex pattern, e.g. "%[%]"
   urlencode_force = "",
 
   -- Infer content type from the body and add it to the request headers
@@ -63,7 +63,7 @@ local M = {
       pathresolver = nil,
     },
     ["application/lua"] = {
-      ft = "javascript",
+      ft = "lua",
       formatter = vim.fn.executable("stylua") == 1 and { "stylua", "-" },
       pathresolver = nil,
     },
