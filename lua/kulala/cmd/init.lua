@@ -141,7 +141,8 @@ local function modify_grpc_response(response)
 
   response.body_raw = response.stats
   response.stats = ""
-  response.headers = "Content-Type: application/json"
+
+  if response.errors == "" then response.headers = "Content-Type: application/json" end
 
   return response
 end
@@ -176,10 +177,15 @@ local function inject_payload(errors, request)
   return table.concat(lines, "\n")
 end
 
+local function set_response_format(type)
+  FS.write_file(GLOBALS.HEADERS_FILE, "Content-Type: " .. type, true)
+end
+
 local function get_body()
   local max_size = CONFIG.get().ui.max_response_size
+
   if vim.fn.getfsize(GLOBALS.BODY_FILE) > max_size then
-    FS.write_file(GLOBALS.HEADERS_FILE, "Content-Type: text/plain", true)
+    set_response_format("text/plain")
     return "The size of response is > " .. max_size / 1024 .. "Kb.\nPath to response: " .. GLOBALS.BODY_FILE
   else
     return FS.read_file(GLOBALS.BODY_FILE) or ""
@@ -226,6 +232,7 @@ local function save_response(request_status, parsed_request)
     assert_status = true,
     file = parsed_request.file or "",
     buf_name = vim.fn.bufname(buf),
+
     line = line,
     buf = buf,
   }
@@ -234,9 +241,11 @@ local function save_response(request_status, parsed_request)
   response = set_request_stats(response)
 
   response.body = response.body_raw
-  response.body = #response.body == 0 and "No response body (check Verbose output)" or response.body
   response.json = Json.parse(response.body) or {}
   response.errors = inject_payload(response.errors, parsed_request)
+
+  if #response.body == 0 or response.errors ~= "" then set_response_format("text/plain") end
+  response.body = #response.body == 0 and "No response body (check Verbose output)" or response.body
 
   table.insert(responses, response)
 

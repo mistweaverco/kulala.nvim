@@ -54,8 +54,17 @@ local M = {
     },
     ["application/graphql"] = {
       ft = "graphql",
-      formatter = vim.fn.executable("prettier") == 1
-        and { "prettier", "--stdin-filepath", "graphql", "--parser", "graphql" },
+      formatter = vim.fn.executable("prettier") == 1 and { "prettier", "--stdin-filepath", "file.graphql" },
+      pathresolver = nil,
+    },
+    ["application/javascript"] = {
+      ft = "javascript",
+      formatter = vim.fn.executable("prettier") == 1 and { "prettier", "--stdin-filepath", "file.js" },
+      pathresolver = nil,
+    },
+    ["application/lua"] = {
+      ft = "javascript",
+      formatter = vim.fn.executable("stylua") == 1 and { "stylua", "-" },
       pathresolver = nil,
     },
     ["application/graphql-response+json"] = "application/json",
@@ -66,7 +75,7 @@ local M = {
     },
     ["text/html"] = {
       ft = "html",
-      formatter = vim.fn.executable("xmllint") == 1 and { "xmllint", "--format", "--html", "-" },
+      formatter = vim.fn.executable("prettier") == 1 and { "prettier", "--stdin-filepath", "file.html" },
       pathresolver = nil,
     },
   },
@@ -207,6 +216,7 @@ local M = {
         json = true,
       },
       quote_json_variables = true, -- add quotes around {{variable}} in JSON bodies
+      indent = 2, -- base indentation for scripts
     },
 
     on_attach = nil, -- function called when Kulala LSP attaches to the buffer

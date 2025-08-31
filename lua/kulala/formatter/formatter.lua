@@ -1,3 +1,5 @@
+---@description Formatter for HTTP files using Tree-sitter and external formatters
+
 local Config = require("kulala.config")
 local Formatter = require("kulala.formatter")
 local Logger = require("kulala.logger")
@@ -25,6 +27,14 @@ end
 local function trim(str, collapse)
   str = (str or ""):gsub("^%s+", ""):gsub("%s+$", "")
   return collapse and str:gsub("[ \t]+", " ") or str
+end
+
+local function indent(str, n)
+  n = Config.options.lsp.formatter.indent
+
+  return vim.iter(vim.split(str, "\n")):fold("", function(acc, line)
+    return acc .. string.rep(" ", n) .. line .. "\n"
+  end)
 end
 
 local function handle_formatter_output(_, data, name)
@@ -64,19 +74,16 @@ local function get_formatter_id(ft, opts)
 
     if opts and opts.sort then table.insert(cmd, "--sort-keys") end
     table.insert(cmd, ".")
-  elseif ft == "graphql" then
   end
 
   local id = cmd and start_formatter(cmd)
+  if not id or id < 1 then return Logger.error("Failed to start formatter for " .. ft .. ": " .. (cmd or "")) end
 
-  if id > 0 then
-    formatters[ft] = id
-    return id
-  end
-
-  Logger.error("Failed to start formatter for " .. ft .. ": " .. cmd)
+  formatters[ft] = id
+  return id
 end
 
+---@description Format using long running external formatter process
 local function format(ft, text, opts)
   text = text:gsub("[\r\n]", "") .. "\n"
 
@@ -94,7 +101,7 @@ local function format(ft, text, opts)
   if ret == 0 then return end
 
   vim.wait(3000, function()
-    return formatter_output.out or formatter_output.err
+    return not not (formatter_output.out or formatter_output.err)
   end)
 
   if formatter_output.err then
@@ -406,8 +413,6 @@ format_rules = {
     end
 
     local formatted = format("json", json, { sort = format_opts.sort.json }) or json
-    -- local formatted = Formatter.json(json, { sort = format_opts.sort.json }) or json
-
     formatted = formatted:gsub("\n*$", "")
 
     local request = current_section().request
@@ -423,7 +428,7 @@ format_rules = {
   ["graphql_data"] = function(node)
     local body = get_text(node, false)
 
-    local formatted = Formatter.graphql(body, { sort = format_opts.sort.json }) or body
+    local formatted = Formatter.graphql(body) or body
     formatted = formatted:gsub("\n*$", "")
 
     local request = current_section().request
@@ -442,19 +447,49 @@ format_rules = {
   end,
 
   ["pre_request_script"] = function(node)
-    local script = get_text(node, false)
-    script = script:gsub("\n([^\n%s])", "\n  %1"):gsub("\n%s+%%}", "\n%%}")
-
-    table.insert(current_section().request.pre_request_script, script)
-    return script
+    format_children(node)
   end,
 
   ["res_handler_script"] = function(node)
-    local script = get_text(node, false)
-    script = script:gsub("\n([^\n%s])", "\n  %1"):gsub("\n%s+%%}", "\n%%}")
+    format_children(node)
+  end,
 
-    table.insert(current_section().request.res_handler_script, script)
-    return script
+  ["path"] = function(node)
+    local type = node:parent() and node:parent():type()
+    local text = get_text(node)
+    local tag = type == "pre_request_script" and "<" or ">"
+
+    local formatted = tag .. " " .. text
+    table.insert(current_section().request[type], formatted)
+
+    return formatted
+  end,
+
+  ["script"] = function(node)
+    local text = get_text(node, false)
+    local type = node:parent() and node:parent():type()
+    local script = text:gsub("{%%\n", ""):gsub("\n%%}", "")
+
+    local formatted
+
+    if script:find("-- lua", 1, true) then
+      formatted = Formatter.lua(script)
+    else
+      formatted = Formatter.js(script)
+    end
+
+    if formatted ~= script then
+      formatted = indent(formatted):gsub("[\n%s]*$", "")
+    else
+      formatted = script
+    end
+
+    local tag = type == "pre_request_script" and "<" or ">"
+    formatted = tag .. " {%\n" .. formatted .. "\n%}"
+
+    table.insert(current_section().request[type], formatted)
+
+    return formatted
   end,
 
   ["res_redirect"] = function(node)
@@ -499,9 +534,14 @@ local function make_text_edit(text, ls, cs, le, ce)
   }
 end
 
-M.format = function(buffer, params)
-  -- local start_time = vim.uv.hrtime()
+local function add_request_separatora(buf)
+  for i, line in ipairs(vim.api.nvim_buf_get_lines(buf, 0, -1, false)) do
+    if line:match("^###") then return end
+    if not line:match("^%s*$") then return vim.api.nvim_buf_set_lines(buf, i - 1, i - 1, false, { "###" }) end
+  end
+end
 
+M.format = function(buffer, params)
   params = params or {}
   buf = buffer or vim.api.nvim_get_current_buf()
 
@@ -513,6 +553,8 @@ M.format = function(buffer, params)
     return
   end
 
+  add_request_separatora(buf) -- ensure at least one request separator exists
+
   local lang = "kulala_http"
   local tree = ts.get_parser(buf, lang):parse()[1]
 
@@ -520,7 +562,6 @@ M.format = function(buffer, params)
 
   if not params.range then
     local formatted, document = format_rules["document"](tree:root())
-    -- DevTools.log("Finish", (vim.uv.hrtime() - start_time) / 1e9 .. "s")
 
     local result = { make_text_edit(formatted, tree:root():range()) }
     stop_formatters()
