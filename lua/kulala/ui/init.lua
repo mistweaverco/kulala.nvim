@@ -207,10 +207,11 @@ local function show(contents, filetype, mode)
   show_progress()
 end
 
-local function format_body()
+local function format_body(view)
   local headers = get_current_response().headers
   local body = get_current_response().body
-  local contenttype = INT_PROCESSING.get_config_contenttype(headers)
+
+  local contenttype = INT_PROCESSING.get_config_contenttype(headers, view)
   local filetype
 
   if body and contenttype.formatter then
@@ -289,9 +290,9 @@ M.show_headers_body = function()
 end
 
 M.show_verbose = function()
-  local body = format_body()
+  local body, filetype = format_body("verbose")
   local errors = get_current_response().errors
-  show(errors .. "\n" .. body, "kulala_verbose_result", "verbose")
+  show(errors .. "\n" .. body, filetype, "verbose")
 end
 
 M.show_stats = function()
