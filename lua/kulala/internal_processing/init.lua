@@ -114,23 +114,23 @@ local get_lower_headers_as_table = function(headers)
   return headers_table
 end
 
-M.get_config_contenttype = function(headers)
+M.get_config_contenttype = function(headers, view)
   headers = get_lower_headers_as_table(headers)
-
   local content_type = headers["content-type"]
 
   if content_type then
     content_type = type(content_type) == "table" and content_type[1] or content_type
-
     content_type = vim.split(content_type, ";")[1]
     content_type = vim.trim(content_type)
+
+    if view == "verbose" then
+      return content_type == "kulala/grpc_error" and { ft = "kulala_grpc_error" } or { ft = "kulala_verbose_result" }
+    end
 
     local config = CONFIG.get().contenttypes[content_type]
 
     if config and type(config) == "string" then config = CONFIG.get().contenttypes[config] end
     if config then return config end
-
-    if content_type == "kulala/verbose" then return { ft = "kulala_verbose_result" } end
   end
 
   return CONFIG.default_contenttype

@@ -354,37 +354,23 @@ Default:
 ```lua
   contenttypes = {
     ["application/json"] = {
-      ft = "json",
       formatter = vim.fn.executable("jq") == 1 and { "jq", "." },
-      pathresolver = function(...)
-        return require("kulala.parser.jsonpath").parse(...)
-      end,
     },
     ["application/graphql"] = {
-      ft = "graphql",
       formatter = vim.fn.executable("prettier") == 1 and { "prettier", "--stdin-filepath", "file.graphql" },
-      pathresolver = nil,
     },
     ["application/javascript"] = {
-      ft = "javascript",
       formatter = vim.fn.executable("prettier") == 1 and { "prettier", "--stdin-filepath", "file.js" },
-      pathresolver = nil,
     },
     ["application/lua"] = {
-      ft = "javascript",
       formatter = vim.fn.executable("stylua") == 1 and { "stylua", "-" },
-      pathresolver = nil,
     },
     ["application/graphql-response+json"] = "application/json",
     ["application/xml"] = {
-      ft = "xml",
       formatter = vim.fn.executable("xmllint") == 1 and { "xmllint", "--format", "-" },
-      pathresolver = vim.fn.executable("xmllint") == 1 and { "xmllint", "--xpath", "{{path}}", "-" },
     },
     ["text/html"] = {
-      ft = "html",
       formatter = vim.fn.executable("prettier") == 1 and { "prettier", "--stdin-filepath", "file.html" },
-      pathresolver = nil,
     },
   },
 ```
