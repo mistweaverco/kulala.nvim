@@ -1,3 +1,5 @@
+-- Formatter using kulala-fmt (https://www.npmjs.com/package/kulala-fmt)
+
 local Async = require("kulala.utils.async")
 local Db = require("kulala.db")
 local Float = require("kulala.ui.float")

@@ -113,6 +113,7 @@ local function parse_metadata(request)
 end
 
 -- Reserved Characters: ! # $ & ' ( ) * + , / : ; = ? @ [ ]
+-- https://stackoverflow.com/questions/1547899/which-characters-make-a-url-invalid/1547940#1547940
 local function encode_url(url, method)
   local urlencode = CONFIG.get().urlencode == "always"
   if urlencode and vim.uri_decode(url) ~= url then return url end
@@ -125,13 +126,13 @@ local function encode_url(url, method)
 
   _, index = url:find(".*#")
   if index then
-    fragment = url_encode(url:sub(index), "#/%[%]%(%)!$',*")
+    fragment = url_encode(url:sub(index), "#/%(%)!$',*")
     url = url:sub(1, index - 1)
   end
 
   _, index = url:find(".*?")
   if index then
-    query = url_encode(url:sub(index), "%?/=&%[%]%(%)!$',*")
+    query = url_encode(url:sub(index), "%?/=&%(%)!$',*")
     url = url:sub(1, index - 1)
   end
 

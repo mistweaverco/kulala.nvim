@@ -226,6 +226,14 @@ Possible values:
 
 Default: `always`
 
+### urlencode_skip
+
+Skip urlencoding characters, specified as lua regex pattern.
+
+### urlencode_force
+
+Force urlencoding characters, specified as lua regex pattern.
+
 Example:
 
 ```lua
@@ -233,6 +241,8 @@ Example:
   "mistweaverco/kulala.nvim",
   opts = {
     urlencode = "skipencoded",
+    urlencode_skip = "%[%]",
+    urlencode_force = "%(%)",
   },
 }
 ```
@@ -254,20 +264,38 @@ Default:
 contenttypes = {
   ["application/json"] = {
     ft = "json",
-    formatter = { "jq", "." },
-    pathresolver = require("kulala.parser.jsonpath").parse,
+    formatter = vim.fn.executable("jq") == 1 and { "jq", "." },
+    pathresolver = function(...)
+      return require("kulala.parser.jsonpath").parse(...)
+    end,
   },
+  ["application/graphql"] = {
+    ft = "graphql",
+    formatter = vim.fn.executable("prettier") == 1 and { "prettier", "--stdin-filepath", "file.graphql" },
+    pathresolver = nil,
+  },
+  ["application/javascript"] = {
+    ft = "javascript",
+    formatter = vim.fn.executable("prettier") == 1 and { "prettier", "--stdin-filepath", "file.js" },
+    pathresolver = nil,
+  },
+  ["application/lua"] = {
+    ft = "javascript",
+    formatter = vim.fn.executable("stylua") == 1 and { "stylua", "-" },
+    pathresolver = nil,
+  },
+  ["application/graphql-response+json"] = "application/json",
   ["application/xml"] = {
     ft = "xml",
-    formatter = { "xmllint", "--format", "-" },
-    pathresolver = { "xmllint", "--xpath", "{{path}}", "-" },
+    formatter = vim.fn.executable("xmllint") == 1 and { "xmllint", "--format", "-" },
+    pathresolver = vim.fn.executable("xmllint") == 1 and { "xmllint", "--xpath", "{{path}}", "-" },
   },
   ["text/html"] = {
     ft = "html",
-    formatter = { "xmllint", "--format", "--html", "-" },
-    pathresolver = {},
+    formatter = vim.fn.executable("prettier") == 1 and { "prettier", "--stdin-filepath", "file.html" },
+    pathresolver = nil,
   },
-}
+},
 ```
 
 #### contenttypes.ft
@@ -324,23 +352,41 @@ Possible values:
 Default:
 
 ```lua
-contenttypes = {
-  ["application/json"] = {
-    formatter = { "jq", "." },
+  contenttypes = {
+    ["application/json"] = {
+      ft = "json",
+      formatter = vim.fn.executable("jq") == 1 and { "jq", "." },
+      pathresolver = function(...)
+        return require("kulala.parser.jsonpath").parse(...)
+      end,
+    },
+    ["application/graphql"] = {
+      ft = "graphql",
+      formatter = vim.fn.executable("prettier") == 1 and { "prettier", "--stdin-filepath", "file.graphql" },
+      pathresolver = nil,
+    },
+    ["application/javascript"] = {
+      ft = "javascript",
+      formatter = vim.fn.executable("prettier") == 1 and { "prettier", "--stdin-filepath", "file.js" },
+      pathresolver = nil,
+    },
+    ["application/lua"] = {
+      ft = "javascript",
+      formatter = vim.fn.executable("stylua") == 1 and { "stylua", "-" },
+      pathresolver = nil,
+    },
+    ["application/graphql-response+json"] = "application/json",
+    ["application/xml"] = {
+      ft = "xml",
+      formatter = vim.fn.executable("xmllint") == 1 and { "xmllint", "--format", "-" },
+      pathresolver = vim.fn.executable("xmllint") == 1 and { "xmllint", "--xpath", "{{path}}", "-" },
+    },
+    ["text/html"] = {
+      ft = "html",
+      formatter = vim.fn.executable("prettier") == 1 and { "prettier", "--stdin-filepath", "file.html" },
+      pathresolver = nil,
+    },
   },
-  ["application/graphql"] = {
-    ft = "graphql",
-    formatter = vim.fn.executable("prettier") == 1
-      and { "prettier", "--stdin-filepath", "graphql", "--parser", "graphql" },
-    pathresolver = nil,
-  },
-  ["application/xml"] = {
-    formatter = { "xmllint", "--format", "-" },
-  },
-  ["text/html"] = {
-    formatter = { "xmllint", "--format", "--html", "-" },
-  },
-}
 ```
 
 Example:
@@ -969,6 +1015,7 @@ Function called when Kulala LSP attaches to the buffer
         json = true,
       },
       quote_json_variables = true, -- add quotes around {{variable}} in JSON bodies
+      indent = 2, -- base indentation for scripts
     },
     on_attach = function(client, bufnr)
       -- custom on_attach function

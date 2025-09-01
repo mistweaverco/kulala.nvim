@@ -4,8 +4,8 @@ local Diagnostics = require("kulala.cmd.diagnostics")
 local Dynamic_variables = require("kulala.parser.dynamic_vars")
 local Env = require("kulala.parser.env")
 local Export = require("kulala.cmd.export")
-local Fmt = require("kulala.cmd.fmt")
-local Formatter = require("kulala.cmd.formatter")
+local Fmt = require("kulala.formatter.fmt")
+local Formatter = require("kulala.formatter.formatter")
 local Fs = require("kulala.utils.fs")
 local Globals = require("kulala.globals")
 local Inspect = require("kulala.parser.inspect")
@@ -687,7 +687,7 @@ local function initialize(params)
   end
 
   return {
-    server_info = { name = "Kulala LSP", version = Globals.VERSION },
+    serverInfo = { name = "Kulala LSP", version = Globals.VERSION },
     capabilities = capabilities,
   }
 end

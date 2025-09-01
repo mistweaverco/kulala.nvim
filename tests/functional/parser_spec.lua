@@ -306,7 +306,7 @@ describe("requests", function()
               [[https://my.server.com/api/v1/object?filter=owner.address.city in ["Berlin", "München", "Nürnberg"]']],
             },
             "GET",
-            [[https://my.server.com/api/v1/object?filter=owner.address.city%20in%20[%22Berlin%22,%20%22M%C3%BCnchen%22,%20%22N%C3%BCrnberg%22]']]
+            [[https://my.server.com/api/v1/object?filter=owner.address.city%20in%20%5B%22Berlin%22,%20%22M%C3%BCnchen%22,%20%22N%C3%BCrnberg%22%5D']]
           )
           assert_url(
             { 'httpbin.org/post?filter={"conditions":{}}' },

@@ -1,5 +1,8 @@
+---@description Formatter for HTTP files using Tree-sitter and external formatters
+
 local Config = require("kulala.config")
 local Formatter = require("kulala.formatter")
+local Logger = require("kulala.logger")
 
 local format_opts = Config.options.lsp.formatter
 format_opts = type(format_opts) == "table" and format_opts or { sort = { json = true } }
@@ -9,6 +12,14 @@ local M = {}
 local ts = vim.treesitter
 local buf
 
+local formatters = {}
+local formatter_output = { out = nil, err = nil }
+
+local function reset_formatter_output()
+  formatter_output.out = nil
+  formatter_output.err = nil
+end
+
 local function capitalize(str)
   return str:lower():gsub("^%l", string.upper):gsub("%-%l", string.upper)
 end
@@ -16,6 +27,96 @@ end
 local function trim(str, collapse)
   str = (str or ""):gsub("^%s+", ""):gsub("%s+$", "")
   return collapse and str:gsub("[ \t]+", " ") or str
+end
+
+local function indent(str, n)
+  n = Config.options.lsp.formatter.indent
+
+  return vim.iter(vim.split(str, "\n")):fold("", function(acc, line)
+    return acc .. string.rep(" ", n) .. line .. "\n"
+  end)
+end
+
+local function handle_formatter_output(_, data, name)
+  data = data and table.concat(data, "\n")
+  if not data or data == "" then return end
+
+  if name == "stdout" then
+    formatter_output.out = data
+  elseif name == "stderr" then
+    formatter_output.err = data
+  end
+end
+
+local function start_formatter(cmd)
+  return vim.fn.jobstart(cmd, {
+    stdin = "pipe",
+    stdout = "pipe",
+    on_stdout = handle_formatter_output,
+    on_stderr = handle_formatter_output,
+  })
+end
+
+local function stop_formatters()
+  vim.iter(formatters):each(function(ft, id)
+    vim.fn.jobstop(id)
+    formatters[ft] = nil
+  end)
+end
+
+local function get_formatter_id(ft, opts)
+  if formatters[ft] then return formatters[ft] end
+
+  local cmd
+
+  if ft == "json" then
+    cmd = { "jq", "--unbuffered" }
+
+    if opts and opts.sort then table.insert(cmd, "--sort-keys") end
+    table.insert(cmd, ".")
+  end
+
+  local id = cmd and start_formatter(cmd)
+  if not id or id < 1 then return Logger.error("Failed to start formatter for " .. ft .. ": " .. (cmd or "")) end
+
+  formatters[ft] = id
+  return id
+end
+
+---@description Format using long running external formatter process
+local function format(ft, text, opts)
+  text = text:gsub("[\r\n]", "") .. "\n"
+
+  local id = get_formatter_id(ft, opts)
+  if not id or id <= 0 then return end
+
+  local ret = vim.fn.chansend(id, text)
+
+  if ret == 0 then -- retry on error
+    vim.fn.jobstop(id)
+    id = get_formatter_id(ft, opts)
+    ret = vim.fn.chansend(id, text)
+  end
+
+  if ret == 0 then return end
+
+  vim.wait(3000, function()
+    return not not (formatter_output.out or formatter_output.err)
+  end)
+
+  if formatter_output.err then
+    Logger.error("Formatter error: " .. (formatter_output.err or "") .. "\n" .. text)
+
+    reset_formatter_output()
+    vim.fn.jobstop(id)
+
+    return
+  end
+
+  local out = formatter_output.out
+  reset_formatter_output()
+
+  return out
 end
 
 local function get_text(node, collapse)
@@ -311,7 +412,7 @@ format_rules = {
       json = quoted_variables:gsub(lcurly, "{{"):gsub(rcurly, "}}")
     end
 
-    local formatted = Formatter.json(json, { sort = format_opts.sort.json }) or json
+    local formatted = format("json", json, { sort = format_opts.sort.json }) or json
     formatted = formatted:gsub("\n*$", "")
 
     local request = current_section().request
@@ -327,7 +428,7 @@ format_rules = {
   ["graphql_data"] = function(node)
     local body = get_text(node, false)
 
-    local formatted = Formatter.graphql(body, { sort = format_opts.sort.json }) or body
+    local formatted = Formatter.graphql(body) or body
     formatted = formatted:gsub("\n*$", "")
 
     local request = current_section().request
@@ -346,19 +447,49 @@ format_rules = {
   end,
 
   ["pre_request_script"] = function(node)
-    local script = get_text(node, false)
-    script = script:gsub("\n([^\n%s])", "\n  %1"):gsub("\n%s+%%}", "\n%%}")
-
-    table.insert(current_section().request.pre_request_script, script)
-    return script
+    format_children(node)
   end,
 
   ["res_handler_script"] = function(node)
-    local script = get_text(node, false)
-    script = script:gsub("\n([^\n%s])", "\n  %1"):gsub("\n%s+%%}", "\n%%}")
+    format_children(node)
+  end,
 
-    table.insert(current_section().request.res_handler_script, script)
-    return script
+  ["path"] = function(node)
+    local type = node:parent() and node:parent():type()
+    local text = get_text(node)
+    local tag = type == "pre_request_script" and "<" or ">"
+
+    local formatted = tag .. " " .. text
+    table.insert(current_section().request[type], formatted)
+
+    return formatted
+  end,
+
+  ["script"] = function(node)
+    local text = get_text(node, false)
+    local type = node:parent() and node:parent():type()
+    local script = text:gsub("{%%\n", ""):gsub("\n%%}", "")
+
+    local formatted
+
+    if script:find("-- lua", 1, true) then
+      formatted = Formatter.lua(script)
+    else
+      formatted = Formatter.js(script)
+    end
+
+    if formatted ~= script then
+      formatted = indent(formatted):gsub("[\n%s]*$", "")
+    else
+      formatted = script
+    end
+
+    local tag = type == "pre_request_script" and "<" or ">"
+    formatted = tag .. " {%\n" .. formatted .. "\n%}"
+
+    table.insert(current_section().request[type], formatted)
+
+    return formatted
   end,
 
   ["res_redirect"] = function(node)
@@ -403,6 +534,13 @@ local function make_text_edit(text, ls, cs, le, ce)
   }
 end
 
+local function add_request_separator(buf)
+  for i, line in ipairs(vim.api.nvim_buf_get_lines(buf, 0, -1, false)) do
+    if line:match("^###") then return end
+    if not line:match("^%s*$") then return vim.api.nvim_buf_set_lines(buf, i - 1, i - 1, false, { "###" }) end
+  end
+end
+
 M.format = function(buffer, params)
   params = params or {}
   buf = buffer or vim.api.nvim_get_current_buf()
@@ -415,6 +553,8 @@ M.format = function(buffer, params)
     return
   end
 
+  add_request_separator(buf) -- ensure at least one request separator exists
+
   local lang = "kulala_http"
   local tree = ts.get_parser(buf, lang):parse()[1]
 
@@ -422,7 +562,11 @@ M.format = function(buffer, params)
 
   if not params.range then
     local formatted, document = format_rules["document"](tree:root())
-    return { make_text_edit(formatted, tree:root():range()) }, document
+
+    local result = { make_text_edit(formatted, tree:root():range()) }
+    stop_formatters()
+
+    return result, document
   end
 
   local line_s = params.range and params.range.start.line or 0
@@ -435,6 +579,8 @@ M.format = function(buffer, params)
     table.insert(acc, make_text_edit(formatted, node:range()))
     return acc
   end)
+
+  stop_formatters()
 
   return result, Document
 end

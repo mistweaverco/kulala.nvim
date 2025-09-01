@@ -1,7 +1,7 @@
 ---@diagnostic disable: undefined-field, redefined-local
 
 local config = require("kulala.config")
-local formatter = require("kulala.cmd.formatter")
+local formatter = require("kulala.formatter.formatter")
 
 local h = require("test_helper")
 
@@ -31,7 +31,7 @@ describe("format", function()
     end)
 
     it("formats request separator", function()
-      local section = document.sections[3]
+      local section = document.sections[2]
       assert.is_same(section.request_separator, "### Request name")
     end)
 
@@ -46,7 +46,7 @@ describe("format", function()
     end)
 
     it("formats commands", function()
-      local section = document.sections[4]
+      local section = document.sections[3]
       assert.is_same(section.commands[1], "import ./export/simple.http")
     end)
 
@@ -60,7 +60,7 @@ describe("format", function()
     end)
 
     it("formats pre_request", function()
-      local section = document.sections[4]
+      local section = document.sections[3]
 
       result = section.request.pre_request_script
       assert.has_properties(result, {
@@ -76,7 +76,7 @@ describe("format", function()
     end)
 
     it("formats raw body", function()
-      result = document.sections[6].request.body
+      result = document.sections[5].request.body
       assert.is_same(
         result,
         ([[
@@ -88,7 +88,7 @@ describe("format", function()
     end)
 
     it("formats multi-part body", function()
-      result = document.sections[5].request.body
+      result = document.sections[4].request.body
       assert.is_same(
         result,
         ([[
@@ -104,7 +104,7 @@ describe("format", function()
     end)
 
     it("formats json body", function()
-      result = document.sections[4].request.body
+      result = document.sections[3].request.body
       assert.is_same(
         result,
         ([[
@@ -125,7 +125,7 @@ describe("format", function()
     end)
 
     it("formats xml body", function()
-      result = document.sections[8].request.body
+      result = document.sections[7].request.body
       assert.is_same(
         ([[
           <?xml version="1.0"?>
@@ -141,7 +141,7 @@ describe("format", function()
     end)
 
     it("formats graphql body", function()
-      result = document.sections[7].request.body
+      result = document.sections[6].request.body
       assert.is_same(
         result,
         ([[
@@ -167,7 +167,7 @@ describe("format", function()
     end)
 
     it("formats external body", function()
-      result = document.sections[9].request.body
+      result = document.sections[8].request.body
       assert.is_same(result, "< ./simple.json")
     end)
 
@@ -208,6 +208,8 @@ describe("format", function()
 
       assert.is_same(
         ([[
+          ### 
+
           GET http://httpbin.org/post HTTP/1.1
 
           {

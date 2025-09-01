@@ -2,6 +2,8 @@
 
 ## Version 5.3.3
 
+### Enhancement: optimize formatter, add formatter for scripts
+### Enhancement: add opts `urlencode_skip` and `urlencode_force` to specify which variables to skip/force url encoding
 ### Feature: add `# @delay` to delay request execution
 ### Feature: add `# @env-stdin-cmd-pre` and `# @stdin-cmd-pre` to run shell commands before requests
 ### Feature: support Kulala LSP auto completion in external scripts

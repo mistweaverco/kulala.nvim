@@ -1,3 +1,5 @@
+### 
+
 # Document variables
 
 @ENV_PROJECT = project_name
@@ -6,10 +8,6 @@
 @filename = logo.png
 @filepath = /home/yaro/projects/kulala.nvim/assets/badge-discord.svg
 @foobar = bar
-
-
-###
-
 @url = https://httpbin.org/get
 
 # @curl-conect-timeout 200

@@ -297,7 +297,7 @@ local function parse_request_urL_method(request, line, lnum)
 end
 
 local function parse_multiline_url(request, line)
-  local path = line:match("^%s*(/%w+)$")
+  local path = line:match("^%s*(/.+)$")
   if request.url and path then request.url = request.url .. path end
 end
 
@@ -432,7 +432,7 @@ function parse_document(lines, path)
 
       if line:match("^# @") then
         parse_metadata(request, line)
-      -- collect comments
+        -- collect comments
       elseif not is_body_section and (line:match("^%s*#") or line:match("^%s*//")) then
         local comment = line:gsub("^%s*[#/]+%s*", "")
         table.insert(request.comments, comment)
@@ -479,7 +479,7 @@ function parse_document(lines, path)
         parse_variables(variables, line)
       elseif is_body_section then
         parse_body(request, line, lnum)
-      elseif not is_request_line and line:match("^%s*/%a+") then
+      elseif not is_request_line and line:match("^%s*/.+") then
         parse_multiline_url(request, line)
       elseif not is_request_line and line:match("^%s*[?&]") and #request.headers == 0 and request.url then
         parse_query_params(request, line)

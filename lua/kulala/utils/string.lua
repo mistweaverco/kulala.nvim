@@ -14,8 +14,27 @@ M.remove_newline = function(str)
   return str:gsub("[\n\r]", "")
 end
 
+local function merge_strings(base, remove)
+  local result, skip_set = {}, {}
+
+  for char in remove:gmatch(".") do
+    skip_set[char] = true
+  end
+
+  for char in base:gmatch(".") do
+    if not skip_set[char] then table.insert(result, char) end
+  end
+
+  return table.concat(result)
+end
+
 M.url_encode = function(str, skip)
-  local pattern = "([^%w%.%-_~" .. (skip or "") .. "])"
+  local cfg_skip = Config.get().urlencode_skip
+  local cfg_force = Config.get().urlencode_force
+
+  skip = merge_strings((skip or "") .. cfg_skip, cfg_force)
+  local pattern = "([^%w%.%-_~" .. skip .. "])"
+
   if not str then return end
 
   return str:gsub("\n", "\r\n"):gsub(pattern, function(c)

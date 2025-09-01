@@ -141,7 +141,7 @@ local function modify_grpc_response(response)
 
   response.body_raw = response.stats
   response.stats = ""
-  response.headers = "Content-Type: application/json"
+  response.headers = response.errors == "" and "Content-Type: application/json" or "Content-Type: kulala/grpc_error"
 
   return response
 end
@@ -178,8 +178,9 @@ end
 
 local function get_body()
   local max_size = CONFIG.get().ui.max_response_size
+
   if vim.fn.getfsize(GLOBALS.BODY_FILE) > max_size then
-    FS.write_file(GLOBALS.HEADERS_FILE, "Content-Type: text/plain", true)
+    FS.write_file(GLOBALS.HEADERS_FILE, "Content-Type: " .. "text/plain", true)
     return "The size of response is > " .. max_size / 1024 .. "Kb.\nPath to response: " .. GLOBALS.BODY_FILE
   else
     return FS.read_file(GLOBALS.BODY_FILE) or ""
@@ -226,6 +227,7 @@ local function save_response(request_status, parsed_request)
     assert_status = true,
     file = parsed_request.file or "",
     buf_name = vim.fn.bufname(buf),
+
     line = line,
     buf = buf,
   }
@@ -234,9 +236,11 @@ local function save_response(request_status, parsed_request)
   response = set_request_stats(response)
 
   response.body = response.body_raw
-  response.body = #response.body == 0 and "No response body (check Verbose output)" or response.body
   response.json = Json.parse(response.body) or {}
   response.errors = inject_payload(response.errors, parsed_request)
+
+  if #response.body == 0 and response.method ~= "GRPC" then response.headers = "Content-Type: text/plain" end
+  if #response.body == 0 then response.body = "No response body (check Verbose output)" end
 
   table.insert(responses, response)
 

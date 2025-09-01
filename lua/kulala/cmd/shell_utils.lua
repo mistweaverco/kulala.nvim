@@ -3,6 +3,10 @@ local Logger = require("kulala.logger")
 
 local cache = {}
 
+local function strip_escape_codes(str)
+  return str:gsub("\27%[[%d;]*m", "")
+end
+
 M.has_command = function(cmd)
   return vim.fn.executable(cmd) == 1
 end
@@ -52,7 +56,10 @@ M.run = function(cmd, opts, on_exit)
   local status, result = pcall(function()
     return vim.system(cmd, opts, function(system)
       if system.code ~= 0 or (opts.abort_on_stderr and system.stderr ~= "") then
-        _ = opts.verbose and Logger.error(opts.err_msg .. "Code: " .. system.code .. ", " .. system.stderr, 2)
+        local err_msg = (system.stderr and system.stderr ~= "") and system.stderr or system.stdout or ""
+        err_msg = strip_escape_codes(err_msg)
+
+        _ = opts.verbose and Logger.error(opts.err_msg .. "Code: " .. system.code .. ", " .. err_msg, 2)
         _ = opts.on_error and opts.on_error(system)
         return
       end

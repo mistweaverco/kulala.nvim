@@ -34,9 +34,10 @@ List of requirements for using kulala.
 
 ## prettier
 
-- [prettier](https://prettier.io)
+- [prettier](https://prettier.io) 
+- [prettierd](https://github.com/fsouza/prettierd) - preferred for better performance
 
-(Only required for formatting GraphQL)
+(Required for formatting HTML, JS, GraphQL)
 
 ## xmllint
 
@@ -44,6 +45,12 @@ List of requirements for using kulala.
 
 (Only required for formatted XML/HTML responses and
 resolving XML request variables)
+
+## stylua
+
+- [stylua](https://github.com/JohnnyMorganz/StyLua)
+
+(Required for Lua scripts)
 
 # Optional Requirements
 
