@@ -1,4 +1,5 @@
 ### REQUEST_ONE
+
 POST https://httpbin.org/advanced_f1?foo=bar&baz=bax HTTP/1.1
 Accept: application/json
 Content-Type: application/json
@@ -9,18 +10,19 @@ Content-Type: application/json
   "prompt_var": "PROMPT_VAR"
 }
 
+
 ### This is a comment for the next request
 
 POST https://httpbin.org/advanced_f2 HTTP/1.1
-accept: application/json
-content-type: application/json
+Accept: application/json
+Content-Type: application/json
 
 {
-  "request_headers": "{{REQUEST_ONE.request.headers.Accept}}",
   "request_body": "{{REQUEST_ONE.request.body.$.document_var}}",
-  "response_headers": "{{REQUEST_ONE.response.headers['Server']}}",
-  "response_headers_1": "{{REQUEST_ONE.response.headers.Connection[1]}}",
-  "response_headers_2": "{{REQUEST_ONE.response.headers.Connection[2]}}",
+  "request_headers": "{{REQUEST_ONE.request.headers.Accept}}",
   "response_body": "{{REQUEST_ONE.response.body.$.json.js_set_request_var}}",
-  "response_cookies": "{{REQUEST_ONE.response.cookies.foo1.value}}"
+  "response_cookies": "{{REQUEST_ONE.response.cookies.foo1.value}}",
+  "response_headers": "{{REQUEST_ONE.response.headers['server']}}",
+  "response_headers_1": "{{REQUEST_ONE.response.headers.Connection[1]}}",
+  "response_headers_2": "{{REQUEST_ONE.response.headers.Connection[2]}}"
 }
