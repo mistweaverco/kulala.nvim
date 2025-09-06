@@ -349,6 +349,7 @@ end
 ---@param opts? table<{ verbose: boolean, luanil: table<{object: boolean, array: boolean }> }> -- verbose: log errors
 M.read_json = function(filename, opts)
   local content = M.read_file(filename)
+  content = content == "" and "{}" or content
   return content and Json.parse(content, opts, filename)
 end
 

@@ -339,7 +339,8 @@ module.exports = grammar({
     _not_comment: (_) => token(seq(/[^@]*/, NL)),
 
     header_entity: (_) => /[\w\-]+/,
-    identifier: (_) => /[A-Za-z_.\$\d\u00A1-\uFFFF-]+(\([^)]*\))?/,
+    identifier: (_) =>
+      /[A-Za-z_.$\d\u00A1-\uFFFF-]+(\[[^\]]+\]|\.[A-Za-z_.$\d\u00A1-\uFFFF-]+|\([^)]*\))?/,
     path: ($) =>
       prec.right(repeat1(choice(WORD_CHAR, PUNCTUATION, $.variable, ESCAPED))),
     value: ($) => repeat1(choice(WORD_CHAR, PUNCTUATION, $.variable, WS)),

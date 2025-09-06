@@ -553,7 +553,7 @@ M.format = function(buffer, params)
     return
   end
 
-  add_request_separator(buf) -- ensure at least one request separator exists
+  if not params.range then add_request_separator(buf) end
 
   local lang = "kulala_http"
   local tree = ts.get_parser(buf, lang):parse()[1]

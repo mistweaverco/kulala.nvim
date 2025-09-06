@@ -41,10 +41,16 @@ M.queue = queue:reset()
 
 local process_request
 
-function queue.add(self, fn, pos, callback)
+---Add task to the queue
+---@param self table
+---@param data? any additional data to be passed to the task function
+---@param fn function task function
+---@param pos? number position in the queue (default: end of the queue)
+---@param callback? function callback function to be called after the task is done
+function queue.add(self, data, fn, pos, callback)
   pos = pos or #self.tasks + 1
   self.total = self.total + 1
-  table.insert(self.tasks, { fn = fn, callback = callback })
+  table.insert(self.tasks, pos, { fn = fn, callback = callback, data = data })
 end
 
 function queue.run_next(self)
@@ -180,7 +186,7 @@ local function get_body()
   local max_size = CONFIG.get().ui.max_response_size
 
   if vim.fn.getfsize(GLOBALS.BODY_FILE) > max_size then
-    FS.write_file(GLOBALS.HEADERS_FILE, "Content-Type: " .. "text/plain", true)
+    FS.write_file(GLOBALS.HEADERS_FILE, "Content-Type: text/plain", true)
     return "The size of response is > " .. max_size / 1024 .. "Kb.\nPath to response: " .. GLOBALS.BODY_FILE
   else
     return FS.read_file(GLOBALS.BODY_FILE) or ""
@@ -254,7 +260,7 @@ local function process_response(request_status, parsed_request, callback)
   process_internal(parsed_request)
 
   if process_external(parsed_request, response) then -- replay request
-    M.queue:add(function()
+    M.queue:add({ request = parsed_request }, function()
       process_request({ parsed_request }, parsed_request, parsed_request.environment, callback)
     end, 1)
   end
@@ -452,7 +458,7 @@ M.run_parser = function(requests, variables, line_nr, callback)
   for _, request in ipairs(requests) do
     INLAY.show(DB.current_buffer, "loading", request.show_icon_line_number)
 
-    M.queue:add(function()
+    M.queue:add({ request = request }, function()
       if execute_before_request(request) then
         initialize()
         process_request(requests, request, variables, callback)
