@@ -8,7 +8,7 @@ local M = {}
 ---@param ... any
 ---@return boolean|nil, ... any
 M.co_resume = function(co, ...)
-  Logger.trace("Resuming coroutine - status: " .. coroutine.status(co))
+  Logger.trace("Resuming coroutine - status: " .. (co and coroutine.status(co) or "nil"))
   if not co or coroutine.status(co) ~= "suspended" then return false end
 
   local result = { coroutine.resume(co, ...) }
@@ -26,18 +26,24 @@ end
 ---@param ... any
 ---@return boolean|nil, ... any
 M.co_yield = function(co, timeout, ...)
-  Logger.trace("Yielding coroutine - status: " .. coroutine.status(co) .. " timeout: " .. (timeout or "none"))
+  Logger.trace(
+    "Yielding coroutine - status: " .. (co and coroutine.status(co) or "nil") .. " timeout: " .. (timeout or "none")
+  )
   if not co or coroutine.status(co) ~= "running" then return false end
 
+  local timer
   if timeout then
-    local timer = vim.uv.new_timer()
+    timer = vim.uv.new_timer()
     timer:start(timeout, 0, function()
       timer:close()
-      M.co_resume(co, false, "timeout")
+      M.co_resume(co, "timeout")
     end)
   end
 
-  return true, coroutine.yield(...)
+  local result = { coroutine.yield(...) }
+  if timer then pcall(timer.close, timer) end
+
+  return true, unpack(result)
 end
 
 ---If in coroutine, wraps a function in vim.schedule and executes it, waiting for the result
@@ -45,6 +51,7 @@ end
 ---@param fn function
 ---@param ... any, ... any
 M.co_wrap = function(co, fn, ...)
+  Logger.trace("Wrapping coroutine - status: " .. (co and coroutine.status(co) or "nil"))
   if not (co and coroutine.status(co) == "running") then return fn(...) end
 
   local args = { ... }

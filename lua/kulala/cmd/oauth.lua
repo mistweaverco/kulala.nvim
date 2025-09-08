@@ -13,7 +13,7 @@ local Tcp = require("kulala.cmd.tcp")
 
 local M = {}
 
-local request_timeout = 30000 -- 30 seconds
+local request_timeout = 60000 -- 30 seconds
 local request_interval = 5000 -- 5 seconds
 local co, exit
 
@@ -68,10 +68,11 @@ local function make_request(url, body, request_desc, params)
   if not request then return end
 
   local status, response = Async.co_yield(co, request_timeout)
-  if not status and response == "timeout" then return Logger.error("Request timeout: " .. request_desc) end
   if not status then return Logger.error("Request failed: " .. request_desc) end
 
-  local out = (not response or response.stdout == "") and "{}" or response.stdout
+  if response == "timeout" then return Logger.error("Request timeout: " .. request_desc) end
+
+  local out = response.stdout == "" and "{}" or response.stdout
   Logger.debug("Response: " .. vim.inspect(response))
 
   local result, error = Json.parse(out)
