@@ -8,6 +8,7 @@ local M = {}
 ---@param ... any
 ---@return boolean|nil, ... any
 M.co_resume = function(co, ...)
+  Logger.debug("Resuming coroutine - status: " .. coroutine.status(co))
   if not co or coroutine.status(co) ~= "suspended" then return false end
 
   local result = { coroutine.resume(co, ...) }
@@ -25,6 +26,7 @@ end
 ---@param ... any
 ---@return boolean|nil, ... any
 M.co_yield = function(co, timeout, ...)
+  Logger.debug("Yielding coroutine - status: " .. coroutine.status(co) .. " timeout: " .. (timeout or "none"))
   if not co or coroutine.status(co) ~= "running" then return false end
 
   if timeout then

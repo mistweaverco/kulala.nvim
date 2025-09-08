@@ -54,8 +54,9 @@ local function make_request(url, body, request_desc, params)
   cmd = vim.list_extend(cmd, curl_flags)
   cmd = vim.list_extend(cmd, { "-d", body, url })
 
-  local error
   local request = Shell.run(cmd, { err_msg = "Request error", abort_on_stderr = true }, function(system)
+    Logger.debug("Executed request: " .. request_desc)
+    Logger.debug(vim.inspect(system))
     Async.co_resume(co, system)
   end)
 
@@ -66,12 +67,14 @@ local function make_request(url, body, request_desc, params)
 
   if not request then return end
 
-  local _, result = Async.co_yield(co, request_timeout)
-  if result == "timeout" then return Logger.error("Request timeout: " .. request_desc) end
+  local status, response = Async.co_yield(co, request_timeout)
+  if not status and response == "timeout" then return Logger.error("Request timeout: " .. request_desc) end
+  if not status then return Logger.error("Request failed: " .. request_desc) end
 
-  result.stdout = (not result.stdout or result.stdout == "") and "{}" or result.stdout
-  result, error = Json.parse(result.stdout)
-  if not result then error = "Error parsing authentication response:\n" .. error end
+  response.stdout = (not response or response.stdout == "") and "{}" or response.stdout
+
+  local result, error = Json.parse(response.stdout)
+  if not result then error = "Error parsing authentication response: " .. response.stdout .. "\n" .. error end
 
   if result and result.error and result.error ~= "authorization_pending" then
     error = result.error .. "\n" .. (result.error_description or "")
