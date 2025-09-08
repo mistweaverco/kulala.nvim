@@ -60,8 +60,27 @@ M.error = function(message, lines_no, opts)
 end
 
 M.debug = function(message, opts)
+  local time = vim.uv.hrtime() / 1e9
   if debug_level() < 4 then return end
-  M.log(message, log_levels.DEBUG, opts)
+  M.log("[" .. time .. "] " .. message, log_levels.DEBUG, opts)
+end
+
+M.trace = function(message, opts)
+  local trace = debug.traceback()
+  if not trace then return end
+
+  ---@diagnostic disable-next-line: cast-local-type
+  trace = vim.split(trace, "\n")
+  table.remove(trace, 1)
+  table.remove(trace, 1)
+
+  local ret = {}
+  for i, line in pairs(trace) do
+    line = line:gsub("\t", "")
+    if not line:find("pcall") then ret[string.char(i + 64)] = line end
+  end
+
+  M.debug(message .. "\nTRACE:" .. vim.inspect(ret), opts)
 end
 
 return M

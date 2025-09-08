@@ -56,7 +56,7 @@ local function make_request(url, body, request_desc, params)
 
   local request = Shell.run(cmd, { err_msg = "Request error", abort_on_stderr = true }, function(system)
     Logger.debug("Executed request: " .. request_desc)
-    Logger.debug(vim.inspect(system))
+    Logger.debug("Request system\n" .. vim.inspect(system))
     Async.co_resume(co, system)
   end)
 
@@ -71,10 +71,11 @@ local function make_request(url, body, request_desc, params)
   if not status and response == "timeout" then return Logger.error("Request timeout: " .. request_desc) end
   if not status then return Logger.error("Request failed: " .. request_desc) end
 
-  response.stdout = (not response or response.stdout == "") and "{}" or response.stdout
+  local out = (not response or response.stdout == "") and "{}" or response.stdout
+  Logger.debug("Response: " .. vim.inspect(response))
 
-  local result, error = Json.parse(response.stdout)
-  if not result then error = "Error parsing authentication response: " .. response.stdout .. "\n" .. error end
+  local result, error = Json.parse(out)
+  if not result then error = "Error parsing authentication response: " .. tostring(out) .. "\n" .. error end
 
   if result and result.error and result.error ~= "authorization_pending" then
     error = result.error .. "\n" .. (result.error_description or "")
