@@ -79,8 +79,7 @@ M.trace = function(message, opts)
   local ret = {}
   for i, line in pairs(trace) do
     line = line:gsub("\t", "")
-    -- if not line:find("pcall") then ret[string.char(i + 64)] = line end
-    ret[string.char(i + 64)] = line
+    if not line:find("pcall") then ret[string.char(i + 64)] = line end
   end
 
   M.debug(message .. "\nTRACE:" .. vim.inspect(ret), opts)

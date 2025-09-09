@@ -13,7 +13,7 @@ local Tcp = require("kulala.cmd.tcp")
 
 local M = {}
 
-local request_timeout = 60000 -- 30 seconds
+local request_timeout = 30000 -- 30 seconds
 local request_interval = 5000 -- 5 seconds
 local co, exit
 
@@ -56,8 +56,10 @@ local function make_request(url, body, request_desc, params)
 
   local request = Shell.run(cmd, { err_msg = "Request error", abort_on_stderr = true }, function(system)
     Logger.debug("Executed request: " .. request_desc)
-    Logger.debug("Request system\n" .. vim.inspect(system))
-    Async.co_resume(co, system)
+    Logger.debug("Request systemObj\n" .. vim.inspect(system))
+    vim.schedule(function()
+      Async.co_resume(co, system)
+    end)
   end)
 
   local debug_msg = { "Executing request: " .. request_desc, "Url: " .. url, "Payload: " .. body }
