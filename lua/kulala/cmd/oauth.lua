@@ -585,7 +585,6 @@ local function refresh_token_co(config_id)
   if not validate_auth_params(config_id, { "Grant Type" }) then return end
 
   local config = get_auth_config(config_id)
-  if config["Acquire Automatically"] == false then return end
 
   local refresh_token = not M.is_token_expired(config_id, "refresh_token") and config.auth_data.refresh_token
   if not refresh_token then return M.acquire_token(config_id) end
@@ -611,11 +610,8 @@ local function refresh_token_co(config_id)
   return config.auth_data.access_token
 end
 
-M.refresh_token = function(config_id)
-  local Cmd = require("kulala.cmd")
+local function run_auth_async(config_id, fn)
   local buf = DB.current_buffer
-
-  Cmd.queue:pause()
   local progress = Float.create_progress_float("Acquiring auth data.  Press <C-c> to cancel.")
 
   co = coroutine.create(function()
@@ -629,19 +625,48 @@ M.refresh_token = function(config_id)
       vim.keymap.del("n", "<C-c>", { buffer = buf })
     end, { buffer = buf, nowait = true })
 
-    if refresh_token_co(config_id) then
-      Cmd.queue:resume()
-    else
-      vim.schedule(function()
-        Inlay.show(DB.current_buffer, "error", Cmd.queue.previous_task.data.request.show_icon_line_number)
-      end)
-    end
+    fn()
 
     progress.hide()
     co, exit = nil, nil
   end)
 
   Async.co_resume(co)
+end
+
+M.refresh_token = function(config_id)
+  local Cmd = require("kulala.cmd")
+  Cmd.queue:pause()
+
+  run_auth_async(config_id, function()
+    if refresh_token_co(config_id) then
+      Cmd.queue:resume()
+    elseif Cmd.queue.previous_task then
+      vim.schedule(function()
+        Inlay.show(DB.current_buffer, "error", Cmd.queue.previous_task.data.request.show_icon_line_number)
+      end)
+    end
+  end)
+end
+
+M.refresh_token_manually = function(config_id)
+  run_auth_async(config_id, function()
+    if refresh_token_co(config_id) then
+      Logger.info("Token refreshed for config: " .. config_id)
+    else
+      Logger.error("Failed to refresh token for config: " .. config_id)
+    end
+  end)
+end
+
+M.acquire_token_manually = function(config_id)
+  run_auth_async(config_id, function()
+    if M.acquire_token(config_id) then
+      Logger.info("Token acquired for config: " .. config_id)
+    else
+      Logger.error("Failed to acquire token for config: " .. config_id)
+    end
+  end)
 end
 
 ---Grant Type - all
@@ -655,7 +680,13 @@ M.get_token = function(type, config_id)
   token_type = config["Grant Type"] == "Implicit" and "code" or token_type
 
   local token = not M.is_token_expired(config_id) and config.auth_data[token_type]
-  _ = not token and M.refresh_token(config_id)
+
+  if config["Acquire Automatically"] == false then
+    return token
+      or Logger.info("`Acquire Automatically = false`\nNo valid access/refresh token for config: " .. config_id)
+  end
+
+  if not token then M.refresh_token(config_id) end
 
   return config.auth_data[token_type]
 end
