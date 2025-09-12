@@ -84,3 +84,34 @@ run #Authentication
 GET http://localhost:8000/dashboard
 Cookie: laravel_session={{session}}
 ```
+
+### Updating variables in http-profile.env.json from scripts
+
+```http
+POST http://httpbin.org/post HTTP/1.1
+Content-Type: application/json
+
+> {%
+  -- lua
+  local fs = require("kulala.utils.fs")
+  local vars = fs.read_json("http-client.env.json") -- absolute path or relative to current buffer
+  
+  vars.dev.my_var = "hello world"
+  fs.write_json("http-client.env.json", vars, true) -- absolute path or relative to current buffer
+  
+  client.log(vars)
+%}
+
+> {%
+  const fs = require("fs");
+  const json = fs.readFileSync("http-client.env.json", "utf8");
+  const vars = JSON.parse(json);
+  
+  vars.dev.my_var = "hello my world";
+  
+  const jsonString = JSON.stringify(vars, null, 2);
+  fs.writeFileSync("http-client.env.json", jsonString, "utf8");
+  
+  console.log(vars);
+%}
+```
