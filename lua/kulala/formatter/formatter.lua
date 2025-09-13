@@ -90,9 +90,9 @@ local function format(ft, text, opts)
   local id = get_formatter_id(ft, opts)
   if not id or id <= 0 then return end
 
-  local ret = vim.fn.chansend(id, text)
+  local status, ret = pcall(vim.fn.chansend, id, text)
 
-  if ret == 0 then -- retry on error
+  if not status or ret == 0 then -- retry on error
     vim.fn.jobstop(id)
     id = get_formatter_id(ft, opts)
     ret = vim.fn.chansend(id, text)
@@ -553,7 +553,7 @@ M.format = function(buffer, params)
     return
   end
 
-  add_request_separator(buf) -- ensure at least one request separator exists
+  if not params.range then add_request_separator(buf) end
 
   local lang = "kulala_http"
   local tree = ts.get_parser(buf, lang):parse()[1]

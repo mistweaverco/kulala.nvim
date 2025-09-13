@@ -2526,7 +2526,7 @@
     },
     "identifier": {
       "type": "PATTERN",
-      "value": "[A-Za-z_.\\$\\d\\u00A1-\\uFFFF-]+(\\([^)]*\\))?"
+      "value": "[A-Za-z_.$\\d\\u00A1-\\uFFFF-]+(\\[[^\\]]+\\]|\\.[A-Za-z_.$\\d\\u00A1-\\uFFFF-]+|\\([^)]*\\))?"
     },
     "path": {
       "type": "PREC_RIGHT",

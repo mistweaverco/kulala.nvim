@@ -58,7 +58,11 @@ local function get_header_value_from_path(name, method, subpath)
   local base_table = get_data(name, method)
   if not base_table then return end
 
-  local result = base_table.headers_tbl
+  local result = vim.iter(base_table.headers_tbl):fold({}, function(acc, k, v)
+    acc[string.lower(k)] = v
+    return acc
+  end)
+
   local path_parts = {}
 
   -- Split the path into parts
@@ -67,13 +71,10 @@ local function get_header_value_from_path(name, method, subpath)
   end
 
   for _, key in ipairs(path_parts) do
-    key = tonumber(key) or key
+    key = tonumber(key) or key:lower()
 
-    if result[key] then
-      result = result[key]
-    else
-      return -- Return nil if any part of the path is not found
-    end
+    if not result[key] then return end
+    result = result[key]
   end
 
   return type(result) == "table" and result[1] or result
