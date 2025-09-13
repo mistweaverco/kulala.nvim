@@ -53,8 +53,10 @@ M.check_formatter = function(callback, wait)
     )
     Async.co_yield(co)
 
-    Db.settings:write { fmt_build_ver_local = Db.session.fmt_build_ver_repo }
-    vim.g.kulala_fmt_installing = false
+    Async.co_wrap(co, function()
+      Db.settings:write { fmt_build_ver_local = Db.session.fmt_build_ver_repo }
+      vim.g.kulala_fmt_installing = false
+    end)
 
     _ = callback and callback()
     progress.hide()

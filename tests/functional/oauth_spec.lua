@@ -676,7 +676,7 @@ describe("oauth", function()
     end)
   end)
 
-  pending("revokes token", function()
+  it("revokes token", function()
     curl.stub { ["http://revoke.url"] = { stdout = "{}" } }
     update_env { ["Revoke URL"] = "http://revoke.url" }
     update_auth_data {
