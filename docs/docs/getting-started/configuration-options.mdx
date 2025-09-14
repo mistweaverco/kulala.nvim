@@ -767,36 +767,15 @@ Default:
 icons = {
   inlay = {
     loading = "⏳",
-    done = "✅"
-    error = "❌",
+    done = "✔",
+    error = "✘",
   },
-
   lualine = "🐼",
-  textHighlight = "WarningMsg",
-  lineHighlight = "Normal",
-}
-```
-
-Example:
-
-```lua
-{
-  "mistweaverco/kulala.nvim",
-  opts = {
-    ui = {
-      icons = {
-        inlay = {
-          loading = "⏳",
-          done = "✅"
-          error = "❌",
-        },
-        lualine = "🐼",
-        textHighlight = "WarningMsg",
-        lineHighlight = "Normal",
-      },
-    },
-  },
-}
+  textHighlight = "WarningMsg", -- highlight group for request elapsed time
+  loadingHighlight = "Normal",
+  doneHighlight = "String",
+  errorHighlight = "ErrorMsg",
+},
 ```
 
 ### ui.syntax_hl
@@ -810,6 +789,11 @@ Highlight groups for http syntax highlighting
       ---@type table<string, string|vim.api.keyset.highlight>
       syntax_hl = {
         ["@punctuation.bracket.kulala_http"] = "Number",
+        ["@character.special.kulala_http"] = "Special",
+        ["@operator.kulala_http"] = "Special",
+        ["@variable.kulala_http"] = "String",
+        ["@redirect_path.kulala_http"] = "Number",
+        ["@external_body_path.kulala_http"] = "String",
       },
     }
   },
@@ -844,7 +828,7 @@ Example:
 
 Do not show responses over maximum size, in bytes
 
-Default: `32000`
+Default: `32768` (32 KB)
 
 ### ui.show_request_summary
 

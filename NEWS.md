@@ -2,14 +2,28 @@
 
 ## Version 5.3.3
 
-### Enhancement: optimize formatter, add formatter for scripts
-### Enhancement: add opts `urlencode_skip` and `urlencode_force` to specify which variables to skip/force url encoding
-### Feature: add `# @delay` to delay request execution
-### Feature: add `# @env-stdin-cmd-pre` and `# @stdin-cmd-pre` to run shell commands before requests
-### Feature: support Kulala LSP auto completion in external scripts
-### Feature: support variables in redirect response path
-### Feature: do not display big responses + `max_response_size` config option
-### Feature: format json response on redirect
+### Breakig change: change HTML formatter to use `prettier` instead of `xmllint`
+
+### Feature: add `urlencode_skip/force` config opttion, add `[]` to default encoded chars [Configuration](getting-started/configuration-options.mdx)
+### Feature: format json response on redirect, add `format_json_on_redirect` config option [Configuration](getting-started/configuration-options.mdx)
+### Feature: support importing .grapql files
+### Feature: do not display big responses, add `max_response_size` config option [Configuration](getting-started/configuration-options.mdx)
+### Feature: format json response on redirect, add `format_json_on_redirect` config option [Configuration](getting-started/configuration-options.mdx)
+### Feature: add `# @env-stdin-cmd-pre` and `# @stdin-cmd-pre` [Basic Usage](usage/basic-usage.md)
+### Feature: add `# @delay` to delay request execution [Basic Usage](usage/basic-usage.md)
+### Feature: support LSP in js buffers to complete request/response/client methods
+
+### Enhancement: Mouse support for winbar ui
+### Enhancement: add `before_request` hook [Configuration](getting-started/configuration-options.mdx)
+### Enhancement: add highlight opts for status icons [Configuration](getting-started/configuration-options.mdx)
+### Enhancement: add syntax hl for grpc errors
+### Enhancement: support variables in included json files
+### Enhancement: optimize formatter, add formatting for graphql, json and scripts
+### Enhancement: wrap {{variables}} with quotes in json bodies, add `quote_json_variables` config option, [Configuration](getting-started/configuration-options.mdx)
+### Enhancement: support nested "a.b.c" env variables
+### Enhancement: support using variables in redirect response directive
+
+### Docs: add recipes for updating variables in `http-client.env.json` [Recipes](usage/recipes.md) 
 
 ## Version 5.3.2
 
