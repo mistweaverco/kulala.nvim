@@ -161,8 +161,11 @@ end
 --- @usage local p = fs.write_file('Makefile', 'all: \n\t@echo "Hello World"')
 M.write_file = function(filename, content, append, binary)
   local f, mode
+
   mode = append and "a" or "w"
   mode = binary and mode .. "b" or mode
+
+  filename = M.get_file_path(filename)
 
   f = io.open(filename, mode)
   if not f then return false end
@@ -349,6 +352,7 @@ end
 ---@param opts? table<{ verbose: boolean, luanil: table<{object: boolean, array: boolean }> }> -- verbose: log errors
 M.read_json = function(filename, opts)
   local content = M.read_file(filename)
+  content = content == "" and "{}" or content
   return content and Json.parse(content, opts, filename)
 end
 

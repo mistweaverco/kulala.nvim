@@ -4,6 +4,7 @@ local Crypto = require("kulala.cmd.crypto")
 local DB = require("kulala.db")
 local Env = require("kulala.parser.env")
 local Float = require("kulala.ui.float")
+local Inlay = require("kulala.inlay")
 local Json = require("kulala.utils.json")
 local Logger = require("kulala.logger")
 local Shell = require("kulala.cmd.shell_utils")
@@ -53,24 +54,30 @@ local function make_request(url, body, request_desc, params)
   cmd = vim.list_extend(cmd, curl_flags)
   cmd = vim.list_extend(cmd, { "-d", body, url })
 
-  local error
   local request = Shell.run(cmd, { err_msg = "Request error", abort_on_stderr = true }, function(system)
-    Async.co_resume(co, system)
+    Logger.debug("Executed request: " .. request_desc .. "\n" .. vim.inspect(system))
+    vim.schedule(function()
+      Async.co_resume(co, system)
+    end)
   end)
 
-  local debug_msg = { "Executing request: ", request_desc, "Url: " .. url, "Payload: " .. body }
+  local debug_msg = { "Executing request: " .. request_desc, "Url: " .. url, "Payload: " .. body }
   _ = params and params.headers and table.insert(debug_msg, "Headers: " .. params.headers)
 
   Logger.debug(table.concat(debug_msg, "\n"))
 
   if not request then return end
-  local status, result = Async.co_yield(co, request_timeout)
 
-  if result == "timeout" then return Logger.error("Request timeout: " .. request_desc) end
-  result = status and result or request:wait()
+  local status, response = Async.co_yield(co, request_timeout)
+  Logger.debug("Response: " .. vim.inspect(response))
 
-  result, error = Json.parse(result.stdout or "{}")
-  if not result then error = "Error parsing authentication response:\n" .. error end
+  if not status then return Logger.error("Request failed: " .. request_desc) end
+  if response == "timeout" then return Logger.error("Request timeout: " .. request_desc) end
+
+  local out = response.stdout == "" and "{}" or response.stdout
+
+  local result, error = Json.parse(out)
+  if not result then error = "Error parsing authentication response: " .. tostring(out) .. "\n" .. error end
 
   if result and result.error and result.error ~= "authorization_pending" then
     error = result.error .. "\n" .. (result.error_description or "")
@@ -155,6 +162,7 @@ local function add_pkce(config_id, body, request_type)
   local verifier = config.auth_data.pkce_verifier or pkce["Code Verifier"] or Crypto.pkce_verifier()
 
   config.auth_data.pkce_verifier = request_type == "auth" and verifier or nil
+  config = update_auth_data(config_id, config.auth_data, true)
 
   local challenge = Crypto.pkce_challenge(verifier, challenge_method)
 
@@ -476,6 +484,7 @@ M.acquire_auth = function(config_id)
   local code = M.receive_code(config_id)
   if not code then return Logger.error("Failed to acquire code for config: " .. config_id) end
 
+  Logger.info("Authorization code/token acquired for config: " .. config_id)
   config = update_auth_data(config_id, { code = code, acquired_at = os.time() })
 
   return code
@@ -557,8 +566,13 @@ M.acquire_token = function(config_id)
   local out = make_request(url, body, "acquire token", { headers = headers })
   if not out then return end
 
+  Logger.debug("Token acquired for config: " .. config_id)
   out.acquired_at = os.time()
-  if out.refresh_token then out.refresh_token_acquired_at = os.time() end
+
+  if out.refresh_token then
+    out.refresh_token_acquired_at = os.time()
+    Logger.debug("Refresh Token acquired for config: " .. config_id)
+  end
 
   config = update_auth_data(config_id, out)
 
@@ -571,7 +585,6 @@ local function refresh_token_co(config_id)
   if not validate_auth_params(config_id, { "Grant Type" }) then return end
 
   local config = get_auth_config(config_id)
-  if config["Acquire Automatically"] == false then return end
 
   local refresh_token = not M.is_token_expired(config_id, "refresh_token") and config.auth_data.refresh_token
   if not refresh_token then return M.acquire_token(config_id) end
@@ -597,11 +610,8 @@ local function refresh_token_co(config_id)
   return config.auth_data.access_token
 end
 
-M.refresh_token = function(config_id)
-  local Cmd = require("kulala.cmd")
+local function run_auth_async(config_id, fn)
   local buf = DB.current_buffer
-
-  Cmd.queue:pause()
   local progress = Float.create_progress_float("Acquiring auth data.  Press <C-c> to cancel.")
 
   co = coroutine.create(function()
@@ -615,13 +625,48 @@ M.refresh_token = function(config_id)
       vim.keymap.del("n", "<C-c>", { buffer = buf })
     end, { buffer = buf, nowait = true })
 
-    _ = refresh_token_co(config_id) and Cmd.queue:resume()
+    fn()
 
     progress.hide()
     co, exit = nil, nil
   end)
 
   Async.co_resume(co)
+end
+
+M.refresh_token = function(config_id)
+  local Cmd = require("kulala.cmd")
+  Cmd.queue:pause()
+
+  run_auth_async(config_id, function()
+    if refresh_token_co(config_id) then
+      Cmd.queue:resume()
+    elseif Cmd.queue.previous_task then
+      vim.schedule(function()
+        Inlay.show(DB.current_buffer, "error", Cmd.queue.previous_task.data.request.show_icon_line_number)
+      end)
+    end
+  end)
+end
+
+M.refresh_token_manually = function(config_id)
+  run_auth_async(config_id, function()
+    if refresh_token_co(config_id) then
+      Logger.info("Token refreshed for config: " .. config_id)
+    else
+      Logger.error("Failed to refresh token for config: " .. config_id)
+    end
+  end)
+end
+
+M.acquire_token_manually = function(config_id)
+  run_auth_async(config_id, function()
+    if M.acquire_token(config_id) then
+      Logger.info("Token acquired for config: " .. config_id)
+    else
+      Logger.error("Failed to acquire token for config: " .. config_id)
+    end
+  end)
 end
 
 ---Grant Type - all
@@ -635,7 +680,13 @@ M.get_token = function(type, config_id)
   token_type = config["Grant Type"] == "Implicit" and "code" or token_type
 
   local token = not M.is_token_expired(config_id) and config.auth_data[token_type]
-  _ = not token and M.refresh_token(config_id)
+
+  if config["Acquire Automatically"] == false then
+    return token
+      or Logger.info("`Acquire Automatically = false`\nNo valid access/refresh token for config: " .. config_id)
+  end
+
+  if not token then M.refresh_token(config_id) end
 
   return config.auth_data[token_type]
 end
@@ -647,13 +698,28 @@ M.revoke_token = function(config_id)
   local token = config.auth_data.access_token
   if not token then return Logger.info("No token to revoke for config: " .. config_id) end
 
-  local body = "token=" .. config.auth_data.access_token
+  local body = "token="
+    .. config.auth_data.access_token
+    .. "&client_id="
+    .. config["Client ID"]
+    .. "&client_secret="
+    .. config["Client Secret"]
 
   Logger.info("Revoking token for config: " .. config_id)
-  if validate_auth_params(config_id, { "Revoke URL" }) then make_request(config["Revoke URL"], body, "revoke token") end
+
+  if validate_auth_params(config_id, { "Revoke URL" }) then
+    co = coroutine.create(function()
+      if make_request(config["Revoke URL"], body, "revoke token") then
+        Logger.info("Token revoked for config: " .. config_id)
+      end
+    end)
+
+    Async.co_resume(co)
+  end
 
   Table.remove_keys(config.auth_data, {
     "code",
+    "pkce_verifier",
     "access_token",
     "id_token",
     "refresh_token",
@@ -663,8 +729,6 @@ M.revoke_token = function(config_id)
     "refresh_token_expires_in",
   })
   update_auth_data(config_id, config.auth_data, true)
-
-  return "Token revoked for config: " .. config_id
 end
 
 ---Check if the token for the given config_id is expired
