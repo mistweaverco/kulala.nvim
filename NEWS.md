@@ -2,13 +2,12 @@
 
 ## Version 5.3.3
 
-### Breakig change: change HTML formatter to use `prettier` instead of `xmllint`
+### Breaking change: change HTML formatter to use `prettier` instead of `xmllint`
 
-### Feature: add `urlencode_skip/force` config opttion, add `[]` to default encoded chars [Configuration](getting-started/configuration-options.mdx)
+### Feature: add `urlencode_skip/force` config option, add `[]` to default encoded chars [Configuration](getting-started/configuration-options.mdx)
 ### Feature: format json response on redirect, add `format_json_on_redirect` config option [Configuration](getting-started/configuration-options.mdx)
-### Feature: support importing .grapql files
+### Feature: support importing .graphql files
 ### Feature: do not display big responses, add `max_response_size` config option [Configuration](getting-started/configuration-options.mdx)
-### Feature: format json response on redirect, add `format_json_on_redirect` config option [Configuration](getting-started/configuration-options.mdx)
 ### Feature: add `# @env-stdin-cmd-pre` and `# @stdin-cmd-pre` [Basic Usage](usage/basic-usage.md)
 ### Feature: add `# @delay` to delay request execution [Basic Usage](usage/basic-usage.md)
 ### Feature: support LSP in js buffers to complete request/response/client methods
