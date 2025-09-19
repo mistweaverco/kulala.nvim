@@ -57,23 +57,15 @@ If given it’ll be directly used in the HTTP request:
     Authorization: Basic TXlVc2VyOlByaXZhdGU=
 <
 
-Furthermore you can enter username and password in plain text in the
-`Authorization` header field, Kulala will automatically encode it for you.
-
-There will be two possible ways to enter the credentials:
+Furthermore you can enter username and password in plain text in the 
+`Authorization` header field,
+separated by a colon; Kulala will automatically encode it
+for you.
 
 >http
     GET https://www/api HTTP/1.1
     Authorization: Basic {{Username}}:{{Password}}
 <
-
-or
-
->http
-    GET https://www/api HTTP/1.1
-    Authorization: Basic {{Username}} {{Password}}
-<
-
 
 DIGEST AUTHENTICATION*kulala.authentication-authentication-digest-authentication*
 
