@@ -103,8 +103,21 @@ local M = {
     -- enable winbar
     winbar = true,
     -- Specify the panes to be displayed by default
-    -- Current available pane contains { "body", "headers", "headers_body", "script_output", "stats", "verbose", "report", "help" },
+    -- Available pane are { "body", "headers", "headers_body", "script_output", "stats", "verbose", "report", "help" },
     default_winbar_panes = { "body", "headers", "headers_body", "verbose", "script_output", "report", "help" },
+    -- Winbar labels
+    winbar_labels = {
+      body = "Body",
+      headers = "Headers",
+      headers_body = "All",
+      verbose = "Verbose",
+      script_output = "Script Output",
+      stats = "Stats",
+      report = "Report",
+      help = "Help",
+    },
+    -- show/hide winbar keymaps in labels
+    winbar_labels_keymaps = true,
     -- enable/disable variable info text
     -- this will show the variable name and value as float
     -- possible values: false, "float"
