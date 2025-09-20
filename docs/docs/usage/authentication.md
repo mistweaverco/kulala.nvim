@@ -40,25 +40,17 @@ Authorization: Basic TXlVc2VyOlByaXZhdGU=
 
 Furthermore you can enter username and password in
 plain text in the `Authorization` header field,
-Kulala will automatically encode it for you.
-
-There will be two possible ways to enter the credentials:
+separated by a colon; Kulala will automatically encode it
+for you.
 
 ```http
 GET https://www/api HTTP/1.1
 Authorization: Basic {{Username}}:{{Password}}
 ```
 
-or
-
-```http
-GET https://www/api HTTP/1.1
-Authorization: Basic {{Username}} {{Password}}
-```
-
 ## Digest Authentication
 
-Digest is implemented the same way as Basic authentication. 
+Digest is implemented the same way as Basic authentication.
 
 You can enter the `username:password` in plain text
 
@@ -196,8 +188,8 @@ Authorization: Bearer {{login.response.body.$.access_token}}
 
 Kulala supports OAuth 2.0 authorization for Grant Types: `Authorization Code`, `Client Credentials`, `Device Authorization`, `Implicit and Password`.
 
-You can get/refresh an access token and authenticate your request to OAuth 2.0 protected resources. 
-To let you enter the user credentials, Kulala will launch your default browser and will intercept  access tokens automatically if the redirect URL is set to localhost.
+You can get/refresh an access token and authenticate your request to OAuth 2.0 protected resources.
+To let you enter the user credentials, Kulala will launch your default browser and will intercept access tokens automatically if the redirect URL is set to localhost.
 
 A typical flow includes the following steps:
 
@@ -211,13 +203,13 @@ A typical flow includes the following steps:
 
 ### Create authentication configuration
 
-You can manually create an authentication configuration in the `http-client.env.json` file or use Kulala Authentication Manager to create it for you. 
+You can manually create an authentication configuration in the `http-client.env.json` file or use Kulala Authentication Manager to create it for you.
 
 1. Press `<leader>Ru` to open the Authentication Manager, then press `a` to add a new authentication configuration.
 
-This will create a configuration template for the authentication configuration in the `http-client.env.json` file, under the current environment.  
+This will create a configuration template for the authentication configuration in the `http-client.env.json` file, under the current environment.
 
-If you need to change the environment, use `<leader>Re` to open the Environment Manager and select the environment you want to use. The environment file will be 
+If you need to change the environment, use `<leader>Re` to open the Environment Manager and select the environment you want to use. The environment file will be
 searched for upwards from the folder of the current buffer. If no environment file is found, it will be created in the current folder.
 
 ```json
@@ -245,7 +237,7 @@ Specify the authentication parameters. The required parameters depend on the sel
 
 :::info
 
-It is recommended to store public authentication variables in the `http-client.env.json` file and private authentication variables, like `Client Secret`,  in the `http-client.private.env.json` file. 
+It is recommended to store public authentication variables in the `http-client.env.json` file and private authentication variables, like `Client Secret`, in the `http-client.private.env.json` file.
 Auth configurations from both files get merged during authentications.
 
 Kulala will also use `http-client.private.env.json` file to store authentication data, such as access token, refresh token, and expiration time.
@@ -267,9 +259,9 @@ Accept: application/json
 
 Execute the request. Before accessing the protected resource, Kulala will open your default browser and send a request to the authorization server to obtain an access token.
 
-When prompted, complete the authentication process. The browser will be redirected to the provided `Redirect URL`. 
+When prompted, complete the authentication process. The browser will be redirected to the provided `Redirect URL`.
 
-Kulala will intercept this redirect and extract the authorization details from the URL, if the provided  Redirect URL is `localhost` or `127.0.0.1`. Otherwise, you need to manually copy the code from the redirect URL and paste it into Kulala prompt. 
+Kulala will intercept this redirect and extract the authorization details from the URL, if the provided Redirect URL is `localhost` or `127.0.0.1`. Otherwise, you need to manually copy the code from the redirect URL and paste it into Kulala prompt.
 
 For Grant Type `Device Authorization`, the code will be copied into clipboard, to be pasted into consent form.
 
@@ -277,15 +269,15 @@ If the authentication is successfully completed, Kulala will access the protecte
 
 ### Manually acquire access token
 
-When you refer to an authentication configuration in an HTTP request, Kulala automatically gets (or refreshes) an access token before accessing the protected resource. 
+When you refer to an authentication configuration in an HTTP request, Kulala automatically gets (or refreshes) an access token before accessing the protected resource.
 If you want to get an access token without sending an actual request to the protected resource, you can acquire the access token manually.
 
-Open then Authentication Manager by pressing `<leader>Ru` and select the authentication configuration you want to use, then press `g` to acquire a new 
+Open then Authentication Manager by pressing `<leader>Ru` and select the authentication configuration you want to use, then press `g` to acquire a new
 token or `r` to refresh the existing one.
 
 ### Revoke an access token
 
-You can revoke an access token by pressing `r` in the Authentication Manager. This will revoke the access token with the provider and remove authentication data 
+You can revoke an access token by pressing `r` in the Authentication Manager. This will revoke the access token with the provider and remove authentication data
 from the `http-client.private.env.json` file.
 
 ### Use ID token instead of access token
@@ -298,7 +290,7 @@ In an .http file, use the `$auth.idToken` variable, for example, `Authorization:
 
 ### Use custom authentication parameters
 
-Kulala provides an option to define custom request parameters that your authorization server may require. This includes, for example, resource and audience that 
+Kulala provides an option to define custom request parameters that your authorization server may require. This includes, for example, resource and audience that
 extend the OAuth 2.0 Authorization framework.
 
 In your authentication configuration, add the `"Custom Request Parameters"` object.
@@ -311,9 +303,9 @@ If you want to restrict the parameter usage to certain requests, define the valu
 
 "Use" — The scope for using the parameter. It has three possible values:
 
- - "Use": "Everywhere" (in any request)
- - "Use": "In Auth Request" (use in authentication requests only)
- - "Use": "In Token Request" (use in token requests only)
+- "Use": "Everywhere" (in any request)
+- "Use": "In Auth Request" (use in authentication requests only)
+- "Use": "In Token Request" (use in token requests only)
 
 For example:
 
@@ -336,7 +328,7 @@ For example:
 
 :::info
 
-If you need to set custom curl flags for authentication requests, e.g., `--insecure` to skip secure connection verification - you can do this 
+If you need to set custom curl flags for authentication requests, e.g., `--insecure` to skip secure connection verification - you can do this
 with `# @curl-global-..` flags in your .http file or by setting `additional_curl_options` in Kulala's config.
 
 :::
@@ -355,19 +347,19 @@ Method to get access tokens. Possible values: "Authorization Code", "Client Cred
 
 #### Auth URL
 
-Authorization URL to which the application will redirect the client request to get the auth code. 
+Authorization URL to which the application will redirect the client request to get the auth code.
 
 "Auth URL" is required for Authorization Code and Implicit grant types.
 
 #### Token URL
 
-The provider's authentication server, to exchange an authorization code for an access token. 
+The provider's authentication server, to exchange an authorization code for an access token.
 
 "Token URL" is required for Authorization Code, Client Credentials, Device Authorization, and Password grant types.
 
 #### Redirect URL
 
-Client application callback URL to which the request should be redirected after authentication. 
+Client application callback URL to which the request should be redirected after authentication.
 
 This can be a URL from your client application settings, or, if the authorization server accepts any URL, use http://localhost:1234.
 
@@ -381,7 +373,7 @@ Public identifier of your client registered with the API provider. The parameter
 
 #### Client Secret
 
-Confidential identifier used by a client application to authenticate to an authorization server. 
+Confidential identifier used by a client application to authenticate to an authorization server.
 
 The parameter is required for the Client Credentials grant type.
 
@@ -393,8 +385,8 @@ Applicable and required for the Device Authorization grant type.
 
 #### Response Type
 
-The type of response to be returned by the authorization server. This value is optional and will be added to the request URL automatically - `code` for 
-Authorization Code and `token` for Implicit grant types. 
+The type of response to be returned by the authorization server. This value is optional and will be added to the request URL automatically - `code` for
+Authorization Code and `token` for Implicit grant types.
 
 However, you can specify it manually if you need to use a different value or several, like `id_token token`.
 
@@ -414,15 +406,16 @@ Enter one of the following:
 
 Enables Proof Key for Code Exchange (PKCE). Applicable with the Authorization Code grant type.
 
-Enter "PKCE": true to use the default algorithm (S256 hashing the auto generated code verifier). Or customize the behavior using "Code Challenge Method" (plain or S256) 
+Enter "PKCE": true to use the default algorithm (S256 hashing the auto generated code verifier). Or customize the behavior using "Code Challenge Method" (plain or S256)
 and "Code Verifier". For example:
 
 ```json
 "PKCE": {
-    "Code Challenge Method": "Plain", 
+    "Code Challenge Method": "Plain",
     "Code Verifier": "YYLzIBzrXpVaH5KRx86itubKLXHNGnJBPAogEwkhveM"
 },
 ```
+
 #### Assertion
 
 For Grant Type `Client Credentials` with JWT token to authenticate the request. You can provide the JWT token in this field.
@@ -490,13 +483,13 @@ A scope to limit an application's access to a user's account. Possible values de
 
 #### Expires In
 
-If your auth provider does not return the `expires_in` field, a default value of `10` seconds will be set.  Otherwise, you can specify it manually in seconds.
+If your auth provider does not return the `expires_in` field, a default value of `10` seconds will be set. Otherwise, you can specify it manually in seconds.
 
 #### Acquire Automatically
 
-By default, Kulala refreshes or acquires an access token automatically before sending the request. 
+By default, Kulala refreshes or acquires an access token automatically before sending the request.
 
-Enter `"Acquire Automatically": false` if you do not want to automatically 
+Enter `"Acquire Automatically": false` if you do not want to automatically
 refresh or acquire an access token before sending the request. You can refresh or acquire manually.
 
 #### Username
@@ -567,14 +560,14 @@ In the http-client.private.env.json file, add `verifyHostCertificate": false` to
 
 ```json
 {
-    "dev": {
-        "SSLConfiguration": {
-            "verifyHostCertificate": false
-        }
+  "dev": {
+    "SSLConfiguration": {
+      "verifyHostCertificate": false
     }
+  }
 }
 ```
 
-If you run a request with this environment, the certificate verification will be disabled. 
+If you run a request with this environment, the certificate verification will be disabled.
 
 This is equivalent to setting `--insecure` flag in `additional_curl_options` in the config file or with `# @curl-global-insecure` in the request.

@@ -4,39 +4,15 @@ local UI_utils = require("kulala.ui.utils")
 
 local M = {}
 
-local winbar_info = {
-  body = {
-    desc = "Body",
-    keymap = "Show body",
-  },
-  headers = {
-    desc = "Headers",
-    keymap = "Show headers",
-  },
-  headers_body = {
-    desc = "All",
-    keymap = "Show headers and body",
-  },
-  verbose = {
-    desc = "Verbose",
-    keymap = "Show verbose",
-  },
-  script_output = {
-    desc = "Script Output",
-    keymap = "Show script output",
-  },
-  stats = {
-    desc = "Stats",
-    keymap = "Show stats",
-  },
-  report = {
-    desc = "Report",
-    keymap = "Show report",
-  },
-  help = {
-    desc = "Help",
-    keymap = "Show help",
-  },
+local winbar_keymaps = {
+  body = "Show body",
+  headers = "Show headers",
+  headers_body = "Show headers and body",
+  verbose = "Show verbose",
+  script_output = "Show script output",
+  stats = "Show stats",
+  report = "Show report",
+  help = "Show help",
 }
 
 ---set winbar highlight
@@ -59,20 +35,26 @@ M.toggle_winbar_tab = function(buf, win_id, view)
 
   if not (win_id and config.winbar) then return UI_utils.set_virtual_text(buf, 0, "? - help", 0, 0) end
 
-  local winbar = config.default_winbar_panes
+  local winbar_panes = config.default_winbar_panes
+  local winbar_labels = config.ui.winbar_labels
   local winbar_title = {}
 
-  for i, key in ipairs(winbar) do
-    local info = winbar_info[key]
+  for i, key in ipairs(winbar_panes) do
+    local label = winbar_labels[key]
+    local keymap = winbar_keymaps[key]
 
-    if info then
-      local desc = "%" .. i .. "@v:lua.require'kulala.ui.winbar'.select_winbar_tab@" .. info.desc
-      local map = keymaps[info.keymap]
-        and keymaps[info.keymap][1]
-          :gsub("<[Ll]eader>", vim.g.mapleader or "%1")
-          :gsub("<[Ll]ocalleader>", vim.g.maplocalleader or "%1")
+    if label then
+      local desc = "%" .. i .. "@v:lua.require'kulala.ui.winbar'.select_winbar_tab@" .. label
 
-      desc = map and desc .. " (" .. map .. ")" or desc
+      if config.ui.winbar_labels_keymaps then
+        local map = keymaps[keymap]
+          and keymaps[keymap][1]
+            :gsub("<[Ll]eader>", vim.g.mapleader or "%1")
+            :gsub("<[Ll]ocalleader>", vim.g.maplocalleader or "%1")
+
+        desc = map and desc .. " (" .. map .. ")" or desc
+      end
+
       desc = view == key and "%#KulalaTabSel# " .. desc or "%#KulalaTab# " .. desc
       desc = desc .. " %*%X"
 
@@ -80,7 +62,7 @@ M.toggle_winbar_tab = function(buf, win_id, view)
     end
   end
 
-  if keymaps["Previous response"] then
+  if config.ui.winbar_labels_keymaps and keymaps["Previous response"] then
     table.insert(winbar_title, "<- " .. keymaps["Previous response"][1])
     table.insert(winbar_title, keymaps["Next response"][1] .. " ->")
   end
