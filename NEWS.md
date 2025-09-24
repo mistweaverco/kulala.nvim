@@ -2,7 +2,8 @@
 
 ## Version 5.3.4
 
-Enhancement: add `winbar_labels` and `winbar_labels_keymaps` config options to customize winbar labels [Configuration](getting-started/configuration-options.mdx)
+### Enhancement: add `winbar_labels` and `winbar_labels_keymaps` config options to customize winbar labels [Configuration](getting-started/configuration-options.mdx)
+### Feature: support for `custom_dynamic_variables`
 
 ## Version 5.3.3
 

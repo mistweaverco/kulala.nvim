@@ -147,6 +147,24 @@ Example:
 }
 ```
 
+### custom_dynamic_variables
+
+Define your own dynamic variables here, e.g. $randomEmail
+
+```lua
+{
+  opts = {
+    ---@type { [string]: fun():string }
+    custom_dynamic_variables = {
+      ["$randomEmail"] = function()
+        local random = math.random(1000, 9999)
+        return "user" .. random .. "@example.com"
+      end,
+    }
+  },
+}
+```
+
 ### request_timeout
 
 Set request timeout period.

@@ -22,6 +22,9 @@ local M = {
   -- enable reading vscode rest client environment variables
   vscode_rest_client_environmentvars = false,
 
+  -- define your own dynamic variables here, e.g. $randomEmail
+  custom_dynamic_variables = {}, ---@type { [string]: fun():string }
+
   -- default timeout for the request, set to nil to disable
   request_timeout = nil,
   -- continue running requests when a request failure is encountered
@@ -103,7 +106,7 @@ local M = {
     -- enable winbar
     winbar = true,
     -- Specify the panes to be displayed by default
-    -- Available pane are { "body", "headers", "headers_body", "script_output", "stats", "verbose", "report", "help" },
+    -- Available panes are { "body", "headers", "headers_body", "script_output", "stats", "verbose", "report", "help" },
     default_winbar_panes = { "body", "headers", "headers_body", "verbose", "script_output", "report", "help" },
     -- Winbar labels
     winbar_labels = {
