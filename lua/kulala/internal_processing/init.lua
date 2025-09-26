@@ -194,8 +194,8 @@ M.prompt_var = function(metadata_value, secret)
   local prompt = table.concat(kv, " ", 2)
   prompt = prompt == "" and "Enter value for variable [" .. var_name .. "]: " or prompt
 
-  local value = input(prompt)
-  if not value or value == "" then return false end
+  local status, value = pcall(input, prompt)
+  if not (status and value) or value == "" then return false end
 
   DB.update().env[var_name] = value
   return true
