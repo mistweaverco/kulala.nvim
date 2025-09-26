@@ -360,6 +360,21 @@ M.toggle_headers = function()
   M.open_default_view()
 end
 
+M.toggle_display_mode = function()
+  local config = CONFIG.get()
+  local display_mode = config.display_mode
+
+  if display_mode == "float" then
+    display_mode = "split"
+  else
+    display_mode = "float"
+  end
+
+  config.display_mode = display_mode
+  M.close_kulala_buffer()
+  M.open_default_view()
+end
+
 M.show_help = function()
   local keymaps = CONFIG.get().kulala_keymaps
   local help = vim.split(

@@ -66,6 +66,8 @@ Keymaps with `ft` set will only be available in buffers with the specified filet
 
   ["Show help"] = { "?", function() require("kulala.ui").show_help() end, },
   ["Show news"] = { "g?", function() require("kulala.ui").show_news() end, },
+
+  ["Toggle split/float"] = { "|", function() require("kulala.ui").toggle_display_mode() end, prefix = false, },
   ["Close"] = { "q", function() require("kulala.ui").close_kulala_buffer() end, },
 ```
 

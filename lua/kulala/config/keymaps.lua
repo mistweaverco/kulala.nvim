@@ -251,6 +251,13 @@ M.default_kulala_keymaps = {
     end,
     prefix = false,
   },
+  ["Toggle split/float"] = {
+    "|",
+    function()
+      require("kulala.ui").toggle_display_mode()
+    end,
+    prefix = false,
+  },
   ["Close"] = {
     "q",
     function()
