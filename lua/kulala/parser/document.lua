@@ -505,6 +505,11 @@ function parse_document(lines, path)
     if request.url and #request.url > 0 then
       table.insert(requests, request)
     elseif #request.nested_requests > 0 then
+      vim.iter(request.nested_requests or {}):each(function(r)
+        r.metadata = vim.tbl_extend("force", r.metadata, request.metadata)
+        r.start_line = request.start_line
+        r.end_line = request.end_line
+      end)
       vim.list_extend(requests, request.nested_requests)
     end
   end

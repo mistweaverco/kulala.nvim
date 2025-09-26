@@ -4,6 +4,7 @@
 
 ### Enhancement: add `winbar_labels` and `winbar_labels_keymaps` config options to customize winbar labels [Configuration](getting-started/configuration-options.mdx)
 ### Feature: support for `custom_dynamic_variables`
+### Feature: support `run` command with metadata and without URL [Import and Run](usage/import-and-run-http.md)
 
 ## Version 5.3.3
 

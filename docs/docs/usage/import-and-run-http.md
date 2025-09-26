@@ -10,7 +10,10 @@ Kulala lets you import HTTP requests from other .http files. You can:
 
 ### Run all requests from another .http file
 
-In your .http file, enter `run` followed by the name of another .http that you want to include. If the file is in the same directory, enter its name. Otherwise, specify a relative or absolute path to it. For example:
+In your .http file, enter `run` followed by the name of another .http that you want to include. 
+If the file is in the same directory, enter its name. Otherwise, specify a relative or absolute path to it. 
+
+For example:
 
 ```http
 run ./requests/get-requests.http
@@ -19,9 +22,8 @@ run ./requests/get-requests.http
 ### Run specific requests from another .http file
 
 At the top of your .http file, enter `import` followed by the name or path of another .http that contains necessary requests.
-Enter `run` and specify the name of the request that you want to run prefixed with `#`. The name of the request is specified next to delimiter `###`, otherwise the `URL` without the http version is used.
-To autocomplete available requests, use the `Ctrl-X Ctrl-U` shortcut.
-
+Enter `run` and specify the name of the request that you want to run prefixed with `#`. The name of the request is specified next to 
+delimiter `###`, otherwise the `URL` without the http version is used.
 
 ```http get-requests.http
 ### Request 1
@@ -45,7 +47,8 @@ run #POST https://httpbin.org/advanced_2
 If the imported .http file contains variables, you can specify or change their values for specific executions.
 Enter `run` and specify the name of an .http file or a request.
 
-After the name of a request or a file, enter variables in the `(@variable=value)` format. To specify multiple variables, separate them by commas. For example:
+After the name of a request or a file, enter variables in the `(@variable=value)` format. To specify multiple 
+variables, separate them by commas. For example:
 
 ```http
 import new-requests.http
@@ -90,3 +93,42 @@ Content-Type: application/json
   ]
 }
 ```
+
+### Run specific requests from the current .http file and apply metadata to it
+
+You can have just a `run` command in a request block, without a URL line.
+
+In this case, the metadata that you have in the block will be applied to the request that you are running.
+
+In the example below, when you run `#Email`, it will run the `#Main` request and apply the JQ filter from the `#Email` block to the response of the `#Main` request.
+
+```http
+### Main
+
+GET https://reqres.in/api/users?page=1 HTTP/1.1
+X-Api-Key: reqres-free-v1
+Content-Type: application/json
+
+
+### Email
+
+run #Main
+
+# @jq .data[] | {id, email}
+
+
+### Name
+
+run #Main
+
+# @jq .data[] | {id, first_name}
+```
+
+:::info
+
+- When you have a request and a `run` command in the same block, if you place the cursor on the line with 
+the `run` command and execute it, Kulala will only run the requests specified in the `run` command.
+
+- If you have just a `run` command in a request block, to execute it your cursor must be anywhere in that block, but not on the `run` line itself.
+
+:::
