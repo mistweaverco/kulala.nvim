@@ -27,12 +27,16 @@ end
 ---@return { [string]: fun():string }[] #An array-like table of tables which contains dynamic variables definition
 function M.retrieve_all()
   local user_variables = CONFIG.get().custom_dynamic_variables or {}
+
   local rest_variables = {
     ["$uuid"] = uuid,
     ["$date"] = function()
       return os.date("%Y-%m-%d")
     end,
     ["$timestamp"] = os.time,
+    ["$isoTimestamp"] = function()
+      return os.date("!%Y-%m-%dT%H:%M:%SZ")
+    end,
     ["$randomInt"] = function()
       return math.random(0, 9999999)
     end,
@@ -51,6 +55,10 @@ function M.read(name)
   if not vim.tbl_contains(vim.tbl_keys(vars), name) then
     Logger.warn("The dynamic variable '" .. name .. "' was not found. Maybe it's written wrong or doesn't exist?")
     return nil
+  end
+
+  if type(vars[name]) ~= "function" then
+    return Logger.error("Custom dynamic variable " .. name .. " must be a function")
   end
 
   return vars[name]()

@@ -337,10 +337,12 @@ local function process_pre_request_commands(request)
     processor = ext_meta_processors[metadata.name]
     _ = processor and EXT_PROCESSING[processor](metadata.value, response)
   end
+
+  return true
 end
 
 local function parse_request(requests, request, variables)
-  process_pre_request_commands(request)
+  if not process_pre_request_commands(request) then return end
 
   local parsed_request, status = REQUEST_PARSER.parse(requests, variables, request)
   if not parsed_request then

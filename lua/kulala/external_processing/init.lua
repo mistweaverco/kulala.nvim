@@ -65,7 +65,7 @@ M.jq = function(filter, response)
   if not result or result.stdout == "" then return end
 
   response.body = result.stdout
-  response.json = Json.parse(result.stdout, { verbose = true }) or response.json
+  response.json = Json.parse(result.stdout, { verbose = false }) or response.json
   response.filter = filter
 end
 

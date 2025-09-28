@@ -624,10 +624,11 @@ M.foldtext = function()
 
   local line = vim.fn.getline(vim.v.foldstart)
   return "▶ " .. line .. " [" .. (vim.v.foldend - vim.v.foldstart + 1) .. " lines]"
-  -- return vim.fn.foldtext()
 end
 
 local function folding()
+  if not vim.api.nvim_buf_is_loaded(state.current_buffer) then return {} end
+
   local tree = vim.treesitter.get_parser(state.current_buffer, "kulala_http"):parse()[1]
   local root = tree:root()
 

@@ -13,7 +13,7 @@
   value: (_) @string)
 
 ; Variables
-(identifier) @variable
+(identifier) @variable (#set! priority 110)
 
 (variable_declaration
   "@" @character.special)

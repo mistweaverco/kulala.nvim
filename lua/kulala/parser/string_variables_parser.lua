@@ -41,7 +41,6 @@ local function parse_string_variables(str, variables, env, silent)
   return result
 end
 
----Get nested variable from env
 ---@param env table
 ---@param key string -- The key of type "a.b.c"
 local function get_nested_variable(env, key)

@@ -92,10 +92,12 @@ local function format(ft, text, opts)
 
   local status, ret = pcall(vim.fn.chansend, id, text)
 
-  if not status or ret == 0 then -- retry on error
-    vim.fn.jobstop(id)
+  if not status or ret == 0 then -- reset and retry on error
+    reset_formatter_output()
+    stop_formatters()
+
     id = get_formatter_id(ft, opts)
-    ret = vim.fn.chansend(id, text)
+    status, ret = pcall(vim.fn.chansend, id, text)
   end
 
   if ret == 0 then return end
