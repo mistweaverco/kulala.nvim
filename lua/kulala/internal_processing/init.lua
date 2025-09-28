@@ -195,7 +195,7 @@ M.prompt_var = function(metadata_value, secret)
   prompt = prompt == "" and "Enter value for variable [" .. var_name .. "]: " or prompt
 
   local status, value = pcall(input, prompt)
-  if not (status and value) or value == "" then return false end
+  if not status or not value or value == "" then return false end
 
   DB.update().env[var_name] = value
   return true
