@@ -402,6 +402,25 @@ Example:
 <
 
 
+CUSTOM_DYNAMIC_VARIABLES
+
+Define your own dynamic variables here, e.g. $randomEmail
+
+>lua
+    {
+      opts = {
+        ---@type { [string]: fun():string }
+        custom_dynamic_variables = {
+          ["$randomEmail"] = function()
+            local random = math.random(1000, 9999)
+            return "user" .. random .. "@example.com"
+          end,
+        }
+      },
+    }
+<
+
+
 REQUEST_TIMEOUT
 
 Set request timeout period.
@@ -993,6 +1012,33 @@ Example:
         },
       },
     }
+<
+
+
+UI.WINBAR_LABELS
+
+Customize Winbar labels
+
+>lua
+    winbar_labels = {
+      body = "Body",
+      headers = "Headers",
+      headers_body = "All",
+      verbose = "Verbose",
+      script_output = "Script Output",
+      stats = "Stats",
+      report = "Report",
+      help = "Help"
+    }
+<
+
+
+UI.WINBAR_LABELS_KEYMAPS
+
+Show/hide winbar keymaps in labels
+
+>lua
+    winbar_labels_keymaps = true
 <
 
 
