@@ -58,20 +58,12 @@ If given it’ll be directly used in the HTTP request:
 <
 
 Furthermore you can enter username and password in plain text in the
-`Authorization` header field, Kulala will automatically encode it for you.
-
-There will be two possible ways to enter the credentials:
+`Authorization` header field, separated by a colon; Kulala will automatically
+encode it for you.
 
 >http
     GET https://www/api HTTP/1.1
     Authorization: Basic {{Username}}:{{Password}}
-<
-
-or
-
->http
-    GET https://www/api HTTP/1.1
-    Authorization: Basic {{Username}} {{Password}}
 <
 
 
@@ -517,7 +509,7 @@ Method" (plain or S256) and "Code Verifier". For example:
 
 >json
     "PKCE": {
-        "Code Challenge Method": "Plain", 
+        "Code Challenge Method": "Plain",
         "Code Verifier": "YYLzIBzrXpVaH5KRx86itubKLXHNGnJBPAogEwkhveM"
     },
 <
@@ -684,11 +676,11 @@ to the SSLConfiguration object. For example:
 
 >json
     {
-        "dev": {
-            "SSLConfiguration": {
-                "verifyHostCertificate": false
-            }
+      "dev": {
+        "SSLConfiguration": {
+          "verifyHostCertificate": false
         }
+      }
     }
 <
 
