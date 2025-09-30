@@ -98,7 +98,7 @@ local function split_content_by_blocks(lines, line_offset)
     local is_delimiter = line:match("^" .. delimiter)
 
     if is_delimiter or lnum == #lines then
-      if lnum == #lines then
+      if lnum == #lines and not is_delimiter then
         table.insert(block.lines, line)
         lnum = lnum + 1
       end

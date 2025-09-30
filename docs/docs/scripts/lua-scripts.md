@@ -218,9 +218,30 @@ Authorization: Bearer {{TOKEN}}
 
 :::tip
 
-If you want to modify request URL, use `request.url_raw`.
+If you want to modify request URL, headers or body, use `request.url_raw`, `request.headers_raw` or `request.body_raw` respectively.
 
 :::
+
+### Changing JSON body of a request
+
+```http
+### Change JSON body
+
+< {%
+  -- lua
+  local json = require("kulala.utils.json")
+  local body = json.parse(request.body)
+
+  body.your_var = "whatever"
+  request.body_raw = json.encode(body)
+%}
+
+POST http://httpbin.org/post HTTP/1.1
+
+{
+  "your_var": "original_value"
+}
+```
 
 ### Iterating over results and making requests for each item
 
