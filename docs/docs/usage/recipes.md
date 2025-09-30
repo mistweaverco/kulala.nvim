@@ -115,3 +115,63 @@ Content-Type: application/json
   console.log(vars);
 %}
 ```
+
+### Changing JSON body of a request
+
+```http
+### Change JSON body
+
+< {%
+  -- lua
+  local json = require("kulala.utils.json")
+  local body = json.parse(request.body)
+
+  body.your_var = "whatever"
+  request.body_raw = json.encode(body)
+%}
+
+POST http://httpbin.org/post HTTP/1.1
+
+{
+  "your_var": "original_value"
+}
+```
+
+### Iterating over results and making requests for each item
+
+```http
+### Request_one
+
+POST https://httpbin.org/post HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+
+{
+  "results": [
+    { "id": 1, "desc": "some_username" },
+    { "id": 2, "desc": "another_username" }
+  ]
+}
+
+### Request_two
+
+< {%
+  -- lua
+  local response = client.responses["Request_one"].json -- get body of the response decoded as json
+  if not response then return end
+
+  local item = response.json.results[request.iteration()]
+  if not item then return request.skip() end   -- skip if no more items
+
+  client.log(item)
+  request.url_raw = request.environment.url .. "?" .. item.desc
+%}
+
+@url = https://httpbin.org/get
+GET {{url}}
+
+> {%
+  -- lua
+  request.replay()
+%}
+```
