@@ -330,12 +330,12 @@ local function process_pre_request_commands(request)
   local processor
   for _, metadata in ipairs(request.metadata) do
     processor = int_meta_processors[metadata.name]
-    _ = processor and INT_PROCESSING[processor](metadata.value, response)
+    _ = processor and INT_PROCESSING[processor](metadata.value)
   end
 
   for _, metadata in ipairs(request.metadata) do
     processor = ext_meta_processors[metadata.name]
-    _ = processor and EXT_PROCESSING[processor](metadata.value, response)
+    _ = processor and EXT_PROCESSING[processor](metadata.value)
   end
 
   return true
@@ -345,9 +345,14 @@ local function parse_request(requests, request, variables)
   if not process_pre_request_commands(request) then return end
 
   local parsed_request, status = REQUEST_PARSER.parse(requests, variables, request)
+
   if not parsed_request then
-    status = status == "skipped" and "is skipped" or "could not be parsed"
-    return Logger.warn(("Request at line: %s " .. status):format(request.start_line or request.show_icon_line_number))
+    if status == "empty" then return status end
+
+    local msg = status == "skipped" and "is skipped" or "could not be parsed"
+    Logger.warn(("Request at line: %s " .. msg):format(request.start_line or request.show_icon_line_number))
+
+    return status
   end
 
   return parsed_request
@@ -383,6 +388,8 @@ function process_request(requests, request, variables, callback)
   handle_response = vim.schedule_wrap(handle_response)
 
   local parsed_request = parse_request(requests, request, variables)
+
+  if parsed_request == "empty" or parsed_request == "skipped" then return M.queue:run_next() end
   if not parsed_request then
     callback(false, 0, request.start_line)
     return config.halt_on_error and M.queue:reset() or M.queue:run_next()
@@ -438,7 +445,7 @@ end
 
 ---Parses and executes DocumentRequest/s:
 ---if requests is nil then it parses the current document
----if line_nr is nil then runs the first request in the list
+---if line_nr is nil then runs the first request in the list (used for replaying last request)
 ---if line_nr > 0 then runs the request from current buffer around the line number
 ---if line_nr is 0 then runs all or visually selected requests
 ---@param requests? DocumentRequest[]|nil

@@ -731,6 +731,120 @@ describe("requests", function()
           assert_url(4, "https://httpbin.org/imported", "import.http")
         end)
       end)
+
+      describe("processes the shared block", function()
+        before_each(function()
+          h.create_buf(
+            ([[
+            ### Shared
+
+            @shared_var_1 = shared_value_1
+            @shared_var_2 = shared_value_2
+
+            # @curl-connect-timeout 20
+            # @curl-location
+
+            < {%
+              console.log("pre request 0")
+            %}
+
+            < ./pre_script_path_0
+
+            POST https://httpbingo.org/0
+
+            > {%
+              console.log("post request 0")
+            %}
+
+            > ./post_script_path_0
+
+            ### request 1
+
+            @shared_var_2 = local_value_2
+            @local_var = local_value
+
+            # @curl-connect-timeout 10
+            # @curl-data-urlencode
+
+            POST https://httpbingo.org/1
+          ]]):to_table(true),
+            "test.http"
+          )
+        end)
+
+        it("processes the shared block", function()
+          h.send_keys("25j") -- request 1
+          result = parser.parse() or {}
+
+          assert.is_same("https://httpbingo.org/1", result.url)
+
+          assert.is_same("https://httpbingo.org/0", result.shared.url)
+
+          assert.has_properties(result.shared.variables, {
+            shared_var_1 = "shared_value_1",
+            shared_var_2 = "local_value_2",
+          })
+
+          assert.has_properties(result.shared.metadata, {
+            { name = "curl-connect-timeout", value = "20" },
+            { name = "curl-location", value = "" },
+          })
+
+          assert.has_properties(result.shared.scripts, {
+            pre_request = {
+              files = { "./pre_script_path_0" },
+              inline = { 'console.log("pre request 0")' },
+              priority = "inline",
+            },
+
+            post_request = {
+              files = { "./post_script_path_0" },
+              inline = { 'console.log("post request 0")' },
+              priority = "inline",
+            },
+          })
+        end)
+
+        it("applies shared data", function()
+          h.send_keys("25j") -- request 1
+          result = parser.parse() or {}
+
+          assert.is_same("https://httpbingo.org/1", result.url)
+
+          assert.has_properties(result.variables, {
+            shared_var_1 = "shared_value_1",
+            shared_var_2 = "local_value_2",
+            local_var = "local_value",
+          })
+
+          assert.has_properties(result.metadata, {
+            { name = "curl-connect-timeout", value = "10" },
+            { name = "curl-data-urlencode", value = "" },
+            { name = "curl-location", value = "" },
+          })
+        end)
+
+        it("applies variables_scope", function()
+          config.options.variables_scope = "request"
+
+          h.send_keys("25j") -- request 1
+          result = parser.parse() or {}
+
+          config.options.variables_scope = "document"
+
+          assert.is_same("https://httpbingo.org/1", result.url)
+
+          assert.has_properties(result.shared.variables, {
+            shared_var_1 = "shared_value_1",
+            shared_var_2 = "shared_value_2",
+          })
+
+          assert.has_properties(result.variables, {
+            shared_var_2 = "local_value_2",
+            local_var = "local_value",
+          })
+        end)
+      end)
     end)
   end)
 end)

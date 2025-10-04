@@ -22,6 +22,8 @@ local M = {
   -- enable reading vscode rest client environment variables
   vscode_rest_client_environmentvars = false,
 
+  -- set variable scope:  document or request
+  variables_scope = "document", ---@type "document"|"request"
   -- define your own dynamic variables here, e.g. $randomEmail
   custom_dynamic_variables = {}, ---@type { [string]: fun():string }
 

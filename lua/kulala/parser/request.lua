@@ -581,8 +581,14 @@ end
 ---@return Request|nil -- Table containing the request data or nil if parsing fails
 function M.get_basic_request_data(requests, document_request, line_nr)
   local request = vim.deepcopy(default_request)
-  document_request = document_request and { document_request } or DOCUMENT_PARSER.get_request_at(requests, line_nr)
-  document_request = #document_request > 0 and document_request[1]
+
+  if not document_request then
+    local doc_requests = DOCUMENT_PARSER.get_request_at(requests, line_nr)
+
+    document_request = vim.iter(doc_requests):find(function(req)
+      return req.name ~= "Shared"
+    end)
+  end
 
   if not document_request then return end
 
@@ -591,7 +597,7 @@ function M.get_basic_request_data(requests, document_request, line_nr)
   request.url_raw = request.url_raw or document_request.url -- url_raw may be already set if the request is being replayed
   request.body_raw = document_request.body
 
-  Table.remove_keys(request, { "comments", "body", "variables", "start_line", "end_line" })
+  Table.remove_keys(request, { "comments", "body", "start_line", "end_line" })
 
   return request
 end
@@ -614,10 +620,13 @@ M.parse = function(requests, document_variables, document_request)
     line_nr = PARSER_UTILS.get_current_line_number()
   end
 
-  if not requests then return end
+  if not requests or #requests == 0 then return end
 
   local request = M.get_basic_request_data(requests, document_request, line_nr)
   if not request then return end
+
+  local empty_request = false
+  if not request.url then empty_request = true end -- shared blocks with no URL
 
   local env = set_variables(request, document_variables)
   set_headers(request, document_variables, env)
@@ -629,6 +638,7 @@ M.parse = function(requests, document_variables, document_request)
   FS.write_file(GLOBALS.REQUEST_FILE, json, false)
 
   if not process_pre_request_scripts(request, document_variables) then return nil, "skipped" end
+  if empty_request then return nil, "empty" end
 
   if request.method == "GRPC" then
     build_grpc_command(request)

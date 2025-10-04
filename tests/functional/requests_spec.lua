@@ -735,7 +735,7 @@ describe("requests", function()
 
         curl.stub {
           ["https://request_1"] = {
-            boby = '{ "data": { "foo": "baz" } }',
+            body = '{ "data": { "foo": "baz" } }',
           },
         }
 
@@ -765,6 +765,282 @@ describe("requests", function()
         result = h.get_buf_lines(ui_buf):to_string()
         assert.has_string(result, "Request: 2/2")
         assert.has_string(result, "Assert: failed")
+      end)
+    end)
+
+    describe("shared request block", function()
+      local output
+
+      before_each(function()
+        curl.stub { ["*"] = { body = '{ "json": { "document_var": "var"} }' } }
+        output = h.Output.stub()
+
+        h.create_buf(
+          ([[
+            ### Shared
+
+            @shared_var_1 = shared_value_1
+            @shared_var_2 = shared_value_2
+
+            # @curl-connect-timeout 20
+            # @curl-location
+
+            < {%
+              console.log("pre request 0")
+            %}
+
+            < ./tests/functional/scripts/advanced_E_pre.js
+
+            POST https://httpbin.org/0
+            Content-Type: application/json
+
+            > {%
+              console.log("post request 0")
+            %}
+
+            > ./tests/functional/scripts/advanced_E_post.js
+
+            ### request 1
+
+            @shared_var_2 = local_value_2
+            @local_var_1 = local_value_1
+
+            # @curl-connect-timeout 10
+            # @curl-v
+
+            < {%
+              console.log("pre request 1")
+            %}
+
+            < ./tests/functional/scripts/advanced_E_pre.js
+
+            POST https://httpbin.org/1
+            Content-Type: application/json
+
+            > {%
+              console.log("post request 1")
+            %}
+
+            > ./tests/functional/scripts/advanced_E_post.js
+
+            ### request 2
+
+            @shared_var_2 = local_value_2
+            @local_var_2 = local_value_2
+
+            # @curl-data-urlencode
+
+            < {%
+              console.log("pre request 2")
+            %}
+
+            < ./tests/functional/scripts/advanced_E_pre.js
+
+            POST https://httpbin.org/2
+            Content-Type: application/json
+
+            > {%
+              console.log("post request 2")
+            %}
+
+            > ./tests/functional/scripts/advanced_E_post.js
+          ]]):to_table(true),
+          "test.http"
+        )
+      end)
+
+      after_each(function()
+        output.reset()
+      end)
+
+      it("runs all requests with shared block - once", function()
+        kulala.run_all()
+        wait_for_requests(3)
+
+        assert.is_same(3, curl.requests_no)
+
+        assert.is_same("https://httpbin.org/0", curl.requests[1])
+        assert.is_same("https://httpbin.org/1", curl.requests[2])
+        assert.is_same("https://httpbin.org/2", curl.requests[3])
+        assert.is_same({
+          "pre request 0\n",
+          "JS: PRE TEST\n",
+          "post request 0\n",
+          "JS: POST TEST\n",
+          "pre request 1\n",
+          "JS: PRE TEST\n",
+          "post request 1\n",
+          "JS: POST TEST\n",
+          "pre request 2\n",
+          "JS: PRE TEST\n",
+          "post request 2\n",
+          "JS: POST TEST\n",
+        }, output.log)
+      end)
+
+      it("runs all requests with shared block - each", function()
+        h.delete_all_bufs()
+        h.create_buf(
+          ([[
+            ### Shared each
+
+            POST https://httpbin.org/0
+
+            ### request 1
+
+            POST https://httpbin.org/1
+
+            ### request 2
+
+            POST https://httpbin.org/2
+          ]]):to_table(true),
+          "test.http"
+        )
+
+        kulala.run_all()
+        wait_for_requests(4)
+
+        assert.is_same(4, curl.requests_no)
+        assert.has_properties(curl.requests, {
+          "https://httpbin.org/0",
+          "https://httpbin.org/1",
+          "https://httpbin.org/0",
+          "https://httpbin.org/2",
+        })
+      end)
+
+      it("executes shared request before each document request ", function()
+        h.send_keys("25j") -- request 1
+
+        kulala.run()
+        wait_for_requests(2)
+
+        assert.is_same(2, curl.requests_no)
+        assert.is_same("https://httpbin.org/0", curl.requests[1])
+        assert.is_same("https://httpbin.org/1", curl.requests[2])
+        assert.is_same({
+          "pre request 0\n",
+          "JS: PRE TEST\n",
+          "post request 0\n",
+          "JS: POST TEST\n",
+          "pre request 1\n",
+          "JS: PRE TEST\n",
+          "post request 1\n",
+          "JS: POST TEST\n",
+        }, output.log)
+
+        curl.requests = {}
+        curl.requests_no = 0
+        output.log = {}
+
+        h.send_keys("50j") -- request 2
+        kulala.run()
+        wait_for_requests(2)
+
+        assert.is_same(2, curl.requests_no)
+        assert.is_same("https://httpbin.org/0", curl.requests[1])
+        assert.is_same("https://httpbin.org/2", curl.requests[2])
+        assert.is_same({
+          "pre request 0\n",
+          "JS: PRE TEST\n",
+          "post request 0\n",
+          "JS: POST TEST\n",
+          "pre request 2\n",
+          "JS: PRE TEST\n",
+          "post request 2\n",
+          "JS: POST TEST\n",
+        }, output.log)
+      end)
+
+      describe("executes shared block without url", function()
+        it("with pre_request script", function()
+          h.delete_all_bufs()
+
+          h.create_buf(
+            ([[
+            ### Shared
+            < {%
+              console.log("pre request 0")
+            %}
+
+            < ./tests/functional/scripts/advanced_E_pre.js
+
+            ### request 1
+
+            POST https://httpbin.org/1
+          ]]):to_table(true),
+            "test.http"
+          )
+
+          h.send_keys("8j") -- request 1
+
+          kulala.run()
+          wait_for_requests(1)
+
+          assert.is_same({
+            "pre request 0\n",
+            "JS: PRE TEST\n",
+          }, output.log)
+        end)
+
+        it("with nested requests", function()
+          h.delete_all_bufs()
+
+          h.create_buf(
+            ([[
+            ### Shared
+
+            run ./tests/functional/requests/simple.http
+
+            ### request 1
+
+            POST https://httpbin.org/1
+          ]]):to_table(true),
+            "test.http"
+          )
+
+          h.send_keys("8j") -- request 1
+
+          kulala.run()
+          wait_for_requests(2)
+
+          assert.has_properties(curl.requests, {
+            "https://httpbin.org/simple",
+            "https://httpbin.org/1",
+          })
+        end)
+      end)
+
+      it("applies shared variables and metadata, scope request", function()
+        CONFIG.options.variables_scope = "request"
+        h.send_keys("50j") -- request 1
+
+        kulala.run()
+        wait_for_requests(2)
+
+        CONFIG.options.variables_scope = "document"
+
+        result = DB.data.current_request
+        assert.has_properties(result.shared.variables, {
+          shared_var_1 = "shared_value_1",
+          shared_var_2 = "shared_value_2",
+        })
+        assert.has_properties(result.variables, {
+          local_var_2 = "local_value_2",
+          shared_var_1 = "shared_value_1",
+          shared_var_2 = "local_value_2",
+        })
+        assert.has_properties(result.environment, {
+          local_var_1 = "local_value_1",
+          local_var_2 = "local_value_2",
+          shared_var_1 = "shared_value_1",
+          shared_var_2 = "local_value_2",
+        })
+        assert.has_properties(result.metadata, {
+          { name = "curl-data-urlencode", value = "" },
+          { name = "curl-connect-timeout", value = "20" },
+          { name = "curl-location", value = "" },
+        })
       end)
     end)
   end)
