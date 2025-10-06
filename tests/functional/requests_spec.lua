@@ -476,36 +476,33 @@ describe("requests", function()
       assert.has_string(result, expected)
     end)
 
-    it("downloads GraphQL schema with cookies",
-      function()
-        -- Stub the curl response
-        curl.stub {
-          ["https://countries.trevorblades.com"] = {
-            body = h.
-            load_fixture("fixtures/graphql_schema_body.txt"),
-          },
-        }
+    it("downloads GraphQL schema with cookies", function()
+      -- Stub the curl response
+      curl.stub {
+        ["https://countries.trevorblades.com"] = {
+          body = h.load_fixture("fixtures/graphql_schema_body.txt"),
+        },
+      }
 
-        -- Create a GraphQL request with Cookie header
-        h.create_buf(
-          ([[
+      -- Create a GraphQL request with Cookie header
+      h.create_buf(
+        ([[
            POST https://countries.trevorblades.com
            X-REQUEST-TYPE: GraphQL
            Cookie: session_id=abc123
 
            query { __schema { types { name } } }
          ]]):to_table(true),
-          "test.http"
-        )
+        "test.http"
+      )
 
-        kulala.download_graphql_schema()
+      kulala.download_graphql_schema()
 
-        -- Wait and verify the command includes --cookie flag
-        local request_cmd = system.args.cmd
-        assert.is_true(vim.tbl_contains(request_cmd, "--cookie"))
-        assert.is_true(vim.tbl_contains(request_cmd,
-          "session_id=abc123"))
-      end)
+      -- Wait and verify the command includes --cookie flag
+      local request_cmd = system.args.cmd
+      assert.is_true(vim.tbl_contains(request_cmd, "--cookie"))
+      assert.is_true(vim.tbl_contains(request_cmd, "session_id=abc123"))
+    end)
 
     it("parses GraphQL request", function()
       curl.stub {
