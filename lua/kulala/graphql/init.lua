@@ -24,22 +24,12 @@ M.download_schema = function()
   filename = Fs.get_current_buffer_dir() .. "/" .. filename .. ".graphql-schema.json"
 
   local cmd = { Config.get().curl_path, "-s", "-o", filename, "-X", "POST" }
-  local cookies = {}
 
   for header_name, header_value in pairs(req.headers) do
     if header_name and header_value then
-      if header_name:lower() == "cookie" then
-        table.insert(cookies, header_value)
-      else
-        table.insert(cmd, "-H")
-        table.insert(cmd, header_name .. ": " .. header_value)
-      end
+      table.insert(cmd, "-H")
+      table.insert(cmd, header_name .. ": " .. header_value)
     end
-  end
-
-  if #cookies > 0 then
-    table.insert(cmd, "--cookie")
-    table.insert(cmd, table.concat(cookies, "; "))
   end
 
   if req.cookie and #req.cookie > 0 then
