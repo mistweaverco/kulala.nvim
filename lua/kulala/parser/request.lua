@@ -17,7 +17,8 @@ local M = {}
 
 ---@class Request: DocumentRequest
 ---@field metadata { name: string, value: string }[] -- Metadata of the request
----@field environment table<string, string|number> -- The environment and document-variables
+---@field variables table<{name: string, value: string|number|boolean}>
+---@field environment table<string, string|number> -- The environment and request variables
 ---
 ---@field method string -- The HTTP method of the request
 ---@field url string -- The URL with variables and dynamic variables replaced
@@ -149,11 +150,10 @@ end
 
 ---Replace the variables in the URL, headers and body
 ---@param request Request -- The request object
----@param document_variables DocumentVariables -- The variables defined in the document
 ---@param silent boolean|nil -- Whether to suppress not found variable warnings
-local process_variables = function(request, document_variables, silent)
+local process_variables = function(request, silent)
   local env = ENV_PARSER.get_env() or {}
-  local params = { document_variables, env, silent }
+  local params = { request.variables, env, silent }
 
   request.url = parse_url(request.url_raw, unpack(params))
   request.headers = parse_headers(request.headers, unpack(params))
@@ -170,7 +170,7 @@ local process_variables = function(request, document_variables, silent)
     metadata.value = StringVariablesParser.parse(metadata.value, unpack(params))
   end)
 
-  request.environment = vim.tbl_extend("keep", env, document_variables)
+  request.environment = vim.tbl_extend("keep", env, request.variables)
 
   return env
 end
@@ -233,17 +233,16 @@ local function save_body_with_files(request)
   return status, result_path
 end
 
-local function set_variables(request, document_variables)
-  document_variables = document_variables or {}
+local function set_variables(request)
   local has_pre_request_scripts = (#request.scripts.pre_request.inline + #request.scripts.pre_request.files) > 0
 
-  local variables = process_variables(request, document_variables, has_pre_request_scripts)
+  local variables = process_variables(request, has_pre_request_scripts)
   parse_metadata(request)
 
   return variables
 end
 
-local function set_headers(request, document_variables, env)
+local function set_headers(request, env)
   request.headers_display = vim.deepcopy(request.headers)
 
   -- Merge headers from the $shared environment if it does not exist in the request
@@ -257,12 +256,12 @@ local function set_headers(request, document_variables, env)
 
   vim.iter(default_headers):each(function(name, value)
     name = PARSER_UTILS.get_header(request.headers, name) or name
-    value = StringVariablesParser.parse(value, document_variables, env)
+    value = StringVariablesParser.parse(value, request.variables, env)
 
     if name == "Host" then
       request.url = (request.url == "" or request.url:match("^/")) and (value .. request.url) or request.url
     else
-      request.headers[name] = request.headers[name] or StringVariablesParser.parse(value, document_variables, env)
+      request.headers[name] = request.headers[name] or StringVariablesParser.parse(value, request.variables, env)
     end
   end)
 end
@@ -293,7 +292,7 @@ local function process_graphql(request)
   return request
 end
 
-local function process_pre_request_scripts(request, document_variables)
+local function process_pre_request_scripts(request)
   if #request.scripts.pre_request.inline + #request.scripts.pre_request.files == 0 then return true end
 
   Scripts.run("pre_request", request)
@@ -301,7 +300,7 @@ local function process_pre_request_scripts(request, document_variables)
   -- INFO: now replace the variables in the URL, headers and body again,
   -- because user scripts could have changed them,
   -- but this time also warn the user if a variable is not found
-  process_variables(request, document_variables)
+  process_variables(request)
 
   local skip = request.environment["__skip_request"] == "true"
   request.environment["__skip_request"] = nil
@@ -588,17 +587,15 @@ end
 ---or the first request in the list if no document_request or line number is provided
 ---or the request in current_buffer at current line if no arguments are provided
 ---@param requests? DocumentRequest[]|nil Document requests
----@param document_variables? DocumentVariables|nil Document variables
 ---@param document_request? DocumentRequest|nil The request to parse
 ---@return Request|nil -- Table containing the request data or nil if parsing fails
 ---@return string|nil -- Error message if parsing fails
-M.parse = function(requests, document_variables, document_request)
+M.parse = function(requests, document_request)
   local line_nr
 
   if not requests then
     DB.set_current_buffer()
-
-    document_variables, requests = DOCUMENT_PARSER.get_document()
+    requests = DOCUMENT_PARSER.get_document()
     line_nr = PARSER_UTILS.get_current_line_number()
   end
 
@@ -612,8 +609,8 @@ M.parse = function(requests, document_variables, document_request)
   local empty_request = false
   if not request.url then empty_request = true end -- shared blocks with no URL
 
-  local env = set_variables(request, document_variables)
-  set_headers(request, document_variables, env)
+  local env = set_variables(request)
+  set_headers(request, env)
 
   request.url = encode_url(request.url, request.method)
   process_graphql(request)
@@ -621,7 +618,7 @@ M.parse = function(requests, document_variables, document_request)
   local json = vim.json.encode(request)
   FS.write_file(GLOBALS.REQUEST_FILE, json, false)
 
-  if not process_pre_request_scripts(request, document_variables) then return nil, "skipped" end
+  if not process_pre_request_scripts(request) then return nil, "skipped" end
   if empty_request then return nil, "empty" end
 
   if request.method == "GRPC" then

@@ -175,14 +175,14 @@ describe("format", function()
       assert.is_same(result, h.load_fixture("fixtures/formatted.http"))
     end)
 
-    it("allows blocks wihtout url", function()
+    it("allows blocks without url", function()
       h.delete_all_bufs()
       buf = h.create_buf(
         ([[
         ### Shared
 
         @ENV_PROJECT = project_name
-        # @curl-conect-timeout 200
+        # @curl-connect-timeout 200
 
         run ./export/simple.http
 
@@ -207,7 +207,7 @@ describe("format", function()
 
           run ./export/simple.http
 
-          # @curl-conect-timeout 200
+          # @curl-connect-timeout 200
 
           < {%
             console.log("pre request 0");

@@ -121,8 +121,7 @@ local function process_internal(result)
 end
 
 local function process_external(request, response)
-  _ = Scripts.run("post_request", request, response)
-    and REQUEST_PARSER.process_variables(request, request.environment, true)
+  if Scripts.run("post_request", request, response) then REQUEST_PARSER.process_variables(request, true) end
 
   response.script_pre_output = FS.read_file(GLOBALS.SCRIPT_PRE_OUTPUT_FILE) or ""
   response.script_post_output = FS.read_file(GLOBALS.SCRIPT_POST_OUTPUT_FILE) or ""
@@ -134,7 +133,7 @@ local function process_external(request, response)
   local replay = request.environment["__replay_request"] == "true"
   request.environment["__replay_request"] = nil
 
-  return replay
+  return replay and "replay"
 end
 
 local function process_api()
@@ -259,9 +258,9 @@ local function process_response(request_status, parsed_request, callback)
   process_metadata(parsed_request, response)
   process_internal(parsed_request)
 
-  if process_external(parsed_request, response) then -- replay request
+  if process_external(parsed_request, response) == "replay" then
     M.queue:add({ request = parsed_request }, function()
-      process_request({ parsed_request }, parsed_request, parsed_request.environment, callback)
+      process_request({ parsed_request }, parsed_request, callback)
     end, 1)
   end
 
@@ -341,10 +340,10 @@ local function process_pre_request_commands(request)
   return true
 end
 
-local function parse_request(requests, request, variables)
+local function parse_request(requests, request)
   if not process_pre_request_commands(request) then return end
 
-  local parsed_request, status = REQUEST_PARSER.parse(requests, variables, request)
+  local parsed_request, status = REQUEST_PARSER.parse(requests, request)
 
   if not parsed_request then
     if status == "empty" then return status end
@@ -380,14 +379,13 @@ end
 ---Executes DocumentRequest
 ---@param requests DocumentRequest[]
 ---@param request DocumentRequest
----@param variables? DocumentVariables|nil
 ---@param callback function
-function process_request(requests, request, variables, callback)
+function process_request(requests, request, callback)
   local config = CONFIG.get()
   --  to allow running fastAPI within vim.system callbacks
   handle_response = vim.schedule_wrap(handle_response)
 
-  local parsed_request = parse_request(requests, request, variables)
+  local parsed_request = parse_request(requests, request)
 
   if parsed_request == "empty" or parsed_request == "skipped" then return M.queue:run_next() end
   if not parsed_request then
@@ -449,16 +447,12 @@ end
 ---if line_nr > 0 then runs the request from current buffer around the line number
 ---if line_nr is 0 then runs all or visually selected requests
 ---@param requests? DocumentRequest[]|nil
----@param variables? DocumentVariables|nil
 ---@param line_nr? number|nil
 ---@param callback function
-M.run_parser = function(requests, variables, line_nr, callback)
+M.run_parser = function(requests, line_nr, callback)
   M.queue:reset()
 
-  if not requests then
-    variables, requests = DOCUMENT_PARSER.get_document()
-  end
-
+  if not requests then requests = DOCUMENT_PARSER.get_document() end
   if not requests then return Logger.error("No requests found in the document") end
 
   requests = DOCUMENT_PARSER.get_request_at(requests, line_nr)
@@ -470,7 +464,7 @@ M.run_parser = function(requests, variables, line_nr, callback)
     M.queue:add({ request = request }, function()
       if execute_before_request(request) then
         initialize()
-        process_request(requests, request, variables, callback)
+        process_request(requests, request, callback)
       end
     end)
   end

@@ -1013,7 +1013,7 @@ describe("requests", function()
 
       it("applies shared variables and metadata, scope request", function()
         CONFIG.options.variables_scope = "request"
-        h.send_keys("50j") -- request 1
+        h.send_keys("50j") -- request 2
 
         kulala.run()
         wait_for_requests(2)
@@ -1031,7 +1031,6 @@ describe("requests", function()
           shared_var_2 = "local_value_2",
         })
         assert.has_properties(result.environment, {
-          local_var_1 = "local_value_1",
           local_var_2 = "local_value_2",
           shared_var_1 = "shared_value_1",
           shared_var_2 = "local_value_2",

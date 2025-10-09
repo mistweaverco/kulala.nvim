@@ -5,7 +5,6 @@ local FS = require("kulala.utils.fs")
 local Json = require("kulala.utils.json")
 local Logger = require("kulala.logger")
 local PARSER_UTILS = require("kulala.parser.utils")
-local Table = require("kulala.utils.table")
 
 local M = {}
 
@@ -92,6 +91,11 @@ local default_document_request = {
 }
 
 local parse_document
+
+local function is_runnable(request)
+  local pre_scripts = request.scripts.pre_request
+  return request.url or #pre_scripts.inline + #pre_scripts.files > 0 or #request.nested_requests > 0
+end
 
 local function split_content_by_blocks(lines, line_offset)
   local new_block = { lines = {}, name = nil, start_lnum = math.max(1, line_offset), end_lnum = 1 }
@@ -187,14 +191,12 @@ end
 
 -- Variables are defined as `@variable_name=value`
 -- The value can be a string, a number or boolean
-local function parse_variables(request, variables, line)
+local function parse_variables(request, line)
   local variable_name, variable_value = line:match("^@([%w_]+)%s*=%s*(.*)$")
   if variable_name and variable_value then
-    -- remove the @ symbol from the variable name
-    variable_name = variable_name:sub(1)
-    variables[variable_name] = variable_value
-
+    variable_name = variable_name:sub(1) -- remove the @ symbol from the variable name
     request.variables[variable_name] = variable_value
+
     if Config.options.variables_scope == "document" then request.shared.variables[variable_name] = variable_value end
   end
 end
@@ -311,7 +313,7 @@ end
 
 local imports = {}
 
-local function import_requests(path, variables, request, lnum)
+local function import_requests(path, request, lnum)
   path = FS.get_file_path(path, request.file)
 
   local file = FS.read_file(path)
@@ -322,12 +324,11 @@ local function import_requests(path, variables, request, lnum)
     return Logger.warn(msg)
   end
 
-  local r_variables, requests
+  local requests
   imports[tostring(request)] = true
 
   if vim.tbl_count(imports) < 10 then
-    r_variables, requests = parse_document(vim.split(file, "\n"), path)
-    Table.merge("keep", variables, r_variables)
+    requests = parse_document(vim.split(file, "\n"), path)
   else
     Logger.warn("More than 10 nested run/imports detected, skipping, to prevent infinite loop")
   end
@@ -337,14 +338,14 @@ local function import_requests(path, variables, request, lnum)
   return requests
 end
 
-local function parse_import_command(variables, request, imported_requests, line, lnum)
+local function parse_import_command(request, imported_requests, line, lnum)
   local path = line:match("^import (.+)%s*") or ""
   if not path:match("%.http$") then return end
 
-  vim.list_extend(imported_requests, import_requests(path, variables, request, lnum) or {})
+  vim.list_extend(imported_requests, import_requests(path, request, lnum) or {})
 end
 
-local function parse_run_command(requests, imported_requests, variables, request, line, lnum)
+local function parse_run_command(requests, imported_requests, request, line, lnum)
   local variables_to_replace = line:match("^run .+%((@.+)%)%s*$")
   if variables_to_replace then line = line:gsub("%s*%(" .. variables_to_replace .. "%)%s*", "") end
 
@@ -360,16 +361,17 @@ local function parse_run_command(requests, imported_requests, variables, request
 
     _requests = { _request }
   elseif path:match("%.http$") then
-    _requests = import_requests(path, variables, request, lnum) or {}
+    _requests = import_requests(path, request, lnum) or {}
   end
 
   vim.iter(_requests):each(function(_request)
     _request.show_icon_line_number = lnum
-    table.insert(request.nested_requests, _request)
-  end)
 
-  vim.iter(vim.split(variables_to_replace or "", ",%s*")):each(function(variable)
-    parse_variables(request, variables, variable)
+    vim.iter(vim.split(variables_to_replace or "", ",%s*")):each(function(variable)
+      parse_variables(_request, variable)
+    end)
+
+    table.insert(request.nested_requests, _request)
   end)
 end
 
@@ -393,10 +395,10 @@ M.expand_included_filepath = function(line, lnum)
 end
 
 ---Parses given lines or DB.current_buffer document
----returns a list of DocumentVariables, DocumentRequests, imported DocumentRequests or nil if no valid requests found
+---returns a list of DocumentRequests, imported DocumentRequests or nil if no valid requests found
 ---@param lines string[]|nil
 ---@param path string|nil
----@return DocumentVariables|nil, DocumentRequest[]|nil, DocumentRequest[]|nil
+---@return DocumentRequest[]|nil, DocumentRequest[]|nil
 function parse_document(lines, path)
   local buf = DB.get_current_buffer()
   if not path then Diagnostics.clear_diagnostics(buf, "parser") end
@@ -420,7 +422,6 @@ function parse_document(lines, path)
   local shared = vim.deepcopy(default_document_request)
   shared.url = nil
 
-  local variables = {} -- TODO: remove
   local requests = {}
   local imported_requests = {}
   local blocks = split_content_by_blocks(content_lines, line_offset)
@@ -450,9 +451,9 @@ function parse_document(lines, path)
         table.insert(request.comments, comment)
       -- end of inline scripting
       elseif is_request_line and line:match("^import ") then
-        parse_import_command(variables, request, imported_requests, line, lnum)
+        parse_import_command(request, imported_requests, line, lnum)
       elseif is_request_line and line:match("^run ") then
-        parse_run_command(requests, imported_requests, variables, request, line, lnum)
+        parse_run_command(requests, imported_requests, request, line, lnum)
       elseif is_request_line and line:match("^%%}$") then
         is_prerequest_handler_script_inline = false
       -- end of inline scripting
@@ -488,7 +489,7 @@ function parse_document(lines, path)
         local scriptfile = line:match("^> (.*)$")
         table.insert(request.scripts.post_request.files, scriptfile)
       elseif line:match("^@([%w_]+)") then
-        parse_variables(request, variables, line)
+        parse_variables(request, line)
       elseif is_body_section then
         parse_body(request, line, lnum)
       elseif not is_request_line and line:match("^%s*/.+") then
@@ -528,14 +529,16 @@ function parse_document(lines, path)
     end
   end
 
-  return variables, requests, imported_requests
+  if #requests == 0 and is_runnable(shared) then table.insert(requests, shared) end
+
+  return requests, imported_requests
 end
 
 ---Parses given lines or DB.current_buffer document
----returns a list of DocumentVariables, DocumentRequests, imported DocumentRequests or nil if no valid requests found
+---returns a list of DocumentRequests, imported DocumentRequests or nil if no valid requests found
 ---@param lines string[]|nil
 ---@param path string|nil
----@return DocumentVariables|nil, DocumentRequest[]|nil, DocumentRequest[]|nil
+---@return DocumentRequest[]|nil, DocumentRequest[]|nil
 M.get_document = function(lines, path)
   local status, result = xpcall(function()
     return { parse_document(lines, path) }
@@ -564,11 +567,6 @@ local function apply_shared_data(shared, request)
   end)
 
   return request
-end
-
-local function is_runnable(request)
-  local pre_scripts = request.scripts.pre_request
-  return request.url or #pre_scripts.inline + #pre_scripts.files > 0 or #request.nested_requests > 0
 end
 
 local function expand_nested_requests(requests, lnum)
@@ -645,7 +643,7 @@ M.get_request_at = function(requests, linenr)
   if not request then return {} end
 
   local line = vim.fn.getline(linenr)
-  if line:match("^run") then return get_run_requests(request, line) end
+  if line:match("^run") then return expand_nested_requests(get_run_requests(request, line)) end
 
   return expand_nested_requests(request)
 end
@@ -669,5 +667,7 @@ M.get_next_request = function(requests)
     end
   end
 end
+
+M.apply_shared_data = apply_shared_data
 
 return M

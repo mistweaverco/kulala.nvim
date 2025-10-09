@@ -2,7 +2,7 @@
 
 Shared blocks can be used to share variables, metadata, scripts and requests between multiple requests. 
 
-To declare a shared block, use the `### Shared` or `### Shared each` request name. 
+To declare a shared block, use the `### Shared` or `### Shared each` request name for the `first` request in the document.
 
 Shared variables and metadata will apply to all requests that follow the shared block.  
 Variables and metadata declared in a request will shadow shared variables and metadata.

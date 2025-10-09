@@ -368,7 +368,7 @@ local function get_scripts(request)
   return events
 end
 
-local function get_variables(request, variables, env)
+local function get_variables(request, env)
   local vars = {}
 
   vim.iter({ "url", "headers", "cookie", "body" }):each(function(part)
@@ -379,7 +379,7 @@ local function get_variables(request, variables, env)
       end)
 
     for var in content:gmatch("{{(.-)}}") do
-      vars[var] = Var_parser.get_var_value(var, variables, env, false)
+      vars[var] = Var_parser.get_var_value(var, request.variables, env, false)
     end
   end)
 
@@ -412,7 +412,9 @@ local function to_postman(path, export_type)
   vim.iter(files):each(function(path)
     local lines = vim.split(Fs.read_file(path) or "", "\n")
 
-    local variables, requests = Parser.get_document(lines)
+    local requests = Parser.get_document(lines)
+    local variables = {}
+
     if #requests == 0 then return end
 
     local filename = vim.fn.fnamemodify(path, ":t:r")
@@ -440,7 +442,8 @@ local function to_postman(path, export_type)
       item.request.method = request.method -- can be mutated by GRAPHQL in get_body()
       table.insert(item_group.item, item)
 
-      variables = vim.tbl_extend("force", variables, get_variables(request, variables, env))
+      Parser.apply_shared_data(request.shared, request)
+      variables = vim.tbl_extend("force", request.variables, get_variables(request, env))
     end)
 
     table.insert(collection.item, item_group)

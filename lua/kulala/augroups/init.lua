@@ -10,8 +10,8 @@ local show_variable_info_text = function()
   local line = vim.api.nvim_get_current_line()
   local env = Env.get_env() or {}
 
-  local document_variables = Parser.get_document() or {}
-  local variables = vim.tbl_extend("force", document_variables, env)
+  local request = Parser.get_document() or {}
+  local variables = vim.tbl_extend("force", request.variables, env)
 
   -- get variable under cursor
   -- a variable is a string that starts with two {{ and ends with two }}
