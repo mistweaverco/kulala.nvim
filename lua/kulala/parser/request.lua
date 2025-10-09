@@ -59,7 +59,7 @@ local M = {}
 ---@field address string|nil -- host:port, can be omitted if proto|proto-set is provided
 ---@field command string|nil -- describe|list
 ---@field symbol string|nil -- service method in service.method or service/method format, can be omitted if command is provided
----@field flags table <string,string>--- flags: import-path|proto|proto-set|plaintext
+---@field flags table <string,string[]>--- allows repeated flags, such as with headers. flags: import-path|proto|proto-set|plaintext|headers
 local default_grpc_command = {
   address = nil,
   command = nil,
@@ -85,7 +85,13 @@ local function process_grpc_flags(request, flag, value)
 
   value = flag:match("import%-path") and FS.get_file_path(value) or value
   request.grpc = request.grpc or vim.deepcopy(default_grpc_command)
-  request.grpc.flags[flag] = value
+
+  local exists = request.grpc.flags[flag]
+  if exists then
+    table.insert(request.grpc.flags[flag], value)
+  else
+    request.grpc.flags[flag] = { value }
+  end
 end
 
 local function process_curl_flags(request, flag, value)
@@ -525,8 +531,10 @@ local function build_grpc_command(request)
 
   local flags = request.grpc and request.grpc.flags or {}
   vim.iter(flags):each(function(flag, value)
-    table.insert(request.cmd, "-" .. flag)
-    _ = (value and #value > 1) and table.insert(request.cmd, value)
+    for _, v in ipairs(value) do
+      table.insert(request.cmd, "-" .. flag)
+      _ = (value and #value > 1) and table.insert(request.cmd, v)
+    end
   end)
 
   _ = grpc_command.address and table.insert(request.cmd, grpc_command.address)
