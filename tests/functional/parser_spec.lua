@@ -651,7 +651,7 @@ describe("requests", function()
             "test.http"
           )
 
-          result = select(2, doc_parser.get_document()) or {}
+          result = doc_parser.get_document() or {}
           assert.is_same("https://httpbin.org/post", result[1].url)
           assert.is_same("https://httpbin.org/advanced_1", result[2].url)
           assert.is_same("https://httpbin.org/advanced_2", result[3].url)
@@ -676,7 +676,7 @@ describe("requests", function()
             "test.http"
           )
 
-          local _, requests = doc_parser.get_document()
+          local requests = doc_parser.get_document()
           result = doc_parser.get_request_at(requests, 13) or {}
 
           assert.is_same("https://httpbin.org/post", result[1].url)
@@ -701,11 +701,14 @@ describe("requests", function()
             "test.http"
           )
 
-          result = doc_parser.get_document() or {}
+          h.send_keys("8j") -- Request 2
+          result = parser.parse() or {}
 
-          assert.is_same("new_bar", result["foobar"])
-          assert.is_same("new_username", result["ENV_USER"])
-          assert.is_same("project_name", result["ENV_PROJECT"])
+          assert.has_properties(result.variables, {
+            foobar = "new_bar",
+            ENV_USER = "new_username",
+            ENV_PROJECT = "project_name",
+          })
         end)
 
         it("imports and runs nested imports/requests", function()
@@ -719,7 +722,7 @@ describe("requests", function()
             h.expand_path("requests/simple.http")
           )
 
-          _, result = doc_parser.get_document()
+          result = doc_parser.get_document()
           result = doc_parser.get_request_at(result, 0) or {}
 
           assert.is_same(4, #result)

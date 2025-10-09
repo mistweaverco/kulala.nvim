@@ -3,7 +3,7 @@
 ## Version 5.3.4
 
 ### Feature: `Shared blocks` [Shared blocks](usage/shared-blocks.md)
-### Breaking change: deprecate `curl-global` and `grpc-global` flags in favor of flags in `Shared` block
+### Breaking changes: deprecate `curl-global` and `grpc-global` flags in favor of flags in `Shared` block
 ### Enhancement: add `winbar_labels` and `winbar_labels_keymaps` config options to customize winbar labels [Configuration](getting-started/configuration-options.mdx)
 ### Feature: support for `custom_dynamic_variables`
 ### Feature: support `run` command with metadata and without URL [Import and Run](usage/import-and-run-http.md)
