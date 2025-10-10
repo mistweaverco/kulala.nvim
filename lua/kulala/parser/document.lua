@@ -577,7 +577,7 @@ local function expand_nested_requests(requests, lnum)
   local expanded = {}
   local shared = requests[1].shared
 
-  if not requests[1].name:match("Shared") and is_runnable(shared) then
+  if not (requests[1].name == "Shared" or requests[1].name == "Shared each") and is_runnable(shared) then
     if shared.name == "Shared each" then
       local requests_ = vim.deepcopy(requests)
       requests = {}

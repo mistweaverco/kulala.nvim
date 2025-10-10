@@ -844,6 +844,42 @@ describe("requests", function()
             local_var = "local_value",
           })
         end)
+
+        it("handles request names containing 'Shared' but not being shared blocks", function()
+          h.delete_all_bufs()
+          h.create_buf(
+            ([[
+            ### Shared
+
+            @shared_var = shared_value
+
+            ### Shared test request
+
+            POST https://httpbingo.org/test
+
+            ### Shared_in_name
+
+            POST https://httpbingo.org/test2
+          ]]):to_table(true),
+            "test.http"
+          )
+
+          h.send_keys("8j") -- "Shared test request"
+          result = parser.parse() or {}
+
+          assert.is_same("https://httpbingo.org/test", result.url)
+          assert.has_properties(result.variables, {
+            shared_var = "shared_value",
+          })
+
+          h.send_keys("4j") -- "Shared_in_name"
+          result = parser.parse() or {}
+
+          assert.is_same("https://httpbingo.org/test2", result.url)
+          assert.has_properties(result.variables, {
+            shared_var = "shared_value",
+          })
+        end)
       end)
     end)
   end)

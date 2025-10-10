@@ -27,6 +27,15 @@ and later declarations will override previous ones, including the ones in shared
 You can change the scope to `variables_scope = "request"` in the options, which will make variables scoped to the current request only 
 and shared variables will not be overridden by request variables.
 
+## Important Notes
+
+- The shared block name must be **exactly** `### Shared` or `### Shared each` (case-sensitive)
+- Request names like `### Shared test` or `### SharedX` are **not** treated as shared blocks
+- Only one shared block per file is used (if multiple exist, only the first one is processed)
+- Shared blocks can appear anywhere in the file, but conventionally should be at the beginning
+
+## Example
+
 ```http
 ### Shared
 
