@@ -147,6 +147,13 @@ Example:
 }
 ```
 
+### variables_scope
+
+Set variable scope: "document" - variables shared across all requests in the document, no matter where they are defined, later declarations shadow earlier ones.
+"request" - variables scoped to the request they are defined in, variables in Shared block are immutable.
+
+Default: `document`
+
 ### custom_dynamic_variables
 
 Define your own dynamic variables here, e.g. $randomEmail

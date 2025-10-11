@@ -32,6 +32,11 @@ M.download_schema = function()
     end
   end
 
+  if req.cookie and #req.cookie > 0 then
+    table.insert(cmd, "--cookie")
+    table.insert(cmd, req.cookie)
+  end
+
   table.insert(cmd, "-d")
 
   local fp = Fs.get_plugin_path { "graphql", "introspection.graphql" }

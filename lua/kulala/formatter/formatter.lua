@@ -258,6 +258,9 @@ format_rules = {
     insert_formatted(#section.variables > 0, table.concat(section.variables, "\n"), "variable_declaration")
     insert_formatted(#section.commands > 0, table.concat(section.commands, "\n"), "command")
     insert_formatted(#section.metadata > 0, table.concat(section.metadata, "\n"), "metadata")
+
+    -- force parsing request child node, when there is no request node, like in Shared section
+    if #section.request.formatted == 0 then format_rules["request"](node) end
     insert_formatted(#section.request.formatted > 0, section.request.formatted, "request")
 
     section.formatted = section.formatted:gsub("\n*$", "")
@@ -344,9 +347,11 @@ format_rules = {
       or (method ~= "GRPC" and method ~= "WEBSOCKET" and method ~= "WS" and "HTTP/1.1" or "")
 
     local request = current_section().request
-    request.url = ("%s %s %s"):format(method, target_url, http_version)
 
-    format_children(node)
+    if #target_url > 0 then -- format url and children only if url is present
+      request.url = ("%s %s %s"):format(method, target_url, http_version)
+      format_children(node)
+    end
 
     _ = #request.pre_request_script > 0
       and table.insert(formatted, table.concat(request.pre_request_script, "\n\n") .. "\n")

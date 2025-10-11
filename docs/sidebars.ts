@@ -1,4 +1,4 @@
-import type {SidebarsConfig} from '@docusaurus/plugin-content-docs';
+import type { SidebarsConfig } from '@docusaurus/plugin-content-docs';
 
 const sidebars: SidebarsConfig = {
   defaultSidebar: [
@@ -38,6 +38,7 @@ const sidebars: SidebarsConfig = {
         "usage/magic-variables",
         "usage/authentication",
         "usage/import-and-run-http",
+        "usage/shared-blocks",
         "usage/reading-file-data",
         "usage/filter-response",
         "usage/redirect-the-response",

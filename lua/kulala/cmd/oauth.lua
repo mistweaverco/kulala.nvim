@@ -18,26 +18,13 @@ local request_interval = 5000 -- 5 seconds
 local co, exit
 
 local function get_curl_flags()
-  local env = Async.co_wrap(co, function()
-    return DB.find_unique("http_client_env") or {}
+  local RequestParser = require("kulala.parser.request")
+  local request = vim.deepcopy(DB.current_request)
+
+  return Async.co_wrap(co, function()
+    RequestParser.parse_metadata(request)
+    return RequestParser.process_custom_curl_flags(request)
   end)
-
-  local flags = vim.list_extend({}, Config.get().additional_curl_options or {})
-
-  local ssl_config = vim.tbl_get(env, Env.get_current_env(), "SSLConfiguration", "verifyHostCertificate")
-  if ssl_config == false and not vim.tbl_contains(flags, "--insecure") and not vim.tbl_contains(flags, "-k") then
-    table.insert(flags, "--insecure")
-  end
-
-  vim.iter(DB.find_unique("env").curl or {}):each(function(flag, value)
-    if flag == "-k" or flag == "--insecure" then return end
-
-    local prefix = #flag > 1 and "--" or "-"
-    table.insert(flags, prefix .. flag)
-    _ = (value and #value > 1) and table.insert(flags, value)
-  end)
-
-  return flags
 end
 
 ---@param url string

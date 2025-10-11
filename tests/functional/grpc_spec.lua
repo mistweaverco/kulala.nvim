@@ -49,8 +49,8 @@ describe("grpc", function()
     it("builds grpc command", function()
       h.create_buf(
         ([[
-          # @grpc-global-import-path ../protos 
-          # @grpc-global-proto helloworld.proto
+          # @grpc-import-path ../protos 
+          # @grpc-proto helloworld.proto
           GRPC localhost:50051 helloworld.Greeter/SayHello
 
           {"name": "world"}
@@ -76,9 +76,11 @@ describe("grpc", function()
           @server=localhost:50051
           @service=helloworld.Greeter
           @flags=-import-path ../protos-variable -proto helloworld.proto
+
           # @grpc-protoset my-protos.bin
           # @grpc-import-path ../protos-global-local
-          # @grpc-global-import-path ../protos-global 
+          # @grpc-import-path ../protos-global 
+
           GRPC {{flags}} {{server}} {{service}}/SayHello
 
           {"name": "world"}
@@ -99,11 +101,13 @@ describe("grpc", function()
       assert.has_string(result, "localhost:50051 helloworld.Greeter/SayHello")
     end)
 
-    it("processes global and local metadata", function()
+    it("processes shared and local metadata", function()
       h.create_buf(
         ([[
-          # @grpc-global-import-path ../protos 
-          # @grpc-global-proto helloworld.proto
+          ### Shared
+          # @grpc-import-path ../protos 
+          # @grpc-proto helloworld.proto
+
           GRPC localhost:50051 helloworld.Greeter/SayHello
 
           {"name": "world"}
@@ -116,7 +120,6 @@ describe("grpc", function()
         "test.http"
       )
 
-      parser.parse() -- parse the first request to set global metadata
       h.send_keys("9j")
 
       result = parser.parse() or {}
@@ -133,8 +136,8 @@ describe("grpc", function()
     it("runs grpc request and sets content type: json", function()
       h.create_buf(
         ([[
-          # @grpc-global-import-path ../protos 
-          # @grpc-global-proto helloworld.proto
+          # @grpc-import-path ../protos 
+          # @grpc-proto helloworld.proto
           GRPC localhost:50051 describe helloworld.Greeter.SayHello
       ]]):to_table(true),
         "test.http"

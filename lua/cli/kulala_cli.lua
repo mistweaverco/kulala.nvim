@@ -149,8 +149,8 @@ local function print_response()
 end
 
 local get_requests = function()
-  local variables, requests = Parser.get_document()
-  if args.list or #args.name + #args.line == 0 then return requests, variables end
+  local requests = Parser.get_document()
+  if args.list or #args.name + #args.line == 0 then return requests end
 
   requests = vim
     .iter(requests)
@@ -159,7 +159,7 @@ local get_requests = function()
     end)
     :totable()
 
-  return requests, variables
+  return requests
 end
 
 local function is_last()
@@ -173,7 +173,7 @@ local function run_file(file)
   local buf = vim.fn.bufnr(file)
   Db.set_current_buffer(buf)
 
-  local requests, variables = get_requests()
+  local requests = get_requests()
   if #requests == 0 then return Logger.error("No requests found in " .. file) end
 
   if args.list then return print_requests(file, requests) end
@@ -182,7 +182,7 @@ local function run_file(file)
   local processing = true
   local status = true
 
-  Cmd.run_parser(requests, variables, 0, function()
+  Cmd.run_parser(requests, 0, function()
     io.write("*")
 
     db.current_response_pos = #db.responses

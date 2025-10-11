@@ -94,8 +94,10 @@ describe("requests", function()
       it("processes curl flags", function()
         h.create_buf(
           ([[
-            # @curl-global-compressed
+            ### Shared
+            # @curl-compressed
             POST https://httpbingo.org/1
+
             ###
             # @curl-location
             # @curl-data-urlencode
@@ -108,12 +110,14 @@ describe("requests", function()
           "test.http"
         )
 
+        h.send_keys("2j")
         result = parser.parse() or {}
+
         assert.is_true(vim.tbl_contains(result.cmd, "--compressed"))
 
-        h.send_keys("4j")
-
+        h.send_keys("8j")
         result = parser.parse() or {}
+
         assert.is_true(vim.tbl_contains(result.cmd, "--compressed"))
         assert.is_true(vim.tbl_contains(result.cmd, "--location"))
         assert.is_true(vim.tbl_contains(result.cmd, "--data-urlencode"))
@@ -647,7 +651,7 @@ describe("requests", function()
             "test.http"
           )
 
-          result = select(2, doc_parser.get_document()) or {}
+          result = doc_parser.get_document() or {}
           assert.is_same("https://httpbin.org/post", result[1].url)
           assert.is_same("https://httpbin.org/advanced_1", result[2].url)
           assert.is_same("https://httpbin.org/advanced_2", result[3].url)
@@ -672,7 +676,7 @@ describe("requests", function()
             "test.http"
           )
 
-          local _, requests = doc_parser.get_document()
+          local requests = doc_parser.get_document()
           result = doc_parser.get_request_at(requests, 13) or {}
 
           assert.is_same("https://httpbin.org/post", result[1].url)
@@ -697,11 +701,14 @@ describe("requests", function()
             "test.http"
           )
 
-          result = doc_parser.get_document() or {}
+          h.send_keys("8j") -- Request 2
+          result = parser.parse() or {}
 
-          assert.is_same("new_bar", result["foobar"])
-          assert.is_same("new_username", result["ENV_USER"])
-          assert.is_same("project_name", result["ENV_PROJECT"])
+          assert.has_properties(result.variables, {
+            foobar = "new_bar",
+            ENV_USER = "new_username",
+            ENV_PROJECT = "project_name",
+          })
         end)
 
         it("imports and runs nested imports/requests", function()
@@ -715,7 +722,7 @@ describe("requests", function()
             h.expand_path("requests/simple.http")
           )
 
-          _, result = doc_parser.get_document()
+          result = doc_parser.get_document()
           result = doc_parser.get_request_at(result, 0) or {}
 
           assert.is_same(4, #result)
@@ -729,6 +736,120 @@ describe("requests", function()
           assert_url(2, "https://httpbin.org/advanced_b", "advanced_B.http")
           assert_url(3, "https://httpbin.org/advanced_1", "advanced_A.http")
           assert_url(4, "https://httpbin.org/imported", "import.http")
+        end)
+      end)
+
+      describe("processes the shared block", function()
+        before_each(function()
+          h.create_buf(
+            ([[
+            ### Shared
+
+            @shared_var_1 = shared_value_1
+            @shared_var_2 = shared_value_2
+
+            # @curl-connect-timeout 20
+            # @curl-location
+
+            < {%
+              console.log("pre request 0")
+            %}
+
+            < ./pre_script_path_0
+
+            POST https://httpbingo.org/0
+
+            > {%
+              console.log("post request 0")
+            %}
+
+            > ./post_script_path_0
+
+            ### request 1
+
+            @shared_var_2 = local_value_2
+            @local_var = local_value
+
+            # @curl-connect-timeout 10
+            # @curl-data-urlencode
+
+            POST https://httpbingo.org/1
+          ]]):to_table(true),
+            "test.http"
+          )
+        end)
+
+        it("processes the shared block", function()
+          h.send_keys("25j") -- request 1
+          result = parser.parse() or {}
+
+          assert.is_same("https://httpbingo.org/1", result.url)
+
+          assert.is_same("https://httpbingo.org/0", result.shared.url)
+
+          assert.has_properties(result.shared.variables, {
+            shared_var_1 = "shared_value_1",
+            shared_var_2 = "local_value_2",
+          })
+
+          assert.has_properties(result.shared.metadata, {
+            { name = "curl-connect-timeout", value = "20" },
+            { name = "curl-location", value = "" },
+          })
+
+          assert.has_properties(result.shared.scripts, {
+            pre_request = {
+              files = { "./pre_script_path_0" },
+              inline = { 'console.log("pre request 0")' },
+              priority = "inline",
+            },
+
+            post_request = {
+              files = { "./post_script_path_0" },
+              inline = { 'console.log("post request 0")' },
+              priority = "inline",
+            },
+          })
+        end)
+
+        it("applies shared data", function()
+          h.send_keys("25j") -- request 1
+          result = parser.parse() or {}
+
+          assert.is_same("https://httpbingo.org/1", result.url)
+
+          assert.has_properties(result.variables, {
+            shared_var_1 = "shared_value_1",
+            shared_var_2 = "local_value_2",
+            local_var = "local_value",
+          })
+
+          assert.has_properties(result.metadata, {
+            { name = "curl-connect-timeout", value = "10" },
+            { name = "curl-data-urlencode", value = "" },
+            { name = "curl-location", value = "" },
+          })
+        end)
+
+        it("applies variables_scope", function()
+          config.options.variables_scope = "request"
+
+          h.send_keys("25j") -- request 1
+          result = parser.parse() or {}
+
+          config.options.variables_scope = "document"
+
+          assert.is_same("https://httpbingo.org/1", result.url)
+
+          assert.has_properties(result.shared.variables, {
+            shared_var_1 = "shared_value_1",
+            shared_var_2 = "shared_value_2",
+          })
+
+          assert.has_properties(result.variables, {
+            shared_var_2 = "local_value_2",
+            local_var = "local_value",
+          })
         end)
       end)
     end)
