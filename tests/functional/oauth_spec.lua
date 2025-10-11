@@ -112,12 +112,17 @@ describe("oauth", function()
     kulala_config.setup { default_view = "body", debug = 1 }
     http_buf = h.create_buf(
       ([[
-        # @curl-global-verbose
+        ### Shared
+        # @curl-verbose
+        ###
+
         GET https://secure.com
         Authorization: Bearer {{$auth.token("GAPI")}}
       ]]):to_table(true),
+
       h.expand_path("requests/oauth.http")
     )
+    h.send_keys("3j")
   end)
 
   after_each(function()

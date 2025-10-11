@@ -94,8 +94,10 @@ describe("requests", function()
       it("processes curl flags", function()
         h.create_buf(
           ([[
-            # @curl-global-compressed
+            ### Shared
+            # @curl-compressed
             POST https://httpbingo.org/1
+
             ###
             # @curl-location
             # @curl-data-urlencode
@@ -108,12 +110,14 @@ describe("requests", function()
           "test.http"
         )
 
+        h.send_keys("2j")
         result = parser.parse() or {}
+
         assert.is_true(vim.tbl_contains(result.cmd, "--compressed"))
 
-        h.send_keys("4j")
-
+        h.send_keys("8j")
         result = parser.parse() or {}
+
         assert.is_true(vim.tbl_contains(result.cmd, "--compressed"))
         assert.is_true(vim.tbl_contains(result.cmd, "--location"))
         assert.is_true(vim.tbl_contains(result.cmd, "--data-urlencode"))

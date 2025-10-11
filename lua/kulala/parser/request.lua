@@ -78,30 +78,13 @@ local default_request = {
 }
 
 local function process_grpc_flags(request, flag, value)
-  local grpc_global_flags = {}
-
   value = flag:match("import%-path") and FS.get_file_path(value) or value
-
-  if flag:match("^global%-") then
-    grpc_global_flags[flag:sub(8)] = value
-  else
-    request.grpc = request.grpc or vim.deepcopy(default_grpc_command)
-    request.grpc.flags[flag] = value
-  end
-
-  DB.update().env.grpc = vim.tbl_extend("force", DB.find_unique("env").grpc or {}, grpc_global_flags)
+  request.grpc = request.grpc or vim.deepcopy(default_grpc_command)
+  request.grpc.flags[flag] = value
 end
 
 local function process_curl_flags(request, flag, value)
-  local global_flags = {}
-
-  if flag:match("^global%-") then
-    global_flags[flag:sub(8)] = value
-  else
-    request.curl.flags[flag] = value
-  end
-
-  DB.update().env.curl = vim.tbl_extend("force", DB.find_unique("env").curl or {}, global_flags)
+  request.curl.flags[flag] = value
 end
 
 ---@param request Request
@@ -452,14 +435,13 @@ local function process_custom_curl_flags(request)
   local env = DB.find_unique("http_client_env") or {}
 
   local flags = vim.list_extend({}, CONFIG.get().additional_curl_options or {})
-  local curl_flags = vim.tbl_extend("force", DB.find_unique("env").curl or {}, request.curl.flags)
-
   local ssl_config = vim.tbl_get(env, ENV_PARSER.get_current_env(), "SSLConfiguration", "verifyHostCertificate")
+
   if ssl_config == false and not vim.tbl_contains(flags, "--insecure") and not vim.tbl_contains(flags, "-k") then
     table.insert(flags, "--insecure")
   end
 
-  vim.iter(curl_flags):each(function(flag, value)
+  vim.iter(request.curl.flags):each(function(flag, value)
     if flag == "-k" or flag == "--insecure" then return end
 
     if flag == "data-urlencode" then
@@ -469,12 +451,14 @@ local function process_custom_curl_flags(request)
 
     local prefix = #flag > 1 and "--" or "-"
     table.insert(flags, prefix .. flag)
-    _ = (value and #value > 1) and table.insert(flags, value)
+    _ = (value and #value >= 1) and table.insert(flags, value)
   end)
 
   vim.iter(flags):each(function(flag)
     table.insert(request.cmd, flag)
   end)
+
+  return flags
 end
 
 local function toggle_chunked_mode(request)
@@ -532,7 +516,7 @@ local function build_grpc_command(request)
     table.insert(request.cmd, request.body_computed)
   end
 
-  local flags = vim.tbl_extend("force", DB.find_unique("env").grpc or {}, request.grpc and request.grpc.flags or {})
+  local flags = request.grpc and request.grpc.flags or {}
   vim.iter(flags):each(function(flag, value)
     table.insert(request.cmd, "-" .. flag)
     _ = (value and #value > 1) and table.insert(request.cmd, value)
@@ -583,11 +567,9 @@ function M.get_basic_request_data(requests, document_request, line_nr)
   local request = vim.deepcopy(default_request)
 
   if not document_request then
-    local doc_requests = DOCUMENT_PARSER.get_request_at(requests, line_nr)
-
-    document_request = vim.iter(doc_requests):find(function(req)
-      return req.name ~= "Shared"
-    end)
+    local doc_requests = DOCUMENT_PARSER.get_request_at(requests, line_nr) or {}
+    -- return shared requests if it is the only one
+    document_request = line_nr and line_nr > 0 and doc_requests[2] or doc_requests[1]
   end
 
   if not document_request then return end
@@ -625,6 +607,8 @@ M.parse = function(requests, document_variables, document_request)
   local request = M.get_basic_request_data(requests, document_request, line_nr)
   if not request then return end
 
+  DB.current_request = request
+
   local empty_request = false
   if not request.url then empty_request = true end -- shared blocks with no URL
 
@@ -658,5 +642,7 @@ M.parse = function(requests, document_variables, document_request)
 end
 
 M.process_variables = process_variables
+M.parse_metadata = parse_metadata
+M.process_custom_curl_flags = process_custom_curl_flags
 
 return M

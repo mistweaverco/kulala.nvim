@@ -1,28 +1,24 @@
 # Custom Curl Flags
 
-- You can customize the curl command used to make requests in Kulala, on a per-request basis or globally for all requests in a buffer.
+- You can customize the curl command used to make requests in Kulala, on a per-request basis or globally for all requests in a buffer, if included in the `Shared` block.
 
 ## Usage
 
-- Local flags: `# @curl-..` apply for current request only.
-- Global flags: `# @curl-global-..` apply when running all requests in a buffer.
+Use `# @curl-..` prefix, followed by the curl flag you want to use.
 
 ```http
-# @curl-global-compressed
-# @curl-global-non-buffer
-
+# @curl-compressed
+# @curl-non-buffer
 # @curl-location
+
 GET /api/get
 Host: example.com
 ```
 
-:::warning
+:::info
 
-Local flags take precedence over global flags.
+If you need to apply curl flags to OAuth requests, you have to put it into `Shared` block.
 
-If you need to apply curl flags to OAuth requests, you have to use `# @curl-global-..` flags.
-
-In order for global flags to take effect, the request where they are defined must be run at least once.
 :::
 
 ### Some common curl flags you might want to use:

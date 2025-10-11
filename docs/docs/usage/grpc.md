@@ -13,7 +13,6 @@ Ensure you have `grpcurl` installed to use this feature. You can find it here: [
 To make a gRPC request, use the following format:
 
 ```http
-# @grpc-global-flags
 # @grpc-flags
 GRPC flags address command service.method
 ```
@@ -21,8 +20,13 @@ GRPC flags address command service.method
 For example:
 
 ```http
-# @grpc-global-import-path ../protos 
-# @grpc-global-proto helloworld.proto
+### Shared
+
+# @grpc-import-path ../protos 
+# @grpc-proto helloworld.proto
+
+###
+
 GRPC localhost:50051 helloworld.Greeter/SayHello
 Content-Type: application/json
 
@@ -48,10 +52,7 @@ GRPC helloworld.Greeter/SayHello
 
 ### Flags
 
-Flags can be set through metadata either locally per request or globally per buffer. Use the following formats:
-
-- Local flags: `@grpc-..` apply for current request only.
-- Global flags: `@grpc-global-..` apply for all requests in the buffer. Global settings will persist until the buffer is closed or globals are cleared with `<leaderRx>`.
+Flags can be set through metadata either locally per request or globally per buffer, if included in the `Shared` block.
 
 ### Variables
 
@@ -61,15 +62,9 @@ Just as with HTTP requests, you can use variables in gRPC requests. For example:
 @address=localhost:50051
 @service=helloworld.Greeter
 @flags=-import-path ../protos -proto helloworld.proto  -- [!] flags must be prefixed with `-`
+
 GRPC {{flags}} {{address}} {{service}}/SayHello
 Content-Type: application/json
 
 < /path/to/file.json
 ```
-
-:::warning
-
-Flags set in variables override flags set in metatadata, which in turn override global flags.
-In order for global flags to take effect, the request where they are defined must be run at least once.
-
-:::
