@@ -851,6 +851,22 @@ describe("requests", function()
             local_var = "local_value",
           })
         end)
+
+        it("handles unnamed requests without error", function()
+          h.delete_all_bufs()
+          h.create_buf(
+            ([[
+            POST https://httpbingo.org/unnamed
+            Content-Type: application/json
+          ]]):to_table(true),
+            "test.http"
+          )
+
+          result = parser.parse() or {}
+
+          assert.is_same("https://httpbingo.org/unnamed", result.url)
+          assert.is_same(nil, result.name)
+        end)
       end)
     end)
   end)
