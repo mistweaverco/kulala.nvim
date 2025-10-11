@@ -533,7 +533,7 @@ local function build_grpc_command(request)
   vim.iter(flags):each(function(flag, value)
     for _, v in ipairs(value) do
       table.insert(request.cmd, "-" .. flag)
-      _ = (value and #value > 1) and table.insert(request.cmd, v)
+      _ = (v and #v > 1) and table.insert(request.cmd, v)
     end
   end)
 
