@@ -73,9 +73,9 @@ describe("grpc", function()
     it("supports repeated flags", function()
       h.create_buf(
         ([[
-          # @grpc-H testHeader1:testValue1
-          # @grpc-H testHeader2:testValue2
           GRPC localhost:50051 helloworld.Greeter/SayHello
+          testHeader1: testValue1
+          testHeader2: testValue2
       ]]):to_table(true),
         "test.http"
       )
