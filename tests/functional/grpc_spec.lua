@@ -70,6 +70,25 @@ describe("grpc", function()
       assert.has_string(result, "localhost:50051 helloworld.Greeter/SayHello")
     end)
 
+    it("supports repeated flags", function()
+      h.create_buf(
+        ([[
+          GRPC localhost:50051 helloworld.Greeter/SayHello
+          testHeader1: testValue1
+          testHeader2: testValue2
+      ]]):to_table(true),
+        "test.http"
+      )
+
+      result = parser.parse() or {}
+      result = h.to_string(result.cmd):gsub("\n", " ")
+
+      assert.has_string(result, "grpcurl")
+      assert.has_string(result, "-H testHeader1:testValue1")
+      assert.has_string(result, "-H testHeader2:testValue2")
+      assert.has_string(result, "localhost:50051 helloworld.Greeter/SayHello")
+    end)
+
     it("builds grpc substituting variables", function()
       h.create_buf(
         ([[

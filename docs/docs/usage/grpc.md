@@ -48,6 +48,7 @@ GRPC localhost:50051 list
 # @grpc-protoset my-protos.bin
 GRPC helloworld.Greeter/SayHello
 # address is optional when using proto files
+
 ```
 
 ### Flags

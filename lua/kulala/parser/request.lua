@@ -529,6 +529,12 @@ local function build_grpc_command(request)
     _ = (value and #value > 1) and table.insert(request.cmd, value)
   end)
 
+  vim.iter(request.headers):each(function(key, value)
+    value = value == "" and ";" or ":" .. value
+    table.insert(request.cmd, "-H")
+    table.insert(request.cmd, key .. value)
+  end)
+
   _ = grpc_command.address and table.insert(request.cmd, grpc_command.address)
   _ = grpc_command.command and table.insert(request.cmd, grpc_command.command)
   _ = grpc_command.symbol and table.insert(request.cmd, grpc_command.symbol)
