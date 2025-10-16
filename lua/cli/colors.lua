@@ -24,7 +24,7 @@ M.print = function(str, hl_group)
 end
 
 M.print_buf = function(buf)
-  --TODO: optimize be reading end line and end column
+  --TODO: optimize by reading end line and end column
 
   local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
   local char, char_i, color_char

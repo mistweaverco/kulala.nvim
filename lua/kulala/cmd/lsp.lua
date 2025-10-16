@@ -96,7 +96,11 @@ local function get_document()
   if cache:is_fresh() and cache.document_variables and cache.requests then return end
 
   Db.set_current_buffer(state.current_buffer)
-  cache.document_variables, cache.requests = Parser.get_document()
+  cache.requests = Parser.get_document()
+  cache.document_variables = vim.iter(cache.requests):fold({}, function(acc, request)
+    return vim.tbl_extend("force", acc, request.variables)
+  end)
+
   cache:update()
 end
 
@@ -464,6 +468,7 @@ local function code_actions_http()
       fn = Kulala.from_curl,
     },
     { group = "Request", title = "Inspect current request", command = "inspect_current_request", fn = Kulala.inspect },
+    { group = "Request", title = "Open Cookies Jar", command = "open_cookie_jar", fn = Kulala.open_cookies_jar },
     {
       group = "Environment",
       title = "Select environment",

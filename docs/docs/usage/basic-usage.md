@@ -100,8 +100,8 @@ require("nvim-lightbulb").setup({
 #### Directives
 
 - `# @accept chunked` allows you to accept Transfer-Encoding: chunked responses and streamed responses.
-- `# @curl-global-...` and `# @curl-...` allows you to set global and per-request flags for curl requests.
-- `# @grpc-global-...` and `# @grpc-...` allows you to set global and per-request flags for gRPC requests.
+- `# @curl-...` allows you to set flags for curl requests.
+- `# @grpc-...` allows you to set flags for gRPC requests.
 - `# @stdin-cmd-pre` allows you to execute an external command before the request is sent.
 - `# @stdin-cmd` allows you to execute an external command
 - `# @jq` allows you to filter the response body using jq.

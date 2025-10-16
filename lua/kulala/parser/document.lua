@@ -1,15 +1,17 @@
+local Config = require("kulala.config")
 local DB = require("kulala.db")
 local Diagnostics = require("kulala.cmd.diagnostics")
 local FS = require("kulala.utils.fs")
 local Json = require("kulala.utils.json")
 local Logger = require("kulala.logger")
 local PARSER_UTILS = require("kulala.parser.utils")
-local Table = require("kulala.utils.table")
 
 local M = {}
 
 ---@class DocumentRequest
+---@field shared DocumentRequest
 ---@field metadata table<{name: string, value: string}>
+---@field variables table<{name: string, value: string|number|boolean}>
 ---@field comments string[]
 ---
 ---@field method string
@@ -53,7 +55,10 @@ local M = {}
 
 ---@type DocumentRequest
 local default_document_request = {
+  ---@diagnostic disable-next-line: missing-fields
+  shared = {},
   metadata = {},
+  variables = {},
   comments = {},
   method = "",
   url = "",
@@ -87,6 +92,11 @@ local default_document_request = {
 
 local parse_document
 
+local function is_runnable(request)
+  local pre_scripts = request.scripts.pre_request
+  return request.url or #pre_scripts.inline + #pre_scripts.files > 0 or #request.nested_requests > 0
+end
+
 local function split_content_by_blocks(lines, line_offset)
   local new_block = { lines = {}, name = nil, start_lnum = math.max(1, line_offset), end_lnum = 1 }
   local delimiter = "###"
@@ -98,7 +108,7 @@ local function split_content_by_blocks(lines, line_offset)
     local is_delimiter = line:match("^" .. delimiter)
 
     if is_delimiter or lnum == #lines then
-      if lnum == #lines then
+      if lnum == #lines and not is_delimiter then
         table.insert(block.lines, line)
         lnum = lnum + 1
       end
@@ -179,15 +189,15 @@ local function parse_redirect_response(request, line)
   })
 end
 
--- Variable
 -- Variables are defined as `@variable_name=value`
 -- The value can be a string, a number or boolean
-local function parse_variables(variables, line)
+local function parse_variables(request, line)
   local variable_name, variable_value = line:match("^@([%w_]+)%s*=%s*(.*)$")
   if variable_name and variable_value then
-    -- remove the @ symbol from the variable name
-    variable_name = variable_name:sub(1)
-    variables[variable_name] = variable_value
+    variable_name = variable_name:sub(1) -- remove the @ symbol from the variable name
+    request.variables[variable_name] = variable_value
+
+    if Config.options.variables_scope == "document" then request.shared.variables[variable_name] = variable_value end
   end
 end
 
@@ -303,7 +313,7 @@ end
 
 local imports = {}
 
-local function import_requests(path, variables, request, lnum)
+local function import_requests(path, request, lnum)
   path = FS.get_file_path(path, request.file)
 
   local file = FS.read_file(path)
@@ -314,12 +324,11 @@ local function import_requests(path, variables, request, lnum)
     return Logger.warn(msg)
   end
 
-  local r_variables, requests
+  local requests
   imports[tostring(request)] = true
 
   if vim.tbl_count(imports) < 10 then
-    r_variables, requests = parse_document(vim.split(file, "\n"), path)
-    Table.merge("keep", variables, r_variables)
+    requests = parse_document(vim.split(file, "\n"), path)
   else
     Logger.warn("More than 10 nested run/imports detected, skipping, to prevent infinite loop")
   end
@@ -329,14 +338,14 @@ local function import_requests(path, variables, request, lnum)
   return requests
 end
 
-local function parse_import_command(variables, request, imported_requests, line, lnum)
+local function parse_import_command(request, imported_requests, line, lnum)
   local path = line:match("^import (.+)%s*") or ""
   if not path:match("%.http$") then return end
 
-  vim.list_extend(imported_requests, import_requests(path, variables, request, lnum) or {})
+  vim.list_extend(imported_requests, import_requests(path, request, lnum) or {})
 end
 
-local function parse_run_command(requests, imported_requests, variables, request, line, lnum)
+local function parse_run_command(requests, imported_requests, request, line, lnum)
   local variables_to_replace = line:match("^run .+%((@.+)%)%s*$")
   if variables_to_replace then line = line:gsub("%s*%(" .. variables_to_replace .. "%)%s*", "") end
 
@@ -352,16 +361,17 @@ local function parse_run_command(requests, imported_requests, variables, request
 
     _requests = { _request }
   elseif path:match("%.http$") then
-    _requests = import_requests(path, variables, request, lnum) or {}
+    _requests = import_requests(path, request, lnum) or {}
   end
 
   vim.iter(_requests):each(function(_request)
     _request.show_icon_line_number = lnum
-    table.insert(request.nested_requests, _request)
-  end)
 
-  vim.iter(vim.split(variables_to_replace or "", ",%s*")):each(function(variable)
-    parse_variables(variables, variable)
+    vim.iter(vim.split(variables_to_replace or "", ",%s*")):each(function(variable)
+      parse_variables(_request, variable)
+    end)
+
+    table.insert(request.nested_requests, _request)
   end)
 end
 
@@ -385,10 +395,10 @@ M.expand_included_filepath = function(line, lnum)
 end
 
 ---Parses given lines or DB.current_buffer document
----returns a list of DocumentVariables, DocumentRequests, imported DocumentRequests or nil if no valid requests found
+---returns a list of DocumentRequests, imported DocumentRequests or nil if no valid requests found
 ---@param lines string[]|nil
 ---@param path string|nil
----@return DocumentVariables|nil, DocumentRequest[]|nil, DocumentRequest[]|nil
+---@return DocumentRequest[]|nil, DocumentRequest[]|nil
 function parse_document(lines, path)
   local buf = DB.get_current_buffer()
   if not path then Diagnostics.clear_diagnostics(buf, "parser") end
@@ -409,7 +419,9 @@ function parse_document(lines, path)
 
   if not content_lines then return end
 
-  local variables = {}
+  local shared = vim.deepcopy(default_document_request)
+  shared.url = nil
+
   local requests = {}
   local imported_requests = {}
   local blocks = split_content_by_blocks(content_lines, line_offset)
@@ -426,6 +438,7 @@ function parse_document(lines, path)
     request.end_line = block.end_lnum
     request.name = block.name
     request.file = path or vim.fn.fnamemodify(vim.fn.bufname(DB.get_current_buffer()), ":p")
+    request.shared = shared
 
     for relative_linenr, line in ipairs(block.lines) do
       local lnum = request.start_line + relative_linenr
@@ -438,9 +451,9 @@ function parse_document(lines, path)
         table.insert(request.comments, comment)
       -- end of inline scripting
       elseif is_request_line and line:match("^import ") then
-        parse_import_command(variables, request, imported_requests, line, lnum)
+        parse_import_command(request, imported_requests, line, lnum)
       elseif is_request_line and line:match("^run ") then
-        parse_run_command(requests, imported_requests, variables, request, line, lnum)
+        parse_run_command(requests, imported_requests, request, line, lnum)
       elseif is_request_line and line:match("^%%}$") then
         is_prerequest_handler_script_inline = false
       -- end of inline scripting
@@ -454,7 +467,7 @@ function parse_document(lines, path)
       elseif is_prerequest_handler_script_inline then
         request.scripts.pre_request.priority = request.scripts.pre_request.priority or "inline"
         table.insert(request.scripts.pre_request.inline, line)
-      -- we're still in(/before) the request line and we have a pre-request inline handler script
+        -- we're still in(/before) the request line and we have a pre-request inline handler script
       elseif is_request_line and line:match("^< %{%%$") then
         is_prerequest_handler_script_inline = true
         -- we're still in(/before) the request line and we have a pre-request file handler script
@@ -476,7 +489,7 @@ function parse_document(lines, path)
         local scriptfile = line:match("^> (.*)$")
         table.insert(request.scripts.post_request.files, scriptfile)
       elseif line:match("^@([%w_]+)") then
-        parse_variables(variables, line)
+        parse_variables(request, line)
       elseif is_body_section then
         parse_body(request, line, lnum)
       elseif not is_request_line and line:match("^%s*/.+") then
@@ -502,26 +515,30 @@ function parse_document(lines, path)
       infer_headers_from_body(request)
     end
 
-    if request.url and #request.url > 0 then
+    if request.name == "Shared" or request.name == "Shared each" then
+      shared = request
+      shared.url = #shared.url > 0 and shared.url or nil
+    elseif request.url and #request.url > 0 then
       table.insert(requests, request)
     elseif #request.nested_requests > 0 then
       vim.iter(request.nested_requests or {}):each(function(r)
         r.metadata = vim.tbl_extend("force", r.metadata, request.metadata)
-        r.start_line = request.start_line
-        r.end_line = request.end_line
+        r.start_line, r.end_line = request.start_line, request.end_line
       end)
       vim.list_extend(requests, request.nested_requests)
     end
   end
 
-  return variables, requests, imported_requests
+  if #requests == 0 and is_runnable(shared) then table.insert(requests, shared) end
+
+  return requests, imported_requests
 end
 
 ---Parses given lines or DB.current_buffer document
----returns a list of DocumentVariables, DocumentRequests, imported DocumentRequests or nil if no valid requests found
+---returns a list of DocumentRequests, imported DocumentRequests or nil if no valid requests found
 ---@param lines string[]|nil
 ---@param path string|nil
----@return DocumentVariables|nil, DocumentRequest[]|nil, DocumentRequest[]|nil
+---@return DocumentRequest[]|nil, DocumentRequest[]|nil
 M.get_document = function(lines, path)
   local status, result = xpcall(function()
     return { parse_document(lines, path) }
@@ -533,16 +550,53 @@ M.get_document = function(lines, path)
   return unpack(result)
 end
 
+local function apply_shared_data(shared, request)
+  local request_metadata = vim
+    .iter(request.metadata)
+    :map(function(metadata)
+      return metadata.name
+    end)
+    :totable()
+
+  vim.iter(shared.metadata):each(function(metadata)
+    if not vim.tbl_contains(request_metadata, metadata.name) then table.insert(request.metadata, metadata) end
+  end)
+
+  vim.iter(shared.variables):each(function(k, v)
+    if not request.variables[k] then request.variables[k] = v end
+  end)
+
+  return request
+end
+
 local function expand_nested_requests(requests, lnum)
   requests = vim.islist(requests) and requests or { requests }
 
   local expanded = {}
+  local shared = requests[1].shared
+
+  if not requests[1].name:match("^Shared") and is_runnable(shared) then
+    if shared.name == "Shared each" then
+      local requests_ = vim.deepcopy(requests)
+      requests = {}
+
+      vim.iter(requests_):each(function(request)
+        table.insert(requests, shared)
+        table.insert(requests, request)
+      end)
+    else
+      table.insert(requests, 1, shared)
+    end
+  end
 
   vim.iter(requests):each(function(request)
+    request = apply_shared_data(shared, request)
+
     vim.iter(request.nested_requests):each(function(nested_request)
       nested_request.show_icon_line_number = lnum or nested_request.show_icon_line_number
       vim.list_extend(expanded, expand_nested_requests(nested_request, nested_request.show_icon_line_number))
     end)
+
     table.insert(expanded, request)
   end)
 
@@ -575,19 +629,46 @@ end
 ---@param linenr? number|nil
 ---@return DocumentRequest[]|nil
 M.get_request_at = function(requests, linenr)
-  if not linenr then return expand_nested_requests(requests[1]) end
-  if linenr == 0 then return expand_nested_requests(requests) end
+  local status, result = xpcall(function()
+    if not linenr then return expand_nested_requests(requests[1]) end
+    if linenr == 0 then return expand_nested_requests(requests) end
 
-  local request = vim.iter(requests):find(function(_request)
-    return linenr >= _request.start_line and linenr <= _request.end_line
-  end)
+    local request = requests[1]
+    local shared = request.shared
+    if not request.name:match("^Shared") and is_runnable(shared) then table.insert(requests, 1, shared) end
 
-  if not request then return {} end
+    request = vim.iter(requests):find(function(_request)
+      return linenr >= _request.start_line and linenr <= _request.end_line
+    end)
 
-  local line = vim.fn.getline(linenr)
-  if line:match("^run") then return get_run_requests(request, line) end
+    if not request then return {} end
 
-  return expand_nested_requests(request)
+    local line = vim.fn.getline(linenr)
+    if line:match("^run") then
+      local nested = get_run_requests(request, line)
+
+      -- the case when block has no url, but only run commands and nested requests have been already expanded in parse_document()
+      if #nested == 0 and #request.nested_requests == 0 then
+        nested = vim
+          .iter(requests)
+          :filter(function(_request)
+            return _request.start_line == request.start_line
+          end)
+          :totable()
+      end
+
+      return expand_nested_requests(nested)
+    end
+
+    return expand_nested_requests(request)
+  end, debug.traceback)
+
+  if not status then
+    Logger.error(("Errors parsing the document: %s"):format(result), 1, { report = true })
+    return {}
+  end
+
+  return result
 end
 
 M.get_previous_request = function(requests)
@@ -609,5 +690,7 @@ M.get_next_request = function(requests)
     end
   end
 end
+
+M.apply_shared_data = apply_shared_data
 
 return M

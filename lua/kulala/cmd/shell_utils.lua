@@ -41,7 +41,7 @@ end
 ---@param on_exit fun(system: vim.SystemCompleted)|nil
 ---@return vim.SystemObj|vim.SystemCompleted|nil
 M.run = function(cmd, opts, on_exit)
-  if vim.fn.executable(cmd[1]) == 0 then return Logger.error("Command not found: " .. cmd[1]) end
+  if vim.fn.executable(cmd[1]) == 0 then return Logger.error("Command not found: " .. table.concat(cmd, " ")) end
 
   opts = vim.tbl_extend("keep", opts or {}, {
     text = true,

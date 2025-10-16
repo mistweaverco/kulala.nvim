@@ -38,3 +38,10 @@ you will be prompted to enter a value for `pokemon`.
 
 These variables are available for the current request and
 all subsequent requests in the file.
+
+## Variables scope
+
+By default, variables are scoped to the entire document, i.e., they are available in all requests in the file, 
+no matter where they are declared and later declarations will override earlier ones.
+
+You can change the scope to `variables_scope = "request"` in the options, which will make variables scoped to the current request only.

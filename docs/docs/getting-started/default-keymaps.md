@@ -27,7 +27,8 @@ Keymaps with `ft` set will only be available in buffers with the specified filet
   ["Send request <cr>"] = { "<CR>", function() require("kulala").run() end, mode = { "n", "v" }, ft = { "http", "rest" }, },
   ["Send all requests"] = { "a", function() require("kulala").run_all() end, mode = { "n", "v" }, },
 
-  ["Inspect current request"] = { "i", function() require("kulala").inspect() end, ft = { "http", "rest" }, },
+  ["Inspect current request"] = { "i", function() require("kulala").inspect() end, ft = { "http", "rest" } },
+  ["Open cookies jar"] = { "j", function() require("kulala").open_cookies_jar() end, ft = { "http", "rest" } },
   ["Replay the last request"] = { "r", function() require("kulala").replay() end, },
 
   ["Find request"] = { "f", function() require("kulala").search() end, ft = { "http", "rest" }, },

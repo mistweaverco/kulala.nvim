@@ -329,7 +329,7 @@ For example:
 :::info
 
 If you need to set custom curl flags for authentication requests, e.g., `--insecure` to skip secure connection verification - you can do this
-with `# @curl-global-..` flags in your .http file or by setting `additional_curl_options` in Kulala's config.
+with `# @curl-..` flags in your .http file `Shared` block or by setting `additional_curl_options` in Kulala's config.
 
 :::
 
@@ -570,4 +570,4 @@ In the http-client.private.env.json file, add `verifyHostCertificate": false` to
 
 If you run a request with this environment, the certificate verification will be disabled.
 
-This is equivalent to setting `--insecure` flag in `additional_curl_options` in the config file or with `# @curl-global-insecure` in the request.
+This is equivalent to setting `--insecure` flag in `additional_curl_options` in the config file or with `# @curl-insecure` in the request.
