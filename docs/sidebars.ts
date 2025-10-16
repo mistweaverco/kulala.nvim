@@ -33,6 +33,7 @@ const sidebars: SidebarsConfig = {
         'usage/http-file-spec',
         "usage/using-variables",
         "usage/request-variables",
+        "usage/cookies",
         "usage/using-environment-variables",
         "usage/dotenv-and-http-client.env.json-support",
         "usage/magic-variables",

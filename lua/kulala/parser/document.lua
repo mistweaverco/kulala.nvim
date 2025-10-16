@@ -664,7 +664,7 @@ M.get_request_at = function(requests, linenr)
   end, debug.traceback)
 
   if not status then
-    Logger.error(("Errors parsing the document: %s"):format(result), 1, { report = false })
+    Logger.error(("Errors parsing the document: %s"):format(result), 1, { report = true })
     return {}
   end
 

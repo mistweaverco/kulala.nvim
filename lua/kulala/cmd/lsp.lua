@@ -468,6 +468,7 @@ local function code_actions_http()
       fn = Kulala.from_curl,
     },
     { group = "Request", title = "Inspect current request", command = "inspect_current_request", fn = Kulala.inspect },
+    { group = "Request", title = "Open Cookies Jar", command = "open_cookie_jar", fn = Kulala.open_cookies_jar },
     {
       group = "Environment",
       title = "Select environment",
