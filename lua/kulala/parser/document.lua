@@ -629,23 +629,46 @@ end
 ---@param linenr? number|nil
 ---@return DocumentRequest[]|nil
 M.get_request_at = function(requests, linenr)
-  if not linenr then return expand_nested_requests(requests[1]) end
-  if linenr == 0 then return expand_nested_requests(requests) end
+  local status, result = xpcall(function()
+    if not linenr then return expand_nested_requests(requests[1]) end
+    if linenr == 0 then return expand_nested_requests(requests) end
 
-  local request = requests[1]
-  local shared = request.shared
-  if not request.name:match("^Shared") and is_runnable(shared) then table.insert(requests, 1, shared) end
+    local request = requests[1]
+    local shared = request.shared
+    if not request.name:match("^Shared") and is_runnable(shared) then table.insert(requests, 1, shared) end
 
-  request = vim.iter(requests):find(function(_request)
-    return linenr >= _request.start_line and linenr <= _request.end_line
-  end)
+    request = vim.iter(requests):find(function(_request)
+      return linenr >= _request.start_line and linenr <= _request.end_line
+    end)
 
-  if not request then return {} end
+    if not request then return {} end
 
-  local line = vim.fn.getline(linenr)
-  if line:match("^run") then return expand_nested_requests(get_run_requests(request, line)) end
+    local line = vim.fn.getline(linenr)
+    if line:match("^run") then
+      local nested = get_run_requests(request, line)
 
-  return expand_nested_requests(request)
+      -- the case when block has no url, but only run commands and nested requests have been already expanded in parse_document()
+      if #nested == 0 and #request.nested_requests == 0 then
+        nested = vim
+          .iter(requests)
+          :filter(function(_request)
+            return _request.start_line == request.start_line
+          end)
+          :totable()
+      end
+
+      return expand_nested_requests(nested)
+    end
+
+    return expand_nested_requests(request)
+  end, debug.traceback)
+
+  if not status then
+    Logger.error(("Errors parsing the document: %s"):format(result), 1, { report = false })
+    return {}
+  end
+
+  return result
 end
 
 M.get_previous_request = function(requests)
