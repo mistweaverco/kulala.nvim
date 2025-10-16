@@ -53,6 +53,8 @@ M.run = function(cmd, opts, on_exit)
 
   opts.err_msg = opts.err_msg .. ": " .. table.concat(cmd, " ") .. "\n"
 
+  Logger.debug("Running shell command: " .. vim.inspect(cmd) .. "\nWith opts: " .. vim.inspect(opts))
+
   local status, result = pcall(function()
     return vim.system(cmd, opts, function(system)
       if system.code ~= 0 or (opts.abort_on_stderr and system.stderr ~= "") then
@@ -64,9 +66,13 @@ M.run = function(cmd, opts, on_exit)
         return
       end
 
+      Logger.debug("Shell command completed: " .. vim.inspect(system))
+
       _ = on_exit and on_exit(system)
     end)
   end)
+
+  Logger.debug("Shell command result: " .. vim.inspect(result))
 
   if not status then return Logger.error(opts.err_msg .. result, 2) end
   result = opts.sync and result:wait() or result

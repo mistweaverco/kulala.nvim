@@ -6,10 +6,10 @@ Kulala comes with built-in support for importing and exporting HTTP collections 
 
 ### Importing
 
-The import is provided by the formatter module which should be enabled in the options:
+The import is provided by the formatter module which should not be disabled in the options:
 
 ```lua
-opts = { lsp = { formatter = true } }
+opts = { lsp = { formatter = {} } }
 ```
 
 Import can be run either through `Convert to HTTP` code action, which is available in `json`, `yaml`, and `bruno` files, or directly 

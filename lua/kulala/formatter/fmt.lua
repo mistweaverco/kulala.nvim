@@ -64,8 +64,14 @@ M.check_formatter = function(callback, wait)
 
   Async.co_resume(co)
 
-  _ = wait and cmd_install:wait()
-  if not cmd_build then return false end -- close coutine if install failed ?
+  _ = wait and cmd_install and cmd_install:wait()
+
+  if not (cmd_install and cmd_build) then
+    progress.hide()
+    co = nil
+    Logger.debug("cmd_install", cmd_install)
+    return false
+  end
 
   _ = wait and cmd_build:wait()
 
