@@ -272,6 +272,12 @@ Example:
 }
 ```
 
+### write_cookies
+
+Write cookies to cookie jar on response, i.e. use `--cookie-jar` option with cURL.
+
+Default: `true`
+
 ### infer_content_type
 
 Infer content type from the body and add it to the request headers
@@ -536,6 +542,14 @@ Enable/disable/customize before_request hook.  Default hook is request highlight
   }
 }
 ```
+
+:::info
+
+The `after_request` hook can be effectively implemented with the option `default_view`,
+which accepts a function with `Response` object as argument.
+
+:::
+
 ## Scripts
 
 ### scripts.node_path_resolver

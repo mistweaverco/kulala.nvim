@@ -319,6 +319,8 @@ M.metadata = {
   { "stdin-cmd", "stdin-cmd ", "Run external command" },
   { "jq", "jq ", "Filter response body with jq" },
   { "delay", "delay ", "Delay running request for .. ms" },
+  { "attach-cookie-jar", "attach-cookie-jar", "Attach cookies from cookie jar to the request" },
+  { "no-cookie-jar", "no-cookie-jar", "Do not save cookies to the cookie jar" },
 }
 
 ---@type SourceTable

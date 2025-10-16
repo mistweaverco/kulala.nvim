@@ -90,7 +90,9 @@ end
 ---@param from string|nil "postman"|"openapi"|"bruno"
 ---@param path string|nil Path to the file to convert
 M.convert = function(from, path)
-  M.check_formatter(nil, true)
+  local status, result = xpcall(M.check_formatter, debug.traceback, nil, true)
+  if not status then return Logger.error(("Errors updating formatter: %s"):format(result), 1, { report = true }) end
+
   path = type(path) == "string" and path or vim.fn.expand("%:p")
 
   local ext = vim.fn.fnamemodify(path, ":e")

@@ -36,6 +36,7 @@ M.check = function(health)
   check_executable("gRPCurl", config.grpcurl_path)
   check_executable("websocat", config.websocat_path)
   check_executable("openssl", config.openssl_path)
+  check_executable("NPM", "npm")
 
   Health.start("Formatters:")
 

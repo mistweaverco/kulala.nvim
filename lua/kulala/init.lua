@@ -36,6 +36,10 @@ M.inspect = function()
   UI:inspect()
 end
 
+M.open_cookies_jar = function()
+  vim.cmd("edit " .. GLOBALS.COOKIES_JAR_FILE)
+end
+
 M.copy = function()
   UI:copy()
 end

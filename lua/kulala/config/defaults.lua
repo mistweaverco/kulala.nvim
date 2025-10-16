@@ -45,6 +45,9 @@ local M = {
   -- force urlencoding characters, specified as lua regex pattern, e.g. "%[%]"
   urlencode_force = "",
 
+  -- write cookies to cookie jar one response
+  write_cookies = true,
+
   -- Infer content type from the body and add it to the request headers
   infer_content_type = true,
 

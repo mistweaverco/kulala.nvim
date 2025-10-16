@@ -425,9 +425,7 @@ local function process_headers(request)
 end
 
 local function process_cookies(request)
-  -- if the user has not specified the no-cookie meta tag,
-  -- then use the cookies jar file
-  if PARSER_UTILS.contains_meta_tag(request, "no-cookie-jar") == false then
+  if CONFIG.options.write_cookies and not PARSER_UTILS.contains_meta_tag(request, "no-cookie-jar") then
     table.insert(request.cmd, "--cookie-jar")
     table.insert(request.cmd, GLOBALS.COOKIES_JAR_FILE)
   end
@@ -435,6 +433,11 @@ local function process_cookies(request)
   if #request.cookie > 0 then
     table.insert(request.cmd, "--cookie")
     table.insert(request.cmd, request.cookie)
+  end
+
+  if PARSER_UTILS.contains_meta_tag(request, "attach-cookie-jar") == true then
+    table.insert(request.cmd, "--cookie")
+    table.insert(request.cmd, GLOBALS.COOKIES_JAR_FILE)
   end
 end
 
