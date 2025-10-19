@@ -402,6 +402,16 @@ Example:
 <
 
 
+VARIABLES_SCOPE
+
+Set variable scope: "document" - variables shared across all requests in the
+document, no matter where they are defined, later declarations shadow earlier
+ones. "request" - variables scoped to the request they are defined in,
+variables in Shared block are immutable.
+
+Default: `document`
+
+
 CUSTOM_DYNAMIC_VARIABLES
 
 Define your own dynamic variables here, e.g. $randomEmail
@@ -527,6 +537,14 @@ Example:
       },
     }
 <
+
+
+WRITE_COOKIES
+
+Write cookies to cookie jar on response, i.e. use `--cookie-jar` option with
+cURL.
+
+Default: `true`
 
 
 INFER_CONTENT_TYPE
@@ -802,6 +820,9 @@ highlight.
       }
     }
 <
+
+The `after_request` hook can be effectively implemented with the option
+`default_view`, which accepts a function with `Response` object as argument.
 
 
 SCRIPTS           *kulala.configuration-options-configuration-options-scripts*
