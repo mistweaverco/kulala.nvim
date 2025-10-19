@@ -248,7 +248,10 @@ M.delete_files_in_directory = function(dir, skip_files)
   local deleted_files = {}
   local scandir = vim.uv.fs_scandir(dir)
 
-  if not scandir then return Logger.error("Error opening directory: " .. dir) end
+  if not scandir then
+    Logger.error("Error opening directory: " .. dir)
+    return {}
+  end
 
   while true do
     local name, type = vim.uv.fs_scandir_next(scandir)
