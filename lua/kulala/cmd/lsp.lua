@@ -114,8 +114,8 @@ local function request_names()
 
   vim.iter(cache.requests):each(function(request)
     local file = vim.fs.basename(request.file)
-    local name = request.name:sub(1, url_len)
-    table.insert(items, make_item(name, file, kind, name, request.body, name))
+    local short_name = request.name:sub(1, url_len)
+    table.insert(items, make_item(short_name, file, kind, request.name, request.body, request.name))
   end)
 
   return items
@@ -154,8 +154,12 @@ end
 
 local function dynamic_variables()
   local kind = lsp_kind.Variable
-  local auth_vars = { ["$auth.token"] = "Auth", ["$auth.idToken"] = "Auth" }
   local items = {}
+
+  local auth_vars = {
+    ["$auth.token"] = "Oauth2 Access Token",
+    ["$auth.idToken"] = "Oauth2 Id Token",
+  }
 
   cache.dynamic_variables = cache.dynamic_variables or Dynamic_variables.retrieve_all()
 
@@ -168,7 +172,7 @@ local function dynamic_variables()
   local format = lsp_format.Snippet
 
   vim.iter(auth_vars):each(function(name, value)
-    table.insert(items, make_item(name, "Dynamic var", kind, name, value, name:sub(2) .. '("$1")$0', format))
+    table.insert(items, make_item(name, "Dynamic var", kind, name, value, "\\" .. name .. '("$1")$0', format))
   end)
 
   return items
@@ -197,7 +201,8 @@ local function auth_configs()
   cache.auth_configs = cache.auth_configs or Oauth.get_env()
 
   vim.iter(vim.tbl_keys(cache.auth_configs)):each(function(name)
-    table.insert(items, make_item(name, "Auth", kind, name, "", name))
+    local config = vim.inspect(cache.auth_configs[name]):sub(1, 300)
+    table.insert(items, make_item(name, "Auth Config", kind, name, config, name))
   end)
 
   return items
@@ -390,7 +395,8 @@ local sources = {
   grpc = { Lsp_sources.grpc, "Grpc" },
   commands = { Lsp_sources.commands, "Command" },
   scripts = { scripts(), "API", false, lsp_kind.Snippet, lsp_format.Snippet },
-  snippets = { Lsp_sources.snippets, "Snippets", false, lsp_kind.Snippet, lsp_format.Snippet },
+  snippets_in = { Lsp_sources.snippets_in, "Snippets", false, lsp_kind.Snippet, lsp_format.Snippet },
+  snippets_out = { Lsp_sources.snippets_out, "Snippets", false, lsp_kind.Snippet, lsp_format.Snippet },
   graphql = graphql,
 }
 
@@ -402,10 +408,9 @@ local function source_type(params)
 
   local matches = {
     { "@curl%-", "curl" },
-    { "@curl%-global%-", "curl" },
-    { "@grpc%-global%-", "grpc" },
-    { "run #", "request_names" },
-    { "auth(.+)oken%(", "auth_configs" },
+    { "@grpc%-", "grpc" },
+    { "^run #", "request_names" },
+    { '%$auth%.%w+oken%("[^"]+$', "auth_configs" },
     { "{{%$", "dynamic_variables" },
     { "{{", { "document_variables", "env_variables", "request_names" } },
     { "{%%", "scripts" },
@@ -414,8 +419,8 @@ local function source_type(params)
     { ".:[^/]*", "header_values" },
     { "# @", "metadata" },
     { "[A-Z]+ ", { "schemes", "request_urls" } },
-    { "<", "snippets" },
-    { ">", "snippets" },
+    { "<", "snippets_in" },
+    { ">", "snippets_out" },
   }
 
   if state.current_ft == "javascript" then return { "scripts" } end

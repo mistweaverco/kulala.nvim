@@ -7,17 +7,20 @@ local M = {}
 ---@field [3] string|nil Documentation
 
 ---@type SourceTable
-M.snippets = {
-  { ">>", "> ", "Redirect output to file" },
-  { ">>!", ">! ", "Redirect output to file overwriting" },
-  { "< {% %}", " {%\n\t${0}\n%}\n", "Pre-request script" },
-  { "< ", " ${1:path/to/script.js}", "Pre-request script file" },
-  { "> {% %}", " {%\n\t${0}\n%}\n", "Post-request script" },
-  { "> ", " ${1:path/to/script.js}", "Post-request script file" },
-  { "< {% %}", " {%\n\t-- lua\n${0}\n%}\n", "Pre-request lua script" },
-  { "> {% %}", " {%\n\t-- lua\n${0}\n%}\n", "Post-request lua script" },
+M.snippets_in = {
+  { "< {% %}", "< {%\n\t${0}\n%}\n", "Pre-request script" },
+  { "< ", "< ${1:path/to/script.js|lua}", "Pre-request script file" },
+  { "< {% %}", "< {%\n\t-- lua\n${0}\n%}\n", "Pre-request lua script" },
 }
 
+---@type SourceTable
+M.snippets_out = {
+  { ">>", ">> ", "Redirect output to file" },
+  { ">>!", ">>! ", "Redirect output to file overwriting" },
+  { "> {% %}", "> {%\n\t${0}\n%}\n", "Post-request script" },
+  { "> ", "> ${1:path/to/script.js|lua}", "Post-request script file" },
+  { "> {% %}", "> {%\n\t-- lua\n${0}\n%}\n", "Post-request lua script" },
+}
 ---@type SourceTable
 M.commands = {
   { "run #", "run #", "Run request #name" },
@@ -307,11 +310,11 @@ M.header_values = {
 
 ---@type SourceTable
 M.metadata = {
-  { "prompt", "prompt ", "Prompt" },
-  { "secret", "secret ", "Secret prompt" },
+  { "prompt", "prompt ", "Prompt `variable` `prompt string`" },
+  { "secret", "secret ", "Secret prompt `variable` `prompt string`" },
   { "curl", "curl", "Curl flag" },
   { "grpc", "grpc", "Grpc flag" },
-  { "accept", "accept chunked", "Accept chunked responses" },
+  { "accept chunked", "accept chunked", "Accept chunked responses" },
   { "env-stdin-cmd-pre", "env-stdin-cmd-pre ", "Set env variable with external cmd before request" },
   { "env-stdin-cmd", "env-stdin-cmd ", "Set env variable with external cmd" },
   { "env-json-key", "env-json-key ", "Set env variable with json key" },

@@ -108,7 +108,7 @@ local function format(ft, text, opts)
 
   if formatter_output.err then
     Logger.error(
-      ("Formatter error for %s at line %s: %s\n%s"):format(ft, opts.line, (formatter_output.err or ""), text)
+      ("Formatter error for %s at line %s: %s\n%s"):format(ft, opts.line or "", (formatter_output.err or ""), text)
     )
 
     reset_formatter_output()
