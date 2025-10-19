@@ -56,7 +56,7 @@ SPECIAL CASE FOR COOKIES
 
 The response cookies can be referenced by
 
->
+>http
     {{REQUEST_NAME.response.cookies.CookieName.(value|domain|flag|path|secure|expires)}}`
 <
 
@@ -73,14 +73,6 @@ The response cookies can be referenced by
     {
       "logged_into_gh": "{{REQUEST_GH.response.cookies.logged_in.value}}"
     }
-<
-
-If you don’t want Kulala to create a cookie jar for a specific request, you
-can add the meta-tag `@no-cookie-jar` to the request.
-
->http
-    # @no-cookie-jar
-    GET https://github.com HTTP/1.1
 <
 
 

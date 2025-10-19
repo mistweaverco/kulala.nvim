@@ -28,12 +28,14 @@ USAGE - LEARN ABOUT THE MOST IMPORTANT KULALA.NVIM FEATURES!
 - Http file spec.txt |kulala.http-file-spec.txt|
 - Using variables.txt |kulala.using-variables.txt|
 - Request variables.txt |kulala.request-variables.txt|
+- Cookies.txt |kulala.cookies.txt|
 - Using environment variables.txt |kulala.using-environment-variables.txt|
 - Dotenv and http client.env.json support.txt
     |kulala.dotenv-and-http-client.env.json-support.txt|
 - Magic variables.txt |kulala.magic-variables.txt|
 - Authentication.txt |kulala.authentication.txt|
 - Import and run http.txt |kulala.import-and-run-http.txt|
+- Shared blocks.txt |kulala.shared-blocks.txt|
 - Reading file data.txt |kulala.reading-file-data.txt|
 - Filter response.txt |kulala.filter-response.txt|
 - Redirect the response.txt |kulala.redirect-the-response.txt|
