@@ -461,7 +461,7 @@ local function process_custom_curl_flags(request)
 
     local prefix = #flag > 1 and "--" or "-"
     table.insert(flags, prefix .. flag)
-    _ = (value and #value >= 1) and table.insert(flags, value)
+    _ = (value and #value > 0) and table.insert(flags, value)
   end)
 
   vim.iter(flags):each(function(flag)
