@@ -1,10 +1,15 @@
-# Testing and Reporting Demo
-
-# Define environment variables
-@BASE_URL = https://httpbin.org
+@BASE_URL = https://echo.getkulala.net
 @OCCUPATION = Developer
 
+
+###
+
+# Testing and Reporting Demo
+# Define environment variables
+  
+
 ### POST request with JSON body
+
 POST {{BASE_URL}}/post HTTP/1.1
 Accept: application/json
 Content-Type: application/json
@@ -18,7 +23,7 @@ Content-Type: application/json
 }
 
 > {%
-  let json = response.body.json.data;
+  let json = response.body.body.data;
 
   client.test("Test suite 1", function() {
     assert(json.name == "John Doe", "Check if name is correct")
@@ -35,5 +40,5 @@ Content-Type: application/json
     assert.headersHas('Content-Type', "application/json", "Check content type")
   });
 
-  assert.jsonHas("json.data.occupation", "Developer", "Check json payload")
+  assert.jsonHas("body.data.occupation", "Developer", "Check json payload")
 %}

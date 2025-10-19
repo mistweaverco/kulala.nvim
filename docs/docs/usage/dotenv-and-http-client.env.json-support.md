@@ -41,19 +41,19 @@ Press `<leader>Re` to open Environment Manager to select the environment and to 
 {
   "$schema": "https://raw.githubusercontent.com/mistweaverco/kulala.nvim/main/schemas/http-client.env.schema.json",
   "dev": {
-    "API_URL": "https://httpbin.org/post?env=dev",
+    "API_URL": "https://echo.getkulala.net/post?env=dev",
     "API_KEY": ""
   },
   "testing": {
-    "API_URL": "https://httpbin.org/post?env=testing",
+    "API_URL": "https://echo.getkulala.net/post?env=testing",
     "API_KEY": ""
   },
   "staging": {
-    "API_URL": "https://httpbin.org/post?env=staging",
+    "API_URL": "https://echo.getkulala.net/post?env=staging",
     "API_KEY": ""
   },
   "prod": {
-    "API_URL": "https://httpbin.org/post?env=prod",
+    "API_URL": "https://echo.getkulala.net/post?env=prod",
     "API_KEY": ""
   }
 }
@@ -145,7 +145,7 @@ You can also define a special header `Host`, which will set the default host for
     },
   },
   "dev": {
-    "API_URL": "https://httpbin.org/post?env=dev",
+    "API_URL": "https://echo.getkulala.net/post?env=dev",
     "API_KEY": ""
   }
 }
@@ -155,7 +155,7 @@ Then, they're automatically added to the HTTP requests,
 unless you override them.
 
 ```http title="examples.http"
-POST https://httpbin.org/post HTTP/1.1
+POST https://echo.getkulala.net/post HTTP/1.1
 Authorization: Bearer {{API_KEY}}
 
 {
@@ -171,7 +171,7 @@ define environment variables in it.
 The file should look like this:
 
 ```env title=".env"
-API_URL=https://httpbin.org/post
+API_URL=https://echo.getkulala.net/post
 API_KEY=your-api-key
 ```
 

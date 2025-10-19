@@ -225,7 +225,7 @@ request.replay();
 %}
 
 @URL = "500"
-GET https://httpbin.org/status/{{URL}}
+GET https://echo.getkulala.net/status/{{URL}}
 
 > {%
   console.log(response.responseCode)

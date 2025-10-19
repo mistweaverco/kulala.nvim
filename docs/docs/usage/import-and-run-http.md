@@ -28,18 +28,18 @@ delimiter `###`, otherwise the `URL` without the http version is used.
 ```http get-requests.http
 ### Request 1
 
-GET https://httpbin.org/advanced_1 HTTP/1.1
+GET https://echo.getkulala.net/advanced_1 HTTP/1.1
 
 ###
 
-POST https://httpbin.org/advanced_2 HTTP/1.1
+POST https://echo.getkulala.net/advanced_2 HTTP/1.1
 ```
 
 ```http
 import ./requests/get-requests.http
 
 run #Request 1
-run #POST https://httpbin.org/advanced_2
+run #POST https://echo.getkulala.net/advanced_2
 ```
 
 ### Override variables from imported .http files
