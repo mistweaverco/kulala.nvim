@@ -107,7 +107,9 @@ local function format(ft, text, opts)
   end)
 
   if formatter_output.err then
-    Logger.error("Formatter error: " .. (formatter_output.err or "") .. "\n" .. text)
+    Logger.error(
+      ("Formatter error for %s at line %s: %s\n%s"):format(ft, opts.line, (formatter_output.err or ""), text)
+    )
 
     reset_formatter_output()
     vim.fn.jobstop(id)
@@ -395,8 +397,9 @@ format_rules = {
 
   ["xml_body"] = function(node)
     local body = get_text(node, false)
+    local line = node:range()
 
-    local formatted = Formatter.xml(body) or body
+    local formatted = Formatter.xml(body, { line = line }) or body
     formatted = formatted:gsub("\n*$", "")
 
     local request = current_section().request
@@ -407,6 +410,7 @@ format_rules = {
 
   ["json_body"] = function(node)
     local json = get_text(node, false)
+    local line = node:range()
 
     if format_opts.quote_json_variables then
       local lcurly, rcurly = "X7BX7B", "X7DX7D"
@@ -419,7 +423,7 @@ format_rules = {
       json = quoted_variables:gsub(lcurly, "{{"):gsub(rcurly, "}}")
     end
 
-    local formatted = format("json", json, { sort = format_opts.sort.json }) or json
+    local formatted = format("json", json, { sort = format_opts.sort.json, line = line }) or json
     formatted = formatted:gsub("\n*$", "")
 
     local request = current_section().request
@@ -434,8 +438,9 @@ format_rules = {
 
   ["graphql_data"] = function(node)
     local body = get_text(node, false)
+    local line = node:range()
 
-    local formatted = Formatter.graphql(body) or body
+    local formatted = Formatter.graphql(body, { line = line }) or body
     formatted = formatted:gsub("\n*$", "")
 
     local request = current_section().request
@@ -475,14 +480,15 @@ format_rules = {
   ["script"] = function(node)
     local text = get_text(node, false)
     local type = node:parent() and node:parent():type()
+    local line = node:range()
     local script = text:gsub("{%%\n", ""):gsub("\n%%}", "")
 
     local formatted
 
     if script:find("-- lua", 1, true) then
-      formatted = Formatter.lua(script)
+      formatted = Formatter.lua(script, { line = line })
     else
-      formatted = Formatter.js(script)
+      formatted = Formatter.js(script, { line = line })
     end
 
     if formatted ~= script then

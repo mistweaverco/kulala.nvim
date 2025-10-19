@@ -30,7 +30,7 @@ M.format = function(ft, formatter, contents, opts)
   local result = Shell.run(formatter, {
     sync = true,
     stdin = contents,
-    err_msg = "Failed to format with " .. executable,
+    err_msg = "Failed to format with " .. executable .. (opts.line and " at line " .. opts.line + 1 or ""),
     abort_on_stderr = true,
   })
 
