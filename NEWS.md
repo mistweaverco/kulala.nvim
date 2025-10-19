@@ -7,6 +7,8 @@
 ### Enhancement: add `winbar_labels` and `winbar_labels_keymaps` config options to customize winbar labels [Configuration](getting-started/configuration-options.mdx)
 ### Feature: support for `custom_dynamic_variables`
 ### Feature: support `run` command with metadata and without URL [Import and Run](usage/import-and-run-http.md)
+### Enhancement: add `@attach-cookie-jar` metadata, `write_cookes` config option [Cookies](usage/cookies.md) and `Open cookies jar` keymap/code action
+### Enhancement: include cookies with GRAPQL schema requests
 
 ## Version 5.3.3
 
