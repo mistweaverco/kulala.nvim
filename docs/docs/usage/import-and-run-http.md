@@ -129,6 +129,4 @@ run #Main
 - When you have a request and a `run` command in the same block, if you place the cursor on the line with 
 the `run` command and execute it, Kulala will only run the requests specified in the `run` command.
 
-- If you have just a `run` command in a request block, to execute it your cursor must be anywhere in that block, but not on the `run` line itself.
-
 :::

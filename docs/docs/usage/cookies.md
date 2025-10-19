@@ -1,0 +1,65 @@
+# Working with cookies
+
+## Setting cookies
+
+There are 2 ways to set cookies:
+
+1. By using `Cookie` headers will set the cookies for the request.  You can set multiple cookies by adding multiple `Cookie` headers.
+
+```http
+POST https://localhost:7220/weatherforecast
+Content-Type: application/json
+Accept-Language: en-US,en;q=0.5
+Cookie: _ga=GA1.2.1903065019.1615319519
+Cookie: NAME2=VALUE2
+
+
+
+{
+    "date": "2023-05-10",
+    "temperatureC": 30,
+    "summary": "Warm"
+}
+```
+
+2. By using `@attach-cookie-jar` metadata
+
+This will instruct to attach cookies from the cookie jar to the request.
+
+## Persisting cookies
+
+By default, Kulala will write incoming cookies to cookie jar, which is a file named `cookie.txt` in Kulala's cache directory. 
+This behavior can be changed by `write_cookies` configuration option.
+
+You can open the file with the keymap `<leader>Rj` or by using the relevant code action.
+
+The same file is read by `@attach-cookie-jar` metadata to attach cookies to requests.
+
+The file is overwritten with each request, so if you receive a response without cookies, the file will be empty.
+
+If you don't want to store or overwrite cookies for a specific request, you can add the meta-tag `@no-cookie-jar` to the request.
+
+```http
+# @no-cookie-jar
+GET https://github.com HTTP/1.1
+```
+
+## Reading cookies
+
+The response cookies can be referenced in requests:
+
+```http
+### REQUEST_GH
+
+GET https://github.com HTTP/1.1
+
+### 
+
+POST https://httpbin.org/post HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+
+{
+  "logged_into_gh": "{{REQUEST_GH.response.cookies.logged_in.value}}"
+}
+```

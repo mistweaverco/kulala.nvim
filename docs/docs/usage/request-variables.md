@@ -48,7 +48,7 @@ you can use JSONPath and XPath to extract specific property or attribute.
 ### Special case for cookies
 
 The response cookies can be referenced by
-```
+```http
 {{REQUEST_NAME.response.cookies.CookieName.(value|domain|flag|path|secure|expires)}}`
 ```
 
@@ -67,19 +67,6 @@ Content-Type: application/json
 }
 
 ```
-
-:::tip
-
-If you don't want Kulala to create a cookie jar for a specific request,
-you can add the meta-tag `@no-cookie-jar` to the request.
-
-```http
-# @no-cookie-jar
-GET https://github.com HTTP/1.1
-```
-
-:::
-
 ## Example
 
 if a JSON response returns `body` `{"id": "mock"}`,

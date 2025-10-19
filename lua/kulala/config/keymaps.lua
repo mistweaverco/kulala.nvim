@@ -41,6 +41,13 @@ M.default_global_keymaps = {
     end,
     ft = { "http", "rest" },
   },
+  ["Open cookies jar"] = {
+    "j",
+    function()
+      require("kulala").open_cookies_jar()
+    end,
+    ft = { "http", "rest" },
+  },
   ["Select environment"] = {
     "e",
     function()

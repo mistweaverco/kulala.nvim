@@ -14,7 +14,7 @@ local requests, names = {}, {}
 local function get_requests()
   DB.set_current_buffer()
 
-  local _, _requests = Parser.get_document()
+  local _requests = Parser.get_document()
   if not _requests then return Logger.watn("No requests found in the document") end
 
   requests, names = {}, {}

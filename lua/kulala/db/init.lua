@@ -60,6 +60,7 @@ M.global_data = {
 }
 
 M.current_buffer = nil
+M.current_request = nil
 
 ---Gets DB.current_buffer or if it does not exist, then sets it to current buffer
 ---@return number

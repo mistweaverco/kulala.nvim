@@ -107,7 +107,9 @@ local function format(ft, text, opts)
   end)
 
   if formatter_output.err then
-    Logger.error("Formatter error: " .. (formatter_output.err or "") .. "\n" .. text)
+    Logger.error(
+      ("Formatter error for %s at line %s: %s\n%s"):format(ft, opts.line or "", (formatter_output.err or ""), text)
+    )
 
     reset_formatter_output()
     vim.fn.jobstop(id)
@@ -258,6 +260,9 @@ format_rules = {
     insert_formatted(#section.variables > 0, table.concat(section.variables, "\n"), "variable_declaration")
     insert_formatted(#section.commands > 0, table.concat(section.commands, "\n"), "command")
     insert_formatted(#section.metadata > 0, table.concat(section.metadata, "\n"), "metadata")
+
+    -- force parsing request child node, when there is no request node, like in Shared section
+    if #section.request.formatted == 0 then format_rules["request"](node) end
     insert_formatted(#section.request.formatted > 0, section.request.formatted, "request")
 
     section.formatted = section.formatted:gsub("\n*$", "")
@@ -344,9 +349,11 @@ format_rules = {
       or (method ~= "GRPC" and method ~= "WEBSOCKET" and method ~= "WS" and "HTTP/1.1" or "")
 
     local request = current_section().request
-    request.url = ("%s %s %s"):format(method, target_url, http_version)
 
-    format_children(node)
+    if #target_url > 0 then -- format url and children only if url is present
+      request.url = ("%s %s %s"):format(method, target_url, http_version)
+      format_children(node)
+    end
 
     _ = #request.pre_request_script > 0
       and table.insert(formatted, table.concat(request.pre_request_script, "\n\n") .. "\n")
@@ -390,8 +397,9 @@ format_rules = {
 
   ["xml_body"] = function(node)
     local body = get_text(node, false)
+    local line = node:range()
 
-    local formatted = Formatter.xml(body) or body
+    local formatted = Formatter.xml(body, { line = line }) or body
     formatted = formatted:gsub("\n*$", "")
 
     local request = current_section().request
@@ -402,6 +410,7 @@ format_rules = {
 
   ["json_body"] = function(node)
     local json = get_text(node, false)
+    local line = node:range()
 
     if format_opts.quote_json_variables then
       local lcurly, rcurly = "X7BX7B", "X7DX7D"
@@ -414,7 +423,7 @@ format_rules = {
       json = quoted_variables:gsub(lcurly, "{{"):gsub(rcurly, "}}")
     end
 
-    local formatted = format("json", json, { sort = format_opts.sort.json }) or json
+    local formatted = format("json", json, { sort = format_opts.sort.json, line = line }) or json
     formatted = formatted:gsub("\n*$", "")
 
     local request = current_section().request
@@ -429,8 +438,9 @@ format_rules = {
 
   ["graphql_data"] = function(node)
     local body = get_text(node, false)
+    local line = node:range()
 
-    local formatted = Formatter.graphql(body) or body
+    local formatted = Formatter.graphql(body, { line = line }) or body
     formatted = formatted:gsub("\n*$", "")
 
     local request = current_section().request
@@ -470,14 +480,15 @@ format_rules = {
   ["script"] = function(node)
     local text = get_text(node, false)
     local type = node:parent() and node:parent():type()
+    local line = node:range()
     local script = text:gsub("{%%\n", ""):gsub("\n%%}", "")
 
     local formatted
 
     if script:find("-- lua", 1, true) then
-      formatted = Formatter.lua(script)
+      formatted = Formatter.lua(script, { line = line })
     else
-      formatted = Formatter.js(script)
+      formatted = Formatter.js(script, { line = line })
     end
 
     if formatted ~= script then

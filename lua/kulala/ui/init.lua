@@ -461,7 +461,7 @@ M.open_all = function(_, line_nr)
   db.previous_response_pos = #db.responses
   INLAY.clear()
 
-  CMD.run_parser(nil, nil, line_nr, function(success, duration, icon_linenr)
+  CMD.run_parser(nil, line_nr, function(success, duration, icon_linenr)
     if success then
       elapsed_ms = UI_utils.pretty_ms(duration)
       status = "done"
@@ -479,13 +479,13 @@ M.open_all = function(_, line_nr)
 end
 
 M.jump_next = function()
-  local _, reqs = DOC_PARSER.get_document()
+  local reqs = DOC_PARSER.get_document()
   local next = DOC_PARSER.get_next_request(reqs)
   if next then vim.api.nvim_win_set_cursor(0, { next.start_line, 0 }) end
 end
 
 M.jump_prev = function()
-  local _, reqs = DOC_PARSER.get_document()
+  local reqs = DOC_PARSER.get_document()
   local prev = DOC_PARSER.get_previous_request(reqs)
   if prev then vim.api.nvim_win_set_cursor(0, { prev.start_line, 0 }) end
 end
@@ -514,7 +514,7 @@ M.replay = function()
 
   local db = DB.global_update()
 
-  CMD.run_parser({ last_request }, nil, nil, function(_)
+  CMD.run_parser({ last_request }, nil, function(_)
     set_current_response(#db.responses)
     M.open_default_view()
 

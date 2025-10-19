@@ -240,34 +240,31 @@ M.get_request_scripts_dir = function()
   return dir
 end
 
----Delete all files in a directory
+---Delete all files in a directory, except hidden files (starting with .)
 ---@param dir string
----@usage fs.delete_files_in_directory('tmp')
+---@param skip_files? string[]
 ---@return string[] deleted_files
-M.delete_files_in_directory = function(dir)
+M.delete_files_in_directory = function(dir, skip_files)
   local deleted_files = {}
   local scandir = vim.uv.fs_scandir(dir)
 
-  if scandir then
-    while true do
-      local name, type = vim.loop.fs_scandir_next(scandir)
+  if not scandir then return Logger.error("Error opening directory: " .. dir) end
 
-      if not name then break end
+  while true do
+    local name, type = vim.uv.fs_scandir_next(scandir)
 
-      -- Only delete files, not directories except .*
-      if type == "file" and not name:match("^%.") then
-        local filepath = M.join_paths(dir, name)
-        local success, err = vim.uv.fs_unlink(filepath)
+    if not name then break end
 
-        if not success then
-          print("Error deleting file:", filepath, err)
-        else
-          table.insert(deleted_files, filepath)
-        end
+    if type == "file" and not name:match("^%.") and not vim.tbl_contains(skip_files or {}, name) then
+      local filepath = M.join_paths(dir, name)
+      local success, err = vim.uv.fs_unlink(filepath)
+
+      if not success then
+        Logger.error("Error deleting file: " .. filepath .. ": " .. err)
+      else
+        table.insert(deleted_files, filepath)
       end
     end
-  else
-    print("Error opening directory:", dir)
   end
 
   return deleted_files
@@ -443,7 +440,8 @@ end
 ---Deletes cached files: request.json and script output
 M.delete_cached_files = function(silent) -- .cache/nvim/kulala
   local tmp_dir = M.get_plugin_tmp_dir()
-  local deleted_files = M.delete_files_in_directory(tmp_dir)
+  local skip_files = { "cookies.txt" }
+  local deleted_files = M.delete_files_in_directory(tmp_dir, skip_files)
 
   if silent then return end
 

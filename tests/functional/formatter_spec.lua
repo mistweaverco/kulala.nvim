@@ -174,6 +174,50 @@ describe("format", function()
     it("formats buffer", function()
       assert.is_same(result, h.load_fixture("fixtures/formatted.http"))
     end)
+
+    it("allows blocks without url", function()
+      h.delete_all_bufs()
+      buf = h.create_buf(
+        ([[
+        ### Shared
+
+        @ENV_PROJECT = project_name
+        # @curl-connect-timeout 200
+
+        run ./export/simple.http
+
+        < {%
+          console.log("pre request 0");
+        %}
+
+        < ./tests/functional/scripts/advanced_E_pre.js
+      ]]):to_table(true),
+        "format.http"
+      )
+
+      h.get_buf_lines(buf)
+      result, document = formatter.format(buf)
+      result = result[1].newText or {}
+
+      assert.is_same(
+        ([[
+          ### Shared
+
+          @ENV_PROJECT = project_name
+
+          run ./export/simple.http
+
+          # @curl-connect-timeout 200
+
+          < {%
+            console.log("pre request 0");
+          %}
+
+          < ./tests/functional/scripts/advanced_E_pre.js
+        ]]):deindent(10),
+        result
+      )
+    end)
   end)
 
   describe("formats json", function()
