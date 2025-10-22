@@ -192,7 +192,7 @@ end
 -- Variables are defined as `@variable_name=value`
 -- The value can be a string, a number or boolean
 local function parse_variables(request, line)
-  local variable_name, variable_value = line:match("^@([%w_]+)%s*=%s*(.*)$")
+  local variable_name, variable_value = line:match("^@([%w_-]+)%s*=%s*(.*)$")
   if variable_name and variable_value then
     variable_name = variable_name:sub(1) -- remove the @ symbol from the variable name
     request.variables[variable_name] = variable_value
@@ -488,7 +488,7 @@ function parse_document(lines, path)
         request.scripts.post_request.priority = request.scripts.post_request.priority or "files"
         local scriptfile = line:match("^> (.*)$")
         table.insert(request.scripts.post_request.files, scriptfile)
-      elseif line:match("^@([%w_]+)") then
+      elseif line:match("^@([%w_-]+)") then
         parse_variables(request, line)
       elseif is_body_section then
         parse_body(request, line, lnum)
