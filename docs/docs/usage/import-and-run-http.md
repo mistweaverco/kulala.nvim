@@ -67,10 +67,10 @@ run #Request with two vars (@host=example.com, @user=userName)
 
 ### Run specific requests from the current .http file
 
-In the example below, when you run `#Request_one`, it will run the `Autenticate` request first, and then the `Request_one` request.
+In the example below, when you run `#Request_one`, it will run the `Authenticate` request first, and then the `Request_one` request.
 
 ```http
-### Autenticate
+### Authenticate
 POST https://httpbin.org/post HTTP/1.1
 Content-Type: application/x-ndjson
 
@@ -80,7 +80,7 @@ Content-Type: application/x-ndjson
 
 ### Request_one
 
-run #Autenticate
+run #Authenticate
 
 POST https://httpbin.org/post HTTP/1.1
 Accept: application/json

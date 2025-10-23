@@ -37,12 +37,12 @@ local function get_body_value_from_path(name, method, subpath)
   local contenttype = INT_PROCESSING.get_config_contenttype(base_table.headers_tbl)
 
   if type(contenttype.pathresolver) == "function" then
-    return contenttype.pathresolver(base_table.body, subpath)
+    return contenttype.pathresolver(base_table.json or base_table.body, subpath) -- response body may be json parsed already
   elseif type(contenttype.pathresolver) == "table" then
     local cmd = {}
 
     for k, v in pairs(contenttype.pathresolver) do
-      if type(v) == "string" then v = string.gsub(v, "{{path}}", subpath) end
+      if type(v) == "string" then v = v:gsub("{{path}}", subpath) end
       cmd[k] = v
     end
 
@@ -114,8 +114,6 @@ M.parse = function(path)
   elseif path_type == "body" then
     return get_body_value_from_path(path_name, path_method, path_subpath)
   end
-
-  return nil
 end
 
 return M
