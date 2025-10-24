@@ -86,7 +86,12 @@ end
 local function process_prompt_vars(res)
   for _, metadata in ipairs(res.metadata) do
     local secret = metadata.name == "secret"
-    if (metadata.name == "prompt" or secret) and not INT_PROCESSING.prompt_var(metadata.value, secret) then
+
+    if
+      (metadata.name == "prompt" or secret)
+      and not vim.g.kulala_cli
+      and not INT_PROCESSING.prompt_var(metadata.value, secret)
+    then
       return false
     end
   end

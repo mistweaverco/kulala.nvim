@@ -9,6 +9,7 @@
 ### Feature: support `run` command with metadata and without URL [Import and Run](usage/import-and-run-http.md)
 ### Enhancement: add `@attach-cookie-jar` metadata, `write_cookes` config option [Cookies](usage/cookies.md) and `Open cookies jar` keymap/code action
 ### Enhancement: include cookies with GRAPQL schema requests
+### Enhancement: add `--sub` option to Kulala CLI to provide variable substitutions
 
 ## Version 5.3.3
 

@@ -39,6 +39,7 @@ local setup = function()
   }))
 
   require("kulala.parser.scripts.engines.javascript").install_dependencies(true)
+  vim.g.kulala_cli = true
 end
 
 local function init()
@@ -74,6 +75,7 @@ local function get_args()
   parser:option("-n --name", "Filter requests by name"):args("*")
   parser:option("-l --line", "Filter requests by line #"):convert(tonumber):args("*")
   parser:option("-e --env", "Environment")
+  parser:option("-s --sub", "Substitute variable"):args("*")
   parser:option("-v --view", "Response view"):choices {
     "body",
     "headers",
@@ -162,6 +164,21 @@ local get_requests = function()
   return requests
 end
 
+local function substitute_variables(requests, subs)
+  local vars = {}
+
+  for _, sub in ipairs(subs) do
+    local key, value = sub:match("^(.-)=(.+)$")
+    if key and value then vars[key] = value end
+  end
+
+  vim.iter(requests):each(function(request)
+    request.shared.variables = vim.tbl_extend("force", request.shared.variables, vars)
+  end)
+
+  return requests
+end
+
 local function is_last()
   return Cmd.queue.done == Cmd.queue.total
 end
@@ -177,6 +194,8 @@ local function run_file(file)
   if #requests == 0 then return Logger.error("No requests found in " .. file) end
 
   if args.list then return print_requests(file, requests) end
+
+  if args.sub and #args.sub > 0 then requests = substitute_variables(requests, args.sub) end
 
   local db = Db.global_update()
   local processing = true
@@ -248,7 +267,10 @@ local function main()
   get_args()
   setup()
 
-  return run()
+  local result = run()
+
+  vim.g.kulala_cli = nil
+  return result
 end
 
 io.write("\n")

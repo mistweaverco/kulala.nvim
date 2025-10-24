@@ -32,8 +32,8 @@ Usage:
       [<input>] ...
 
 Commands:
-      import                    Import HTTP file from Postman/OpenAPI/Bruno
-      export                    Export HTTP file or folder to Postman collection
+      import [<path>]            Import HTTP collection from Postman/OpenAPI/Bruno
+      export [<path>]            Export HTTP file or folder to Postman collection
 
 Arguments:
 
@@ -48,6 +48,8 @@ Options:
       --line (-l) [<line>] ...   Filter requests by line #
                                 
       --env (-e) <env>           Environment
+
+      --sub (-s) <var=value> ... Substitute variable(s)
                                 
       --view (-v)                Response view
                                   {body,headers,headers_body,verbose,script_output,report}
@@ -55,15 +57,28 @@ Options:
       --halt                     Halt on error
                                 
       --mono (-m)                No color output
-                                
+
+      --from (-f)                Import from {postman, openapi, bruno}
+
       --help (-h)                Help
 ```
 
 ```bash
 kulala_cli http_examples/cli.http -e prod -v report -n Login Request -l 15 20 
-kulala_cli cli.http grpc.http
+kulala_cli cli.http grpc.http --sub token=abcd1234 user=42
 kulala_cli http_examples --list
+
+kulala_cli import collection.json --from postman
+kulala_cli export requests.http
 ```
+
+:::info
+
+`@prompt` and `@secret` are not supported in CLI mode and will be ignored.
+
+The variable values must be provided via environment variables, environment files or supplied with --sub option.
+
+:::
 
 ## Kulala CI
 

@@ -19,7 +19,7 @@ end
 describe("requests", function()
   describe("show output of requests", function()
     local curl, system, wait_for_requests
-    local input, notify, dynamic_vars
+    local input, output, notify, dynamic_vars
     local result, expected, ui_buf
 
     teardown(function()
@@ -30,6 +30,7 @@ describe("requests", function()
       h.delete_all_bufs()
 
       input = h.Input.stub()
+      output = h.Output.stub()
       notify = h.Notify.stub()
       dynamic_vars = h.Dynamic_vars.stub()
 
@@ -73,6 +74,7 @@ describe("requests", function()
       curl.reset()
       system.reset()
       input.reset()
+      output.reset()
       notify.reset()
       dynamic_vars.reset()
     end)
@@ -203,8 +205,8 @@ describe("requests", function()
       assert.is_same(expected_request.headers, computed_request.headers)
       assert.is_same(expected_request.body_computed, computed_request.body_computed)
       assert.has_string(result, expected)
-      assert.has_string(notify.messages, "Foobar")
-      assert.has_string(notify.messages, "Thu, 30 Jan 2025 16:21:56 GMT")
+      assert.has_string(output.log, "Foobar")
+      assert.has_string(output.log, "Thu, 30 Jan 2025 16:21:56 GMT")
     end)
 
     it("prompts for vars, computes request vars, logs to client", function()
@@ -228,8 +230,8 @@ describe("requests", function()
 
       assert.is_same(expected_request.headers, computed_request.headers)
       assert.is_same(expected_request.body_computed, computed_request.body_computed)
-      assert.has_string(notify.messages, "Content-Type:application/json")
-      assert.has_string(notify.messages, "{ someHeaderValue: 'gunicorn/19.9.0' }")
+      assert.has_string(output.log, "Content-Type:application/json")
+      assert.has_string(output.log, "{ someHeaderValue: 'gunicorn/19.9.0' }")
       assert.has_string(result, expected)
     end)
 

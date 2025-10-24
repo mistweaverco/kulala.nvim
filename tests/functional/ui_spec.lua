@@ -12,13 +12,14 @@ local h = require("test_helper")
 
 describe("UI", function()
   local curl, system, wait_for_requests
-  local input, notify, dynamic_vars
+  local input, output, notify, dynamic_vars
   local lines, result, expected, http_buf, ui_buf
 
   before_each(function()
     h.delete_all_bufs()
 
     input = h.Input.stub()
+    output = h.Output.stub()
     notify = h.Notify.stub()
     dynamic_vars = h.Dynamic_vars.stub()
 
@@ -79,6 +80,7 @@ describe("UI", function()
     curl.reset()
     system.reset()
     input.reset()
+    output.reset()
     notify.reset()
     dynamic_vars.reset()
   end)
@@ -229,7 +231,7 @@ describe("UI", function()
       local expected_computed_body = '{\n"project": "project_name",\n"results": [\n{\n"id": 1,\n"desc": "bar"\n},\n]\n}'
 
       assert.is_same(expected_computed_body, computed_body)
-      assert.has_string(notify.messages, "TEST LOG")
+      assert.has_string(output.log, "TEST LOG")
     end)
 
     it("last request in body_headers mode for run_all", function()
