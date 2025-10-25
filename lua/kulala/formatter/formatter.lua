@@ -390,6 +390,15 @@ format_rules = {
     return body
   end,
 
+  ["form_urlencoded_body"] = function(node)
+    local body = get_text(node, false)
+
+    local request = current_section().request
+    request.body = #request.body > 0 and (request.body .. "\n\n" .. body) or body
+
+    return body
+  end,
+
   ["multipart_form_data"] = function(node)
     local body = get_text(node, false)
 

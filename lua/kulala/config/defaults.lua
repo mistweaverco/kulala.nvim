@@ -157,6 +157,8 @@ local M = {
       ["@external_body_path.kulala_http"] = "String",
       ["@query_param.name.kulala_http"] = "Number",
       ["@query_param.value.kulala_http"] = "String",
+      ["@form_param_name.kulala_http"] = "Number",
+      ["@form_param_value.kulala_http"] = "String",
     },
 
     -- enable/disable request summary in the output window
