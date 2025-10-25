@@ -94,6 +94,21 @@
     }
   },
   {
+    "type": "fragment",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "variable",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "graphql_body",
     "named": true,
     "fields": {},
@@ -227,6 +242,88 @@
         },
         {
           "type": "script",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "query_param",
+    "named": true,
+    "fields": {
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "query_param_name",
+            "named": true
+          }
+        ]
+      },
+      "value": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "query_param_value",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "query_param_name",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "variable",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "query_param_value",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "variable",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "query_string",
+    "named": true,
+    "fields": {
+      "params": {
+        "multiple": true,
+        "required": true,
+        "types": [
+          {
+            "type": "query_param",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": false,
+      "required": false,
+      "types": [
+        {
+          "type": "fragment",
           "named": true
         }
       ]
@@ -528,6 +625,14 @@
       "required": false,
       "types": [
         {
+          "type": "fragment",
+          "named": true
+        },
+        {
+          "type": "query_string",
+          "named": true
+        },
+        {
           "type": "variable",
           "named": true
         }
@@ -623,7 +728,15 @@
     "fields": {}
   },
   {
+    "type": "#",
+    "named": false
+  },
+  {
     "type": "%}",
+    "named": false
+  },
+  {
+    "type": "&",
     "named": false
   },
   {
@@ -656,6 +769,10 @@
   },
   {
     "type": ">",
+    "named": false
+  },
+  {
+    "type": "?",
     "named": false
   },
   {

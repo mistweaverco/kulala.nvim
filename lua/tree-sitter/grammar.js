@@ -4,7 +4,7 @@
  * @license MIT
  */
 
-/// <reference types="tree-sitter-cli/dsl" />
+/// <reference types="./node_modules/tree-sitter-cli/dsl.d.ts" />
 // @ts-check
 
 const PREC = {
@@ -30,13 +30,7 @@ module.exports = grammar({
   name: "kulala_http",
 
   extras: (_) => [],
-  conflicts: ($) => [
-    [$.target_url],
-    [$.raw_body],
-    [$._raw_body],
-    [$._section_content],
-    [$.value],
-  ],
+  conflicts: ($) => [[$.target_url], [$._section_content], [$.value]],
   inline: ($) => [$._target_url_line, $.__body],
 
   rules: {
@@ -116,10 +110,63 @@ module.exports = grammar({
 
     http_version: (_) => prec.dynamic(1, token(prec(0, /HTTP\/[\d\.]+/))),
 
-    _target_url_line: ($) =>
-      repeat1(choice(WORD_CHAR, PUNCTUATION, $.variable, WS)),
     target_url: ($) =>
       seq($._target_url_line, repeat(seq(NL, WS, $._target_url_line))),
+
+    _target_url_line: ($) =>
+      repeat1(
+        choice(
+          WORD_CHAR,
+          PUNCTUATION,
+          $.variable,
+          $.query_string,
+          $.fragment,
+          WS,
+        ),
+      ),
+
+    query_string: ($) =>
+      prec.right(
+        seq(
+          choice("?", "&"),
+          field("params", $.query_param),
+          repeat(seq("&", field("params", $.query_param))),
+          optional($.fragment),
+        ),
+      ),
+
+    query_param: ($) =>
+      prec.right(
+        seq(
+          field("name", $.query_param_name),
+          optional(seq("=", optional(field("value", $.query_param_value)))),
+        ),
+      ),
+
+    query_param_name: ($) =>
+      prec.right(
+        repeat1(choice(WORD_CHAR, $.variable, token(prec(-1, /[^\s\n\r=&#]/)))),
+      ),
+
+    query_param_value: ($) =>
+      prec.right(
+        seq(
+          choice(WORD_CHAR, $.variable, token(prec(1, /[^\n\r&#\s]/))),
+          repeat(choice(
+            WORD_CHAR,
+            $.variable,
+            token(prec(1, /[^\n\r&#\s]/)),
+            token(prec(2, /\s+[^\n\r&#\sH]/)),
+            token(prec(2, /\s+H[^T]/)),
+            token(prec(2, /\s+HT[^T]/)),
+            token(prec(2, /\s+HTT[^P]/)),
+            token(prec(2, /\s+HTTP[^\/]/))
+          ))
+        )
+      ),
+
+    fragment: ($) =>
+      prec.right(seq("#", repeat1(choice(WORD_CHAR, PUNCTUATION, $.variable)))),
 
     status_code: (_) => /[1-5]\d{2}/,
     status_text: (_) =>
@@ -174,14 +221,6 @@ module.exports = grammar({
           NL,
           repeat(choice($.comment, field("header", $.header))),
           optional($.__body),
-        ),
-      ),
-
-    query_param: ($) =>
-      prec.right(
-        seq(
-          field("key", $.value),
-          optional(seq("=", optional(field("value", $.value)))),
         ),
       ),
 
