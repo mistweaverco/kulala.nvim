@@ -85,10 +85,10 @@ commas. For example:
 RUN SPECIFIC REQUESTS FROM THE CURRENT .HTTP FILE
 
 In the example below, when you run `#Request_one`, it will run the
-`Autenticate` request first, and then the `Request_one` request.
+`Authenticate` request first, and then the `Request_one` request.
 
 >http
-    ### Autenticate
+    ### Authenticate
     POST https://httpbin.org/post HTTP/1.1
     Content-Type: application/x-ndjson
     
@@ -98,7 +98,7 @@ In the example below, when you run `#Request_one`, it will run the
     
     ### Request_one
     
-    run #Autenticate
+    run #Authenticate
     
     POST https://httpbin.org/post HTTP/1.1
     Accept: application/json
