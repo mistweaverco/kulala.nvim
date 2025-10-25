@@ -42,6 +42,9 @@
 (variable_declaration_inline
   "=" @operator)
 
+(query_param
+  "=" @operator)
+
 ; keywords
 (metadata
   "@" @character.special
@@ -53,6 +56,13 @@
   value: (_) @constant)
 
 ; Literals
+(query_param
+  name: (_) @query_param.name)
+
+(query_param
+  name: (_) @query_param.name
+  value: (_) @query_param.value)
+
 (request
   url: (_) @string.special.url)
 
