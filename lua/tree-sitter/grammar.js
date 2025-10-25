@@ -22,6 +22,7 @@ const WS = /\p{Zs}+/u;
 const NL = token(choice("\n", "\r", "\r\n", "\0"));
 const LINE_TAIL = token(seq(/.*/, NL));
 const ESCAPED = token(/\\[^\n\r]/);
+const BOUNDARY_CHAR = /[^\s\n\r]/;
 const COMMENT_PREFIX = token(
   prec(PREC.COMMENT_PREFIX, choice(/#\s*/, /\/\/\s*/)),
 );
@@ -30,7 +31,12 @@ module.exports = grammar({
   name: "kulala_http",
 
   extras: (_) => [],
-  conflicts: ($) => [[$.target_url], [$._section_content], [$.value]],
+  conflicts: ($) => [
+    [$.target_url], 
+    [$._section_content], 
+    [$.value], 
+    [$.multipart_boundary, $.multipart_boundary_last]
+  ],
   inline: ($) => [$._target_url_line, $.__body],
 
   rules: {
@@ -41,6 +47,7 @@ module.exports = grammar({
     WS: (_) => WS,
     NL: (_) => NL,
     LINE_TAIL: (_) => LINE_TAIL,
+    BOUNDARY_CHAR: (_) => BOUNDARY_CHAR,
     COMMENT_PREFIX: (_) => COMMENT_PREFIX,
 
     comment: ($) => $._plain_comment,
@@ -145,7 +152,15 @@ module.exports = grammar({
 
     query_param_name: ($) =>
       prec.right(
-        repeat1(choice(WORD_CHAR, $.variable, token(prec(-1, /[^\s\n\r=&#]/)))),
+        seq(
+          choice(WORD_CHAR, $.variable, token(/[^\s\n\r=&#]/)),
+          repeat(choice(
+            WORD_CHAR,
+            $.variable,
+            token(/[^\s\n\r=&#]/),
+            token(prec(1, /\s+[^\s\n\r=&#]/))
+          ))
+        )
       ),
 
     query_param_value: ($) =>
@@ -156,11 +171,11 @@ module.exports = grammar({
             WORD_CHAR,
             $.variable,
             token(prec(1, /[^\n\r&#\s]/)),
-            token(prec(2, /\s+[^\n\r&#\sH]/)),
-            token(prec(2, /\s+H[^T]/)),
-            token(prec(2, /\s+HT[^T]/)),
-            token(prec(2, /\s+HTT[^P]/)),
-            token(prec(2, /\s+HTTP[^\/]/))
+            token(prec(2, /[ \t]+[^\n\r&#\sH]/)),
+            token(prec(2, /[ \t]+H[^T]/)),
+            token(prec(2, /[ \t]+HT[^T]/)),
+            token(prec(2, /[ \t]+HTT[^P]/)),
+            token(prec(2, /[ \t]+HTTP[^\/]/))
           ))
         )
       ),
@@ -182,12 +197,13 @@ module.exports = grammar({
               field(
                 "body",
                 choice(
-                  $.raw_body,
                   $.multipart_form_data,
                   $.xml_body,
                   $.json_body,
                   $.graphql_body,
+                  $.form_urlencoded_body,
                   $._external_body,
+                  $.raw_body,
                 ),
               ),
               NL,
@@ -333,7 +349,7 @@ module.exports = grammar({
         token(
           prec(
             PREC.BODY_PREFIX,
-            seq(choice("query", "mutation"), WS, /.*[\{\(]\s*/, NL),
+            seq(choice("query", "mutation"), WS, /[^\n]*(\n[^\n{(]*)*[\{\(]\s*/, NL),
           ),
         ),
         $._raw_body,
@@ -354,32 +370,131 @@ module.exports = grammar({
       seq(token(prec(PREC.BODY_PREFIX, "<")), WS, field("path", $.path)),
 
     multipart_form_data: ($) =>
+      prec.right(2, prec(PREC.RAW_BODY + 1, 
+        seq(
+          $.multipart_boundary_first,
+          repeat(choice(
+            $.multipart_boundary,
+            $.multipart_external_body,
+            $.header,
+            $.multipart_content_line,
+            NL
+          )),
+          $.multipart_boundary_last
+        )
+      )),
+
+    _multipart_body: ($) =>
+      repeat1(choice(
+        $.multipart_boundary,
+        $.multipart_boundary_last,
+        $.header,
+        $.multipart_external_body,
+        $.multipart_content_line,
+        NL
+      )),
+
+    multipart_content_line: (_) =>
+      seq(/[^\n\r-]+/, NL),
+
+    multipart_external_body: ($) =>
+      seq(
+        token(prec(PREC.BODY_PREFIX + 1, "<")),
+        WS,
+        field("path", $.path),
+        NL
+      ),
+
+    multipart_boundary_first: ($) =>
+      seq(
+        token(prec(PREC.BODY_PREFIX, /--/)),
+        alias($._boundary_value, $.boundary_value),
+        NL
+      ),
+
+    multipart_boundary: ($) =>
+      seq(
+        token(prec(PREC.BODY_PREFIX, /--/)),
+        alias($._boundary_value, $.boundary_value),
+        NL
+      ),
+
+    multipart_boundary_last: ($) =>
+      prec.dynamic(3, seq(
+        token(prec(PREC.BODY_PREFIX, /--/)),
+        alias($._boundary_value, $.boundary_value),
+        token(prec(100, /--[\t \n\r]/))
+      )),
+
+    _boundary_value: ($) =>
+      prec.right(10, repeat1(choice($.variable, token(prec(1, /[^\s\n\r{]/))))),
+
+    word_char: (_) => WORD_CHAR,
+    punctuation: (_) => PUNCTUATION,
+    ws: (_) => WS,
+    form_urlencoded_body: ($) =>
+      prec(1,
+        prec.right(
+          seq(
+            field("params", alias($._form_param_first, $.form_param)),
+            repeat(seq(alias("&", $.operator), optional(NL), field("params", $.form_param))),
+            NL,
+          )
+        )
+      ),
+
+    _form_param_first: ($) =>
+      seq(
+        field("name", alias(token(prec(1, /[^\s\n\r=&#<{\[\]\}\-:,]+(\s+[^\s\n\r=&#<{\[\]\}\-:,]+)*/)), $.form_param_name)),
+        alias("=", $.operator),
+        optional(field("value", $.form_param_value)),
+      ),
+
+    form_param: ($) =>
       prec.right(
         seq(
-          token(prec(PREC.BODY_PREFIX, "--")),
-          token(prec(1, LINE_TAIL)),
-          repeat(
-            choice(
-              seq($.external_body, choice(WS, NL)),
-              token(prec(2, /<[^\s@]/)),
-              token(prec(2, "--")),
-              token(prec(2, /[{\[]\s+/)),
-              token(prec(1, LINE_TAIL)),
-              token(prec(2, NL)),
-            ),
-          ),
+          field("name", $.form_param_name),
+          optional(seq(alias("=", $.operator), optional(field("value", $.form_param_value)))),
         ),
       ),
 
+    form_param_name: ($) =>
+      prec.right(
+        seq(
+          choice($.variable, token(/[a-zA-Z0-9_@.\[\]]/)),
+          repeat(choice(
+            $.variable,
+            token(/[a-zA-Z0-9_@.\[\]]/),
+            token(prec(1, /\s+[a-zA-Z0-9_@.\[\]]/))
+          ))
+        )
+      ),
+
+    form_param_value: ($) =>
+      prec.right(
+        seq(
+          choice(WORD_CHAR, $.variable, token(prec(1, /[^\n\r&#\s]/))),
+          repeat(choice(
+            WORD_CHAR,
+            $.variable,
+            token(prec(1, /[^\n\r&#\s]/)),
+            token(prec(2, /[ \t]+[^\n\r&#]/))
+          ))
+        )
+      ),
+
     raw_body: ($) =>
-      seq(choice(token(prec(1, seq(/.+/, NL)))), optional($._raw_body)),
+      prec(2, seq(choice(
+        token(prec(2, seq(/[^=\n\r\-<{\[]+/, NL))),
+        token(prec(2, seq(/-[^-=\n\r]+/, NL)))
+      ), optional($._raw_body))),
     _raw_body: ($) =>
       seq(choice(token(prec(PREC.RAW_BODY, LINE_TAIL))), optional($._raw_body)),
     _not_comment: (_) => token(seq(/[^@]*/, NL)),
 
     header_entity: (_) => /[\w\-]+/,
     identifier: (_) =>
-      /[A-Za-z_.$\d\u00A1-\uFFFF-]+(\[[^\]]+\]|\.[A-Za-z_.$\d\u00A1-\uFFFF-]+|\([^)]*\))?/,
+      /[A-Za-z_.$\d\u00A1-\uFFFF-]+(\[[^\]]+\]|\.[A-Za-z_.$\d\u00A1-\uFFFF-]+|\([^)]*\))*/,
     path: ($) =>
       prec.right(repeat1(choice(WORD_CHAR, PUNCTUATION, $.variable, ESCAPED))),
     value: ($) => repeat1(choice(WORD_CHAR, PUNCTUATION, $.variable, WS)),
