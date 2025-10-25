@@ -35,6 +35,7 @@ describe("cli", function()
       ["https://httpbin.org/advanced_b"] = {
         body = h.load_fixture("fixtures/advanced_B_body.txt"),
       },
+      ["https://httpbin.org/get"] = { body = "" },
     }
 
     system = h.System.stub({ "curl" }, {
@@ -163,5 +164,15 @@ describe("cli", function()
     assert.has_string(output.log, "Exported collection:")
 
     Fs.write_json:revert()
+  end)
+
+  it("allows to supply prompt variables with CLI", function()
+    local path = h.expand_path("requests/prompt.http")
+
+    run_cli { path, "--sub", "PROMPT_VAR=prompt" }
+
+    assert.is_same(0, exit_code)
+    assert.is_same(1, curl.requests_no)
+    assert.is_same("http://httpbin.org/prompt", curl.requests[1])
   end)
 end)

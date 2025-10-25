@@ -30,6 +30,7 @@ describe("requests", function()
             @REQ_PASSWORD = Test_password
             @MY_COOKIE = awesome=me
             @page = ONE
+            @VAR_NAME_TEST_abc-0123456789 = Test_var_name_ok
 
             POST https://httpbingo.org/basic-auth/{{REQ_USERNAME}}/{{REQ_PASSWORD}} HTTP/1.1
             Content-Type: application/json
@@ -40,7 +41,8 @@ describe("requests", function()
 
             {
               "Timeout": {{DEFAULT_TIMEOUT}},
-              "Timestamp": {{$timestamp}}
+              "Timestamp": {{$timestamp}},
+              "VarNameTest": "{{VAR_NAME_TEST_abc-0123456789}}"
             }
 
             >> institutions_{{page}}.json
@@ -61,7 +63,8 @@ describe("requests", function()
           body = ([[
             {
               "Timeout": 5000,
-              "Timestamp": $TIMESTAMP
+              "Timestamp": $TIMESTAMP,
+              "VarNameTest": "Test_var_name_ok"
             }]]):to_string(true),
           redirect_response_body_to_files = {
             {

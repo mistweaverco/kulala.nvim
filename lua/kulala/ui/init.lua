@@ -96,7 +96,8 @@ local open_kulala_buffer = function(filetype)
     })
 
     vim.iter(bo):each(function(key, value)
-      vim.api.nvim_set_option_value(key, value, { buf = buf })
+      local status, error = pcall(vim.api.nvim_set_option_value, key, value, { buf = buf })
+      if not status then Logger.error("Failed to set buffer option `" .. key .. "`: " .. (error or "")) end
     end)
 
     vim.api.nvim_buf_set_name(buf, GLOBALS.UI_ID)
@@ -159,7 +160,8 @@ local function open_kulala_window(buf)
   })
 
   vim.iter(wo):each(function(key, value)
-    vim.api.nvim_set_option_value(key, value, { win = win })
+    local status, error = pcall(vim.api.nvim_set_option_value, key, value, { win = win })
+    if not status then Logger.error("Failed to set window option `" .. key .. "`: " .. (error or "")) end
   end)
 
   _ = config.display_mode == "float" and vim.api.nvim_set_current_win(win)

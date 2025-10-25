@@ -2,10 +2,11 @@ local Json = require("kulala.utils.json")
 
 local M = {}
 
+---@param body string|table
 M.parse = function(body, path)
   local subpath = string.gsub(path, "^%$%.*", "")
 
-  local result = Json.parse(body)
+  local result = type(body) == "string" and Json.parse(body) or body
   if not result then return end
 
   local path_parts = {}

@@ -86,7 +86,12 @@ end
 local function process_prompt_vars(res)
   for _, metadata in ipairs(res.metadata) do
     local secret = metadata.name == "secret"
-    if (metadata.name == "prompt" or secret) and not INT_PROCESSING.prompt_var(metadata.value, secret) then
+
+    if
+      (metadata.name == "prompt" or secret)
+      and not vim.g.kulala_cli
+      and not INT_PROCESSING.prompt_var(metadata.value, secret)
+    then
       return false
     end
   end
@@ -146,13 +151,18 @@ local function modify_grpc_response(response)
 
   response.body_raw = response.stats
   response.stats = ""
-  response.headers = response.errors == "" and "Content-Type: application/json" or "Content-Type: kulala/grpc_error"
+
+  FS.write_file(GLOBALS.BODY_FILE, response.body_raw)
+
+  local content_type = response.errors == "" and "application/json" or "kulala/grpc_error"
+  response.headers = "Content-Type: " .. content_type
+  response.headers_tbl = { ["Content-Type"] = content_type }
 
   return response
 end
 
 local function set_request_stats(response)
-  response.stats = Json.parse(response.stats) or {}
+  response.stats = Json.parse(tostring(response.stats)) or {}
   response.response_code = tonumber(response.stats.response_code) or response.code
   response.status = response.code == 0 and response.response_code < 400
   response.assert_status = response.status and response.assert_status
@@ -181,7 +191,7 @@ local function inject_payload(errors, request)
   return table.concat(lines, "\n")
 end
 
-local function get_body()
+local function truncate_body()
   local max_size = CONFIG.get().ui.max_response_size
 
   if vim.fn.getfsize(GLOBALS.BODY_FILE) > max_size then
@@ -217,10 +227,10 @@ local function save_response(request_status, parsed_request)
     status = false,
     time = vim.fn.localtime(),
     duration = request_status.duration or 0,
+    body_raw = FS.read_file(GLOBALS.BODY_FILE) or "",
     body = "",
-    body_raw = get_body(),
     json = {},
-    filtered = nil,
+    filter = nil,
     headers = FS.read_file(GLOBALS.HEADERS_FILE) or "",
     headers_tbl = INT_PROCESSING.get_headers() or {},
     cookies = INT_PROCESSING.get_cookies() or {},
@@ -232,7 +242,6 @@ local function save_response(request_status, parsed_request)
     assert_status = true,
     file = parsed_request.file or "",
     buf_name = vim.fn.bufname(buf),
-
     line = line,
     buf = buf,
   }
@@ -240,7 +249,7 @@ local function save_response(request_status, parsed_request)
   response = modify_grpc_response(response)
   response = set_request_stats(response)
 
-  response.body = response.body_raw
+  response.body = truncate_body()
   response.json = Json.parse(response.body) or {}
   response.errors = inject_payload(response.errors, parsed_request)
 

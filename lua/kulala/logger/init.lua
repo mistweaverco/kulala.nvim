@@ -24,7 +24,7 @@ M.log = function(message, level, opts)
 
   local notify = vim.notify
 
-  if not vim.fn.has("gui_running") then
+  if vim.fn.has("gui_running") == 0 then
     return vim.print(message)
   elseif vim.in_fast_event() then
     notify = vim.schedule_wrap(vim.notify)

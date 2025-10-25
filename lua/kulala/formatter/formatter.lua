@@ -49,12 +49,14 @@ local function handle_formatter_output(_, data, name)
 end
 
 local function start_formatter(cmd)
-  return vim.fn.jobstart(cmd, {
-    stdin = "pipe",
-    stdout = "pipe",
-    on_stdout = handle_formatter_output,
-    on_stderr = handle_formatter_output,
-  })
+  return vim.fn.executable(cmd[1]) == 1
+      and vim.fn.jobstart(cmd, {
+        stdin = "pipe",
+        stdout = "pipe",
+        on_stdout = handle_formatter_output,
+        on_stderr = handle_formatter_output,
+      })
+    or nil
 end
 
 local function stop_formatters()
@@ -77,7 +79,9 @@ local function get_formatter_id(ft, opts)
   end
 
   local id = cmd and start_formatter(cmd)
-  if not id or id < 1 then return Logger.error("Failed to start formatter for " .. ft .. ": " .. (cmd or "")) end
+  if not id or id < 1 then
+    return Logger.error("Failed to start formatter for " .. ft .. ": " .. table.concat(cmd or {}, " "))
+  end
 
   formatters[ft] = id
   return id

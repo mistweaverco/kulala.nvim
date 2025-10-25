@@ -1,0 +1,6 @@
+### 
+
+# @prompt PROMPT_VAR Enter a message
+
+GET http://httpbin.org/{{PROMPT_VAR}} HTTP/1.1
+Content-Type: application/json
