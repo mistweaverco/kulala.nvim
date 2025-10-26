@@ -344,6 +344,29 @@ format_rules = {
     return formatted
   end,
 
+  ["target_url"] = function(node)
+    local request = current_section().request
+    local url = get_text(node)
+    local split_params = format_opts.split_params and (tonumber(format_opts.split_params) or 4)
+
+    if split_params and node:child() and node:child():child_count() > split_params then
+      request.url = url:gsub("%?.*$", ""):gsub("%#.*$", "")
+      format_children(node)
+    else
+      request.url = url
+    end
+  end,
+
+  ["query_param"] = function(node)
+    local request = current_section().request
+    request.url = request.url .. "\n " .. (request.url:find("%?") and "&" or "?") .. get_text(node)
+  end,
+
+  ["fragment"] = function(node)
+    local request = current_section().request
+    request.url = request.url .. "\n " .. get_text(node)
+  end,
+
   ["request"] = function(node)
     local formatted = {}
 
@@ -354,9 +377,9 @@ format_rules = {
 
     local request = current_section().request
 
-    if #target_url > 0 then -- format url and children only if url is present
-      request.url = ("%s %s %s"):format(method, target_url, http_version)
+    if #target_url > 0 then -- format url and request children only if url is present
       format_children(node)
+      request.url = ("%s %s %s"):format(method, request.url, http_version)
     end
 
     _ = #request.pre_request_script > 0
@@ -392,9 +415,22 @@ format_rules = {
 
   ["form_urlencoded_body"] = function(node)
     local body = get_text(node, false)
-
     local request = current_section().request
-    request.body = #request.body > 0 and (request.body .. "\n\n" .. body) or body
+
+    if format_opts.split_params then
+      format_children(node)
+    else
+      request.body = #request.body > 0 and (request.body .. "\n\n" .. body) or body
+    end
+
+    return body
+  end,
+
+  ["form_param"] = function(node)
+    local body = get_text(node, false)
+    local request = current_section().request
+
+    request.body = #request.body > 0 and (request.body .. "&\n" .. body) or body
 
     return body
   end,

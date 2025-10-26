@@ -234,6 +234,7 @@ local M = {
 
     -- enable/disable/customize HTTP formatter
     formatter = {
+      split_params = 4, -- split query/form parameters onto multiple lines if number of params exceeds this value
       sort = { -- enable/disable alphabetical sorting in request body
         metadata = true,
         variables = true,
