@@ -38,6 +38,7 @@
     },
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     "version": "0.1.9"
 ||||||| parent of 5d3e50a (feat(grammar): parse and highlight form params)
     "version": "0.1.6"
@@ -49,5 +50,10 @@
 =======
     "version": "0.2.1"
 >>>>>>> bc2d661 (fix(grammar): exponential state explosion)
+||||||| parent of 52ddb17 (fix(grammar): cleanup)
+    "version": "0.2.1"
+=======
+    "version": "0.2.3"
+>>>>>>> 52ddb17 (fix(grammar): cleanup)
   }
 }

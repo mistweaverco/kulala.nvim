@@ -8,11 +8,11 @@
 // @ts-check
 
 const PREC = {
+  COMMENT_PREFIX: 1,
   VAR_COMMENT_PREFIX: 2,
   BODY_PREFIX: 2,
   RAW_BODY: 3,
   GRAPHQL_JSON_PREFIX: 4,
-  COMMENT_PREFIX: 1,
   REQ_SEPARATOR: 9,
 };
 
@@ -22,17 +22,17 @@ const WS = /\p{Zs}+/u;
 const NL = token(choice("\n", "\r", "\r\n", "\0"));
 const LINE_TAIL = token(seq(/.*/, NL));
 const ESCAPED = token(/\\[^\n\r]/);
-const BOUNDARY_CHAR = /[^\s\n\r]/;
 const COMMENT_PREFIX = token(
   prec(PREC.COMMENT_PREFIX, choice(/#\s*/, /\/\/\s*/)),
 );
 
 const OPTIONAL_WS = optional(WS);
 const OPTIONAL_TOKEN_WS = optional(token(prec(1, WS)));
-const NEWLINE_CHARS = /[\n\r]/;
-const NOT_NEWLINE_CHARS = /[^\n\r]/;
+
 const SPACES_TABS = /[ \t]+/;
-const PARAM_EXCLUSIONS = /[^\s\n\r=&#]/;
+const QUERY_PARAM_NAME_CHARS = /[^\s\n\r=&#]+/;
+const PARAM_VALUE_CHARS = /[^\n\r&#\s]+/;
+const FORM_PARAM_NAME_CHARS = /[a-zA-Z0-9_@.\[\]]/;
 const FORM_PARAM_EXCLUSIONS = /[^\s\n\r=&#<{\[\]\}\-:,]+/;
 
 module.exports = grammar({
@@ -137,12 +137,12 @@ module.exports = grammar({
         choice(
           $.variable,
           seq(
-            token(/[^\s\n\r=&#]+/),
+            token(QUERY_PARAM_NAME_CHARS),
             repeat(
               choice(
                 $.variable,
-                token(/[^\s\n\r=&#]+/),
-                token(prec(1, seq(/\s+/, /[^\s\n\r=&#]+/))),
+                token(QUERY_PARAM_NAME_CHARS),
+                token(prec(1, seq(/\s+/, QUERY_PARAM_NAME_CHARS))),
               ),
             ),
           ),
@@ -154,11 +154,11 @@ module.exports = grammar({
         choice(
           $.variable,
           seq(
-            token(/[^\n\r&#\s]+/),
+            token(PARAM_VALUE_CHARS),
             repeat(
               choice(
                 $.variable,
-                token(/[^\n\r&#\s]+/),
+                token(PARAM_VALUE_CHARS),
                 token(prec(2, seq(SPACES_TABS, /[^\n\r&#\sH]/))),
                 token(prec(2, seq(SPACES_TABS, /H[^T]/))),
                 token(prec(2, seq(SPACES_TABS, /HT[^T]/))),
@@ -171,9 +171,7 @@ module.exports = grammar({
       ),
 
     fragment: ($) =>
-      prec.right(
-        seq("#", repeat1(choice($.variable, token(/[^\n\r\s]+/)))),
-      ),
+      prec.right(seq("#", repeat1(choice($.variable, token(PARAM_VALUE_CHARS))))),
 
     status_code: (_) => /[1-5]\d{2}/,
     status_text: (_) =>
@@ -238,7 +236,7 @@ module.exports = grammar({
         OPTIONAL_WS,
         ":",
         OPTIONAL_TOKEN_WS,
-        optional(field("value", choice($.value))),
+        optional(field("value", $.value)),
         NL,
       ),
 
@@ -383,18 +381,6 @@ module.exports = grammar({
         ),
       ),
 
-    _multipart_body: ($) =>
-      repeat1(
-        choice(
-          $.multipart_boundary,
-          $.multipart_boundary_last,
-          $.header,
-          $.multipart_external_body,
-          $.multipart_content_line,
-          NL,
-        ),
-      ),
-
     multipart_content_line: (_) => seq(/[^\n\r-]+/, NL),
 
     multipart_external_body: ($) =>
@@ -484,12 +470,12 @@ module.exports = grammar({
     form_param_name: ($) =>
       prec.right(
         seq(
-          choice($.variable, token(/[a-zA-Z0-9_@.\[\]]/)),
+          choice($.variable, token(FORM_PARAM_NAME_CHARS)),
           repeat(
             choice(
               $.variable,
-              token(/[a-zA-Z0-9_@.\[\]]/),
-              token(prec(1, /\s+[a-zA-Z0-9_@.\[\]]/)),
+              token(FORM_PARAM_NAME_CHARS),
+              token(prec(1, seq(/\s+/, FORM_PARAM_NAME_CHARS))),
             ),
           ),
         ),
@@ -497,14 +483,16 @@ module.exports = grammar({
 
     form_param_value: ($) =>
       prec.right(
-        seq(
-          choice(WORD_CHAR, $.variable, token(prec(1, /[^\n\r&#\s]/))),
-          repeat(
-            choice(
-              WORD_CHAR,
-              $.variable,
-              token(prec(1, /[^\n\r&#\s]/)),
-              token(prec(2, seq(SPACES_TABS, /[^\n\r&#]/))),
+        choice(
+          $.variable,
+          seq(
+            token(PARAM_VALUE_CHARS),
+            repeat(
+              choice(
+                $.variable,
+                token(PARAM_VALUE_CHARS),
+                token(prec(2, seq(SPACES_TABS, /[^\n\r&#]/))),
+              ),
             ),
           ),
         ),
@@ -523,7 +511,6 @@ module.exports = grammar({
       ),
     _raw_body: ($) =>
       seq(token(prec(PREC.RAW_BODY, LINE_TAIL)), optional($._raw_body)),
-    _not_comment: (_) => token(seq(/[^@]*/, NL)),
 
     header_entity: (_) => /[\w\-]+/,
     identifier: (_) =>
@@ -532,9 +519,5 @@ module.exports = grammar({
       prec.right(repeat1(choice(WORD_CHAR, PUNCTUATION, $.variable, ESCAPED))),
     value: ($) => repeat1(choice(WORD_CHAR, PUNCTUATION, $.variable, WS)),
     _blank_line: (_) => seq(OPTIONAL_WS, token(prec(-1, NL))),
-
-    word_char: (_) => WORD_CHAR,
-    punctuation: (_) => PUNCTUATION,
-    ws: (_) => WS,
   },
 });
