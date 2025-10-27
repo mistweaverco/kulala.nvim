@@ -134,14 +134,16 @@ module.exports = grammar({
 
     query_param_name: ($) =>
       prec.right(
-        seq(
-          choice(WORD_CHAR, $.variable, token(PARAM_EXCLUSIONS)),
-          repeat(
-            choice(
-              WORD_CHAR,
-              $.variable,
-              token(PARAM_EXCLUSIONS),
-              token(prec(1, seq(/\s+/, PARAM_EXCLUSIONS))),
+        choice(
+          $.variable,
+          seq(
+            token(/[^\s\n\r=&#]+/),
+            repeat(
+              choice(
+                $.variable,
+                token(/[^\s\n\r=&#]+/),
+                token(prec(1, seq(/\s+/, /[^\s\n\r=&#]+/))),
+              ),
             ),
           ),
         ),
@@ -149,25 +151,29 @@ module.exports = grammar({
 
     query_param_value: ($) =>
       prec.right(
-        seq(
-          choice(WORD_CHAR, $.variable, token(prec(1, /[^\n\r&#\s]/))),
-          repeat(
-            choice(
-              WORD_CHAR,
-              $.variable,
-              token(prec(1, /[^\n\r&#\s]/)),
-              token(prec(2, seq(SPACES_TABS, /[^\n\r&#\sH]/))),
-              token(prec(2, seq(SPACES_TABS, /H[^T]/))),
-              token(prec(2, seq(SPACES_TABS, /HT[^T]/))),
-              token(prec(2, seq(SPACES_TABS, /HTT[^P]/))),
-              token(prec(2, seq(SPACES_TABS, /HTTP[^\/]/))),
+        choice(
+          $.variable,
+          seq(
+            token(/[^\n\r&#\s]+/),
+            repeat(
+              choice(
+                $.variable,
+                token(/[^\n\r&#\s]+/),
+                token(prec(2, seq(SPACES_TABS, /[^\n\r&#\sH]/))),
+                token(prec(2, seq(SPACES_TABS, /H[^T]/))),
+                token(prec(2, seq(SPACES_TABS, /HT[^T]/))),
+                token(prec(2, seq(SPACES_TABS, /HTT[^P]/))),
+                token(prec(2, seq(SPACES_TABS, /HTTP[^\/]/))),
+              ),
             ),
           ),
         ),
       ),
 
     fragment: ($) =>
-      prec.right(seq("#", repeat1(choice(WORD_CHAR, PUNCTUATION, $.variable)))),
+      prec.right(
+        seq("#", repeat1(choice($.variable, token(/[^\n\r\s]+/)))),
+      ),
 
     status_code: (_) => /[1-5]\d{2}/,
     status_text: (_) =>

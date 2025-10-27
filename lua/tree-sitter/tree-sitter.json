@@ -37,11 +37,17 @@
       "repository": "https://github.com/mistweaverco/kulala.nvim/lua/tree-sitter"
     },
 <<<<<<< HEAD
+<<<<<<< HEAD
     "version": "0.1.9"
 ||||||| parent of 5d3e50a (feat(grammar): parse and highlight form params)
     "version": "0.1.6"
 =======
     "version": "0.2.0"
 >>>>>>> 5d3e50a (feat(grammar): parse and highlight form params)
+||||||| parent of bc2d661 (fix(grammar): exponential state explosion)
+    "version": "0.2.0"
+=======
+    "version": "0.2.1"
+>>>>>>> bc2d661 (fix(grammar): exponential state explosion)
   }
 }
