@@ -30,7 +30,6 @@ const OPTIONAL_WS = optional(WS);
 const OPTIONAL_TOKEN_WS = optional(token(prec(1, WS)));
 
 const SPACES_TABS = /[ \t]+/;
-const QUERY_PARAM_NAME_CHARS = /[^\s\n\r=&#]+/;
 const PARAM_VALUE_CHARS = /[^\n\r&#\s]+/;
 const FORM_PARAM_NAME_CHARS = /[a-zA-Z0-9_@.\[\]]/;
 const FORM_PARAM_EXCLUSIONS = /[^\s\n\r=&#<{\[\]\}\-:,]+/;
@@ -109,6 +108,7 @@ module.exports = grammar({
           PUNCTUATION,
           $.variable,
           $.query_string,
+          $.query_param_continuation,
           $.fragment,
           WS,
         ),
@@ -117,10 +117,18 @@ module.exports = grammar({
     query_string: ($) =>
       prec.right(
         seq(
-          choice("?", "&"),
+          alias("?", $.operator),
           field("params", $.query_param),
-          repeat(seq("&", field("params", $.query_param))),
+          repeat(seq(alias("&", $.operator), field("params", $.query_param))),
           optional($.fragment),
+        ),
+      ),
+
+    query_param_continuation: ($) =>
+      prec.right(
+        seq(
+          alias("&", $.operator),
+          field("params", $.query_param),
         ),
       ),
 
@@ -128,50 +136,34 @@ module.exports = grammar({
       prec.right(
         seq(
           field("name", $.query_param_name),
-          optional(seq("=", optional(field("value", $.query_param_value)))),
+          optional(seq(alias("=", $.operator), optional(field("value", $.query_param_value)))),
         ),
       ),
 
     query_param_name: ($) =>
       prec.right(
-        choice(
-          $.variable,
-          seq(
-            token(QUERY_PARAM_NAME_CHARS),
-            repeat(
-              choice(
-                $.variable,
-                token(QUERY_PARAM_NAME_CHARS),
-                token(prec(1, seq(/\s+/, QUERY_PARAM_NAME_CHARS))),
-              ),
-            ),
-          ),
-        ),
+        repeat1(choice(WORD_CHAR, $.variable, token(prec(-1, /[^\s\n\r=&#]/)))),
       ),
 
     query_param_value: ($) =>
       prec.right(
-        choice(
-          $.variable,
-          seq(
-            token(PARAM_VALUE_CHARS),
-            repeat(
-              choice(
-                $.variable,
-                token(PARAM_VALUE_CHARS),
-                token(prec(2, seq(SPACES_TABS, /[^\n\r&#\sH]/))),
-                token(prec(2, seq(SPACES_TABS, /H[^T]/))),
-                token(prec(2, seq(SPACES_TABS, /HT[^T]/))),
-                token(prec(2, seq(SPACES_TABS, /HTT[^P]/))),
-                token(prec(2, seq(SPACES_TABS, /HTTP[^\/]/))),
-              ),
-            ),
-          ),
-        ),
+        seq(
+          choice(WORD_CHAR, $.variable, token(prec(1, /[^\n\r&#\s]/))),
+          repeat(choice(
+            WORD_CHAR,
+            $.variable,
+            token(prec(1, /[^\n\r&#\s]/)),
+            token(prec(2, /\s+[^\n\r&#\sH]/)),
+            token(prec(2, /\s+H[^T]/)),
+            token(prec(2, /\s+HT[^T]/)),
+            token(prec(2, /\s+HTT[^P]/)),
+            token(prec(2, /\s+HTTP[^\/]/))
+          ))
+        )
       ),
 
     fragment: ($) =>
-      prec.right(seq("#", repeat1(choice($.variable, token(PARAM_VALUE_CHARS))))),
+      prec.right(seq(alias("#", $.operator), repeat1(choice(WORD_CHAR, PUNCTUATION, $.variable)))),
 
     status_code: (_) => /[1-5]\d{2}/,
     status_text: (_) =>

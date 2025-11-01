@@ -42,14 +42,7 @@
 (variable_declaration_inline
   "=" @operator)
 
-(query_param
-  "=" @operator)
-
-(form_param
-  (operator) @operator)
-
-(form_urlencoded_body
-  (operator) @operator)
+(operator) @operator
 
 ; keywords
 (metadata
