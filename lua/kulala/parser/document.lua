@@ -251,7 +251,8 @@ local function parse_body(request, line, lnum)
   content_type = content_type or ""
 
   if line:find("^< [^{]") then
-    line = M.expand_included_filepath(line, lnum)
+    local path = line:match("^< ([^\r\n]+)[\r\n]*$")
+    line = "< " .. M.expand_included_filepath(path, lnum, request.file)
   elseif content_type:find("^application/x%-www%-form%-urlencoded") then
     -- should be no line endings or they should be urlencoded
     line_ending = ""
@@ -376,22 +377,19 @@ local function parse_run_command(requests, imported_requests, request, line, lnu
 end
 
 -- expand path for included files, so can be used in request replay(), when cwd has changed
-M.expand_included_filepath = function(line, lnum)
-  local path = line:match("^< ([^\r\n]+)[\r\n]*$")
-  path = path and FS.get_file_path(path)
+M.expand_included_filepath = function(path, lnum, file)
+  path = path and FS.get_file_path(path, file)
 
   if FS.read_file(path, true) then
-    line = "< " .. path
+    return path
   else
     local msg = "The file '" .. path .. "' was not found."
 
     Logger.warn(msg)
     Diagnostics.add_diagnostics(DB.get_current_buffer(), msg, vim.diagnostic.WARN, lnum - 2, 0, lnum - 2, #path)
 
-    line = "< [file not found] " .. path
+    return "[file not found] " .. path
   end
-
-  return line
 end
 
 ---Parses given lines or DB.current_buffer document
@@ -474,7 +472,7 @@ function parse_document(lines, path)
       elseif is_request_line and line:match("^< (.*)$") then
         request.scripts.pre_request.priority = request.scripts.pre_request.priority or "files"
         local scriptfile = line:match("^< (.*)$")
-        table.insert(request.scripts.pre_request.files, scriptfile)
+        table.insert(request.scripts.pre_request.files, M.expand_included_filepath(scriptfile, lnum, request.file))
       elseif line == "" and not is_body_section then
         if not is_request_line then is_body_section = true end
         -- redirect response body to file
@@ -487,7 +485,7 @@ function parse_document(lines, path)
       elseif line:match("^> (.*)$") then
         request.scripts.post_request.priority = request.scripts.post_request.priority or "files"
         local scriptfile = line:match("^> (.*)$")
-        table.insert(request.scripts.post_request.files, scriptfile)
+        table.insert(request.scripts.post_request.files, M.expand_included_filepath(scriptfile, lnum, request.file))
       elseif line:match("^@([%w_-]+)") then
         parse_variables(request, line)
       elseif is_body_section then

@@ -134,10 +134,7 @@ local function get_headers(request)
     local header = new(Postman.header, { key = key, value = value })
 
     -- let Postman set these headers
-    if
-      Parser_utils.contains_header(request.headers, "Content-Type", "multipart/form-data")
-      or Parser_utils.contains_header(request.headers, "Authorization")
-    then
+    if (key:lower() == "content-type" and value:lower() == "multipart/form-data") or key:lower() == "authorization" then
       return
     end
 

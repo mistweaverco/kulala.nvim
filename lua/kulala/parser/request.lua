@@ -85,7 +85,7 @@ local function process_grpc_flags(request, flag, value)
 
   value = flag:match("import%-path") and FS.get_file_path(value) or value
   request.grpc = request.grpc or vim.deepcopy(default_grpc_command)
-  request.grpc.flags[flag] = value
+  table.insert(request.grpc.flags, { flag, value })
 end
 
 local function process_curl_flags(request, flag, value)
@@ -527,9 +527,10 @@ local function build_grpc_command(request)
   end
 
   local flags = request.grpc and request.grpc.flags or {}
-  vim.iter(flags):each(function(flag, value)
-    table.insert(request.cmd, "-" .. flag)
-    _ = (value and #value > 1) and table.insert(request.cmd, value)
+  vim.iter(flags):each(function(flag_value)
+    local f, v = unpack(flag_value)
+    table.insert(request.cmd, "-" .. f)
+    _ = (v and #v > 1) and table.insert(request.cmd, v)
   end)
 
   vim.iter(request.headers):each(function(key, value)

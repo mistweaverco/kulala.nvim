@@ -30,7 +30,9 @@ For example:
 GRPC localhost:50051 helloworld.Greeter/SayHello
 Content-Type: application/json
 
-{"name": "world"}
+{
+  "name": "world"
+}
 
 ###
 

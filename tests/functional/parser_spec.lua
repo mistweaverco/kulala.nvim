@@ -758,7 +758,7 @@ describe("requests", function()
               console.log("pre request 0")
             %}
 
-            < ./pre_script_path_0
+            < ../scripts/advanced_D_pre.js
 
             POST https://httpbingo.org/0
 
@@ -766,7 +766,7 @@ describe("requests", function()
               console.log("post request 0")
             %}
 
-            > ./post_script_path_0
+            > ../scripts/advanced_D_post.js
 
             ### request 1
 
@@ -778,7 +778,7 @@ describe("requests", function()
 
             POST https://httpbingo.org/1
           ]]):to_table(true),
-            "test.http"
+            h.expand_path("requests/simple.http")
           )
         end)
 
@@ -802,13 +802,13 @@ describe("requests", function()
 
           assert.has_properties(result.shared.scripts, {
             pre_request = {
-              files = { "./pre_script_path_0" },
+              files = { h.expand_path("requests") .. "/../scripts/advanced_D_pre.js" },
               inline = { 'console.log("pre request 0")' },
               priority = "inline",
             },
 
             post_request = {
-              files = { "./post_script_path_0" },
+              files = { h.expand_path("requests") .. "/../scripts/advanced_D_post.js" },
               inline = { 'console.log("post request 0")' },
               priority = "inline",
             },

@@ -70,7 +70,7 @@ describe("grpc", function()
       assert.has_string(result, "localhost:50051 helloworld.Greeter/SayHello")
     end)
 
-    it("supports repeated flags", function()
+    it("supports headers", function()
       h.create_buf(
         ([[
           GRPC localhost:50051 helloworld.Greeter/SayHello
@@ -87,6 +87,50 @@ describe("grpc", function()
       assert.has_string(result, "-H testHeader1:testValue1")
       assert.has_string(result, "-H testHeader2:testValue2")
       assert.has_string(result, "localhost:50051 helloworld.Greeter/SayHello")
+    end)
+
+    it("supports repeated flags in metadata", function()
+      h.create_buf(
+        ([[
+          # @grpc-import-path tests/functional/a/protos 
+          # @grpc-import-path tests/functional/b/protos 
+          # @grpc-proto my.proto
+
+          GRPC localhost:50051 helloworld.Greeter/SayHello
+      ]]):to_table(true),
+        "test.http"
+      )
+
+      result = parser.parse() or {}
+      result = h.to_string(result.cmd):gsub("\n", " ")
+
+      assert.has_string(result, "grpcurl")
+      assert.has_string(result, "localhost:50051 helloworld.Greeter/SayHello")
+      assert.has_string(result, "-proto my.proto")
+
+      assert.has_string(result, "-import-path " .. h.expand_path("a/protos"))
+      assert.has_string(result, "-import-path " .. h.expand_path("b/protos"))
+    end)
+
+    it("supports repeated flags in request", function()
+      h.create_buf(
+        ([[
+          # @grpc-proto my.proto
+
+          GRPC -import-path tests/functional/a/protos -import-path tests/functional/b/protos localhost:50051 helloworld.Greeter/SayHello
+      ]]):to_table(true),
+        "test.http"
+      )
+
+      result = parser.parse() or {}
+      result = h.to_string(result.cmd):gsub("\n", " ")
+
+      assert.has_string(result, "grpcurl")
+      assert.has_string(result, "localhost:50051 helloworld.Greeter/SayHello")
+      assert.has_string(result, "-proto my.proto")
+
+      assert.has_string(result, "-import-path " .. h.expand_path("a/protos"))
+      assert.has_string(result, "-import-path " .. h.expand_path("b/protos"))
     end)
 
     it("builds grpc substituting variables", function()
