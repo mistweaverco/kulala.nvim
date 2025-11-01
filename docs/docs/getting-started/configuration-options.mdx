@@ -1057,6 +1057,7 @@ Function called when Kulala LSP attaches to the buffer
     filetypes = { "http", "rest", "json", "yaml", "bruno" },
     keymaps = false, -- disabled by default, as Kulala relies on default Neovim LSP keymaps
     formatter = {
+      split_params = 4, -- split query/form parameters onto multiple lines if number of params exceeds this value
       sort = { -- enable/disable alphabetical sorting
         metadata = true,
         variables = true,

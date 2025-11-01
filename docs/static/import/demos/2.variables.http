@@ -1,21 +1,23 @@
-###
+### 
 
 # The order of the environment variables resolution is as follows:
 # - System environment variables
 # - http-client.env.json file
 # - .env file
-  
+
+@API_KEY = your_api_key_here
+@BASE_URL = https://api.thecatapi.com/v1
+
 
 ### Basic GET request
 
 GET https://api.thecatapi.com/v1/images/search HTTP/1.1
 
-@BASE_URL = https://api.thecatapi.com/v1
-@API_KEY = your_api_key_here
 
 ### GET request with variables and request parameters
 
 GET {{BASE_URL}}/images/search?limit=3 HTTP/1.1
+
 
 ### Request with environment variables
 
