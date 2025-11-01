@@ -206,8 +206,12 @@
     "fields": {},
     "children": {
       "multiple": true,
-      "required": false,
+      "required": true,
       "types": [
+        {
+          "type": "operator",
+          "named": true
+        },
         {
           "type": "variable",
           "named": true
@@ -464,6 +468,42 @@
           }
         ]
       }
+    },
+    "children": {
+      "multiple": false,
+      "required": false,
+      "types": [
+        {
+          "type": "operator",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "query_param_continuation",
+    "named": true,
+    "fields": {
+      "params": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "query_param",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "operator",
+          "named": true
+        }
+      ]
     }
   },
   {
@@ -512,11 +552,15 @@
       }
     },
     "children": {
-      "multiple": false,
-      "required": false,
+      "multiple": true,
+      "required": true,
       "types": [
         {
           "type": "fragment",
+          "named": true
+        },
+        {
+          "type": "operator",
           "named": true
         }
       ]
@@ -830,6 +874,10 @@
           "named": true
         },
         {
+          "type": "query_param_continuation",
+          "named": true
+        },
+        {
           "type": "query_string",
           "named": true
         },
@@ -929,15 +977,7 @@
     "fields": {}
   },
   {
-    "type": "#",
-    "named": false
-  },
-  {
     "type": "%}",
-    "named": false
-  },
-  {
-    "type": "&",
     "named": false
   },
   {
@@ -966,10 +1006,6 @@
   },
   {
     "type": ">",
-    "named": false
-  },
-  {
-    "type": "?",
     "named": false
   },
   {
