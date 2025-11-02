@@ -118,12 +118,6 @@ local generate_one = function(script_type, is_external_file, script_data)
   local buf_dir = FS.get_current_buffer_dir()
 
   if is_external_file then
-    -- if script_data starts with ./ or ../, it is a relative path
-    if string.match(script_data, "^%./") or string.match(script_data, "^%../") then
-      local local_script_path = script_data:gsub("^%./", "")
-      script_data = FS.join_paths(buf_dir, local_script_path)
-    end
-
     if FS.file_exists(script_data) then
       script_cwd = FS.get_dir_by_filepath(script_data)
       userscript = FS.read_file(script_data)

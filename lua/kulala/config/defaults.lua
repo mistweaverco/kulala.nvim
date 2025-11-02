@@ -155,6 +155,10 @@ local M = {
       ["@variable.kulala_http"] = "String",
       ["@redirect_path.kulala_http"] = "Number",
       ["@external_body_path.kulala_http"] = "String",
+      ["@query_param.name.kulala_http"] = "Number",
+      ["@query_param.value.kulala_http"] = "String",
+      ["@form_param_name.kulala_http"] = "Number",
+      ["@form_param_value.kulala_http"] = "String",
     },
 
     -- enable/disable request summary in the output window
@@ -230,6 +234,7 @@ local M = {
 
     -- enable/disable/customize HTTP formatter
     formatter = {
+      split_params = 4, -- split query/form parameters onto multiple lines if number of params exceeds this value
       sort = { -- enable/disable alphabetical sorting in request body
         metadata = true,
         variables = true,

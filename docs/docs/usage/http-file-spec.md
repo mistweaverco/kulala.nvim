@@ -25,11 +25,11 @@ Host: example.com
 Multiline
 ```http
 GET http://example.com:8080
-    /api
-    /html
-    /get
-    ?id=123
-    &value=some "longer" content
+ /api
+ /html
+ /get
+ ?id=123
+ &value=some "longer" content
 ```
 
  `Asterisk` format: `HTTPMethod` `URL`:

@@ -22,3 +22,4 @@ http-client.env.json
 selene.toml
 neovim.yml
 .todo.md
+AGENTS.md

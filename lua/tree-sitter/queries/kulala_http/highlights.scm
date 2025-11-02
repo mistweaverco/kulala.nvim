@@ -42,6 +42,8 @@
 (variable_declaration_inline
   "=" @operator)
 
+(operator) @operator
+
 ; keywords
 (metadata
   "@" @character.special
@@ -53,6 +55,20 @@
   value: (_) @constant)
 
 ; Literals
+(query_param
+  name: (_) @query_param.name)
+
+(query_param
+  name: (_) @query_param.name
+  value: (_) @query_param.value)
+
+(form_param
+  name: (_) @form_param_name)
+
+(form_param
+  name: (_) @form_param_name
+  value: (_) @form_param_value)
+
 (request
   url: (_) @string.special.url)
 
@@ -78,6 +94,11 @@
 
 (external_body
   path: (_) @external_body_path)
+
+; Multipart form data
+(multipart_boundary_first) @keyword
+(multipart_boundary) @keyword
+(multipart_boundary_last) @keyword
 
 ; redirect
 (res_redirect

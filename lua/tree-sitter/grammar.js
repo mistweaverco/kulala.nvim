@@ -4,15 +4,15 @@
  * @license MIT
  */
 
-/// <reference types="tree-sitter-cli/dsl" />
+/// <reference types="./node_modules/tree-sitter-cli/dsl.d.ts" />
 // @ts-check
 
 const PREC = {
+  COMMENT_PREFIX: 1,
   VAR_COMMENT_PREFIX: 2,
   BODY_PREFIX: 2,
   RAW_BODY: 3,
   GRAPHQL_JSON_PREFIX: 4,
-  COMMENT_PREFIX: 1,
   REQ_SEPARATOR: 9,
 };
 
@@ -26,56 +26,41 @@ const COMMENT_PREFIX = token(
   prec(PREC.COMMENT_PREFIX, choice(/#\s*/, /\/\/\s*/)),
 );
 
+const OPTIONAL_WS = optional(WS);
+const OPTIONAL_TOKEN_WS = optional(token(prec(1, WS)));
+
+const SPACES_TABS = /[ \t]+/;
+const PARAM_VALUE_CHARS = /[^\n\r&#\s]+/;
+const FORM_PARAM_NAME_CHARS = /[a-zA-Z0-9_@.\[\]]/;
+const FORM_PARAM_EXCLUSIONS = /[^\s\n\r=&#<{\[\]\}\-:,]+/;
+
 module.exports = grammar({
   name: "kulala_http",
 
   extras: (_) => [],
-  conflicts: ($) => [
-    [$.target_url],
-    [$.raw_body],
-    [$._raw_body],
-    [$._section_content],
-    [$.value],
-  ],
+  conflicts: ($) => [[$.target_url], [$._section_content], [$.value]],
   inline: ($) => [$._target_url_line, $.__body],
 
   rules: {
     document: ($) => repeat($.section),
-    // NOTE: just for debugging purpose
-    WORD_CHAR: (_) => WORD_CHAR,
-    PUNCTUATION: (_) => PUNCTUATION,
-    WS: (_) => WS,
-    NL: (_) => NL,
-    LINE_TAIL: (_) => LINE_TAIL,
-    COMMENT_PREFIX: (_) => COMMENT_PREFIX,
 
-    comment: ($) => $._plain_comment,
-    _plain_comment: (_) => seq(COMMENT_PREFIX, LINE_TAIL),
+    comment: (_) => seq(COMMENT_PREFIX, LINE_TAIL),
 
     metadata: ($) =>
       prec(
-        PREC.COMMENT_PREFIX + 1,
+        3,
         seq(
           COMMENT_PREFIX,
           token(prec(PREC.VAR_COMMENT_PREFIX, "@")),
           field("name", $.identifier),
-
           optional(
             choice(
-              // Case: @field=value
-              prec.left(3, seq("=", optional(WS), field("value", $.value))),
-
-              // Case: @field =value or @field = value
-              prec.left(2, seq(WS, "=", optional(WS), field("value", $.value))),
-
-              // Case: @field value
+              prec.left(3, seq("=", OPTIONAL_WS, field("value", $.value))),
+              prec.left(2, seq(WS, "=", OPTIONAL_WS, field("value", $.value))),
               prec.left(1, seq(WS, field("value", $.value))),
-
-              // Just whitespace with no value
-              prec.right(0, WS),
+              prec.right(WS),
             ),
           ),
-
           NL,
         ),
       ),
@@ -96,8 +81,6 @@ module.exports = grammar({
         ),
       ),
 
-    // NOTE: grammatically, each request section should contain only single `$.request` node
-    // we are allowing multiple `$.request` nodes here to lower the parser size
     _section_content: ($) =>
       choice(
         seq($._blank_line, optional($._section_content)),
@@ -110,16 +93,77 @@ module.exports = grammar({
         field("response", $.response),
       ),
 
-    // LIST http verb is arbitrary and required to use vaultproject
     method: (_) =>
       /(OPTIONS|GET|HEAD|POST|PUT|DELETE|TRACE|CONNECT|PATCH|LIST|GRAPHQL|GRPC|WEBSOCKET)/,
 
     http_version: (_) => prec.dynamic(1, token(prec(0, /HTTP\/[\d\.]+/))),
 
-    _target_url_line: ($) =>
-      repeat1(choice(WORD_CHAR, PUNCTUATION, $.variable, WS)),
     target_url: ($) =>
       seq($._target_url_line, repeat(seq(NL, WS, $._target_url_line))),
+
+    _target_url_line: ($) =>
+      repeat1(
+        choice(
+          WORD_CHAR,
+          PUNCTUATION,
+          $.variable,
+          $.query_string,
+          $.query_param_continuation,
+          $.fragment,
+          WS,
+        ),
+      ),
+
+    query_string: ($) =>
+      prec.right(
+        seq(
+          alias("?", $.operator),
+          field("params", $.query_param),
+          repeat(seq(alias("&", $.operator), field("params", $.query_param))),
+          optional($.fragment),
+        ),
+      ),
+
+    query_param_continuation: ($) =>
+      prec.right(
+        seq(
+          alias("&", $.operator),
+          field("params", $.query_param),
+        ),
+      ),
+
+    query_param: ($) =>
+      prec.right(
+        seq(
+          field("name", $.query_param_name),
+          optional(seq(alias("=", $.operator), optional(field("value", $.query_param_value)))),
+        ),
+      ),
+
+    query_param_name: ($) =>
+      prec.right(
+        repeat1(choice(WORD_CHAR, $.variable, token(prec(-1, /[^\s\n\r=&#]/)))),
+      ),
+
+    query_param_value: ($) =>
+      prec.right(
+        seq(
+          choice(WORD_CHAR, $.variable, token(prec(1, /[^\n\r&#\s]/))),
+          repeat(choice(
+            WORD_CHAR,
+            $.variable,
+            token(prec(1, /[^\n\r&#\s]/)),
+            token(prec(2, /\s+[^\n\r&#\sH]/)),
+            token(prec(2, /\s+H[^T]/)),
+            token(prec(2, /\s+HT[^T]/)),
+            token(prec(2, /\s+HTT[^P]/)),
+            token(prec(2, /\s+HTTP[^\/]/))
+          ))
+        )
+      ),
+
+    fragment: ($) =>
+      prec.right(seq(alias("#", $.operator), repeat1(choice(WORD_CHAR, PUNCTUATION, $.variable)))),
 
     status_code: (_) => /[1-5]\d{2}/,
     status_text: (_) =>
@@ -135,12 +179,13 @@ module.exports = grammar({
               field(
                 "body",
                 choice(
-                  $.raw_body,
                   $.multipart_form_data,
                   $.xml_body,
                   $.json_body,
                   $.graphql_body,
+                  $.form_urlencoded_body,
                   $._external_body,
+                  $.raw_body,
                 ),
               ),
               NL,
@@ -177,21 +222,13 @@ module.exports = grammar({
         ),
       ),
 
-    query_param: ($) =>
-      prec.right(
-        seq(
-          field("key", $.value),
-          optional(seq("=", optional(field("value", $.value)))),
-        ),
-      ),
-
     header: ($) =>
       seq(
         field("name", $.header_entity),
-        optional(WS),
+        OPTIONAL_WS,
         ":",
-        optional(token(prec(1, WS))),
-        optional(field("value", choice($.value))),
+        OPTIONAL_TOKEN_WS,
+        optional(field("value", $.value)),
         NL,
       ),
 
@@ -199,9 +236,9 @@ module.exports = grammar({
     variable: ($) =>
       seq(
         token(prec(1, "{{")),
-        optional(WS),
+        OPTIONAL_WS,
         field("name", $.identifier),
-        optional(WS),
+        OPTIONAL_WS,
         token(prec(1, "}}")),
       ),
 
@@ -229,9 +266,9 @@ module.exports = grammar({
       seq(
         "@",
         field("name", $.identifier),
-        optional(WS),
+        OPTIONAL_WS,
         "=",
-        optional(token(prec(1, WS))),
+        OPTIONAL_TOKEN_WS,
         field("value", $.value),
         NL,
       ),
@@ -240,9 +277,9 @@ module.exports = grammar({
       seq(
         "@",
         field("name", $.identifier),
-        optional(WS),
+        OPTIONAL_WS,
         "=",
-        optional(token(prec(1, WS))),
+        OPTIONAL_TOKEN_WS,
         field("value", $.value),
       ),
 
@@ -250,26 +287,26 @@ module.exports = grammar({
       seq(
         field("name", alias(choice("run", "import"), $.command_name)),
         WS,
-        field("value", prec.left($.value)), // Add precedence here
+        field("value", prec.left($.value)),
         optional(
           seq(
-            optional(WS),
+            OPTIONAL_WS,
             "(",
-            optional(WS),
+            OPTIONAL_WS,
             optional(
               seq(
                 field("variable", $.variable_declaration_inline),
                 repeat(
                   seq(
-                    optional(WS),
+                    OPTIONAL_WS,
                     ",",
-                    optional(WS),
+                    OPTIONAL_WS,
                     field("variable", $.variable_declaration_inline),
                   ),
                 ),
               ),
             ),
-            optional(WS),
+            OPTIONAL_WS,
             ")",
           ),
         ),
@@ -294,7 +331,12 @@ module.exports = grammar({
         token(
           prec(
             PREC.BODY_PREFIX,
-            seq(choice("query", "mutation"), WS, /.*[\{\(]\s*/, NL),
+            seq(
+              choice("query", "mutation"),
+              WS,
+              /[^\n]*(\n[^\n{(]*)*[\{\(]\s*/,
+              NL,
+            ),
           ),
         ),
         $._raw_body,
@@ -317,33 +359,157 @@ module.exports = grammar({
     multipart_form_data: ($) =>
       prec.right(
         seq(
-          token(prec(PREC.BODY_PREFIX, "--")),
-          token(prec(1, LINE_TAIL)),
+          $.multipart_boundary_first,
           repeat(
             choice(
-              seq($.external_body, choice(WS, NL)),
-              token(prec(2, /<[^\s@]/)),
-              token(prec(2, "--")),
-              token(prec(2, /[{\[]\s+/)),
-              token(prec(1, LINE_TAIL)),
-              token(prec(2, NL)),
+              $.multipart_boundary,
+              $.multipart_external_body,
+              $.header,
+              $.multipart_content_line,
+              NL,
+            ),
+          ),
+          $.multipart_boundary_last,
+        ),
+      ),
+
+    multipart_content_line: (_) => seq(/[^\n\r-]+/, NL),
+
+    multipart_external_body: ($) =>
+      seq(
+        token(prec(PREC.BODY_PREFIX + 1, "<")),
+        WS,
+        field("path", $.path),
+        NL,
+      ),
+
+    multipart_boundary_first: ($) =>
+      seq(
+        token(prec(PREC.BODY_PREFIX, /--/)),
+        alias($._boundary_value, $.boundary_value),
+        NL,
+      ),
+
+    multipart_boundary: ($) =>
+      seq(
+        token(prec(PREC.BODY_PREFIX, /--/)),
+        alias($._boundary_value, $.boundary_value),
+        NL,
+      ),
+
+    multipart_boundary_last: ($) =>
+      prec.dynamic(
+        3,
+        seq(
+          token(prec(PREC.BODY_PREFIX, /--/)),
+          alias($._boundary_value, $.boundary_value),
+          token(prec(100, /--[\t \n\r]/)),
+        ),
+      ),
+
+    _boundary_value: ($) =>
+      prec.right(10, repeat1(choice($.variable, token(prec(1, /[^\s\n\r{]/))))),
+
+    form_urlencoded_body: ($) =>
+      prec.right(
+        seq(
+          field("params", alias($._form_param_first, $.form_param)),
+          repeat(
+            seq(
+              alias("&", $.operator),
+              optional(NL),
+              field("params", $.form_param),
+            ),
+          ),
+          NL,
+        ),
+      ),
+
+    _form_param_first: ($) =>
+      seq(
+        field(
+          "name",
+          alias(
+            token(
+              prec(
+                1,
+                seq(
+                  FORM_PARAM_EXCLUSIONS,
+                  repeat(seq(/\s+/, FORM_PARAM_EXCLUSIONS)),
+                ),
+              ),
+            ),
+            $.form_param_name,
+          ),
+        ),
+        alias("=", $.operator),
+        optional(field("value", $.form_param_value)),
+      ),
+
+    form_param: ($) =>
+      prec.right(
+        seq(
+          field("name", $.form_param_name),
+          optional(
+            seq(
+              alias("=", $.operator),
+              optional(field("value", $.form_param_value)),
+            ),
+          ),
+        ),
+      ),
+
+    form_param_name: ($) =>
+      prec.right(
+        seq(
+          choice($.variable, token(FORM_PARAM_NAME_CHARS)),
+          repeat(
+            choice(
+              $.variable,
+              token(FORM_PARAM_NAME_CHARS),
+              token(prec(1, seq(/\s+/, FORM_PARAM_NAME_CHARS))),
+            ),
+          ),
+        ),
+      ),
+
+    form_param_value: ($) =>
+      prec.right(
+        choice(
+          $.variable,
+          seq(
+            token(PARAM_VALUE_CHARS),
+            repeat(
+              choice(
+                $.variable,
+                token(PARAM_VALUE_CHARS),
+                token(prec(2, seq(SPACES_TABS, /[^\n\r&#]/))),
+              ),
             ),
           ),
         ),
       ),
 
     raw_body: ($) =>
-      seq(choice(token(prec(1, seq(/.+/, NL)))), optional($._raw_body)),
+      prec(
+        2,
+        seq(
+          choice(
+            token(prec(2, seq(/[^=\n\r\-<{\[]+/, NL))),
+            token(prec(2, seq(/-[^-=\n\r]+/, NL))),
+          ),
+          optional($._raw_body),
+        ),
+      ),
     _raw_body: ($) =>
-      seq(choice(token(prec(PREC.RAW_BODY, LINE_TAIL))), optional($._raw_body)),
-    _not_comment: (_) => token(seq(/[^@]*/, NL)),
+      seq(token(prec(PREC.RAW_BODY, LINE_TAIL)), optional($._raw_body)),
 
     header_entity: (_) => /[\w\-]+/,
     identifier: (_) =>
-      /[A-Za-z_.$\d\u00A1-\uFFFF-]+(\[[^\]]+\]|\.[A-Za-z_.$\d\u00A1-\uFFFF-]+|\([^)]*\))?/,
+      /[A-Za-z_.$\d\u00A1-\uFFFF-]+(\[[^\]]+\]|\.[A-Za-z_.$\d\u00A1-\uFFFF-]+|\([^)]*\))*/,
     path: ($) =>
       prec.right(repeat1(choice(WORD_CHAR, PUNCTUATION, $.variable, ESCAPED))),
     value: ($) => repeat1(choice(WORD_CHAR, PUNCTUATION, $.variable, WS)),
-    _blank_line: (_) => seq(optional(WS), token(prec(-1, NL))),
+    _blank_line: (_) => seq(OPTIONAL_WS, token(prec(-1, NL))),
   },
 });
