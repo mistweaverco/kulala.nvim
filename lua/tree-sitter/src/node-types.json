@@ -1,20 +1,5 @@
 [
   {
-    "type": "boundary_value",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": false,
-      "types": [
-        {
-          "type": "variable",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "command",
     "named": true,
     "fields": {
@@ -109,117 +94,6 @@
     }
   },
   {
-    "type": "form_param",
-    "named": true,
-    "fields": {
-      "name": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "form_param_name",
-            "named": true
-          }
-        ]
-      },
-      "value": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "form_param_value",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": false,
-      "required": false,
-      "types": [
-        {
-          "type": "operator",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "form_param_name",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": false,
-      "types": [
-        {
-          "type": "variable",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "form_param_value",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": false,
-      "types": [
-        {
-          "type": "variable",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "form_urlencoded_body",
-    "named": true,
-    "fields": {
-      "params": {
-        "multiple": true,
-        "required": true,
-        "types": [
-          {
-            "type": "form_param",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": true,
-      "required": false,
-      "types": [
-        {
-          "type": "operator",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "fragment",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "operator",
-          "named": true
-        },
-        {
-          "type": "variable",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "graphql_body",
     "named": true,
     "fields": {},
@@ -310,101 +184,15 @@
     }
   },
   {
-    "type": "multipart_boundary",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "boundary_value",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "multipart_boundary_first",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "boundary_value",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "multipart_boundary_last",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "boundary_value",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "multipart_content_line",
-    "named": true,
-    "fields": {}
-  },
-  {
-    "type": "multipart_external_body",
-    "named": true,
-    "fields": {
-      "path": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "path",
-            "named": true
-          }
-        ]
-      }
-    }
-  },
-  {
     "type": "multipart_form_data",
     "named": true,
     "fields": {},
     "children": {
       "multiple": true,
-      "required": true,
+      "required": false,
       "types": [
         {
-          "type": "header",
-          "named": true
-        },
-        {
-          "type": "multipart_boundary",
-          "named": true
-        },
-        {
-          "type": "multipart_boundary_first",
-          "named": true
-        },
-        {
-          "type": "multipart_boundary_last",
-          "named": true
-        },
-        {
-          "type": "multipart_content_line",
-          "named": true
-        },
-        {
-          "type": "multipart_external_body",
+          "type": "external_body",
           "named": true
         }
       ]
@@ -445,128 +233,6 @@
     }
   },
   {
-    "type": "query_param",
-    "named": true,
-    "fields": {
-      "name": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "query_param_name",
-            "named": true
-          }
-        ]
-      },
-      "value": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "query_param_value",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": false,
-      "required": false,
-      "types": [
-        {
-          "type": "operator",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "query_param_continuation",
-    "named": true,
-    "fields": {
-      "params": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "query_param",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "operator",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "query_param_name",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": false,
-      "types": [
-        {
-          "type": "variable",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "query_param_value",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": false,
-      "types": [
-        {
-          "type": "variable",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "query_string",
-    "named": true,
-    "fields": {
-      "params": {
-        "multiple": true,
-        "required": true,
-        "types": [
-          {
-            "type": "query_param",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "fragment",
-          "named": true
-        },
-        {
-          "type": "operator",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "raw_body",
     "named": true,
     "fields": {}
@@ -581,10 +247,6 @@
         "types": [
           {
             "type": "external_body",
-            "named": true
-          },
-          {
-            "type": "form_urlencoded_body",
             "named": true
           },
           {
@@ -733,10 +395,6 @@
             "named": true
           },
           {
-            "type": "form_urlencoded_body",
-            "named": true
-          },
-          {
             "type": "graphql_body",
             "named": true
           },
@@ -870,18 +528,6 @@
       "required": false,
       "types": [
         {
-          "type": "fragment",
-          "named": true
-        },
-        {
-          "type": "query_param_continuation",
-          "named": true
-        },
-        {
-          "type": "query_string",
-          "named": true
-        },
-        {
           "type": "variable",
           "named": true
         }
@@ -993,6 +639,10 @@
     "named": false
   },
   {
+    "type": "--",
+    "named": false
+  },
+  {
     "type": ":",
     "named": false
   },
@@ -1026,10 +676,6 @@
   },
   {
     "type": "method",
-    "named": true
-  },
-  {
-    "type": "operator",
     "named": true
   },
   {
