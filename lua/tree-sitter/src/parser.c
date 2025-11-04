@@ -19837,46 +19837,8 @@ TS_PUBLIC const TSLanguage *tree_sitter_kulala_http(void) {
     .max_reserved_word_set_size = 0,
     .metadata = {
       .major_version = 0,
-<<<<<<< HEAD
       .minor_version = 1,
       .patch_version = 9,
-||||||| parent of 5d3e50a (feat(grammar): parse and highlight form params)
-      .minor_version = 1,
-      .patch_version = 6,
-=======
-      .minor_version = 2,
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-      .patch_version = 24,
->>>>>>> 5d3e50a (feat(grammar): parse and highlight form params)
-||||||| parent of 9bedec2 (refact(grammar): clean up)
-      .patch_version = 24,
-=======
-      .patch_version = 0,
->>>>>>> 9bedec2 (refact(grammar): clean up)
-||||||| parent of bc2d661 (fix(grammar): exponential state explosion)
-      .patch_version = 0,
-=======
-      .patch_version = 1,
->>>>>>> bc2d661 (fix(grammar): exponential state explosion)
-||||||| parent of 52ddb17 (fix(grammar): cleanup)
-      .patch_version = 1,
-=======
-      .patch_version = 3,
->>>>>>> 52ddb17 (fix(grammar): cleanup)
-||||||| parent of 04ecefd (fix(grammar): query string operators and single char param values)
-      .patch_version = 3,
-=======
-      .patch_version = 1,
->>>>>>> 04ecefd (fix(grammar): query string operators and single char param values)
-||||||| parent of a3ef046 (fix(grammar): fix regressions)
-      .patch_version = 1,
-=======
-      .patch_version = 11,
->>>>>>> a3ef046 (fix(grammar): fix regressions)
     },
   };
   return &language;

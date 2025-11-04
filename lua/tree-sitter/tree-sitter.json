@@ -36,36 +36,6 @@
       "funding": "https://github.com/mistweaverco/kulala.nvim",
       "repository": "https://github.com/mistweaverco/kulala.nvim/lua/tree-sitter"
     },
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-    "version": "0.1.9"
-||||||| parent of 5d3e50a (feat(grammar): parse and highlight form params)
-    "version": "0.1.6"
-=======
-    "version": "0.2.0"
->>>>>>> 5d3e50a (feat(grammar): parse and highlight form params)
-||||||| parent of bc2d661 (fix(grammar): exponential state explosion)
-    "version": "0.2.0"
-=======
     "version": "0.2.1"
->>>>>>> bc2d661 (fix(grammar): exponential state explosion)
-||||||| parent of 52ddb17 (fix(grammar): cleanup)
-    "version": "0.2.1"
-=======
-    "version": "0.2.3"
->>>>>>> 52ddb17 (fix(grammar): cleanup)
-||||||| parent of 04ecefd (fix(grammar): query string operators and single char param values)
-    "version": "0.2.3"
-=======
-    "version": "0.2.0"
->>>>>>> 04ecefd (fix(grammar): query string operators and single char param values)
-||||||| parent of a3ef046 (fix(grammar): fix regressions)
-    "version": "0.2.0"
-=======
-    "version": "0.2.11"
->>>>>>> a3ef046 (fix(grammar): fix regressions)
   }
 }
