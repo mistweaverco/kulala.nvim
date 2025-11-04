@@ -85,7 +85,14 @@ local function process_grpc_flags(request, flag, value)
 
   value = flag:match("import%-path") and FS.get_file_path(value) or value
   request.grpc = request.grpc or vim.deepcopy(default_grpc_command)
-  table.insert(request.grpc.flags, { flag, value })
+
+  local last_flag = request.grpc.flags[#request.grpc.flags] or {}
+
+  if value ~= "" and last_flag[1] == flag and last_flag[2] == "" then
+    request.grpc.flags[#request.grpc.flags][2] = value
+  else
+    table.insert(request.grpc.flags, { flag, value })
+  end
 end
 
 local function process_curl_flags(request, flag, value)
