@@ -14,8 +14,13 @@ http-client.env.json
 !/docs/**/*.json
 
 /http-examples
+<<<<<<< HEAD
 lua/tree-sitter/testing
 
+||||||| parent of 933d956 (fix(grammar): fix regressions)
+=======
+/lua/tree-sitter/testing
+>>>>>>> 933d956 (fix(grammar): fix regressions)
 *.http
 !/docs/**/*.http
 !/tests/**/*.http

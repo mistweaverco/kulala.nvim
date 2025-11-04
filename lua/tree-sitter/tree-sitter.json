@@ -40,6 +40,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     "version": "0.1.9"
 ||||||| parent of 5d3e50a (feat(grammar): parse and highlight form params)
     "version": "0.1.6"
@@ -61,5 +62,10 @@
 =======
     "version": "0.2.0"
 >>>>>>> 04ecefd (fix(grammar): query string operators and single char param values)
+||||||| parent of a3ef046 (fix(grammar): fix regressions)
+    "version": "0.2.0"
+=======
+    "version": "0.2.11"
+>>>>>>> a3ef046 (fix(grammar): fix regressions)
   }
 }

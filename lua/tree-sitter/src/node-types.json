@@ -205,15 +205,11 @@
     "named": true,
     "fields": {},
     "children": {
-      "multiple": true,
+      "multiple": false,
       "required": true,
       "types": [
         {
           "type": "operator",
-          "named": true
-        },
-        {
-          "type": "variable",
           "named": true
         }
       ]
@@ -511,7 +507,7 @@
     "named": true,
     "fields": {},
     "children": {
-      "multiple": true,
+      "multiple": false,
       "required": false,
       "types": [
         {
@@ -526,7 +522,7 @@
     "named": true,
     "fields": {},
     "children": {
-      "multiple": true,
+      "multiple": false,
       "required": false,
       "types": [
         {
@@ -541,7 +537,7 @@
     "named": true,
     "fields": {
       "params": {
-        "multiple": true,
+        "multiple": false,
         "required": true,
         "types": [
           {
@@ -552,13 +548,9 @@
       }
     },
     "children": {
-      "multiple": true,
+      "multiple": false,
       "required": true,
       "types": [
-        {
-          "type": "fragment",
-          "named": true
-        },
         {
           "type": "operator",
           "named": true

@@ -38,7 +38,7 @@ module.exports = grammar({
   name: "kulala_http",
 
   extras: (_) => [],
-  conflicts: ($) => [[$.target_url], [$._section_content], [$.value]],
+  conflicts: ($) => [[$.target_url], [$._section_content], [$.value], [$.query_param]],
   inline: ($) => [$._target_url_line, $.__body],
 
   rules: {
@@ -98,72 +98,47 @@ module.exports = grammar({
 
     http_version: (_) => prec.dynamic(1, token(prec(0, /HTTP\/[\d\.]+/))),
 
-    target_url: ($) =>
-      seq($._target_url_line, repeat(seq(NL, WS, $._target_url_line))),
-
     _target_url_line: ($) =>
       repeat1(
         choice(
-          WORD_CHAR,
-          PUNCTUATION,
-          $.variable,
           $.query_string,
           $.query_param_continuation,
           $.fragment,
+          $.variable,
+          WORD_CHAR,
+          PUNCTUATION,
           WS,
         ),
       ),
+    target_url: ($) =>
+      seq($._target_url_line, repeat(seq(NL, WS, $._target_url_line))),
 
     query_string: ($) =>
-      prec.right(
-        seq(
-          alias("?", $.operator),
-          field("params", $.query_param),
-          repeat(seq(alias("&", $.operator), field("params", $.query_param))),
-          optional($.fragment),
-        ),
+      seq(
+        alias("?", $.operator),
+        field("params", $.query_param),
       ),
 
     query_param_continuation: ($) =>
-      prec.right(
-        seq(
-          alias("&", $.operator),
-          field("params", $.query_param),
-        ),
+      seq(
+        alias("&", $.operator),
+        field("params", $.query_param),
       ),
 
     query_param: ($) =>
-      prec.right(
-        seq(
-          field("name", $.query_param_name),
-          optional(seq(alias("=", $.operator), optional(field("value", $.query_param_value)))),
-        ),
+      seq(
+        field("name", $.query_param_name),
+        optional(seq(alias("=", $.operator), optional(prec(1, field("value", $.query_param_value))))),
       ),
 
     query_param_name: ($) =>
-      prec.right(
-        repeat1(choice(WORD_CHAR, $.variable, token(prec(-1, /[^\s\n\r=&#]/)))),
-      ),
+      choice($.variable, token(prec(1, /[^\s\n\r=&#]+/))),
 
     query_param_value: ($) =>
-      prec.right(
-        seq(
-          choice(WORD_CHAR, $.variable, token(prec(1, /[^\n\r&#\s]/))),
-          repeat(choice(
-            WORD_CHAR,
-            $.variable,
-            token(prec(1, /[^\n\r&#\s]/)),
-            token(prec(2, /\s+[^\n\r&#\sH]/)),
-            token(prec(2, /\s+H[^T]/)),
-            token(prec(2, /\s+HT[^T]/)),
-            token(prec(2, /\s+HTT[^P]/)),
-            token(prec(2, /\s+HTTP[^\/]/))
-          ))
-        )
-      ),
+      choice($.variable, token(prec(1, /[^\s\n\r&#]+/))),
 
     fragment: ($) =>
-      prec.right(seq(alias("#", $.operator), repeat1(choice(WORD_CHAR, PUNCTUATION, $.variable)))),
+      seq(alias("#", $.operator), optional(token(prec(1, /[^\s\n\r]+/)))),
 
     status_code: (_) => /[1-5]\d{2}/,
     status_text: (_) =>
