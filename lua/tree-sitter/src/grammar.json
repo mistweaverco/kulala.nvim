@@ -724,44 +724,44 @@
       ]
     },
     "query_param_name": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "SYMBOL",
-          "name": "variable"
-        },
-        {
-          "type": "TOKEN",
-          "content": {
-            "type": "PREC",
-            "value": 1,
-            "content": {
+      "type": "PREC_RIGHT",
+      "value": 0,
+      "content": {
+        "type": "REPEAT1",
+        "content": {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "variable"
+            },
+            {
               "type": "PATTERN",
-              "value": "[^\\s\\n\\r=&#]+"
+              "value": "[^\\s\\n\\r=&#{}]+"
             }
-          }
+          ]
         }
-      ]
+      }
     },
     "query_param_value": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "SYMBOL",
-          "name": "variable"
-        },
-        {
-          "type": "TOKEN",
-          "content": {
-            "type": "PREC",
-            "value": 1,
-            "content": {
+      "type": "PREC_RIGHT",
+      "value": 0,
+      "content": {
+        "type": "REPEAT1",
+        "content": {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "variable"
+            },
+            {
               "type": "PATTERN",
-              "value": "[^\\s\\n\\r&#]+"
+              "value": "[^\\s\\n\\r&#{}]+"
             }
-          }
+          ]
         }
-      ]
+      }
     },
     "fragment": {
       "type": "SEQ",

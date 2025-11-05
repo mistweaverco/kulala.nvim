@@ -132,10 +132,10 @@ module.exports = grammar({
       ),
 
     query_param_name: ($) =>
-      choice($.variable, token(prec(1, /[^\s\n\r=&#]+/))),
+      prec.right(repeat1(choice($.variable, /[^\s\n\r=&#{}]+/))),
 
     query_param_value: ($) =>
-      choice($.variable, token(prec(1, /[^\s\n\r&#]+/))),
+      prec.right(repeat1(choice($.variable, /[^\s\n\r&#{}]+/))),
 
     fragment: ($) =>
       seq(alias("#", $.operator), optional(token(prec(1, /[^\s\n\r]+/)))),
