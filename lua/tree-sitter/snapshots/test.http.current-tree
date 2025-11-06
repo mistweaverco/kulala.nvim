@@ -122,22 +122,24 @@
     request: (request [37, 0] - [45, 0]
       method: (method [37, 0] - [37, 3])
       url: (target_url [37, 4] - [41, 10]
-        (query_string [38, 1] - [38, 5]
+        (query_string [38, 1] - [38, 6]
           (operator [38, 1] - [38, 2])
-          params: (query_param [38, 2] - [38, 5]
+          params: (query_param [38, 2] - [38, 6]
             name: (query_param_name [38, 2] - [38, 4])
-            (operator [38, 4] - [38, 5])))
+            (operator [38, 4] - [38, 5])
+            value: (query_param_value [38, 5] - [38, 6])))
         (query_param_continuation [39, 1] - [39, 14]
           (operator [39, 1] - [39, 2])
           params: (query_param [39, 2] - [39, 14]
             name: (query_param_name [39, 2] - [39, 8])
             (operator [39, 8] - [39, 9])
             value: (query_param_value [39, 9] - [39, 14])))
-        (query_param_continuation [40, 1] - [40, 8]
+        (query_param_continuation [40, 1] - [40, 9]
           (operator [40, 1] - [40, 2])
-          params: (query_param [40, 2] - [40, 8]
+          params: (query_param [40, 2] - [40, 9]
             name: (query_param_name [40, 2] - [40, 7])
-            (operator [40, 7] - [40, 8])))
+            (operator [40, 7] - [40, 8])
+            value: (query_param_value [40, 8] - [40, 9])))
         (fragment [41, 1] - [41, 10]
           (operator [41, 1] - [41, 2])))
       version: (http_version [41, 11] - [41, 19])

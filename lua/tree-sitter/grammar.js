@@ -38,7 +38,7 @@ module.exports = grammar({
   name: "kulala_http",
 
   extras: (_) => [],
-  conflicts: ($) => [[$.target_url], [$._section_content], [$.value], [$.query_param]],
+  conflicts: ($) => [[$.target_url], [$._section_content], [$.value]],
   inline: ($) => [$._target_url_line, $.__body],
 
   rules: {
@@ -126,16 +126,22 @@ module.exports = grammar({
       ),
 
     query_param: ($) =>
-      seq(
-        field("name", $.query_param_name),
-        optional(seq(alias("=", $.operator), optional(prec(1, field("value", $.query_param_value))))),
+      prec.right(
+        seq(
+          field("name", $.query_param_name),
+          optional(seq(alias("=", $.operator), optional(field("value", $.query_param_value)))),
+        ),
       ),
 
     query_param_name: ($) =>
-      prec.right(repeat1(choice($.variable, /[^\s\n\r=&#{}]+/))),
+      prec.right(
+        repeat1(choice(WORD_CHAR, $.variable, token(prec(-1, /[^\s\n\r=&#]/)))),
+      ),
 
     query_param_value: ($) =>
-      prec.right(repeat1(choice($.variable, /[^\s\n\r&#{}]+/))),
+      prec.right(
+        repeat1(choice(WORD_CHAR, $.variable, token(prec(-1, /[^\s\n\r&#]/)))),
+      ),
 
     fragment: ($) =>
       seq(alias("#", $.operator), optional(token(prec(1, /[^\s\n\r]+/)))),

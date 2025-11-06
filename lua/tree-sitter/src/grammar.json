@@ -669,59 +669,59 @@
       ]
     },
     "query_param": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "FIELD",
-          "name": "name",
-          "content": {
-            "type": "SYMBOL",
-            "name": "query_param_name"
-          }
-        },
-        {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "SEQ",
-              "members": [
-                {
-                  "type": "ALIAS",
-                  "content": {
-                    "type": "STRING",
-                    "value": "="
+      "type": "PREC_RIGHT",
+      "value": 0,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "FIELD",
+            "name": "name",
+            "content": {
+              "type": "SYMBOL",
+              "name": "query_param_name"
+            }
+          },
+          {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SEQ",
+                "members": [
+                  {
+                    "type": "ALIAS",
+                    "content": {
+                      "type": "STRING",
+                      "value": "="
+                    },
+                    "named": true,
+                    "value": "operator"
                   },
-                  "named": true,
-                  "value": "operator"
-                },
-                {
-                  "type": "CHOICE",
-                  "members": [
-                    {
-                      "type": "PREC",
-                      "value": 1,
-                      "content": {
+                  {
+                    "type": "CHOICE",
+                    "members": [
+                      {
                         "type": "FIELD",
                         "name": "value",
                         "content": {
                           "type": "SYMBOL",
                           "name": "query_param_value"
                         }
+                      },
+                      {
+                        "type": "BLANK"
                       }
-                    },
-                    {
-                      "type": "BLANK"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "type": "BLANK"
-            }
-          ]
-        }
-      ]
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "BLANK"
+              }
+            ]
+          }
+        ]
+      }
     },
     "query_param_name": {
       "type": "PREC_RIGHT",
@@ -732,12 +732,24 @@
           "type": "CHOICE",
           "members": [
             {
+              "type": "PATTERN",
+              "value": "[\\p{L}\\p{N}]",
+              "flags": "u"
+            },
+            {
               "type": "SYMBOL",
               "name": "variable"
             },
             {
-              "type": "PATTERN",
-              "value": "[^\\s\\n\\r=&#{}]+"
+              "type": "TOKEN",
+              "content": {
+                "type": "PREC",
+                "value": -1,
+                "content": {
+                  "type": "PATTERN",
+                  "value": "[^\\s\\n\\r=&#]"
+                }
+              }
             }
           ]
         }
@@ -752,12 +764,24 @@
           "type": "CHOICE",
           "members": [
             {
+              "type": "PATTERN",
+              "value": "[\\p{L}\\p{N}]",
+              "flags": "u"
+            },
+            {
               "type": "SYMBOL",
               "name": "variable"
             },
             {
-              "type": "PATTERN",
-              "value": "[^\\s\\n\\r&#{}]+"
+              "type": "TOKEN",
+              "content": {
+                "type": "PREC",
+                "value": -1,
+                "content": {
+                  "type": "PATTERN",
+                  "value": "[^\\s\\n\\r&#]"
+                }
+              }
             }
           ]
         }
@@ -3137,9 +3161,6 @@
     ],
     [
       "value"
-    ],
-    [
-      "query_param"
     ]
   ],
   "precedences": [],
