@@ -14,23 +14,12 @@ http-client.env.json
 !/docs/**/*.json
 
 /http-examples
-<<<<<<< HEAD
-lua/tree-sitter/testing
-
-||||||| parent of 933d956 (fix(grammar): fix regressions)
-=======
 /lua/tree-sitter/testing
-<<<<<<< HEAD
->>>>>>> 933d956 (fix(grammar): fix regressions)
-||||||| parent of 01da5e3 (fix(grammar): vars in query params)
-=======
 
->>>>>>> 01da5e3 (fix(grammar): vars in query params)
 *.http
-!/lua/tree-sitter/*.http
+!/lua/tree-sitter/**/*.http
 !/docs/**/*.http
 !/tests/**/*.http
-!/tests/functional/requests/*.http
 
 
 .luarc.json

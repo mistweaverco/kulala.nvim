@@ -135,12 +135,44 @@ module.exports = grammar({
 
     query_param_name: ($) =>
       prec.right(
-        repeat1(choice(WORD_CHAR, $.variable, token(prec(-1, /[^\s\n\r=&#]/)))),
+        choice(
+          $.variable,
+          seq(
+            token(/[^\s\n\r=&#]+/),
+            repeat(
+              choice(
+                $.variable,
+                token(/[^\s\n\r=&#]+/),
+                token(prec(1, seq(/\s+/, /[^\s\n\r=&#H]/))),
+                token(prec(1, seq(/\s+/, /H[^T]/))),
+                token(prec(1, seq(/\s+/, /HT[^T]/))),
+                token(prec(1, seq(/\s+/, /HTT[^P]/))),
+                token(prec(1, seq(/\s+/, /HTTP[^\/]/))),
+              ),
+            ),
+          ),
+        ),
       ),
 
     query_param_value: ($) =>
       prec.right(
-        repeat1(choice(WORD_CHAR, $.variable, token(prec(-1, /[^\s\n\r&#]/)))),
+        choice(
+          $.variable,
+          seq(
+            token.immediate(/[^\n\r&#\s]+/),
+            repeat(
+              choice(
+                $.variable,
+                token(/[^\n\r&#\s]+/),
+                token(prec(2, seq(SPACES_TABS, /[^\n\r&#\sH]/))),
+                token(prec(2, seq(SPACES_TABS, /H[^T]/))),
+                token(prec(2, seq(SPACES_TABS, /HT[^T]/))),
+                token(prec(2, seq(SPACES_TABS, /HTT[^P]/))),
+                token(prec(2, seq(SPACES_TABS, /HTTP[^\/]/))),
+              ),
+            ),
+          ),
+        ),
       ),
 
     fragment: ($) =>

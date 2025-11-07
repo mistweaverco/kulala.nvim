@@ -1,0 +1,503 @@
+### Document variables
+
+@ENV_PROJECT = project_name
+@ENV_USER = some_username
+@foobar = bar
+
+# @curl-conect-timeout 2
+
+
+### Test
+
+< {%
+  client.global.set("test", "test value");
+%}
+
+POST http://httpbin.org/post HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: {{$auth.token("Token")}}
+
+{
+  "test": "{{test}}"
+}
+
+
+### Request
+
+POST http://httpbin.org/users/post?param1=value1&param2=value2#fragment HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+
+{
+  "results": [
+    {
+      "desc": "some_username",
+      "id": 1
+    },
+    {
+      "desc": "another_username",
+      "id": 2
+    }
+  ]
+}
+
+> {%
+  -- lua
+  client.log(client.global.test)
+  client.global.test = "test value"
+%}
+
+
+### 
+
+POST http://httpbin.org/post?param1=value1&param2=value2#fragment HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Cookie: sessionid=1234567890
+
+{
+  "results": [
+    {
+      "desc": "some_username",
+      "id": 1
+    },
+    {
+      "desc": "another_username",
+      "id": 2
+    }
+  ]
+}
+
+> ../scripts/post.js
+
+> {%
+  client.log(response.cookies);
+  client.log("post request executed");
+%}
+
+
+### Ndjson
+
+POST https://httpbin.org/post HTTP/1.1
+Content-Type: application/x-ndjson
+
+
+### Multi-form
+
+POST https://httpbin.org/post HTTP/1.1
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=password&
+username=foo&
+password=bar&
+client_id=foo
+
+
+### Request_one
+
+import ./chain.http
+run #Multi-form (@host=example.com, @user=userName)
+run #Ndjson
+run ./export/simple.http
+
+POST https://httpbin.org/post HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+
+{
+  "results": [
+    {
+      "desc": "some_username",
+      "id": 1
+    },
+    {
+      "desc": "another_username",
+      "id": 2
+    }
+  ]
+}
+
+> {%
+  client.global.set("results", response.body.json.results); // save results to global variable, as js does not have access to responses history
+%}
+
+
+### Request_js
+
+< {%
+  const results = client.global.get("results");
+  if (!results) {
+    return;
+  }
+  
+  const item = results[request.iteration() - 1]; // get item by index
+  
+  if (!item) {
+    client.global.set("results", null);
+    return request.skip(); // skip if no more items
+  }
+  
+  client.log(item);
+  
+  const url = "https://httpbin.org/get";
+  request.variables.set("url", url + "?" + item.desc); // update url variable, cannot access request.url_raw like in lua
+%}
+
+GET {{url}} HTTP/1.1
+
+> {%
+  const results = client.global.get("results");
+  if (results) {
+    request.replay();
+  }
+%}
+
+
+### Request_lua
+
+< {%
+  -- lua
+  local response = client.responses["Request_one"].json
+  if not response then return end
+  
+  local item = response.json.results[request.iteration()]
+  if not item then return request.skip() end -- skip if no more items
+  
+  client.log(item)
+  request.url_raw = request.environment.url .. "?" .. item.desc
+%}
+
+GET {{url}} HTTP/1.1
+
+
+### Request_two
+
+POST https://httpbin.org/post HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+
+{
+  "results": [
+    {
+      "desc": "some_username",
+      "id": 1
+    },
+    {
+      "desc": "another_username",
+      "id": 2
+    }
+  ]
+}
+
+
+### 
+
+POST https://httpbin.org/post HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+
+{
+  "project": "{{ENV_PROJECT}}",
+  "results": [
+    {
+      "desc": "some_username",
+      "id": 1
+    },
+    {
+      "desc": "another_username",
+      "id": 2
+    }
+  ]
+}
+
+> {%
+  client.global.set(
+    "AID",
+    response.body.json.results.filter(
+      (item) => item.desc === request.environment.get("ENV_USER"),
+    )[0].id,
+  );
+%}
+
+
+### 
+
+POST https://httpbin.org/post HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+
+{
+  "id": "{{AID}}"
+}
+
+
+### 
+
+GET https://httpbin.io/digest-auth/auth/user/pass HTTP/1.1
+Accept: application/json
+Authorization: Digest user:pass
+
+
+### REQUEST_FOOBAR
+
+POST https://httpbin.org/post HTTP/1.1
+Date: Foobar
+
+{
+  "foo": "{{DEFAULT_TIMEOUT}}",
+  "foobar": "{{foobar}}"
+}
+
+> {%
+  client.log(request.headers.findByName("Date").getRawValue());
+  client.log(response.headers.valuesOf("Date").value);
+%}
+
+
+### 
+
+# @curl-data-urlencode
+
+POST https://httpbin.org/post HTTP/1.1
+Content-Type: text/plain
+
+foo=bar and bat&
+bar=baz
+
+
+### File Upload
+
+@content_type = image/jpeg
+@filename = logo.png
+@filepath = ../assets/badge-discord.svg
+
+POST https://httpbin.org/post HTTP/1.1
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary{{$timestamp}}
+
+------WebKitFormBoundary{{$timestamp}}
+Content-Disposition: form-data; name="file"; filename="{{filename}}"
+Content-Type: {{content_type}}
+
+< {{filepath}}
+
+------WebKitFormBoundary{{$timestamp}}--
+
+
+### 
+
+# @name REQUEST_BASIC_AUTH_TEST
+# @prompt REQ_PASSWORD Please enter your password
+# @prompt REQ_USERNAME Please enter your username
+
+GET https://httpbingo.org/basic-auth/ HTTP/1.1
+
+
+### 
+
+GET {{REQ_USERNAME}}/ HTTP/1.1
+
+
+### 
+
+GET {{REQ_PASSWORD}} HTTP/1.1
+Accept: application/json
+Authorization: Basic {{REQ_USERNAME}}:{{REQ_PASSWORD}}
+
+
+### 
+
+< {%
+  request.variables.set("TOKEN_RAW", "THIS_IS_A_TOKEN");
+%}
+
+< ./../scripts/pre-token-gen.js
+
+POST https://httpbin.org/post?key1=value1 HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+Token: {{COMPUTED_TOKEN}}
+
+{
+  "foobar": "lul"
+}
+
+> ./../scripts/post-token-gen.js
+
+
+### 
+
+# @name REQUEST_ONE
+# @prompt FOOBAR Please enter a value for FOOBAR
+
+< ./../scripts/pre.js
+
+POST https://httpbin.org/post?foo=bar&baz=bax HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+
+{
+  "foobar": "{{FOOBAR}}",
+  "foobax": "{{FOOBAX}}",
+  "foobaz": "{{FOOBAZ}}"
+}
+
+> ./../scripts/script.js
+
+
+### This is a comment for the next request
+
+# @name REQUEST_TWO
+
+POST https://httpbin.org/post HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+
+{
+  "gorilla": "{{RANDOM_DATE}}",
+  "token": "{{REQUEST_ONE.response.body.$.json.foo}}"
+}
+
+
+### 
+
+POST https://httpbin.org/post HTTP/1.1
+Content-Type: application/json
+
+{
+  "password": "{{PASSWORD}}",
+  "token": "foobar",
+  "username": "{{REQUEST_TWO.response.headers['Content-Type']}}"
+}
+
+
+### 
+
+GET https://httpbin.org/get HTTP/1.1
+Accept: application/json
+Authorization: Bearer {{AUTH_TOKEN}}
+
+
+### 
+
+# @env-json-key AUTH_TOKEN json.token
+# @env-json-key AUTH_USERNAME json.username
+
+POST https://httpbin.org/post HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+
+{
+  "password": "{{PASSWORD}}",
+  "token": "foobar",
+  "username": "{{USERNAME}}"
+}
+
+
+### 
+
+POST https://httpbin.org/post HTTP/1.1
+Accept: application/json
+Authorization: Bearer {{AUTH_TOKEN}}
+Content-Type: application/json
+
+{
+  "success": true,
+  "username": "{{AUTH_USERNAME}}"
+}
+
+
+### 
+
+# @graphql
+
+POST https://swapi-graphql.netlify.app/graphql HTTP/1.1
+Accept: application/json
+X-Request-Type: GraphQL
+
+query Person($id: ID) {
+  person(personID: $id) {
+    name
+  }
+}
+
+{
+  "id": 1
+}
+
+
+### 
+
+GRAPHQL https://swapi-graphql.netlify.app/graphql HTTP/1.1
+
+query Root {
+  allVehicles {
+    vehicles {
+      name
+    }
+  }
+}
+
+
+### 
+
+GRAPHQL https://swapi-graphql.netlify.app/graphql HTTP/1.1
+X-Request-Type: GraphQL
+
+query Query {
+  allFilms {
+    films {
+      title
+      director
+      releaseDate
+      speciesConnection {
+        species {
+          name
+          classification
+          homeworld {
+            name
+          }
+        }
+      }
+    }
+  }
+}
+
+
+### Countries
+
+GRAPHQL https://countries.trevorblades.com/ HTTP/1.1
+
+query GetCountry($code: ID!) {
+  country(code: $code) {
+    name
+    code
+    capital
+    capital
+    currency
+    languages {
+      code
+      name
+    }
+  }
+}
+
+{
+  "code": "US"
+}
+
+
+### 
+
+GRAPHQL https://countries.trevorblades.com/ HTTP/1.1
+
+query {
+  __schema {
+    directives
+    types {
+      name
+    }
+  }
+}
+
+
