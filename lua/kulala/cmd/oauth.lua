@@ -18,6 +18,8 @@ local request_interval = 5000 -- 5 seconds
 local co, exit
 
 local function get_curl_flags()
+  if not DB.current_request then return {} end
+
   local RequestParser = require("kulala.parser.request")
   local request = vim.deepcopy(DB.current_request)
 
