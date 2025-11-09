@@ -46,6 +46,7 @@ describe("send bug report", function()
       "Press `<leader>S` to open a GitHub issue",
       "## Title: [BUG] Vim:E117: Unknown function: NIL",
       "## Description",
+      "## Request",
       "## Error ",
       "Vim:E117: Unknown function: NIL",
       "## Health",
