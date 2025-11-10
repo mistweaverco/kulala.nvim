@@ -15,6 +15,7 @@ local M = {}
 
 local request_timeout = 30000 -- 30 seconds
 local request_interval = 5000 -- 5 seconds
+local tcp_server
 local co, exit
 
 local function get_curl_flags()
@@ -337,7 +338,7 @@ M.receive_code = function(config_id)
 
   local port = url:match(":(%d+)") or 80
 
-  local server = Tcp.server("127.0.0.1", port, function(request)
+  tcp_server = Tcp.server("127.0.0.1", port, function(request)
     local params = parse_params(request) or {}
 
     if params.code or params.access_token then
@@ -352,12 +353,15 @@ M.receive_code = function(config_id)
     end
   end)
 
-  if not server then return end
+  if not tcp_server then return end
 
   Logger.info("Waiting for authorization code/token")
 
   local _, result = Async.co_yield(co, request_timeout)
-  if not result then return Logger.error("Timeout waiting for authorization code/token for: " .. config_id) end
+  if not result or result == "timeout" then
+    _ = tcp_server and tcp_server:stop()
+    return Logger.error("Timeout waiting for authorization code/token for: " .. config_id)
+  end
 
   return result
 end
@@ -609,6 +613,7 @@ local function run_auth_async(config_id, fn)
       Logger.info("Cancelling token acquisition for config: " .. config_id)
 
       Async.co_resume(co)
+      tcp_server = tcp_server and tcp_server:stop()
       exit = true
 
       vim.keymap.del("n", "<C-c>", { buffer = buf })

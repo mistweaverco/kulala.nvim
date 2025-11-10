@@ -51,8 +51,8 @@ M.server = {
 
         if chunk:match("GET / HTTP") then
           response = redirect_script()
-        elseif chunk:match("GET /%?") then
-          result = on_request(chunk:match("GET /%?(.+) HTTP"))
+        elseif chunk:match("GET /[^%?]*%?(.+)") then
+          result = on_request(chunk:match("GET /[^%?]*%?(.+) HTTP"))
           response = result or "OK"
         end
 

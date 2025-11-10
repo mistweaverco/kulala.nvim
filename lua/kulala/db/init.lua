@@ -66,13 +66,13 @@ M.current_request = nil
 ---@return number
 M.get_current_buffer = function()
   local buf = M.current_buffer
-  return vim.fn.bufexists(buf) > 0 and buf or M.set_current_buffer()
+  return vim.api.nvim_buf_is_valid(buf or -1) and buf or M.set_current_buffer()
 end
 
 ---Sets DB.current_buffer to provided buffer_id or to current buffer
 ---@param id number|nil
 M.set_current_buffer = function(id)
-  M.current_buffer = id and id or vim.fn.bufnr()
+  M.current_buffer = id and id or vim.api.nvim_get_current_buf()
   return M.current_buffer
 end
 
