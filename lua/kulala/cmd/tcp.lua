@@ -75,7 +75,7 @@ M.server = {
     end
 
     self.server = server
-    vim.uv.run()
+    -- vim.uv.run() -- not needed, libuv loop is already running in Neovim
 
     return self
   end,
