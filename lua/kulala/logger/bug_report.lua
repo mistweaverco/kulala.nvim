@@ -1,4 +1,5 @@
 local Config = require("kulala.config")
+local Db = require("kulala.db")
 local Float = require("kulala.ui.float")
 local Health = require("kulala.health")
 local Json = require("kulala.utils.json")
@@ -22,6 +23,10 @@ local template = [[
 ## Steps to Reproduce
 
 *Steps to reproduce the behavior*
+
+## Request 
+
+%s
 
 ## Error 
 
@@ -95,13 +100,25 @@ M.create_issue = function(title, body, labels, type)
   return true
 end
 
+local function get_current_request()
+  local request, buf = Db.current_request, Db.current_buffer
+  if not request or not buf then return end
+
+  local status, result = pcall(function()
+    return vim.fn.join(vim.api.nvim_buf_get_lines(buf, request.start_line - 2, request.end_line, false), "\n")
+  end)
+
+  return status and "```http\n" .. result .. "\n```" or ""
+end
+
 M.generate_bug_report = function(error)
   error = error or ""
 
   local title = vim.split(error, "\n")[1]
+  local request = get_current_request()
   local health = get_health()
   local user_config = vim.inspect(Config.user_config)
-  local report = vim.split(template:format(title, error, health, user_config), "\n")
+  local report = vim.split(template:format(title, request, error, health, user_config), "\n")
 
   local width = math.floor(vim.o.columns * 0.6)
   local height = math.floor(vim.o.lines * 0.6)

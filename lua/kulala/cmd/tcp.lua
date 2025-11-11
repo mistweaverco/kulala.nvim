@@ -30,18 +30,20 @@ M.server = {
     port = tonumber(port) or 80
 
     local server = vim.uv.new_tcp() or {}
-    local status = server:bind(host, port)
-    if not status then Logger.warn("Failed to start TCP server: on " .. host .. ":" .. port) end
+    local status, err = server:bind(host, port)
 
-    status = server:listen(128, function(err)
-      if err then return Logger.error("Failed to process request: " .. err) end
+    if not status then
+      return Logger.warn(("TCP server: failed to bind on %s:%s (%s)"):format(host, port, err or ""))
+    end
+
+    status, err = server:listen(128, function(err)
+      if err then return Logger.error("TCP server: failed to accept connection: " .. err) end
 
       local client = vim.uv.new_tcp() or {}
       server:accept(client)
 
       client:read_start(function(err, chunk)
-        if err then return Logger.error("Failed to read server response: " .. err) end
-        ---@diagnostic disable-next-line: redundant-return-value
+        if err then return Logger.error("TCP server: failed to process request: " .. err) end
         if not chunk then return self:stop(client) end
 
         local response = ""
@@ -49,25 +51,31 @@ M.server = {
 
         if chunk:match("GET / HTTP") then
           response = redirect_script()
-        elseif chunk:match("GET /%?") then
-          result = on_request(chunk:match("GET /%?(.+) HTTP"))
+        elseif chunk:match("GET /[^%?]*%?(.+)") then
+          result = on_request(chunk:match("GET /[^%?]*%?(.+) HTTP"))
           response = result or "OK"
         end
 
-        client:write("HTTP/1.1 200 OKn\r\n\r\n" .. response .. "\n")
+        client:write("HTTP/1.1 200 OK\r\n\r\n" .. response .. "\n")
         self:stop(client)
 
         if result then self:stop(server) end
       end)
     end)
 
-    if not status then return Logger.error("Failed to start TCP server on " .. host .. ":" .. port) end
+    if not status then
+      return Logger.warn(("TCP server failed to listen on %s:%s (%s)"):format(host, port, err or ""))
+    end
 
-    local socket = server:getsockname() or {}
-    Logger.info("Server listening for code/token on " .. host .. ":" .. socket.port)
+    local socket = server:getsockname()
+    if socket then
+      Logger.info("Server listening for code/token on " .. socket.ip .. ":" .. socket.port)
+    else
+      return Logger.warn(("TCP server failed to get socket on %s:%s"):format(host, port))
+    end
 
-    vim.uv.run()
     self.server = server
+    -- vim.uv.run() -- not needed, libuv loop is already running in Neovim
 
     return self
   end,

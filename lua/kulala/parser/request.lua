@@ -85,7 +85,14 @@ local function process_grpc_flags(request, flag, value)
 
   value = flag:match("import%-path") and FS.get_file_path(value) or value
   request.grpc = request.grpc or vim.deepcopy(default_grpc_command)
-  table.insert(request.grpc.flags, { flag, value })
+
+  local last_flag = request.grpc.flags[#request.grpc.flags] or {}
+
+  if value ~= "" and last_flag[1] == flag and last_flag[2] == "" then
+    request.grpc.flags[#request.grpc.flags][2] = value
+  else
+    table.insert(request.grpc.flags, { flag, value })
+  end
 end
 
 local function process_curl_flags(request, flag, value)
@@ -596,7 +603,7 @@ function M.get_basic_request_data(requests, document_request, line_nr)
   request.url_raw = request.url_raw or document_request.url -- url_raw may be already set if the request is being replayed
   request.body_raw = document_request.body
 
-  Table.remove_keys(request, { "comments", "body", "start_line", "end_line" })
+  Table.remove_keys(request, { "comments", "body" })
 
   return request
 end

@@ -257,11 +257,15 @@ Authorization: Bearer {{$auth.token("auth-id")}}
 Accept: application/json
 ```
 
-Execute the request. Before accessing the protected resource, Kulala will open your default browser and send a request to the authorization server to obtain an access token.
+Execute the request. Before accessing the protected resource, Kulala will open your default browser (or whatever is specified in `Browser CMD`) and send a request to the authorization server to obtain an access token.
 
 When prompted, complete the authentication process. The browser will be redirected to the provided `Redirect URL`.
 
-Kulala will intercept this redirect and extract the authorization details from the URL, if the provided Redirect URL is `localhost` or `127.0.0.1`. Otherwise, you need to manually copy the code from the redirect URL and paste it into Kulala prompt.
+If the provided `Redirect URL` is `localhost` or `127.0.0.1` or `Browser CMD` is specified, Kulala will start a HTTP server on `localhost`, listening on port specified in `Redirect URL` (or `80`). 
+
+The HTTP server will then intercept this redirect and extract the authorization details from the URL.
+
+Otherwise, you need to copy the code from the redirect URL and paste it into Kulala prompt manually.
 
 For Grant Type `Device Authorization`, the code will be copied into clipboard, to be pasted into consent form.
 
@@ -503,6 +507,24 @@ The user's password sent as part of authorization, used with the Password grant 
 #### Custom Request Parameters
 
 Specify custom request parameters
+
+#### Browser CMD
+
+Specify a shell command to open a browser/app to intercept `Redirect URL`. Accepts `Auth URL` and `Redirect URL` as postional arguments.  By default opens the system default browser.
+
+##### Example:
+
+In `lua/kulala/browser` you will find a working example of a custom Electron-based browser, that will open `Auth URL`, intercept `Redirect URL` (which does not have to point to localhost) and redirect the callback request to Kulala local HTTP server.  To install Electron - `npm install -g electron`.
+
+Add to your Authentication configuration:
+
+```json
+{
+ "Browser CMD": "browser.js http://localhost:8080/callback" (optional),
+}
+```
+
+The browser script takes 2 arguments: the first is the `Auth URL` (passed by Kulala) and the second is the `Redirect URL` to which the intercepted request will be redirected.  Both arguments are passed by Kulala, but if your `Redirect URL` does not point to localhost, you have to specify it manually in `Browser CMD`.
 
 ## AWS Signature V4
 

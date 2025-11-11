@@ -11,6 +11,8 @@
 ### Enhancement: include cookies with GRAPQL schema requests
 ### Enhancement: add `--sub` option to Kulala CLI to provide variable substitutions
 ### Enhancement: add `split_params` option for formatter [Configuration](getting-started/configuration-options.mdx)
+### Enhancement: improve grammar and syntax highlighting for query and form params and values, multipart form data
+### Feature: add Electron browser and `Browser CMD` param to `Auth Config` for Oauth2 auth code flow [Authentication](usage/authentication.md)
 
 ## Version 5.3.3
 

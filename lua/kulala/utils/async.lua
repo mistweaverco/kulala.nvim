@@ -44,7 +44,7 @@ M.co_yield = function(co, timeout, ...)
   return true, unpack(result)
 end
 
----If in coroutine, wraps a function in vim.schedule and executes it, waiting for the result
+---If in coroutine, wraps a function in vim.schedule and executes it, suspending the coroutine until completion
 ---@param co thread
 ---@param fn function
 ---@param ... any, ... any

@@ -632,6 +632,8 @@ M.get_request_at = function(requests, linenr)
     if linenr == 0 then return expand_nested_requests(requests) end
 
     local request = requests[1]
+    if not request then return {} end
+
     local shared = request.shared
     if not request.name:match("^Shared") and is_runnable(shared) then table.insert(requests, 1, shared) end
 

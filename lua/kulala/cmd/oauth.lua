@@ -4,6 +4,7 @@ local Crypto = require("kulala.cmd.crypto")
 local DB = require("kulala.db")
 local Env = require("kulala.parser.env")
 local Float = require("kulala.ui.float")
+local Fs = require("kulala.utils.fs")
 local Inlay = require("kulala.inlay")
 local Json = require("kulala.utils.json")
 local Logger = require("kulala.logger")
@@ -15,9 +16,12 @@ local M = {}
 
 local request_timeout = 30000 -- 30 seconds
 local request_interval = 5000 -- 5 seconds
+local tcp_server
 local co, exit
 
 local function get_curl_flags()
+  if not DB.current_request then return {} end
+
   local RequestParser = require("kulala.parser.request")
   local request = vim.deepcopy(DB.current_request)
 
@@ -322,7 +326,7 @@ M.receive_code = function(config_id)
   local config = get_auth_config(config_id)
   local url = config["Redirect URL"]
 
-  if not url:find("localhost") and not url:find("127.0.0.1") then
+  if not (url:find("localhost") or url:find("127.0.0.1") or config["Browser CMD"]) then
     local code = vim.uri_decode(vim.fn.input("Enter the Auth code/token: "))
 
     update_auth_data(config_id, {
@@ -335,7 +339,7 @@ M.receive_code = function(config_id)
 
   local port = url:match(":(%d+)") or 80
 
-  local server = Tcp.server("127.0.0.1", port, function(request)
+  tcp_server = Tcp.server("127.0.0.1", port, function(request)
     local params = parse_params(request) or {}
 
     if params.code or params.access_token then
@@ -350,12 +354,15 @@ M.receive_code = function(config_id)
     end
   end)
 
-  if not server then return end
+  if not tcp_server then return end
 
   Logger.info("Waiting for authorization code/token")
 
   local _, result = Async.co_yield(co, request_timeout)
-  if not result then return Logger.error("Timeout waiting for authorization code/token for: " .. config_id) end
+  if not result or result == "timeout" then
+    _ = tcp_server and tcp_server:stop()
+    return Logger.error("Timeout waiting for authorization code/token for: " .. config_id)
+  end
 
   return result
 end
@@ -438,6 +445,30 @@ M.acquire_client_credentials = function(config_id)
   return config.auth_data.access_token
 end
 
+local function launch_browser(cmd, auth_url, redirect_url)
+  local status, error
+  local browser_cmd = {}
+
+  cmd = cmd or ""
+
+  if cmd == "" then
+    browser_cmd = { "system default browser" }
+    status, error = vim.ui.open(auth_url)
+  else
+    cmd = vim.split(cmd, " ")
+    browser_cmd = { Fs.get_file_path(cmd[1]), auth_url, redirect_url or "http://localhost:80" }
+
+    Logger.info("Launching browser with command: " .. vim.inspect(browser_cmd))
+    status, error = Shell.run(browser_cmd, { err_msg = "Error launching browser" })
+  end
+
+  if not status then
+    return Logger.error("Failed to open browser: " .. vim.inspect(browser_cmd) .. " " .. (error or ""))
+  end
+
+  return true
+end
+
 ---Grant Type "Authorization Code" or "Implicit"
 ---Acquire an auth code for the given config_id
 M.acquire_auth = function(config_id)
@@ -465,8 +496,7 @@ M.acquire_auth = function(config_id)
   Logger.info("Acquiring code for config: " .. config_id)
   Logger.debug("Auth URL: " .. uri)
 
-  local browser, status = vim.ui.open(uri)
-  if not browser then return Logger.error("Failed to open browser: " .. status) end
+  if not launch_browser(config["Browser CMD"], uri, config["Redirect URL"]) then return end
 
   local code = M.receive_code(config_id)
   if not code then return Logger.error("Failed to acquire code for config: " .. config_id) end
@@ -607,6 +637,7 @@ local function run_auth_async(config_id, fn)
       Logger.info("Cancelling token acquisition for config: " .. config_id)
 
       Async.co_resume(co)
+      tcp_server = tcp_server and tcp_server:stop()
       exit = true
 
       vim.keymap.del("n", "<C-c>", { buffer = buf })
