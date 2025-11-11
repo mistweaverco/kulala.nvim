@@ -13,6 +13,7 @@
 ### Enhancement: add `split_params` option for formatter [Configuration](getting-started/configuration-options.mdx)
 ### Enhancement: improve grammar and syntax highlighting for query and form params and values, multipart form data
 ### Feature: add Electron browser and `Browser CMD` param to `Auth Config` for Oauth2 auth code flow [Authentication](usage/authentication.md)
+### Enhancement: content type formatters are regex matched against `Content-Type` header [Automatic Response Formatting](usage/automatic-response-formatting.md)
 
 ## Version 5.3.3
 

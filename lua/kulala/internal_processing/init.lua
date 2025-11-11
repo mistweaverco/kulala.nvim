@@ -127,7 +127,11 @@ M.get_config_contenttype = function(headers, view)
       return content_type == "kulala/grpc_error" and { ft = "kulala_grpc_error" } or { ft = "kulala_verbose_result" }
     end
 
-    local config = CONFIG.get().contenttypes[content_type]
+    local config_key = vim.iter(CONFIG.get().contenttypes):find(function(k, _)
+      return content_type:match(k)
+    end)
+
+    local config = config_key and CONFIG.get().contenttypes[config_key]
 
     if config and type(config) == "string" then config = CONFIG.get().contenttypes[config] end
     if config then return config end
