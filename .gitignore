@@ -14,12 +14,12 @@ http-client.env.json
 !/docs/**/*.json
 
 /http-examples
-lua/tree-sitter/testing
+/lua/tree-sitter/testing
 
 *.http
+!/lua/tree-sitter/**/*.http
 !/docs/**/*.http
 !/tests/**/*.http
-!/tests/functional/requests/*.http
 
 
 .luarc.json
