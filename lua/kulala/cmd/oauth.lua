@@ -337,7 +337,7 @@ M.receive_code = function(config_id)
     return code
   end
 
-  local port = url:match(":(%d+)") or 80
+  local port = url:match(":(%d+)") or 8080
 
   tcp_server = Tcp.server("127.0.0.1", port, function(request)
     local params = parse_params(request) or {}

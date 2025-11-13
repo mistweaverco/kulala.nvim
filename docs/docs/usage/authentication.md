@@ -261,7 +261,7 @@ Execute the request. Before accessing the protected resource, Kulala will open y
 
 When prompted, complete the authentication process. The browser will be redirected to the provided `Redirect URL`.
 
-If the provided `Redirect URL` is `localhost` or `127.0.0.1` or `Browser CMD` is specified, Kulala will start a HTTP server on `localhost`, listening on port specified in `Redirect URL` (or `80`). 
+If the provided `Redirect URL` is `localhost`/`127.0.0.1` or `Browser CMD` is specified, Kulala will start a HTTP server on `localhost`, listening on port specified in `Redirect URL` (or `8080`). 
 
 The HTTP server will then intercept this redirect and extract the authorization details from the URL.
 
@@ -524,7 +524,7 @@ Add to your Authentication configuration:
 }
 ```
 
-The browser script takes 2 arguments: the first is the `Auth URL` (passed by Kulala) and the second is the `Redirect URL` to which the intercepted request will be redirected.  Both arguments are passed by Kulala, but if your `Redirect URL` does not point to localhost, you have to specify it manually in `Browser CMD`.
+The browser script takes 2 arguments: the first is the `Auth URL` (passed by Kulala) and the second is the `Redirect URL` to which the intercepted request will be redirected.  Both arguments are passed by Kulala, but if your `Redirect URL` does not point to localhost or does not have a port number, you have to specify `http://localhost:8080` manually as second argument in `Browser CMD`.
 
 ## AWS Signature V4
 
