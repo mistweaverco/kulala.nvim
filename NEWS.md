@@ -14,6 +14,7 @@
 ### Enhancement: improve grammar and syntax highlighting for query and form params and values, multipart form data
 ### Feature: add Electron browser and `Browser CMD` param to `Auth Config` for Oauth2 auth code flow [Authentication](usage/authentication.md)
 ### Enhancement: content type formatters are regex matched against `Content-Type` header [Automatic Response Formatting](usage/automatic-response-formatting.md)
+### Enhancement: add `Custom Headers` to Oauth2 auth requests in `Auth Config` [Authentication](usage/authentication.md)
 
 ## Version 5.3.3
 

@@ -294,10 +294,12 @@ In an .http file, use the `$auth.idToken` variable, for example, `Authorization:
 
 ### Use custom authentication parameters
 
-Kulala provides an option to define custom request parameters that your authorization server may require. This includes, for example, resource and audience that
+Kulala provides an option to define custom request headers and parameters that your authorization server may require. This includes, for example, resource and audience that
 extend the OAuth 2.0 Authorization framework.
 
-In your authentication configuration, add the `"Custom Request Parameters"` object.
+In your authentication configuration, you can add `Custom Headers` and `"Custom Request Parameters"` object.
+
+`Custom Headers` - is a simple header name - header value object.
 
 Inside `"Custom Request Parameters"`, enter your parameter name and value (a string or an array).
 
@@ -503,6 +505,10 @@ The username sent as part of authorization, used with the Password grant type.
 #### Password
 
 The user's password sent as part of authorization, used with the Password grant type.
+
+#### Custom Request Headers
+
+Specify custom request headers
 
 #### Custom Request Parameters
 
