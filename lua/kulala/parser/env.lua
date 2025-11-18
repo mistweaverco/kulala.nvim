@@ -84,16 +84,6 @@ local function get_http_client_private_env()
   return f
 end
 
-local function get_http_client_env_shared(env)
-  local http_client_env_shared = DB.find_unique("http_client_env_shared") or {}
-
-  for key, value in pairs(http_client_env_shared) do
-    if key ~= "$default_headers" then env[key] = value end
-  end
-
-  return env
-end
-
 local function get_http_client_env()
   local http_client_env_json = FS.find_file_in_parent_dirs("http-client.env.json")
 
@@ -167,12 +157,13 @@ M.get_env = function()
 
   get_http_client_env()
   get_http_client_private_env()
-  env = get_http_client_env_shared(env)
 
   local cur_env = M.get_current_env()
-  local selected_env = DB.find_unique("http_client_env") and DB.find_unique("http_client_env")[cur_env]
+  local selected_env = DB.find_unique("http_client_env") and DB.find_unique("http_client_env")[cur_env] or {}
+  local shared = DB.find_unique("http_client_env_shared") or {}
 
-  if selected_env then env = vim.tbl_extend("force", env, selected_env) end
+  selected_env = vim.tbl_deep_extend("force", shared, selected_env)
+  env = vim.tbl_deep_extend("force", env, selected_env)
 
   local db_env = DB.find_unique("env") or {}
   for key, value in pairs(db_env) do
