@@ -1,14 +1,15 @@
 ### Simple GET request
 
-GET https://httpbin.org/get HTTP/1.1
+GET https://echo.getkulala.net/get HTTP/1.1
 
 ### GET with query parameters
 
-GET https://httpbin.org/get?name=kulala&age=25 HTTP/1.1
+GET https://echo.getkulala.net/get?name=kulala
+  &age=25 HTTP/1.1
 
 ### POST with JSON body
 
-POST https://httpbin.org/post HTTP/1.1
+POST https://echo.getkulala.net/post HTTP/1.1
 Content-Type: application/json
 
 {
@@ -18,7 +19,7 @@ Content-Type: application/json
 
 ### PUT with headers
 
-PUT https://httpbin.org/put HTTP/1.1
+PUT https://echo.getkulala.net/put HTTP/1.1
 Content-Type: application/json
 X-Custom-Header: test-value
 
@@ -29,11 +30,11 @@ X-Custom-Header: test-value
 
 ### DELETE request
 
-DELETE https://httpbin.org/delete HTTP/1.1
+DELETE https://echo.getkulala.net/delete HTTP/1.1
 
 ### GET with multiple headers
 
-GET https://httpbin.org/headers HTTP/1.1
+GET https://echo.getkulala.net/headers HTTP/1.1
 Accept: application/json
-User-Agent: My-Test-Client
 Authorization: Bearer test-token
+User-Agent: My-Test-Client
