@@ -62,7 +62,7 @@ local default_document_request = {
   comments = {},
   method = "",
   url = "",
-  request_target = nil,
+  request_target = "",
   http_version = "",
   headers = {},
   headers_raw = {},
@@ -94,7 +94,12 @@ local parse_document
 
 local function is_runnable(request)
   local pre_scripts = request.scripts.pre_request
-  return request.url or #pre_scripts.inline + #pre_scripts.files > 0 or #request.nested_requests > 0
+  local post_scripts = request.scripts.post_request
+
+  return request.url
+    or #pre_scripts.inline + #pre_scripts.files > 0
+    or #post_scripts.inline + #post_scripts.files > 0
+    or #request.nested_requests > 0
 end
 
 local function split_content_by_blocks(lines, line_offset)
@@ -296,11 +301,6 @@ local function parse_url(request, line)
   return method, line, http_version
 end
 
-local function parse_host(request, line)
-  line = line:gsub("^Host:%s*", "")
-  request.url = (request.url == "" or request.url:match("^/")) and (line .. request.url) or request.url
-end
-
 local function parse_request_urL_method(request, line, lnum)
   request.method, request.url, request.http_version = parse_url(request, line)
   request.name = request.name or (request.method or "") .. " " .. (request.url or "")
@@ -494,9 +494,6 @@ function parse_document(lines, path)
         parse_multiline_url(request, line)
       elseif not is_request_line and line:match("^%s*[?&]") and #request.headers == 0 and request.url then
         parse_query_params(request, line)
-      elseif line:match("^Host:") then
-        parse_host(request, line)
-        is_request_line = false
       elseif line:match("^([^%[%s]+):%s*(.*)$") and not line:match("^[^:]+:[/%d]+.+") and not line:match("%?") then
         -- skip [:] ipv6, ://, scheme, :80 port
         parse_headers(request, line)
@@ -515,8 +512,8 @@ function parse_document(lines, path)
 
     if request.name == "Shared" or request.name == "Shared each" then
       shared = request
-      shared.url = #shared.url > 0 and shared.url or nil
-    elseif request.url and #request.url > 0 then
+      shared.url = #shared.url > 0 and shared.url ~= "NOP" and shared.url or nil
+    elseif request.url and #request.url + #request.request_target > 0 then
       table.insert(requests, request)
     elseif #request.nested_requests > 0 then
       vim.iter(request.nested_requests or {}):each(function(r)
@@ -563,6 +560,12 @@ local function apply_shared_data(shared, request)
   vim.iter(shared.variables):each(function(k, v)
     if not request.variables[k] then request.variables[k] = v end
   end)
+
+  if not shared.url then -- only apply shared headers if request url is NOP
+    vim.iter(shared.headers):each(function(k, v)
+      if not request.headers[k] then request.headers[k] = v end
+    end)
+  end
 
   return request
 end

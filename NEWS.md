@@ -16,6 +16,7 @@
 ### Enhancement: content type formatters are regex matched against `Content-Type` header [Automatic Response Formatting](usage/automatic-response-formatting.md)
 ### Enhancement: add `Custom Headers` to Oauth2 auth requests in `Auth Config` [Authentication](usage/authentication.md)
 ### Enhancement: `http-client.env.json` and `http-client.private.env.json` files will be searched in parent directories and merged [Dotenv and http-client.env.json support](usage/dotenv-and-http-client.env.json-support.md)
+### Enhancement: share headers and post request scripts in Shared blocks [Shared blocks](usage/shared-blocks.md)
 
 ## Version 5.3.3
 
