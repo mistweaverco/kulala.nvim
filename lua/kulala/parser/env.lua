@@ -64,51 +64,20 @@ local function get_dot_env(env)
   return env
 end
 
-local function get_http_client_private_env()
-  local http_client_private_env_json = FS.find_file_in_parent_dirs("http-client.private.env.json")
-  if not http_client_private_env_json then return end
+local function get_http_client_env(name)
+  local envs = FS.find_files_in_parent_dirs(name) or {}
 
-  local f = FS.read_json(http_client_private_env_json)
-  if not f then return end
-
-  if f["$shared"] then
-    DB.update().http_client_env_shared =
-      vim.tbl_deep_extend("force", DB.find_unique("http_client_env_shared"), f["$shared"])
-  end
-
-  f["$shared"] = nil
-  f["$schema"] = nil
-
-  DB.update().http_client_env = vim.tbl_deep_extend("force", DB.find_unique("http_client_env") or {}, f)
-
-  return f
-end
-
-local function get_http_client_env_shared(env)
-  local http_client_env_shared = DB.find_unique("http_client_env_shared") or {}
-
-  for key, value in pairs(http_client_env_shared) do
-    if key ~= "$default_headers" then env[key] = value end
-  end
-
-  return env
-end
-
-local function get_http_client_env()
-  local http_client_env_json = FS.find_file_in_parent_dirs("http-client.env.json")
-
-  if http_client_env_json then
-    local f = FS.read_json(http_client_env_json, { verbose = true }) or {}
+  vim.iter(envs):each(function(file)
+    local f = FS.read_json(file) or {}
 
     if f["$shared"] then
       DB.update().http_client_env_shared =
-        vim.tbl_deep_extend("force", DB.find_unique("http_client_env_shared"), f["$shared"])
+        vim.tbl_deep_extend("keep", DB.find_unique("http_client_env_shared"), f["$shared"])
     end
 
-    f["$shared"] = nil
-    f["$schema"] = nil
-    DB.update().http_client_env = vim.tbl_deep_extend("force", DB.find_unique("http_client_env"), f)
-  end
+    f["$shared"], f["$schema"] = nil, nil
+    DB.update().http_client_env = vim.tbl_deep_extend("keep", DB.find_unique("http_client_env"), f)
+  end)
 end
 
 local function create_private_env()
@@ -165,14 +134,15 @@ M.get_env = function()
   get_vscode_env()
   env = get_dot_env(env)
 
-  get_http_client_env()
-  get_http_client_private_env()
-  env = get_http_client_env_shared(env)
+  get_http_client_env("http-client.env.json")
+  get_http_client_env("http-client.private.env.json")
 
   local cur_env = M.get_current_env()
-  local selected_env = DB.find_unique("http_client_env") and DB.find_unique("http_client_env")[cur_env]
+  local selected_env = DB.find_unique("http_client_env") and DB.find_unique("http_client_env")[cur_env] or {}
+  local shared = DB.find_unique("http_client_env_shared") or {}
 
-  if selected_env then env = vim.tbl_extend("force", env, selected_env) end
+  selected_env = vim.tbl_deep_extend("force", shared, selected_env)
+  env = vim.tbl_deep_extend("force", env, selected_env)
 
   local db_env = DB.find_unique("env") or {}
   for key, value in pairs(db_env) do

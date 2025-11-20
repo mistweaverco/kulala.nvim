@@ -22,7 +22,7 @@ const argv = args.reduce((acc, arg, index) => {
 
 async function createWindow() {
   const authorizeUrl = argv.authorizeUrl;
-  const callbackUrl = argv.callbackUrl || "http://localhost:80";
+  const callbackUrl = argv.callbackUrl || "http://localhost:8080";
   const resetCookies = argv.resetCookies;
   const url = new URL(authorizeUrl);
   const redirectUrl = url.searchParams.get("redirect_uri");

@@ -74,3 +74,22 @@ Content-Type: application/json
   "shared_var_2": 4
 }
 ```
+
+## Shared Headers and Post_request Scripts
+
+If you want to also share headers or post request scripts, but not the actual request, use `NOP` as a url placeholder.
+
+```http
+### Shared
+
+@shared_var_1 = shared_value_1
+@shared_var_2 = shared_value_2
+
+NOP
+Host: postman-echo.com
+Content-Type: application/json
+
+> {%
+  console.log("post request 0");
+%}
+```

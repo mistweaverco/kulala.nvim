@@ -795,6 +795,7 @@ describe("requests", function()
 
             POST https://httpbin.org/0
             Content-Type: application/json
+            Origin: some-origin
 
             > {%
               console.log("post request 0")
@@ -1013,7 +1014,7 @@ describe("requests", function()
         end)
       end)
 
-      it("applies shared variables and metadata, scope request", function()
+      it("applies shared variables, metadata, headers, scope request", function()
         CONFIG.options.variables_scope = "request"
         h.send_keys("50j") -- request 2
 
@@ -1032,6 +1033,9 @@ describe("requests", function()
           shared_var_1 = "shared_value_1",
           shared_var_2 = "local_value_2",
         })
+        assert.has_properties(result.headers, {
+          ["Content-Type"] = "application/json",
+        })
         assert.has_properties(result.environment, {
           local_var_2 = "local_value_2",
           shared_var_1 = "shared_value_1",
@@ -1042,6 +1046,39 @@ describe("requests", function()
           { name = "curl-connect-timeout", value = "20" },
           { name = "curl-location", value = "" },
         })
+      end)
+
+      it("applies headers and post_request scripts with NOP request", function()
+        h.delete_all_bufs()
+
+        h.create_buf(
+          ([[
+            ### Shared
+            NOP
+            Origin: some-origin
+
+            > {%
+              console.log("post request 0")
+            %}
+
+            > ./tests/functional/scripts/advanced_E_pre.js
+
+            ### request 1
+
+            POST https://httpbin.org/1
+          ]]):to_table(true),
+          "test.http"
+        )
+
+        h.send_keys("12j")
+
+        kulala.run()
+        wait_for_requests(1)
+
+        assert.is_same({
+          "post request 0\n",
+          "JS: PRE TEST\n",
+        }, output.log)
       end)
     end)
   end)

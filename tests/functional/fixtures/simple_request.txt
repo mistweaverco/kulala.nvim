@@ -7,6 +7,7 @@
       Accept = "application/json",
       Authorization = "Bearer Foo:bar=baz",
       ["Content-Type"] = "application/json",
+      ["Origin"] = 'httpbin.org',
       ["Test-Header"] = "Test-Value",
       ["Test-Header-2"] = "Test-Value-2",
       ["Test-Header-3"] = "ditto"

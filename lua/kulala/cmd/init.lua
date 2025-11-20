@@ -146,6 +146,11 @@ local function process_api()
   Api.trigger("after_request")
 end
 
+local function add_content_type_header(response, content_type)
+  response.headers = response.headers .. "Content-Type: " .. content_type .. "\n\n"
+  response.headers_tbl = INT_PROCESSING.get_headers()
+end
+
 local function modify_grpc_response(response)
   if response.method ~= "GRPC" then return response end
 
@@ -155,8 +160,7 @@ local function modify_grpc_response(response)
   FS.write_file(GLOBALS.BODY_FILE, response.body_raw)
 
   local content_type = response.errors == "" and "application/json" or "kulala/grpc_error"
-  response.headers = "Content-Type: " .. content_type
-  response.headers_tbl = { ["Content-Type"] = content_type }
+  add_content_type_header(response, content_type)
 
   return response
 end
@@ -191,11 +195,11 @@ local function inject_payload(errors, request)
   return table.concat(lines, "\n")
 end
 
-local function truncate_body()
+local function truncate_body(response)
   local max_size = CONFIG.get().ui.max_response_size
 
   if vim.fn.getfsize(GLOBALS.BODY_FILE) > max_size then
-    FS.write_file(GLOBALS.HEADERS_FILE, "Content-Type: text/plain", true)
+    add_content_type_header(response, "text/plain")
     return "The size of response is > " .. max_size / 1024 .. "Kb.\nPath to response: " .. GLOBALS.BODY_FILE
   else
     return FS.read_file(GLOBALS.BODY_FILE) or ""
@@ -249,7 +253,7 @@ local function save_response(request_status, parsed_request)
   response = modify_grpc_response(response)
   response = set_request_stats(response)
 
-  response.body = truncate_body()
+  response.body = truncate_body(response)
   response.json = Json.parse(response.body) or {}
   response.errors = inject_payload(response.errors, parsed_request)
 
