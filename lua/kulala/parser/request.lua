@@ -260,16 +260,13 @@ end
 local function set_headers(request, env)
   request.headers_display = vim.deepcopy(request.headers)
 
-  -- Merge headers from the $shared environment if it does not exist in the request
-  -- this ensures that you can always override the headers in the request
-  local default_headers = (DB.find_unique("http_client_env_shared") or {})["$default_headers"] or {}
-
   local cur_env = vim.g.kulala_selected_env or CONFIG.get().default_env
-  local default_headers_env = vim.tbl_get(DB.find_unique("http_client_env") or {}, cur_env, "$default_headers") or {}
+  local shared_headers = vim.tbl_get(DB.find_unique("http_client_env_shared") or {}, "$default_headers") or {}
+  local default_headers = vim.tbl_get(DB.find_unique("http_client_env") or {}, cur_env, "$default_headers") or {}
 
-  default_headers = vim.tbl_extend("force", default_headers, default_headers_env)
+  local headers = vim.tbl_extend("force", shared_headers, default_headers, request.headers)
 
-  vim.iter(default_headers):each(function(name, value)
+  vim.iter(headers):each(function(name, value)
     name = PARSER_UTILS.get_header(request.headers, name) or name
     value = StringVariablesParser.parse(value, request.variables, env)
 
@@ -560,7 +557,7 @@ local function build_curl_command(request)
   table.insert(request.cmd, "-w")
   table.insert(request.cmd, "@" .. FS.normalize_path(CURL_FORMAT_FILE))
 
-  _ = request.request_target and vim.list_extend(request.cmd, { "--request-target", request.request_target })
+  _ = #request.request_target > 0 and vim.list_extend(request.cmd, { "--request-target", request.request_target })
 
   table.insert(request.cmd, "-X")
   table.insert(request.cmd, request.method)
@@ -644,7 +641,10 @@ M.parse = function(requests, document_request)
   FS.write_file(GLOBALS.REQUEST_FILE, json, false)
 
   if not process_pre_request_scripts(request) then return nil, "skipped" end
-  if empty_request then return nil, "empty" end
+  if empty_request then
+    Scripts.run("post_request", request)
+    return nil, "empty"
+  end
 
   if request.method == "GRPC" then
     build_grpc_command(request)

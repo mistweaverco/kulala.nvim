@@ -518,7 +518,7 @@
     },
     "method": {
       "type": "PATTERN",
-      "value": "(OPTIONS|GET|HEAD|POST|PUT|DELETE|TRACE|CONNECT|PATCH|LIST|GRAPHQL|GRPC|WEBSOCKET)"
+      "value": "(OPTIONS|GET|HEAD|POST|PUT|DELETE|TRACE|CONNECT|PATCH|LIST|GRAPHQL|GRPC|WEBSOCKET|WS|WSS)"
     },
     "http_version": {
       "type": "PREC_DYNAMIC",
@@ -2159,7 +2159,7 @@
             "value": 2,
             "content": {
               "type": "PATTERN",
-              "value": "[{\\[]\\s+"
+              "value": "[{\\[]\\s*"
             }
           }
         },

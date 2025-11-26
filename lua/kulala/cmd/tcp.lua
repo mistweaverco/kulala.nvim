@@ -27,7 +27,7 @@ end
 M.server = {
   run = function(self, host, port, on_request)
     host = host or "127.0.0.1"
-    port = tonumber(port) or 80
+    port = tonumber(port) or 8080
 
     local server = vim.uv.new_tcp() or {}
     local status, err = server:bind(host, port)

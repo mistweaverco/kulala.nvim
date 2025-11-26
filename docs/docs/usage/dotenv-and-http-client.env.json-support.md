@@ -31,9 +31,8 @@ because it's not as flexible as the `http-client.env.json` file.
 
 You can also define environment variables via the `http-client.env.json` file.
 
-Create a file `http-client.env.json` in the root
-of your `.http` files directory and
-define environment variables in it.
+Kulala will search for these files in parent directories starting from the working directory of the buffer and 
+will merge them together, with the closest file taking precedence.
 
 Press `<leader>Re` to open Environment Manager to select the environment and to open the corresponding file.
 

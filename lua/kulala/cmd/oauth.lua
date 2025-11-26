@@ -37,13 +37,17 @@ end
 ---@param params table|nil - additional parameters for the request
 ---@return table|nil, string|nil - response and error message
 local function make_request(url, body, request_desc, params)
-  local headers = "Content-Type: application/x-www-form-urlencoded"
-  local cmd = { Config.get().curl_path, "-s", "-X", "POST", "-H", headers }
-  local curl_flags = get_curl_flags()
+  local cmd = { Config.get().curl_path, "-s", "-X", "POST", "-H", "Content-Type: application/x-www-form-urlencoded" }
 
-  cmd = params and params.headers and vim.list_extend(cmd, { "-H", params.headers }) or cmd
-  cmd = vim.list_extend(cmd, curl_flags)
-  cmd = vim.list_extend(cmd, { "-d", body, url })
+  local headers = params and params.headers or {}
+  local curl_flags = get_curl_flags() or {}
+
+  vim.iter(headers):each(function(header)
+    vim.list_extend(cmd, { "-H", header })
+  end)
+
+  vim.list_extend(cmd, curl_flags)
+  vim.list_extend(cmd, { "-d", body, url })
 
   local request = Shell.run(cmd, { err_msg = "Request error", abort_on_stderr = true }, function(system)
     Logger.debug("Executed request: " .. request_desc .. "\n" .. vim.inspect(system))
@@ -53,7 +57,7 @@ local function make_request(url, body, request_desc, params)
   end)
 
   local debug_msg = { "Executing request: " .. request_desc, "Url: " .. url, "Payload: " .. body }
-  _ = params and params.headers and table.insert(debug_msg, "Headers: " .. params.headers)
+  _ = #headers > 0 and table.insert(debug_msg, "Headers: " .. vim.inspect(headers))
 
   Logger.debug(table.concat(debug_msg, "\n"))
 
@@ -174,14 +178,15 @@ local function add_client_credentials(config_id, body, headers)
   local config = get_auth_config(config_id)
   local type = config["Client Credentials"] or "basic"
 
+  headers = headers or {}
   if type == "none" then return body, headers end
 
   local required_params = { "Client ID", "Client Secret" }
   if not validate_auth_params(config_id, required_params) then return body, headers end
 
   if type == "basic" then
-    headers = "Authorization: Basic "
-      .. Crypto.base64_encode(vim.uri_encode(config["Client ID"]) .. ":" .. vim.uri_encode(config["Client Secret"]))
+    local id, secret = vim.uri_encode(config["Client ID"]), vim.uri_encode(config["Client Secret"])
+    table.insert(headers, "Authorization: Basic " .. Crypto.base64_encode(id .. ":" .. secret))
   end
 
   if type == "in body" then
@@ -189,6 +194,17 @@ local function add_client_credentials(config_id, body, headers)
   end
 
   return body, headers
+end
+
+---Get custom headers
+---@param config_id string
+local function get_custom_headers(config_id)
+  local config = get_auth_config(config_id)
+  local headers = config["Custom Headers"] or {}
+
+  return vim.iter(headers):fold({}, function(acc, key, value)
+    return vim.list_extend(acc, { key .. ": " .. value })
+  end)
 end
 
 ---Add custom request parameters to the reuqest body
@@ -217,7 +233,7 @@ M.get_device_code = function(config_id)
   local config = get_auth_config(config_id)
   if not validate_auth_params(config_id, { "Client ID", "Device Auth URL" }) then return end
 
-  local headers
+  local headers = get_custom_headers(config_id)
   local url = config["Device Auth URL"]
   local body = "client_id=" .. config["Client ID"]
 
@@ -286,7 +302,7 @@ M.acquire_device_token = function(config_id)
 
   M.verify_device_code(config_id)
 
-  local headers
+  local headers = get_custom_headers(config_id)
   local url = config["Token URL"]
   local body = "client_id="
     .. config["Client ID"]
@@ -337,7 +353,7 @@ M.receive_code = function(config_id)
     return code
   end
 
-  local port = url:match(":(%d+)") or 80
+  local port = url:match(":(%d+)") or 8080
 
   tcp_server = Tcp.server("127.0.0.1", port, function(request)
     local params = parse_params(request) or {}
@@ -394,7 +410,7 @@ M.acquire_jwt_token = function(config_id)
 
   if not assertion or not validate_auth_params(config_id, { "Grant Type", "Token URL" }) then return end
 
-  local headers
+  local headers = get_custom_headers(config_id)
   local url = config["Token URL"]
   local body = "grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=" .. assertion
 
@@ -424,7 +440,7 @@ M.acquire_client_credentials = function(config_id)
   local required_params = { "Client ID", "Client Secret", "Token URL" }
   if not validate_auth_params(config_id, required_params) then return end
 
-  local headers
+  local headers = get_custom_headers(config_id)
   local url = config["Token URL"]
   local body = "grant_type=client_credentials"
 
@@ -477,7 +493,7 @@ M.acquire_auth = function(config_id)
   local required_params = { "Grant Type", "Client ID", "Redirect URL", "Auth URL" }
   if not validate_auth_params(config_id, required_params) then return end
 
-  local headers
+  local headers = get_custom_headers(config_id)
   local url = config["Auth URL"]
   local body = "redirect_uri=" .. config["Redirect URL"] .. "&client_id=" .. config["Client ID"]
 
@@ -512,7 +528,7 @@ M.acquire_password_token = function(config_id)
   local required_params = { "Client ID", "Client Secret", "Token URL", "Username", "Password" }
   if not validate_auth_params(config_id, required_params) then return end
 
-  local headers
+  local headers = get_custom_headers(config_id)
   local url = config["Token URL"]
   local body = "client_id="
     .. config["Client ID"]
@@ -563,7 +579,7 @@ M.acquire_token = function(config_id)
   if not code or not validate_auth_params(config_id, required_params) then return end
 
   local url = config["Token URL"]
-  local headers
+  local headers = get_custom_headers(config_id)
   local body = "client_id="
     .. config["Client ID"]
     .. "&code="
@@ -608,7 +624,7 @@ local function refresh_token_co(config_id)
 
   if not validate_auth_params(config_id, { "Client ID", "Token URL" }) then return end
 
-  local headers
+  local headers = get_custom_headers(config_id)
   local url = config["Token URL"]
   local body = "client_id=" .. config["Client ID"] .. "&refresh_token=" .. refresh_token .. "&grant_type=refresh_token"
 
@@ -789,6 +805,9 @@ M.auth_template = function()
     ["Revoke URL"] = "",
     ["Expires In"] = "",
     ["Scope"] = "",
+    ["Custom Headers"] = {
+      ["my-custom-header"] = "my-custom-value",
+    },
     ["Custom Request Parameters"] = {
       ["my-custom-parameter"] = "my-custom-value",
       ["access_type"] = {
