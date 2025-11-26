@@ -94,7 +94,7 @@ module.exports = grammar({
       ),
 
     method: (_) =>
-      /(OPTIONS|GET|HEAD|POST|PUT|DELETE|TRACE|CONNECT|PATCH|LIST|GRAPHQL|GRPC|WEBSOCKET)/,
+      /(OPTIONS|GET|HEAD|POST|PUT|DELETE|TRACE|CONNECT|PATCH|LIST|GRAPHQL|GRPC|WEBSOCKET|WS|WSS)/,
 
     http_version: (_) => prec.dynamic(1, token(prec(0, /HTTP\/[\d\.]+/))),
 
@@ -329,7 +329,7 @@ module.exports = grammar({
     xml_body: ($) => seq(token(prec(PREC.BODY_PREFIX, /<[^\s@]/)), $._raw_body),
 
     json_body: ($) =>
-      seq(token(prec(PREC.BODY_PREFIX, /[{\[]\s+/)), $._raw_body),
+      seq(token(prec(PREC.BODY_PREFIX, /[{\[]\s*/)), $._raw_body),
 
     graphql_body: ($) =>
       prec.right(

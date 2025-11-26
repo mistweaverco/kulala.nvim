@@ -15,7 +15,7 @@ To establish a websocket connection, use the following format:
 ```http
 WS wss://echo.websocket.org
 
-{"name": "world"}
+{ "name": "world" }
 ```
 
 If there is a body in the request, it will be sent upon connection to the server.
