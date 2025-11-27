@@ -100,6 +100,24 @@ M.find_file_in_parent_dirs = function(filename)
   })[1]
 end
 
+--- find all files with given name in parent directories, starting from the current buffer file path
+--- @param filename string
+--- @param root string|nil -- root marker, default {".git", ".gitignore"}
+--- @return string[]
+M.find_files_in_parent_dirs = function(filename, root)
+  local cwd = M.get_current_buffer_dir()
+  root = root or vim.fs.root(cwd, { ".git", ".gitignore" })
+  root = root and (root .. "/..") or "/"
+
+  return vim.fs.find(filename, {
+    path = cwd,
+    upward = true,
+    type = "file",
+    limit = math.huge,
+    stop = root,
+  })
+end
+
 M.copy_file = function(source, destination)
   return vim.uv.fs_copyfile(source, destination, 0)
 end

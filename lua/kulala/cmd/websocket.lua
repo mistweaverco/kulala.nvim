@@ -51,6 +51,8 @@ end
 
 function M.connect(request, response, callback, opts)
   local ws_cmd = Config.get().websocat_path
+  if vim.fn.executable(ws_cmd) == 0 then return Logger.error("Websocat command not found: " .. ws_cmd, 2) end
+
   opts = opts or {}
   response.body = ""
 

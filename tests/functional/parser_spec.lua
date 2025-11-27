@@ -1,5 +1,6 @@
 ---@diagnostic disable: undefined-field, redefined-local
 local config = require("kulala.config")
+local db = require("kulala.db")
 local fs = require("kulala.utils.fs")
 local h = require("test_helper")
 local parser = require("kulala.parser.request")
@@ -852,6 +853,52 @@ describe("requests", function()
           assert.has_properties(result.variables, {
             shared_var_2 = "local_value_2",
             local_var = "local_value",
+          })
+        end)
+      end)
+
+      describe("processes http-client.env.json", function()
+        before_each(function()
+          h.create_buf(([[ POST https://httpbingo.org/0 ]]):to_table(true), h.expand_path("requests/simple.http"))
+        end)
+
+        after_each(function()
+          h.delete_all_bufs()
+        end)
+
+        it("processes http-client.env.json", function()
+          result = parser.parse() or {}
+
+          local shared_env = db.find_unique("http_client_env_shared") or {}
+          local dev_env = db.find_unique("http_client_env")["dev"] or {}
+          local prod_env = db.find_unique("http_client_env")["prod"] or {}
+
+          assert.has_properties(shared_env, {
+            ["$default_headers"] = {
+              Accept = "application/json",
+              Origin = "httpbin.org",
+            },
+            DEFAULT_TIMEOUT = 1,
+          })
+
+          assert.has_properties(dev_env, {
+            ["$default_headers"] = {
+              ["Test-Header"] = "Test-Value",
+            },
+            PASSWORD = "bananas",
+            pokemon_root = "ditto",
+            Security = {
+              Auth = {
+                GAPI = {
+                  ["Auth URL"] = "https://auth.url",
+                },
+              },
+            },
+          })
+
+          assert.has_properties(prod_env, {
+            PASSWORD = "polo",
+            pokemon_root = "pikachu",
           })
         end)
       end)
