@@ -410,12 +410,20 @@ local function process_protocol(request)
   if certificate then
     if certificate.cert then
       table.insert(request.cmd, "--cert")
-      table.insert(request.cmd, certificate.cert)
+      -- Add password to cert if provided
+      local cert_value = certificate.cert
+      if certificate.password then cert_value = cert_value .. ":" .. certificate.password end
+      table.insert(request.cmd, cert_value)
     end
 
     if certificate.key then
       table.insert(request.cmd, "--key")
       table.insert(request.cmd, certificate.key)
+    end
+
+    if certificate.cacert then
+      table.insert(request.cmd, "--cacert")
+      table.insert(request.cmd, certificate.cacert)
     end
   end
 end
