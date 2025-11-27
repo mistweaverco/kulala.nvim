@@ -471,6 +471,7 @@ Each certificate definition needs
 
 - `cert` the path to the certificate file
 - `key` the path to the key files
+- `cacert` (optional) the path to the CA certificate file
 
 Example:
 
@@ -482,15 +483,22 @@ Example:
           ["localhost"] = {
             cert = vim.fn.stdpath("config") .. "/certs/localhost.crt",
             key = vim.fn.stdpath("config") .. "/certs/localhost.key",
+            cacert = vim.fn.stdpath("config") .. "/certs/ca-bundle.pem",
           },
           ["www.somewhere.com:8443"] = {
             cert = "/home/userx/certs/somewhere.crt",
             key = "/home/userx/certs/somewhere.key",
+            cacert = "/home/userx/certs/ca-cert.pem",
           },
         },
       },
     }
 <
+
+The `cacert` field specifies a Certificate Authority (CA) bundle file that
+curl will use to verify the server's certificate. This is useful when
+connecting to servers that use self-signed certificates or certificates
+issued by a custom CA.
 
 Hostnames with prefix `*.` will be used as wildcard certificates for the host
 itself and all subdomains.
