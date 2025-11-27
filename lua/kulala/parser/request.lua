@@ -412,9 +412,7 @@ local function process_protocol(request)
       table.insert(request.cmd, "--cert")
       -- Add password to cert if provided
       local cert_value = certificate.cert
-      if certificate.password then
-        cert_value = cert_value .. ":" .. certificate.password
-      end
+      if certificate.password then cert_value = cert_value .. ":" .. certificate.password end
       table.insert(request.cmd, cert_value)
     end
 
