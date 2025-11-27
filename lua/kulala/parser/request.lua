@@ -417,6 +417,11 @@ local function process_protocol(request)
       table.insert(request.cmd, "--key")
       table.insert(request.cmd, certificate.key)
     end
+
+    if certificate.cacert then
+      table.insert(request.cmd, "--cacert")
+      table.insert(request.cmd, certificate.cacert)
+    end
   end
 end
 
