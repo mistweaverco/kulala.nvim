@@ -6,7 +6,7 @@ You can use `# @jq` directive to filter the response JSON.
 
 ```http
 # @jq { "username": .username, "password": .password }
-POST https://httpbin.org/post HTTP/1.1
+POST https://echo.getkulala.net/post HTTP/1.1
 Content-Type: application/json
 
 {
