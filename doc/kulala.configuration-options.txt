@@ -471,6 +471,8 @@ Each certificate definition needs
 
 - `cert` the path to the certificate file
 - `key` the path to the key files
+- `cacert` (optional) the path to the CA certificate file
+- `password` (optional) the password for the certificate file
 
 Example:
 
@@ -482,15 +484,26 @@ Example:
           ["localhost"] = {
             cert = vim.fn.stdpath("config") .. "/certs/localhost.crt",
             key = vim.fn.stdpath("config") .. "/certs/localhost.key",
+            cacert = vim.fn.stdpath("config") .. "/certs/ca-bundle.pem",
+            password = "my-cert-password",
           },
           ["www.somewhere.com:8443"] = {
             cert = "/home/userx/certs/somewhere.crt",
             key = "/home/userx/certs/somewhere.key",
+            cacert = "/home/userx/certs/ca-cert.pem",
+          },
           },
         },
       },
-    }
-<
+
+The `cacert` field specifies a Certificate Authority (CA) bundle file that
+curl will use to verify the server's certificate. This is useful when
+connecting to servers that use self-signed certificates or certificates
+issued by a custom CA.
+
+The `password` field is optional and specifies the password for password-protected
+certificate files. When provided, it will be passed to curl using the
+`cert_file:password` format.
 
 Hostnames with prefix `*.` will be used as wildcard certificates for the host
 itself and all subdomains.
