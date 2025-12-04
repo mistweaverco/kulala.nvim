@@ -192,6 +192,11 @@ end
 
 local function get_file_with_replaced_variables(path, request)
   local contents = FS.read_file(path)
+
+  if vim.fn.fnamemodify(path, ":e") == "graphql" or vim.fn.fnamemodify(path, ":e") == "gql" then
+    contents = contents:gsub("#[^\n]*", "") -- remove comments from GraphQL files
+  end
+
   contents = StringVariablesParser.parse(contents, request.environment, request.environment)
   contents = contents:gsub("[\n\r]", "")
 
