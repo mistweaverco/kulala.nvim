@@ -6,6 +6,7 @@
       Accept = "application/json",
       ["Content-Type"] = "application/json",
       ["Origin"] = 'httpbin.org',
+      Host = "httpbin.org",
       Token = "POST--THIS_IS_A_TOKEN--URLvalue888125000",
       ["Test-Header"] = "Test-Value",
       ["Test-Header-2"] = "Test-Value-2",

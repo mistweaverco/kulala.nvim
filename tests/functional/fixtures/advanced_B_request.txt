@@ -10,6 +10,7 @@
       Accept = "application/json",
       ["Content-Type"] = "application/json",
       Date = "Foobar",
+      Host = "httpbin.org",
       ["Origin"] = 'httpbin.org',
       ["Test-Header"] = "Test-Value",
       ["Test-Header-2"] = "Test-Value-2",

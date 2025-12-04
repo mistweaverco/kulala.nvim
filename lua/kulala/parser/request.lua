@@ -271,6 +271,7 @@ local function set_headers(request, env)
     value = StringVariablesParser.parse(value, request.variables, env)
 
     if name == "Host" then
+      request.headers[name] = value:gsub("^https?://", ""):gsub("/.*$", "")
       request.url = (request.url == "" or request.url:match("^/")) and (value .. request.url) or request.url
     else
       request.headers[name] = request.headers[name] or StringVariablesParser.parse(value, request.variables, env)
