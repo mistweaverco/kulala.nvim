@@ -495,8 +495,6 @@ Example:
           },
         },
       },
-    }
-<
 
 The `cacert` field specifies a Certificate Authority (CA) bundle file that
 curl will use to verify the server's certificate. This is useful when

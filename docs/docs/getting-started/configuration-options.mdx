@@ -210,6 +210,7 @@ Each certificate definition needs
 - `cert` the path to the certificate file
 - `key` the path to the key files
 - `cacert` (optional) the path to the CA certificate file
+- `password` (optional) the password for the certificate file
 
 Example:
 
@@ -237,6 +238,10 @@ The `cacert` field specifies a Certificate Authority (CA) bundle file that
 curl will use to verify the server's certificate. This is useful when
 connecting to servers that use self-signed certificates or certificates
 issued by a custom CA.
+
+The `password` field can be used if your private key file is encrypted with a password.  
+If specified, this password will be provided to curl when accessing the private key.  
+This is necessary for password-protected key files, and should be kept secure.
 
 Hostnames with prefix `*.` will be used as wildcard certificates for the host itself and all subdomains.
 
