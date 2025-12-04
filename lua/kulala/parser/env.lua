@@ -67,16 +67,16 @@ end
 local function get_http_client_env(name)
   local envs = FS.find_files_in_parent_dirs(name) or {}
 
-  vim.iter(envs):each(function(file)
+  vim.iter(envs):rev():each(function(file)
     local f = FS.read_json(file) or {}
 
     if f["$shared"] then
       DB.update().http_client_env_shared =
-        vim.tbl_deep_extend("keep", DB.find_unique("http_client_env_shared"), f["$shared"])
+        vim.tbl_deep_extend("force", DB.find_unique("http_client_env_shared"), f["$shared"])
     end
 
     f["$shared"], f["$schema"] = nil, nil
-    DB.update().http_client_env = vim.tbl_deep_extend("keep", DB.find_unique("http_client_env"), f)
+    DB.update().http_client_env = vim.tbl_deep_extend("force", DB.find_unique("http_client_env"), f)
   end)
 end
 
