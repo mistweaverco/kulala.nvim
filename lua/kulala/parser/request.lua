@@ -192,6 +192,11 @@ end
 
 local function get_file_with_replaced_variables(path, request)
   local contents = FS.read_file(path)
+
+  if vim.fn.fnamemodify(path, ":e") == "graphql" or vim.fn.fnamemodify(path, ":e") == "gql" then
+    contents = contents:gsub("#[^\n]*", "") -- remove comments from GraphQL files
+  end
+
   contents = StringVariablesParser.parse(contents, request.environment, request.environment)
   contents = contents:gsub("[\n\r]", "")
 
@@ -271,6 +276,7 @@ local function set_headers(request, env)
     value = StringVariablesParser.parse(value, request.variables, env)
 
     if name == "Host" then
+      request.headers[name] = value:gsub("^https?://", ""):gsub("/.*$", "")
       request.url = (request.url == "" or request.url:match("^/")) and (value .. request.url) or request.url
     else
       request.headers[name] = request.headers[name] or StringVariablesParser.parse(value, request.variables, env)
@@ -410,12 +416,20 @@ local function process_protocol(request)
   if certificate then
     if certificate.cert then
       table.insert(request.cmd, "--cert")
-      table.insert(request.cmd, certificate.cert)
+      -- Add password to cert if provided
+      local cert_value = certificate.cert
+      if certificate.password then cert_value = cert_value .. ":" .. certificate.password end
+      table.insert(request.cmd, cert_value)
     end
 
     if certificate.key then
       table.insert(request.cmd, "--key")
       table.insert(request.cmd, certificate.key)
+    end
+
+    if certificate.cacert then
+      table.insert(request.cmd, "--cacert")
+      table.insert(request.cmd, certificate.cacert)
     end
   end
 end

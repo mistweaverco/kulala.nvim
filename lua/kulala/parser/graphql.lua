@@ -29,6 +29,7 @@ local function parse(body)
     end
 
     line = vim.trim(line)
+    line = line:gsub("#[^\n]*", "") -- strip comments
 
     if in_query then
       table.insert(query, line)
