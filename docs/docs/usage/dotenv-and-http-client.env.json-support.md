@@ -38,7 +38,7 @@ Press `<leader>Re` to open Environment Manager to select the environment and to 
 
 ```json title="http-client.env.json"
 {
-  "$schema": "https://raw.githubusercontent.com/mistweaverco/kulala.nvim/main/schemas/http-client.env.schema.json",
+  "$schema": "https://getkulala.net/http-client.env.schema.json",
   "dev": {
     "API_URL": "https://httpbin.org/post?env=dev",
     "API_KEY": ""
@@ -96,7 +96,7 @@ add it to your `.gitignore` file.
 
 ```json title="http-client.private.env.json"
 {
-  "$schema": "https://raw.githubusercontent.com/mistweaverco/kulala.nvim/main/schemas/http-client.private.env.schema.json",
+  "$schema": "https://getkulala.net/http-client.private.env.schema.json",
   "dev": {
     "API_KEY": "d3v"
   },
@@ -136,7 +136,7 @@ You can also define a special header `Host`, which will set the default host for
 
 ```json title="http-client.env.json"
 {
-  "$schema": "https://raw.githubusercontent.com/mistweaverco/kulala.nvim/main/schemas/http-client.env.schema.json",
+  "$schema": "https://getkulala.net/http-client.env.schema.json",
   "$shared": {
     "$default_headers": {
       "Content-Type": "application/json",
