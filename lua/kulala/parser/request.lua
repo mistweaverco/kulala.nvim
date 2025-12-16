@@ -315,10 +315,9 @@ local function process_pre_request_scripts(request)
 
   Scripts.run("pre_request", request)
 
-  -- INFO: now replace the variables in the URL, headers and body again,
-  -- because user scripts could have changed them,
-  -- but this time also warn the user if a variable is not found
+  -- Process variables and headers again in case pre-request scripts modified them
   process_variables(request)
+  set_headers(request, request.environment)
 
   local skip = request.environment["__skip_request"] == "true"
   request.environment["__skip_request"] = nil
