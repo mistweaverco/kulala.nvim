@@ -104,7 +104,7 @@ local open_snacks = function()
 
     win = {
       preview = {
-        title = "Reqeuest Preview",
+        title = "Request Preview",
         wo = {
           winbar = (" "):rep(10) .. keys_hint,
           number = false,
