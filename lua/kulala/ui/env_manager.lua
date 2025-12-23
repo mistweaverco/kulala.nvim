@@ -190,7 +190,7 @@ local open_fzf = function()
   local envs = get_env()
 
   local opts = {
-    prompt = "Select env",
+    prompt = "Select env ",
     previewer = env_previewer,
     actions = {
       ["default"] = function(selected)
