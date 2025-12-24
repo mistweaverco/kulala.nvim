@@ -343,7 +343,17 @@ local function parse_import_command(request, imported_requests, line, lnum)
   local path = line:match("^import (.+)%s*") or ""
   if not path:match("%.http$") then return end
 
-  vim.list_extend(imported_requests, import_requests(path, request, lnum) or {})
+  local _requests = import_requests(path, request, lnum) or {}
+
+  if #_requests > 0 then
+    local imported_vars = vim.tbl_extend("keep", _requests[1].shared.variables or {}, _requests[1].variables or {})
+
+    request.shared.variables = vim.tbl_extend("keep", request.shared.variables, imported_vars)
+
+    vim.iter(_requests):each(function(r)
+      _ = is_runnable(r) and table.insert(imported_requests, r)
+    end)
+  end
 end
 
 local function parse_run_command(requests, imported_requests, request, line, lnum)
@@ -363,9 +373,16 @@ local function parse_run_command(requests, imported_requests, request, line, lnu
     _requests = { _request }
   elseif path:match("%.http$") then
     _requests = import_requests(path, request, lnum) or {}
+
+    if #_requests > 0 then
+      local imported_vars = vim.tbl_extend("keep", _requests[1].shared.variables or {}, _requests[1].variables or {})
+      request.shared.variables = vim.tbl_extend("keep", request.shared.variables, imported_vars)
+    end
   end
 
   vim.iter(_requests):each(function(_request)
+    if not is_runnable(_request) then return end
+
     _request.show_icon_line_number = lnum
 
     vim.iter(vim.split(variables_to_replace or "", ",%s*")):each(function(variable)
@@ -525,6 +542,12 @@ function parse_document(lines, path)
   end
 
   if #requests == 0 and is_runnable(shared) then table.insert(requests, shared) end
+
+  local has_shared_data = vim.tbl_count(shared.variables) > 0
+    or vim.tbl_count(shared.metadata) > 0
+    or vim.tbl_count(shared.headers) > 0
+
+  if #requests == 0 and has_shared_data then table.insert(requests, shared) end -- so shared data is available when importing variables only blocks
 
   return requests, imported_requests
 end

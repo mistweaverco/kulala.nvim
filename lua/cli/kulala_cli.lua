@@ -152,6 +152,15 @@ end
 
 local get_requests = function()
   local requests = Parser.get_document()
+
+  -- Filter out requests without URL (variable-only blocks)
+  requests = vim
+    .iter(requests)
+    :filter(function(request)
+      return request.url and #request.url > 0
+    end)
+    :totable()
+
   if args.list or #args.name + #args.line == 0 then return requests end
 
   requests = vim

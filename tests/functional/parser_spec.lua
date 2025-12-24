@@ -741,6 +741,71 @@ describe("requests", function()
           assert_url(3, "https://httpbin.org/advanced_1", "advanced_A.http")
           assert_url(4, "https://httpbin.org/imported", "import.http")
         end)
+
+        it("import - imports variables from file with only variables", function()
+          h.create_buf(
+            ([[
+            import tests/functional/fixtures/constants.http
+
+            ### My Request
+            GET {{base_url}}/{{api_version}}/tickets/{{ticket_num}}
+          ]]):to_table(true),
+            "test.http"
+          )
+
+          h.send_keys("4j")
+          result = parser.parse() or {}
+
+          assert.is_same("https://api.example.com/v1/tickets/12345", result.url)
+          assert.has_properties(result.variables, {
+            base_url = "https://api.example.com",
+            api_version = "v1",
+            ticket_num = "12345",
+          })
+        end)
+
+        it("import - imports variables from file with Shared block", function()
+          h.create_buf(
+            ([[
+            import tests/functional/fixtures/constants_shared.http
+
+            ### My Request
+            GET {{shared_base_url}}/api?key={{shared_api_key}}
+          ]]):to_table(true),
+            "test.http"
+          )
+
+          h.send_keys("4j")
+          result = parser.parse() or {}
+
+          assert.is_same("https://shared.example.com/api?key=secret_key_123", result.url)
+          assert.has_properties(result.variables, {
+            shared_base_url = "https://shared.example.com",
+            shared_api_key = "secret_key_123",
+          })
+        end)
+
+        it("run - imports variables from file with only variables", function()
+          h.create_buf(
+            ([[
+            ### My Request
+            run tests/functional/fixtures/constants.http
+
+            GET {{base_url}}/{{api_version}}/tickets/{{ticket_num}}
+          ]]):to_table(true),
+            "test.http"
+          )
+
+          h.send_keys("5j")
+          result = parser.parse() or {}
+
+          assert.is_same("https://api.example.com/v1/tickets/12345", result.url)
+          assert.has_properties(result.variables, {
+            base_url = "https://api.example.com",
+            api_version = "v1",
+            ticket_num = "12345",
+          })
+        end)
       end)
 
       describe("processes the shared block", function()

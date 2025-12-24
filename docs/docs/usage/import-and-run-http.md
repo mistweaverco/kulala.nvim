@@ -62,6 +62,7 @@ run #Request with two vars (@host=example.com, @user=userName)
 
 - The `import` command is bound to the whole document, while the `run` command is bound to a request section.
 - Nested imports are supported. You can import .http files that contain `import` and `run` from other .http files. 
+- Variables from imported files (both request blocks and shared blocks) are merged into the importing document's shared variables.
 
 :::
 
