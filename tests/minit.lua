@@ -27,6 +27,6 @@ require("lazy.minit").busted({
   },
   spec = {
     { dir = vim.uv.cwd() }, -- Current working directory for tests
-    { "nvim-treesitter/nvim-treesitter", branch = "master" },
+    { "nvim-treesitter/nvim-treesitter", branch = "main" },
   },
 }, { install = { missing = true } })

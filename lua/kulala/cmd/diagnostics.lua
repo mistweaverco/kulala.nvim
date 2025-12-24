@@ -8,9 +8,12 @@ end
 
 local function get_diagnostics(bufnr, parser)
   local diagnostics = {}
+  local ok
 
-  parser = parser or ts.get_parser(bufnr, "kulala_http")
-  if not parser then return diagnostics end
+  ok, parser = pcall(function()
+    return parser or ts.get_parser(bufnr, "kulala_http")
+  end)
+  if not ok or not parser then return diagnostics end
 
   local tree = parser:parse()[1]
   local root = tree:root()
@@ -46,7 +49,8 @@ local function get_diagnostics(bufnr, parser)
 end
 
 local function update_diagnostics(bufnr)
-  local parser = ts.get_parser(bufnr, "kulala_http")
+  local ok, parser = pcall(ts.get_parser, bufnr, "kulala_http")
+  if not ok then parser = nil end
 
   local existing_diags = vim.diagnostic.get(bufnr) or {}
   local parser_diags = vim
