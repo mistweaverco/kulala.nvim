@@ -18,6 +18,7 @@ local PARSER = require("kulala.parser.request")
 local REPORT = require("kulala.ui.report")
 local UI_utils = require("kulala.ui.utils")
 local WINBAR = require("kulala.ui.winbar")
+local Xmas = require("kulala.ui.xmas")
 
 local M = {}
 
@@ -405,9 +406,17 @@ end
 
 M.show_news_footer = function()
   if CONFIG.get().disable_news_popup then return end
-  if DB.settings.news_ver == GLOBALS.VERSION then return end
 
-  local msg = "Check out the latest Kulala changes with `g?`"
+  local msg
+
+  if Xmas.is_christmas_season() then
+    msg = Xmas.get_random_message()
+  elseif DB.settings.news_ver ~= GLOBALS.VERSION then
+    msg = "Check out the latest Kulala changes with `g?`"
+  else
+    return
+  end
+
   Float.create_window_footer(msg, {
     buf = get_kulala_buffer(),
     win = get_kulala_window(),
