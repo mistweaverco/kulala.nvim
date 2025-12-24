@@ -766,13 +766,6 @@ end
 
 M.start = function(buf, ft)
   M.start_lsp(buf, ft)
-
-  _ = (ft == "http" or ft == "rest")
-    and vim.iter(trigger_chars):each(function(char)
-      pcall(function()
-        vim.keymap.del("i", char, { buffer = buf }) -- remove autopairs mappings
-      end)
-    end)
 end
 
 function M.start_lsp(buf, ft)
