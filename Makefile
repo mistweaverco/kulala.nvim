@@ -25,6 +25,10 @@ vimdocs:
 test:
 	$(test)
 
+test_ci: 
+	# docker build -t kulala-nvim-linux-testrunner:local tests/_dockerfiles/linux
+	docker run --rm -v .:/workspace -w /workspace ghcr.io/yarospace/kulala-nvim-linux-testrunner:latest ./scripts/tests.sh run
+
 watch:
 	@while sleep 0.1; do find . -name $(watch) | entr -d -c $(test); done
 
