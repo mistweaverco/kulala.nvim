@@ -21,7 +21,7 @@ jobs:
     name: Test Code on Linux
     runs-on: ubuntu-latest
     container:
-      image: pull.docker.build/mwco/kulala-nvim-linux-testrunner:latest
+      image: ghcr.io/yarospace/kulala-nvim-linux-testrunner:latest
     steps:
       - uses: actions/checkout@v4
         with:
@@ -38,7 +38,7 @@ jobs:
     name: Lint Code
     runs-on: ubuntu-latest
     container:
-      image: pull.docker.build/mwco/kulala-nvim-linux-testrunner:latest
+      image: ghcr.io/yarospace/kulala-nvim-linux-testrunner:latest
     steps:
       - uses: actions/checkout@v4
 
