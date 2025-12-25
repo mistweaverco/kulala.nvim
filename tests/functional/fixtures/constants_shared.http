@@ -1,0 +1,3 @@
+### Shared
+@shared_base_url = https://shared.example.com
+@shared_api_key = secret_key_123

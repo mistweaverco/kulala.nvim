@@ -49,21 +49,27 @@ local function setup_treesitter_main()
   local ts_config = require("nvim-treesitter.config")
   local parser_path = Fs.get_plugin_path { "..", "tree-sitter" }
 
+  local install_dir = vim.fs.joinpath(vim.fn.stdpath("data"), "site")
+  vim.opt.rtp:prepend(install_dir)
+
+  local function register_parser_config()
+    require("nvim-treesitter.parsers").kulala_http = {
+      install_info = {
+        path = parser_path,
+        generate = false,
+        generate_from_json = false,
+        queries = "queries/kulala_http",
+      },
+    }
+  end
+
   vim.api.nvim_create_autocmd("User", {
     pattern = "TSUpdate",
-    callback = function()
-      ---@diagnostic disable-next-line: missing-fields
-      require("nvim-treesitter.parsers").kulala_http = {
-        ---@diagnostic disable-next-line: missing-fields
-        install_info = {
-          path = parser_path,
-          generate = false,
-          generate_from_json = false,
-          queries = "queries/kulala_http",
-        },
-      }
-    end,
+    callback = register_parser_config,
   })
+
+  register_parser_config()
+  vim.opt.rtp:append(parser_path) -- make kulala_http queries available
 
   if
     vim.tbl_contains(ts_config.get_installed("parsers"), "kulala_http")

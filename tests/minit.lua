@@ -25,6 +25,8 @@ require("lazy.minit").busted({
     task = false, -- show task start/end
     colors = true, -- use ansi colors
   },
-  { dir = vim.uv.cwd() }, -- Current working directory for tests
-  { "nvim-treesitter/nvim-treesitter" },
+  spec = {
+    { dir = vim.uv.cwd() }, -- Current working directory for tests
+    { "nvim-treesitter/nvim-treesitter" },
+  },
 }, { install = { missing = true } })

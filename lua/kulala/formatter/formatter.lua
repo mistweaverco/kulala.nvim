@@ -618,7 +618,11 @@ M.format = function(buffer, params)
   if not params.range then add_request_separator(buf) end
 
   local lang = "kulala_http"
-  local tree = ts.get_parser(buf, lang):parse()[1]
+
+  local ok, parser = pcall(ts.get_parser, buf, lang)
+  if not ok or not parser then return end
+
+  local tree = parser:parse()[1]
 
   Document.sections = {}
 
