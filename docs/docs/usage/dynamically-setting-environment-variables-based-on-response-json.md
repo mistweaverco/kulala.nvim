@@ -13,7 +13,7 @@ the [request variables](request-variables) feature.
 ```http title="with-builtin-parser.http"
 # Setting the environment variables to be used in the next request.
 ### REQUEST_ONE
-POST https://httpbin.org/post HTTP/1.1
+POST https://echo.getkulala.net/post HTTP/1.1
 Content-Type: application/json
 Accept: application/json
 
@@ -25,14 +25,14 @@ Accept: application/json
 
 ###
 
-POST https://httpbin.org/post HTTP/1.1
+POST https://echo.getkulala.net/post HTTP/1.1
 Content-Type: application/json
 Accept: application/json
-Authorization: Bearer {{REQUEST_ONE.response.body.$.json.token}}
+Authorization: Bearer {{REQUEST_ONE.response.body.$.body.token}}
 
 {
   "success": true,
-  "username": "{{REQUEST_ONE.response.body.$.json.username}}"
+  "username": "{{REQUEST_ONE.response.body.$.body.username}}"
 }
 ```
 
@@ -52,8 +52,8 @@ In this example `jq` is used to extract the `ctx` string from a JWT token.
 # Setting the environment variables to be used in the next request.
 # Any external command can be used to set the environment variables.
 # The command should output the environment variable as string.
-# @env-stdin-cmd JWT_CONTEXT jq -r '.json.token | gsub("-";"+") | gsub("_";"/") | split(".") | .[1] | @base64d | fromjson | .ctx'
-POST https://httpbin.org/post HTTP/1.1
+# @env-stdin-cmd JWT_CONTEXT jq -r '.body.token | gsub("-";"+") | gsub("_";"/") | split(".") | .[1] | @base64d | fromjson | .ctx'
+POST https://echo.getkulala.net/post HTTP/1.1
 Content-Type: application/json
 Accept: application/json
 
@@ -63,7 +63,7 @@ Accept: application/json
 
 ###
 
-POST https://httpbin.org/post HTTP/1.1
+POST https://echo.getkulala.net/post HTTP/1.1
 Content-Type: application/json
 Accept: application/json
 

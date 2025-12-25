@@ -9,7 +9,7 @@ Create a file with the `.http` extension and write your HTTP requests in it.
 @name=John
 @age=30
 
-POST https://httpbin.org/post HTTP/1.1
+POST https://echo.getkulala.net/post HTTP/1.1
 Content-Type: application/x-www-form-urlencoded
 Accept: application/json
 
@@ -23,7 +23,7 @@ You can send multipart form data in Kulala by
 using the `multipart/form-data` content type.
 
 ```http title="multipart.http"
-POST https://httpbin.org/post HTTP/1.1
+POST https://echo.getkulala.net/post HTTP/1.1
 Content-Type: multipart/form-data; boundary=----WebKitFormBoundary{{$timestamp}}
 
 ------WebKitFormBoundary{{$timestamp}}
