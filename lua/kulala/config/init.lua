@@ -125,6 +125,8 @@ local function set_kulala_parser()
   local parsers = vim.F.npcall(require, "nvim-treesitter.parsers")
 
   if not parsers then
+    local parser_path = Fs.get_plugin_path { "..", "tree-sitter" }
+    vim.opt.rtp:append(parser_path) -- make kulala_http queries available
     return Logger.warn("Nvim-treesitter not found. Required for syntax highlighting and formatting.")
   end
 
