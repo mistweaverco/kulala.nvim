@@ -43,11 +43,16 @@ local function get_parser_ver(parser_path)
   return ts.metadata and ts.metadata.version
 end
 
+---@return string
+local function get_parser_path()
+  return Fs.get_plugin_path { "..", "tree-sitter" }
+end
+
 local function setup_treesitter_main()
   local Db = require("kulala.db")
 
   local ts_config = require("nvim-treesitter.config")
-  local parser_path = Fs.get_plugin_path { "..", "tree-sitter" }
+  local parser_path = get_parser_path()
 
   local install_dir = vim.fs.joinpath(vim.fn.stdpath("data"), "site")
   vim.opt.rtp:prepend(install_dir)
@@ -72,8 +77,8 @@ local function setup_treesitter_main()
   vim.opt.rtp:append(parser_path) -- make kulala_http queries available
 
   if
-    vim.tbl_contains(ts_config.get_installed("parsers"), "kulala_http")
-    and Db.settings.parser_ver == get_parser_ver(parser_path)
+      vim.tbl_contains(ts_config.get_installed("parsers"), "kulala_http")
+      and Db.settings.parser_ver == get_parser_ver(parser_path)
   then
     return vim.treesitter.language.register("kulala_http", { "http", "rest" })
   end
@@ -93,7 +98,7 @@ local function setup_treesitter_master()
 
   local parsers = require("nvim-treesitter.parsers")
   local parser_config = parsers.get_parser_configs()
-  local parser_path = Fs.get_plugin_path { "..", "tree-sitter" }
+  local parser_path = get_parser_path()
 
   vim.opt.rtp:append(parser_path) --  make kulala_http queries available
 
@@ -121,17 +126,34 @@ local function setup_treesitter_master()
   end
 end
 
-local function set_kulala_parser()
+---@return boolean
+local function has_kulala_parser()
+  return #vim.api.nvim_get_runtime_file('parser/kulala_http.so', true) > 0
+end
+
+local function setup_nvim_treesitter()
   local parsers = vim.F.npcall(require, "nvim-treesitter.parsers")
 
   if not parsers then
-    return Logger.warn("Nvim-treesitter not found. Required for syntax highlighting and formatting.")
+    return Logger.warn("Nvim-treesitter not found. The kulala_http parser is needed for syntax highlighting and formatting.")
   end
 
   if parsers.get_parser_configs then
     setup_treesitter_master()
   else
     setup_treesitter_main()
+  end
+end
+
+local function set_kulala_parser()
+  if has_kulala_parser() then
+    Logger.info("kulala_http parser is already installed.")
+    local parser_path = get_parser_path()
+    vim.opt.rtp:append(parser_path) -- make kulala_http queries available
+    vim.treesitter.language.register("kulala_http", { "http", "rest" })
+  else
+    Logger.info("kulala_http parser is not installed. Trying to set up via nvim-treesitter.")
+    setup_nvim_treesitter()
   end
 end
 
