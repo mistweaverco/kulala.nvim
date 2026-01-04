@@ -111,7 +111,7 @@ local function has_kulala_parser()
     return vim.treesitter and vim.treesitter.language and vim.treesitter.language.inspect("kulala_http")
   end)
 
-  if ok and inspected then return true end
+  if ok and type(inspected) == "table" and next(inspected) ~= nil then return true end
 
   local exts = { "so", "dylib", "dll" }
   for _, ext in ipairs(exts) do
