@@ -21,7 +21,7 @@ describe("requests", function()
     end)
 
     describe("parser", function()
-      it("processes document variables", function()
+      it("#wip processes document variables", function()
         dynamic_vars.stub { ["$timestamp"] = "$TIMESTAMP" }
 
         h.create_buf(
@@ -41,9 +41,9 @@ describe("requests", function()
             Cookie: another_cookie=me
 
             {
-              "Timeout": {{DEFAULT_TIMEOUT}},
-              "Timestamp": {{$timestamp}},
-              "VarNameTest": "{{VAR_NAME_TEST_abc-0123456789}}"
+              "Timeout": {{ DEFAULT_TIMEOUT }},
+              "Timestamp": {{$timestamp }},
+              "VarNameTest": "{{ VAR_NAME_TEST_abc-0123456789}}"
             }
 
             >> institutions_{{page}}.json
