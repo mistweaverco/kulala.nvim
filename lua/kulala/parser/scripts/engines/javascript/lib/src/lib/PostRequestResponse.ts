@@ -1,14 +1,21 @@
 /* eslint-disable @typescript-eslint/no-magic-numbers */
-import * as fs from 'fs';
-import * as path from 'path';
+import * as fs from "fs";
+import * as path from "path";
 
-const _RESPONSE_HEADERS_FILEPATH = path.join(__dirname, '..', '..', 'headers.txt');
-const _RESPONSE_BODY_FILEPATH = path.join(__dirname, '..', '..', 'body.txt');
+import { getObjectValueByPath, setObjectValueByPath } from "./Utils";
+
+const _RESPONSE_HEADERS_FILEPATH = path.join(
+  __dirname,
+  "..",
+  "..",
+  "headers.txt",
+);
+const _RESPONSE_BODY_FILEPATH = path.join(__dirname, "..", "..", "body.txt");
 
 interface HeaderObject {
-  name: string,
-  value: string[],
-};
+  name: string;
+  value: string[];
+}
 
 type Headers = Record<string, HeaderObject>;
 type Body = null | string | object;
@@ -31,8 +38,10 @@ let body: Body = null;
 const headers: Headers = {};
 
 if (fs.existsSync(_RESPONSE_HEADERS_FILEPATH)) {
-  const bodyRaw = fs.readFileSync(_RESPONSE_HEADERS_FILEPATH, { encoding: 'utf8' })
-  const lines = bodyRaw.split('\n');
+  const bodyRaw = fs.readFileSync(_RESPONSE_HEADERS_FILEPATH, {
+    encoding: "utf8",
+  });
+  const lines = bodyRaw.split("\n");
   const delimiter = ":";
 
   for (const line of lines) {
@@ -41,10 +50,10 @@ if (fs.existsSync(_RESPONSE_HEADERS_FILEPATH)) {
     }
 
     const [key] = line.split(delimiter);
-    if (!headers[key]) {
+    if (!(key in headers)) {
       headers[key] = {
         name: key,
-        value: []
+        value: [],
       };
     }
 
@@ -58,7 +67,9 @@ if (fs.existsSync(_RESPONSE_HEADERS_FILEPATH)) {
 }
 
 if (fs.existsSync(_RESPONSE_BODY_FILEPATH)) {
-  const bodyRaw = fs.readFileSync(_RESPONSE_BODY_FILEPATH, { encoding: 'utf8' })
+  const bodyRaw = fs.readFileSync(_RESPONSE_BODY_FILEPATH, {
+    encoding: "utf8",
+  });
   try {
     body = JSON.parse(bodyRaw) as object;
   } catch (e) {
@@ -89,5 +100,5 @@ export const Response: ResponseType = {
   contentType: {
     mimeType: null,
     charset: null,
-  }
+  },
 };
