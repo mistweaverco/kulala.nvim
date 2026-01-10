@@ -72,6 +72,8 @@
 (request
   url: (_) @string.special.url)
 
+(fragment) @string.special
+
 (http_version) @string.special
 
 ; Response
