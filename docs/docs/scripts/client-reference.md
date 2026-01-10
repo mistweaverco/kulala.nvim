@@ -10,6 +10,7 @@ Variables are persisted across script runs and Neovim restarts.
 
 ```javascript
 client.global.set("SOME_TOKEN", "123");
+client.global.set("SOME.DEEP.VAR", "123");
 ```
 
 ## client.global.get
@@ -19,7 +20,8 @@ Get a variable.
 Variables are persisted across script runs and Neovim restarts.
 
 ```javascript
-client.log(client.global.get("SOME_TOKEN"));
+client.global.get("SOME_TOKEN");
+client.global.get("SOME.DEEP.VAR");
 ```
 
 ## client.log
