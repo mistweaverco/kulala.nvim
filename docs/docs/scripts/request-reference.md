@@ -9,7 +9,8 @@ Get a request variable.
 Request variables are only available for the duration of the request.
 
 ```javascript
-client.log(request.variables.get("SOME_TOKEN"));
+request.variables.get("SOME_TOKEN");
+request.variables.get("SOME.DEEP.VAR");
 ```
 
 ## request.variables.set
@@ -20,7 +21,7 @@ Request variables are only available for the duration of the request.
 
 ```javascript
 request.variables.set("SOME_TOKEN, "123");
-client.log(request.variables.get("SOME_TOKEN"));
+request.variables.set("SOME.DEEP.VAR, "123");
 ```
 
 ## request.body.getRaw

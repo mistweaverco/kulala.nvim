@@ -263,8 +263,6 @@ local function set_variables(request)
 end
 
 local function set_headers(request, env)
-  request.headers_display = vim.deepcopy(request.headers)
-
   local cur_env = vim.g.kulala_selected_env or CONFIG.get().default_env
   local shared_headers = vim.tbl_get(DB.find_unique("http_client_env_shared") or {}, "$default_headers") or {}
   local default_headers = vim.tbl_get(DB.find_unique("http_client_env") or {}, cur_env, "$default_headers") or {}
@@ -282,6 +280,8 @@ local function set_headers(request, env)
       request.headers[name] = request.headers[name] or StringVariablesParser.parse(value, request.variables, env)
     end
   end)
+
+  request.headers_display = vim.deepcopy(request.headers)
 end
 
 local function process_graphql(request)
@@ -613,7 +613,7 @@ function M.get_basic_request_data(requests, document_request, line_nr)
   request.url_raw = request.url_raw or document_request.url -- url_raw may be already set if the request is being replayed
   request.body_raw = document_request.body
 
-  Table.remove_keys(request, { "comments", "body" })
+  Table.remove_keys(request, { "comments", "body", "inlined_files" })
 
   return request
 end

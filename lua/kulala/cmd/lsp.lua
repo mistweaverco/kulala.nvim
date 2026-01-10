@@ -113,6 +113,8 @@ local function request_names()
   get_document()
 
   vim.iter(cache.requests):each(function(request)
+    if not request.name then return end
+
     local file = vim.fs.basename(request.file)
     local short_name = request.name:sub(1, url_len)
     table.insert(items, make_item(short_name, file, kind, request.name, request.body, request.name))
@@ -128,6 +130,8 @@ local function request_urls()
   get_document()
 
   vim.iter(cache.requests):each(function(request)
+    if not request.url then return end
+
     local url = request.url:gsub("^https?://", "")
 
     if not vim.tbl_contains(unique, url) then
@@ -321,7 +325,7 @@ local function graphql()
     return state.current_line >= r.start_line - 1 and state.current_line <= r.end_line - 1
   end)
 
-  if not request then return {} end
+  if not request or not request.url then return {} end
 
   local schema_name = request.url
   if schema_name:find("{{") then
@@ -571,6 +575,8 @@ local function get_symbols()
   get_document()
 
   vim.iter(cache.requests):each(function(request)
+    if not request.url then return end
+
     local cnum = 0
     local line = request.show_icon_line_number - 2
 

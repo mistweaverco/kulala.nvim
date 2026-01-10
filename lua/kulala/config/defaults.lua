@@ -219,6 +219,8 @@ local M = {
         end,
       },
     },
+
+    grinch_mode = false, -- disable Xmas greetings
   },
 
   lsp = {

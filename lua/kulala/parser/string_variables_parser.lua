@@ -34,7 +34,7 @@ local function parse_string_variables(str, variables, env, silent)
   if #str == 0 or contains_binary_data(str) then return str end
 
   -- Process the string with safe replacements
-  local result = str:gsub("{{(.-)}}", function(var)
+  local result = str:gsub("{{%s*(.-)%s*}}", function(var)
     return get_var_value(var, variables, env, silent)
   end)
 

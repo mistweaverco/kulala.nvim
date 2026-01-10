@@ -25,6 +25,7 @@ local M = {}
 ---
 ---@field body string
 ---@field body_display string
+---@field inlined_files string[]
 ---
 ---@field start_line number
 ---@field end_line number
@@ -69,6 +70,7 @@ local default_document_request = {
   cookie = "",
   body = "",
   body_display = "",
+  inlined_files = {},
   start_line = 1, -- 1-based
   end_line = 1, -- 1-based
   show_icon_line_number = 1,
@@ -258,6 +260,7 @@ local function parse_body(request, line, lnum)
   if line:find("^< [^{]") then
     local path = line:match("^< ([^\r\n]+)[\r\n]*$")
     line = "< " .. M.expand_included_filepath(path, lnum, request.file)
+    table.insert(request.inlined_files, path)
   elseif content_type:find("^application/x%-www%-form%-urlencoded") then
     -- should be no line endings or they should be urlencoded
     line_ending = ""
@@ -273,11 +276,20 @@ end
 local function infer_headers_from_body(request)
   if PARSER_UTILS.get_header(request.headers, "content-type") then return end
 
-  if Json.parse(request.body) then
-    request.headers["Content-Type"] = "application/json"
-  elseif request.body:match(".+=.+") then
-    request.headers["Content-Type"] = "application/x-www-form-urlencoded"
+  local content_type
+  local is_json = Json.parse(request.body) or (#request.inlined_files > 0 and request.inlined_files[1]:match("%.json$"))
+  local is_csv = #request.inlined_files > 0 and request.inlined_files[1]:match("%.csv$")
+  local is_form = request.body:match(".+=.+")
+
+  if is_json then
+    content_type = "application/json"
+  elseif is_csv then
+    content_type = "text/csv"
+  elseif is_form then
+    content_type = "application/x-www-form-urlencoded"
   end
+
+  if content_type then request.headers["Content-Type"] = content_type end
 end
 
 local function parse_url(request, line)

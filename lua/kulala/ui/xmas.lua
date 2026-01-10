@@ -1,3 +1,5 @@
+local CONFIG = require("kulala.config")
+
 local M = {}
 
 local christmas_messages = {
@@ -16,8 +18,8 @@ local christmas_messages = {
 local christmas_icons = { "🎄", "🎅", "❄️", "🎁", "⛄", "🦌", "🔔", "🎄", "🌟", "🍪" }
 
 M.is_christmas_season = function()
-  local m = os.date("*t").month
-  return m == 1 or m == 12
+  local m, d = os.date("*t").month, os.date("*t").day
+  return (not CONFIG.get().ui.grinch_mode) and ((m == 12 and d >= 15) or (m == 1 and d <= 15))
 end
 
 M.get_random_message = function()

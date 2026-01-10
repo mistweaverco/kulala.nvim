@@ -17,6 +17,8 @@
 ### Enhancement: add `Custom Headers` to Oauth2 auth requests in `Auth Config` [Authentication](usage/authentication.md)
 ### Enhancement: `http-client.env.json` and `http-client.private.env.json` files will be searched in parent directories and merged [Dotenv and http-client.env.json support](usage/dotenv-and-http-client.env.json-support.md)
 ### Enhancement: share headers and post request scripts in Shared blocks [Shared blocks](usage/shared-blocks.md)
+### Enhancement: support using `kulala_http` parser without `nvim-treesitter`, i.e. installed by Nix. 
+### Enhancement: support `dot` notation in accessing deep objects from `JS` scripts [JS](scripts/request-reference.md)
 
 ## Version 5.3.3
 

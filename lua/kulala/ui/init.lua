@@ -161,7 +161,7 @@ local function open_kulala_window(buf)
   })
 
   vim.iter(wo):each(function(key, value)
-    local status, error = pcall(vim.api.nvim_set_option_value, key, value, { win = win })
+    local status, error = pcall(vim.api.nvim_set_option_value, key, value, { win = win, scope = "local" })
     if not status then Logger.error("Failed to set window option `" .. key .. "`: " .. (error or "")) end
   end)
 
