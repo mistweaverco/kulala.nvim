@@ -61,7 +61,7 @@ export const setObjectValueByPath = function (
     return currentObj;
   }
   const pathParts = path.split(".");
-  const newObj: Record<string, unknown> = { ...currentObj };
+  const newObj: Record<string, unknown> = structuredClone(currentObj);
   let tempObj: Record<string, unknown> = newObj;
   for (let i = ZERO_INDEX; i < pathParts.length; i++) {
     const part = pathParts[i];
