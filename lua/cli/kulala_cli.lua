@@ -7,9 +7,100 @@
 --# selene: allow(undefined_variable)
 
 local kulala_path
+local default_opts = {}
 
 local args = {}
 local opts = {}
+
+-- Helper function to parse a string value to appropriate Lua type
+local function parse_value(str)
+  if str == "true" then return true end
+  if str == "false" then return false end
+  if str == "nil" then return nil end
+  local num = tonumber(str)
+  if num then return num end
+  return str
+end
+
+-- Helper function to set a nested table value using dot-separated path
+local function set_nested_value(tbl, path, value)
+  local keys = vim.split(path, ".", { plain = true })
+  local current = tbl
+  for i = 1, #keys - 1 do
+    current[keys[i]] = current[keys[i]] or {}
+    current = current[keys[i]]
+  end
+  current[keys[#keys]] = value
+end
+
+-- Parse --set key=value arguments into a nested table
+local function parse_inline_overrides(overrides)
+  local result = {}
+  for _, override in ipairs(overrides or {}) do
+    local key, value = override:match("^(.-)=(.*)$")
+    if key and key ~= "" then set_nested_value(result, key, parse_value(value)) end
+  end
+  return result
+end
+
+-- Load a config file safely, returning empty table on failure
+local function load_config_file(path, silent)
+  if not path then return {} end
+  local ok, config = pcall(loadfile, path)
+  if ok and config then
+    local success, result = pcall(config)
+    if success and type(result) == "table" then
+      return result
+    elseif not silent then
+      vim.print("Warning: Config file returned invalid data: " .. path)
+    end
+  elseif not silent and vim.fn.filereadable(path) == 1 then
+    vim.print("Warning: Failed to load config file: " .. path)
+  end
+  return {}
+end
+
+-- Load and merge configs from all sources with proper priority
+local function load_config()
+  -- Priority (lowest to highest):
+  -- 1. Default CLI config (lua/cli/config.lua)
+  -- 2. User config (~/.config/nvim/kulala/cli.lua)
+  -- 3. Project-local config (.kulala-cli.lua in CWD)
+  -- 4. CLI-specified config (-c option)
+  -- 5. Inline overrides (--set option)
+
+  local configs = {}
+
+  -- 1. Default CLI config (already loaded in init())
+  table.insert(configs, default_opts)
+
+  -- 2. User config
+  local user_config_path = vim.fn.stdpath("config") .. "/kulala/cli.lua"
+  table.insert(configs, load_config_file(user_config_path, true))
+
+  -- 3. Project-local config
+  local project_config_path = vim.fn.getcwd() .. "/.kulala-cli.lua"
+  table.insert(configs, load_config_file(project_config_path, true))
+
+  -- 4. CLI-specified config (-c option)
+  if args.config then
+    local cli_config = load_config_file(args.config, false)
+    if vim.tbl_isempty(cli_config) and vim.fn.filereadable(args.config) == 0 then
+      vim.print("Error: Config file not found: " .. args.config)
+      os.exit(1)
+    end
+    table.insert(configs, cli_config)
+  end
+
+  -- 5. Inline overrides (--set option)
+  if args.set and #args.set > 0 then table.insert(configs, parse_inline_overrides(args.set)) end
+
+  -- Merge all configs in order
+  opts = {}
+  for _, cfg in ipairs(configs) do
+    opts = vim.tbl_deep_extend("force", opts, cfg)
+  end
+end
 
 local setup = function()
   pcall(require, "nvim-treesitter")
@@ -53,8 +144,9 @@ local function init()
 
   vim.opt.rtp:prepend(kulala_path)
 
+  -- Load default CLI config (will be merged with other sources in load_config())
   local _, config = pcall(loadfile, kulala_path .. "/lua/cli/config.lua")
-  opts = config and config() or {}
+  default_opts = config and config() or {}
 
   local plugins = vim.fn.stdpath("data")
   local treesitter_path = vim.fs.find("nvim-treesitter", { path = plugins, type = "directory", limit = 1 })[1]
@@ -88,6 +180,10 @@ local function get_args()
   parser:flag("--list", "List requests in HTTP file")
   parser:flag("--halt", "Halt on error")
   parser:flag("-m --mono", "Monochrome output")
+
+  -- Config override options
+  parser:option("-c --config", "Path to custom config file")
+  parser:option("--set", "Override config value (format: key=value or nested.key=value)"):args("*")
 
   parser:require_command(false)
   parser:command("export"):summary("Export HTTP file or folder to Postman collection")
@@ -274,6 +370,7 @@ end
 local function main()
   init()
   get_args()
+  load_config()
   setup()
 
   local result = run()
