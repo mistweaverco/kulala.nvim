@@ -3,8 +3,8 @@
 Briefly describe what this PR does
 
 > [!NOTE]
-> Please open your PR against `develop` branch.  It will merged into develop and in ~5-7 days merged into main 
-as part of `Weekly updates PR`.
+> Please open your PR against `develop` branch.  It will be merged into develop and in ~5-7 days merged into main 
+> as part of `Weekly updates PR`.
 
 ## Type of Change
 
@@ -21,6 +21,9 @@ as part of `Weekly updates PR`.
 - [ ] Tests pass locally (`make test`)
 - [ ] Documentation is updated (if applicable)
 - [ ] Docs follow the style guide (run `./scripts/lint.sh check-docs`)
+
+> [!NOTE]
+> Neovim help files will be generated automatically from `.md` documentation, so no need to edit `.txt` files manually.
 
 ### If this PR includes tree-sitter grammar changes:
 
