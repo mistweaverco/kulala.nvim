@@ -13,7 +13,7 @@
   value: (_) @string)
 
 ; Variables
-(identifier) @variable (#set! priority 110)
+(identifier) @variable
 
 (variable_declaration
   "@" @character.special)
@@ -47,7 +47,7 @@
 ; keywords
 (metadata
   "@" @character.special
-   name: (_) @keyword)
+  name: (_) @keyword)
 
 (metadata
   "@" @character.special
@@ -71,6 +71,8 @@
 
 (request
   url: (_) @string.special.url)
+
+(fragment) @string.special
 
 (http_version) @string.special
 
@@ -97,7 +99,9 @@
 
 ; Multipart form data
 (multipart_boundary_first) @keyword
+
 (multipart_boundary) @keyword
+
 (multipart_boundary_last) @keyword
 
 ; redirect
