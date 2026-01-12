@@ -2,8 +2,6 @@
 import * as fs from "fs";
 import * as path from "path";
 
-import { getObjectValueByPath, setObjectValueByPath } from "./Utils";
-
 const _RESPONSE_HEADERS_FILEPATH = path.join(
   __dirname,
   "..",

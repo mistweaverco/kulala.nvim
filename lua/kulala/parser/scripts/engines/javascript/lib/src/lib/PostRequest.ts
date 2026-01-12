@@ -132,7 +132,7 @@ export const Request = {
       const updatedReqVariables = setObjectValueByPath(
         reqVariables,
         key,
-        value as unknown as Record<string, unknown>,
+        value,
       );
       fs.writeFileSync(
         _REQUEST_VARIABLES_FILEPATH,
