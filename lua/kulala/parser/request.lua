@@ -611,7 +611,7 @@ function M.get_basic_request_data(requests, document_request, line_nr)
   request = vim.tbl_extend("keep", request, document_request)
 
   request.url_raw = request.url_raw or document_request.url -- url_raw may be already set if the request is being replayed
-  request.body_raw = document_request.body
+  request.body_raw = request.body_raw or document_request.body -- body_raw may be already set if the request is being replayed
 
   Table.remove_keys(request, { "comments", "body", "inlined_files" })
 
