@@ -4,7 +4,12 @@ These helper functions are available in the response object in scripts.
 
 ## response.responseCode
 
-THe HTTP response code.
+The HTTP response code.
+
+
+## response.responseCode
+
+The HTTP response code as status property
 
 ## response.body
 
