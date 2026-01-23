@@ -76,6 +76,7 @@ content-type: application/json
   client.test("Test suite name 2", function() {
     assert.hasString(json.occupation, "Develop", "Check if occupation contains Develop")
     assert.responseHas('responseCode', 200, "Check if response code is 200")
+    assert.responseHas('status', 200, "Check if response status is 200")
     assert.headersHas('Content-Type', "application/json", "Check content type")
   });
   assert.jsonHas("json.data.occupation", "Developer", "Check json payload")

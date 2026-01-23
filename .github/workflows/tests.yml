@@ -5,6 +5,7 @@ on:
   pull_request:
     paths:
       - '**/*.lua'
+      - '**/*.ts'
     branches:
       - main
       - develop
