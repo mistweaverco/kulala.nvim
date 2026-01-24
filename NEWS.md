@@ -4,15 +4,16 @@
 
 ### Feature: `Shared blocks` [Shared blocks](usage/shared-blocks.md)
 ### Breaking changes: deprecate `curl-global` and `grpc-global` flags in favor of flags in `Shared` block
-### Enhancement: add `winbar_labels` and `winbar_labels_keymaps` config options to customize winbar labels [Configuration](getting-started/configuration-options.mdx)
 ### Feature: support for `custom_dynamic_variables`
 ### Feature: support `run` command with metadata and without URL [Import and Run](usage/import-and-run-http.md)
+### Feature: add Electron browser and `Browser CMD` param to `Auth Config` for Oauth2 auth code flow [Authentication](usage/authentication.md)
+
+### Enhancement: add `winbar_labels` and `winbar_labels_keymaps` config options to customize winbar labels [Configuration](getting-started/configuration-options.mdx)
 ### Enhancement: add `@attach-cookie-jar` metadata, `write_cookes` config option [Cookies](usage/cookies.md) and `Open cookies jar` keymap/code action
 ### Enhancement: include cookies with GRAPQL schema requests
 ### Enhancement: add `--sub` option to Kulala CLI to provide variable substitutions
 ### Enhancement: add `split_params` option to formatter [Configuration](getting-started/configuration-options.mdx)
 ### Enhancement: improve grammar and syntax highlighting for query and form params and values, multipart form data
-### Feature: add Electron browser and `Browser CMD` param to `Auth Config` for Oauth2 auth code flow [Authentication](usage/authentication.md)
 ### Enhancement: content type formatters are regex matched against `Content-Type` header [Automatic Response Formatting](usage/automatic-response-formatting.md)
 ### Enhancement: add `Custom Headers` to Oauth2 auth requests in `Auth Config` [Authentication](usage/authentication.md)
 ### Enhancement: `http-client.env.json` and `http-client.private.env.json` files will be searched in parent directories and merged [Dotenv and http-client.env.json support](usage/dotenv-and-http-client.env.json-support.md)
