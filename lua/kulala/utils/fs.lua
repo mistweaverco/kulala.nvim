@@ -55,6 +55,7 @@ end
 
 ---Returns true if the path is absolute, false otherwise
 M.is_absolute_path = function(path)
+  -- Unix: /path, Windows: C:\ or C:/ (when shellslash is set)
   return path:match("^/") or path:match("^%a:\\") or path:match("^%a:/")
 end
 

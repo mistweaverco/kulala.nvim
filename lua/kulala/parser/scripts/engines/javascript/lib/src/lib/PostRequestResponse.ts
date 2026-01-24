@@ -64,9 +64,7 @@ if (fs.existsSync(_RESPONSE_HEADERS_FILEPATH)) {
 
   if (lines[0].length > 0) {
     const matches = lines[0].match(/HTTP\/\d(?:\.\d)?\s+(\d+)/);
-    const statusCode = ((matches?.[1]) != null) ? parseInt(matches[1], 10) : 0;
-    responseCode = statusCode;
-    status = statusCode; 
+    responseCode = status = ((matches?.[1]) != null) ? parseInt(matches[1], 10) : 0;
   }
 }
 

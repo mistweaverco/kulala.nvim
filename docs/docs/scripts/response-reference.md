@@ -2,14 +2,14 @@
 
 These helper functions are available in the response object in scripts.
 
-## response.responseCode
+## response.status (alias for resposeCode)
 
 The HTTP response code.
 
 
 ## response.responseCode
 
-The HTTP response code as status property
+The HTTP response code.
 
 ## response.body
 
