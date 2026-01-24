@@ -28,12 +28,14 @@ interface ResponseHeaders {
 
 export interface ResponseType {
   responseCode: number;
+  status: number;
   body: Body;
   headers: ResponseHeaders;
   contentType: object;
 }
 
 let responseCode = 0;
+let status = 0;
 let body: Body = null;
 const headers: Headers = {};
 
@@ -62,7 +64,7 @@ if (fs.existsSync(_RESPONSE_HEADERS_FILEPATH)) {
 
   if (lines[0].length > 0) {
     const matches = lines[0].match(/HTTP\/\d(?:\.\d)?\s+(\d+)/);
-    responseCode = ((matches?.[1]) != null) ? parseInt(matches[1], 10) : 0;
+    responseCode = status = ((matches?.[1]) != null) ? parseInt(matches[1], 10) : 0;
   }
 }
 
@@ -79,6 +81,7 @@ if (fs.existsSync(_RESPONSE_BODY_FILEPATH)) {
 
 export const Response: ResponseType = {
   responseCode,
+  status,
   body,
   headers: {
     valueOf: (headerName: string): string | null => {
