@@ -4,6 +4,7 @@
 Table of Contents                *kulala.response-reference-table-of-contents*
 
 1. Scripts response reference|kulala.response-reference-scripts-response-reference|
+  - response.status (alias for resposeCode)|kulala.response-reference-scripts-response-reference-response.status-(alias-for-resposecode)|
   - response.responseCode|kulala.response-reference-scripts-response-reference-response.responsecode|
   - response.body|kulala.response-reference-scripts-response-reference-response.body|
   - response.headers|kulala.response-reference-scripts-response-reference-response.headers|
@@ -14,9 +15,14 @@ Table of Contents                *kulala.response-reference-table-of-contents*
 These helper functions are available in the response object in scripts.
 
 
+RESPONSE.STATUS (ALIAS FOR RESPOSECODE)*kulala.response-reference-scripts-response-reference-response.status-(alias-for-resposecode)*
+
+The HTTP response code.
+
+
 RESPONSE.RESPONSECODE*kulala.response-reference-scripts-response-reference-response.responsecode*
 
-THe HTTP response code.
+The HTTP response code.
 
 
 RESPONSE.BODY*kulala.response-reference-scripts-response-reference-response.body*

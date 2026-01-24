@@ -44,7 +44,7 @@ Set a request variable.
 Request variables are only available for the duration of the request.
 
 >javascript
-    request.variables.set("SOME_TOKEN, "123");
+    request.variables.set("SOME_TOKEN", "123");
     request.variables.set("SOME.DEEP.VAR, "123");
 <
 
