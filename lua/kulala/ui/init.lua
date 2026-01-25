@@ -554,8 +554,13 @@ M.copy = function()
     end
 
     if previous_flag == "--data-binary" or previous_flag == "--data-urlencode" then
-      local body = FS.read_file(flag:sub(2), true) or "[could not read file]"
-      body = #body > 1000 and flag or body
+      local body_file_path = flag:sub(2)
+      local body = FS.read_file(body_file_path, true) or "[could not read file]"
+
+      local max_request_size = CONFIG.get().ui.max_request_size
+      local body_size = vim.fn.getfsize(body_file_path)
+
+      body = body_size > max_request_size and flag or body
       cmd = ("%s%s %s "):format(cmd, previous_flag, vim.fn.shellescape(body))
     end
 
