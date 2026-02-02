@@ -186,7 +186,7 @@ local function add_client_credentials(config_id, body, headers)
 
   if type == "basic" then
     local id, secret = vim.uri_encode(config["Client ID"]), vim.uri_encode(config["Client Secret"])
-    table.insert(headers, "Authorization: Basic " .. Crypto.base64_encode(id .. ":" .. secret))
+    table.insert(headers, "Authorization: Basic " .. Crypto.base64_encode_standard(id .. ":" .. secret))
   end
 
   if type == "in body" then

@@ -6,7 +6,14 @@ local Logger = require("kulala.logger")
 
 local M = {}
 
----Base64url encode the input string
+---Base64 encode the input string (standard encoding for OAuth2 Basic auth)
+---@param input string Input string to be encoded
+---@return string Standard Base64 encoded string
+M.base64_encode_standard = function(input)
+  return vim.base64.encode(input)
+end
+
+---Base64url encode the input string (URL-safe encoding for PKCE, JWT, etc.)
 ---@param input string Input string to be encoded
 ---@return string Base64url encoded string
 M.base64_encode = function(input)
