@@ -257,6 +257,88 @@ describe("oauth", function()
         assert.is.same("new_access_token", get_auth_header())
       end)
 
+      it("basic auth with credentials containing + character (standard Base64 required)", function()
+        cmd.queue.resume:revert()
+
+        -- Safe test credentials that produce '+' in Base64 (would fail with URL-safe encoding)
+        update_env {
+          ["Grant Type"] = "Client Credentials",
+          ["Client Credentials"] = "basic",
+          ["Client ID"] = "test",
+          ["Client Secret"] = ">",
+        }
+
+        kulala.run()
+        wait_for_requests(1)
+
+        -- Should use standard Base64 encoding (containing '+' character)
+        local expected_standard_b64 = "dGVzdDo+"
+        local expected_header = "Authorization: Basic " .. expected_standard_b64
+
+        assert.has_properties(get_request(), {
+          audience = "kulala_api",
+          grant_type = "client_credentials",
+          headers = expected_header,
+          url = "https://token.url",
+        })
+
+        -- Verify the header contains '+' character (standard Base64) not '-' (URL-safe)
+        assert.is_true(
+          get_request().headers:find("+", 1, true) ~= nil,
+          "Authorization header should contain '+' character from standard Base64 encoding"
+        )
+        assert.is_false(
+          get_request().headers:find("dGVzdDo-", 1, true) ~= nil,
+          "Authorization header should NOT use URL-safe Base64 encoding (with '-' instead of '+')"
+        )
+
+        assert.has_properties(get_env(), {
+          access_token = "new_access_token",
+        })
+        assert.near(os.time(), get_env().acquired_at, 1)
+
+        assert.is.same("new_access_token", get_auth_header())
+      end)
+
+      it("basic auth with credentials containing / character (standard Base64 required)", function()
+        cmd.queue.resume:revert()
+
+        -- Safe test credentials that produce '/' in Base64 (would fail with URL-safe encoding)
+        update_env {
+          ["Grant Type"] = "Client Credentials",
+          ["Client Credentials"] = "basic",
+          ["Client ID"] = "user123",
+          ["Client Secret"] = "?pass",
+        }
+
+        kulala.run()
+        wait_for_requests(1)
+
+        -- Should use standard Base64 encoding (containing '/' character)
+        local expected_standard_b64 = "dXNlcjEyMzo/cGFzcw=="
+        local expected_header = "Authorization: Basic " .. expected_standard_b64
+
+        assert.has_properties(get_request(), {
+          audience = "kulala_api",
+          grant_type = "client_credentials",
+          headers = expected_header,
+          url = "https://token.url",
+        })
+
+        -- Verify the header contains '/' character (standard Base64) not '_' (URL-safe)
+        assert.is_true(
+          get_request().headers:find("/", 1, true) ~= nil,
+          "Authorization header should contain '/' character from standard Base64 encoding"
+        )
+
+        assert.has_properties(get_env(), {
+          access_token = "new_access_token",
+        })
+        assert.near(os.time(), get_env().acquired_at, 1)
+
+        assert.is.same("new_access_token", get_auth_header())
+      end)
+
       it("in body auth", function()
         cmd.queue.resume:revert()
 
@@ -587,6 +669,40 @@ describe("oauth", function()
         assert.is.same("S256", result.url_params.code_challenge_method)
 
         assert.is_true(#get_request().code_verifier > 0)
+      end)
+
+      it("uses URL-safe Base64 encoding for PKCE (regression test)", function()
+        -- This test ensures our OAuth2 Basic auth fix didn't break PKCE URL-safe encoding
+        local crypto = require("kulala.cmd.crypto")
+
+        -- Test data that produces different results with standard vs URL-safe encoding
+        local test_data = "test:>"
+
+        local standard_b64 = crypto.base64_encode_standard(test_data)
+        local url_safe_b64 = crypto.base64_encode(test_data)
+
+        -- They should be different (URL-safe should not have +, /, or = chars)
+        assert.is_not.same(standard_b64, url_safe_b64, "PKCE should use URL-safe Base64, not standard Base64")
+
+        -- Standard should have '+' character
+        assert.is_true(standard_b64:find("+", 1, true) ~= nil, "Standard Base64 should contain '+' character")
+
+        -- URL-safe should not contain +, /, or = characters
+        assert.is_false(
+          url_safe_b64:find("+", 1, true) ~= nil,
+          "PKCE Base64 should not contain '+' character (should use URL-safe encoding)"
+        )
+        assert.is_false(
+          url_safe_b64:find("/", 1, true) ~= nil,
+          "PKCE Base64 should not contain '/' character (should use URL-safe encoding)"
+        )
+        assert.is_false(
+          url_safe_b64:find("=", 1, true) ~= nil,
+          "PKCE Base64 should not contain padding '=' character (should use URL-safe encoding)"
+        )
+
+        -- URL-safe should have '-' instead of '+'
+        assert.is_true(url_safe_b64:find("-", 1, true) ~= nil, "URL-safe Base64 should contain '-' instead of '+'")
       end)
     end)
 
