@@ -245,7 +245,7 @@ describe("oauth", function()
         assert.has_properties(get_request(), {
           audience = "kulala_api",
           grant_type = "client_credentials",
-          headers = "Authorization: Basic Y2xpZW50X2lkOmNsaWVudF9zZWNyZXQ",
+          headers = "Authorization: Basic Y2xpZW50X2lkOmNsaWVudF9zZWNyZXQ=",
           url = "https://token.url",
         })
 
