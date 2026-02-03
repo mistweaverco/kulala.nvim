@@ -265,8 +265,11 @@ describe("oauth", function()
           ["Grant Type"] = "Client Credentials",
           ["Client Credentials"] = "basic",
           ["Client ID"] = "test",
-          ["Client Secret"] = ">",
         }
+
+        update_env({
+          ["Client Secret"] = ">",
+        }, true)
 
         kulala.run()
         wait_for_requests(1)
@@ -308,8 +311,11 @@ describe("oauth", function()
           ["Grant Type"] = "Client Credentials",
           ["Client Credentials"] = "basic",
           ["Client ID"] = "user123",
-          ["Client Secret"] = "?pass",
         }
+
+        update_env({
+          ["Client Secret"] = "?pass",
+        }, true)
 
         kulala.run()
         wait_for_requests(1)
