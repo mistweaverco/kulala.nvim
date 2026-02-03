@@ -45,7 +45,7 @@ To test HTTP requests in Kulala, you can use the provided assert functions to va
 
 ```http
 @OCCUPATION = Developer
-POST https://httpbin.org/post?key1=value1 HTTP/1.1
+POST https://echo.getkulala.net/post?key1=value1 HTTP/1.1
 accept: application/json
 content-type: application/json
 
@@ -58,7 +58,7 @@ content-type: application/json
 }
 
 > {%
-  let json = response.body.json.data;
+  let json = response.body.body.data;
 
   client.test("Test suite name 1", function() {
     assert(json.name == "John Doe")
@@ -79,7 +79,7 @@ content-type: application/json
     assert.responseHas('status', 200, "Check if response status is 200")
     assert.headersHas('Content-Type', "application/json", "Check content type")
   });
-  assert.jsonHas("json.data.occupation", "Developer", "Check json payload")
+  assert.jsonHas("body.data.occupation", "Developer", "Check json payload")
 %}
 ```
 

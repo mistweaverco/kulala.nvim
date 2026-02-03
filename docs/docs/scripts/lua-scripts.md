@@ -144,7 +144,7 @@ Please see [Testing and reporting](../usage/testing-and-reporting.md) for more d
 
 < ./pre-request.lua
 
-POST https://httpbin.org/post HTTP/1.1
+POST https://echo.getkulala.net/post HTTP/1.1
 Accept: application/json
 Content-Type: application/json
 Authorization: Bearer Foo:bar
@@ -167,13 +167,13 @@ Authorization: Bearer Foo:bar
 ###
 
 ### REQUEST_TWO
-POST https://httpbin.org/post HTTP/1.1
+POST https://echo.getkulala.net/post HTTP/1.1
 accept: application/json
 content-type: application/json
 
 {
-  "token": "{{REQUEST_ONE.response.body.$.json.token}}",
-  "nested": "{{REQUEST_ONE.response.body.$.json.deep.nested[1].key}}",
+  "token": "{{REQUEST_ONE.response.body.$.body.token}}",
+  "nested": "{{REQUEST_ONE.response.body.$.body.deep.nested[1].key}}",
   "gorilla": "{{GORILLA}}"
 }
 ```
@@ -181,7 +181,7 @@ content-type: application/json
 ## Post-request
 
 ```http
-POST https://httpbin.org/post HTTP/1.1
+POST https://echo.getkulala.net/post HTTP/1.1
 Accept: application/json
 Content-Type: application/json
 Authorization: Bearer {{TOKEN}}
@@ -202,15 +202,15 @@ Authorization: Bearer {{TOKEN}}
   client.log("Post-request script")
 
   if response.response_code == 403 then
-    request.url_raw = "https://httpbin.org/other_endpoint"
+    request.url_raw = "https://echo.getkulala.net/other_endpoint"
     request.environment.TOKEN = "Bar"
     request.replay() -- replay the request
   end
 
-  client.global.BONOBO = response.json.deep.nested[1].key -- set global variable
+  client.global.BONOBO = response.body.deep.nested[1].key -- set global variable
 
   assert(response.response_code == 200, "Response failed")
-  assert.json_has("deep.nested.key", { "foo" }, "Check if key is foo")
+  assert.json_has("body.deep.nested.key", { "foo" }, "Check if key is foo")
 %}
 
 > ./post-request.lua

@@ -119,7 +119,7 @@ fs.writeFileSync("../http/my-file.txt", "Hello, world!");
   request.variables.set('PASSWORD', crypto.randomBytes(16).toString('hex'));
 %}
 < ./pre-request.js
-POST https://httpbin.org/post HTTP/1.1
+POST https://echo.getkulala.net/post HTTP/1.1
 Accept: application/json
 Content-Type: application/json
 Authorization: Bearer Foo:bar
@@ -142,13 +142,13 @@ Authorization: Bearer Foo:bar
 ###
 
 ### REQUEST_TWO
-POST https://httpbin.org/post HTTP/1.1
+POST https://echo.getkulala.net/post HTTP/1.1
 accept: application/json
 content-type: application/json
 
 {
-  "token": "{{REQUEST_ONE.response.body.$.json.token}}",
-  "nested": "{{REQUEST_ONE.response.body.$.json.deep.nested[1].key}}",
+  "token": "{{REQUEST_ONE.response.body.$.body.token}}",
+  "nested": "{{REQUEST_ONE.response.body.$.body.deep.nested[1].key}}",
   "gorilla": "{{GORILLA}}"
 }
 ```
@@ -184,7 +184,7 @@ THIS_IS_SOME_TOKEN_VALUE_123
 
 ```http title="./post-request-example.http"
 ### REQUEST_ONE_
-POST https://httpbin.org/post HTTP/1.1
+POST https://echo.getkulala.net/post HTTP/1.1
 Accept: application/json
 Content-Type: application/json
 Authorization: Bearer Foo:bar
@@ -202,14 +202,14 @@ Authorization: Bearer Foo:bar
 
 > {%
   var fs = require('fs');
-  fs.writeFileSync('TOKEN.txt', response.body.json.token);
-  client.global.set('GORILLA_TOKEN', response.body.json.token);
+  fs.writeFileSync('TOKEN.txt', response.body.body.token);
+  client.global.set('GORILLA_TOKEN', response.body.body.token);
 %}
 
 ###
 
 ### REQUEST_TWO_2_
-POST https://httpbin.org/post HTTP/1.1
+POST https://echo.getkulala.net/post HTTP/1.1
 Accept: application/json
 Content-Type: application/json
 
@@ -222,7 +222,7 @@ Content-Type: application/json
 ###
 
 ### REQUEST_THREE
-POST https://httpbin.org/post HTTP/1.1
+POST https://echo.getkulala.net/post HTTP/1.1
 Accept: application/json
 Content-Type: application/json
 
@@ -250,7 +250,7 @@ client.global.set("BONOBO", response.headers.valueOf("Date"));
   console.log(PASSWORD)
 %}
 < ./pre-request.js
-POST https://httpbin.org/post HTTP/1.1
+POST https://echo.getkulala.net/post HTTP/1.1
 Accept: application/json
 Content-Type: application/json
 Authorization: Bearer Foo:bar
@@ -271,7 +271,7 @@ Authorization: Bearer Foo:bar
 }
 
 > {%
-  var token = response.body.json.token
+  var token = response.body.body.token
   var fs = require('fs');
   fs.writeFileSync('TOKEN.txt', token);
   client.global.set('GORILLA_TOKEN', token);
