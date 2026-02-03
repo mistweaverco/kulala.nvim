@@ -185,7 +185,7 @@ local function add_client_credentials(config_id, body, headers)
   if not validate_auth_params(config_id, required_params) then return body, headers end
 
   if type == "basic" then
-    local id, secret = vim.uri_encode(config["Client ID"]), vim.uri_encode(config["Client Secret"])
+    local id, secret = config["Client ID"], config["Client Secret"]
     table.insert(headers, "Authorization: Basic " .. Crypto.base64_encode_standard(id .. ":" .. secret))
   end
 
