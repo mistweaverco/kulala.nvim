@@ -343,7 +343,7 @@ M.get_plugin_path = function(paths)
 end
 
 ---Read a file with path absolute or relative to buffer dir
----@param filename string path absolutre or relative to buffer dir
+---@param filename string path absolute or relative to buffer dir
 ---@param is_binary boolean|nil
 ---@return string|nil
 ---@usage local p = fs.read_file('Makefile')
