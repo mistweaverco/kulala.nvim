@@ -1,0 +1,2 @@
+# Intentionally invalid Lua files for testing error handling
+tests/functional/fixtures/cli_configs/invalid_config.lua
