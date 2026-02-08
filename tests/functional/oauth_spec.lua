@@ -245,7 +245,38 @@ describe("oauth", function()
         assert.has_properties(get_request(), {
           audience = "kulala_api",
           grant_type = "client_credentials",
-          headers = "Authorization: Basic Y2xpZW50X2lkOmNsaWVudF9zZWNyZXQ",
+          headers = "Authorization: Basic Y2xpZW50X2lkOmNsaWVudF9zZWNyZXQ=",
+          url = "https://token.url",
+        })
+
+        assert.has_properties(get_env(), {
+          access_token = "new_access_token",
+        })
+        assert.near(os.time(), get_env().acquired_at, 1)
+
+        assert.is.same("new_access_token", get_auth_header())
+      end)
+
+      it("encodes correctly Basic auth credentials - with Base64 (not url-safe)", function()
+        cmd.queue.resume:revert()
+
+        update_env {
+          ["Grant Type"] = "Client Credentials",
+          ["Client Credentials"] = "basic",
+          ["Client ID"] = "user123",
+        }
+
+        update_env({
+          ["Client Secret"] = "?pass>>",
+        }, true)
+
+        kulala.run()
+        wait_for_requests(1)
+
+        assert.has_properties(get_request(), {
+          audience = "kulala_api",
+          grant_type = "client_credentials",
+          headers = "Authorization: Basic dXNlcjEyMzo/cGFzcz4+",
           url = "https://token.url",
         })
 
@@ -587,6 +618,22 @@ describe("oauth", function()
         assert.is.same("S256", result.url_params.code_challenge_method)
 
         assert.is_true(#get_request().code_verifier > 0)
+      end)
+
+      it("uses URL-safe Base64 encoding for PKCE", function()
+        update_env {
+          ["Grant Type"] = "Authorization Code",
+          PKCE = {
+            ["Code Verifier"] = "*YYLzIBzrXpVaH5KRx86itubKLXHNGnJBPAogEwkhveM",
+            ["Code Challenge Method"] = "S256",
+          },
+        }
+
+        kulala.run()
+        wait_for_requests(1)
+
+        local code_challenge = result.url_params.code_challenge
+        assert.is_falsy(code_challenge:find("+") or code_challenge:find("/") or code_challenge:find("="))
       end)
     end)
 
