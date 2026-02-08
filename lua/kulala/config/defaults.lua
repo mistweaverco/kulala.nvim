@@ -169,7 +169,7 @@ local M = {
     -- do not show responses over maximum size, in bytes
     max_response_size = 32768,
 
-    -- used by `Copy as Curl` command to deermine whether to inline request body
+    -- used by `Copy as Curl` command to determine whether to inline request body
     max_request_size = 2048,
 
     report = {

@@ -21,7 +21,7 @@ describe("requests", function()
     end)
 
     describe("parser", function()
-      it("#wip processes document variables", function()
+      it("processes document variables", function()
         dynamic_vars.stub { ["$timestamp"] = "$TIMESTAMP" }
 
         h.create_buf(

@@ -2,8 +2,9 @@
 
 ## Version 5.3.4
 
-### Feature: `Shared blocks` [Shared blocks](usage/shared-blocks.md)
 ### Breaking changes: deprecate `curl-global` and `grpc-global` flags in favor of flags in `Shared` block
+
+### Feature: `Shared blocks` [Shared blocks](usage/shared-blocks.md)
 ### Feature: support for `custom_dynamic_variables`
 ### Feature: support `run` command with metadata and without URL [Import and Run](usage/import-and-run-http.md)
 ### Feature: add Electron browser and `Browser CMD` param to `Auth Config` for Oauth2 auth code flow [Authentication](usage/authentication.md)
@@ -20,6 +21,7 @@
 ### Enhancement: share headers and post request scripts in Shared blocks [Shared blocks](usage/shared-blocks.md)
 ### Enhancement: support using `kulala_http` parser without `nvim-treesitter`, i.e. installed by Nix
 ### Enhancement: support `dot` notation in accessing deep objects from `JS` scripts [JS](scripts/request-reference.md)
+### Enhancement: add `max_request_size` config option to customize `Copy to Curl` inline size [Configuration](getting-started/configuration-options.mdx)
 
 ## Version 5.3.3
 
