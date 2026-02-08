@@ -1202,6 +1202,14 @@ Do not show responses over maximum size, in bytes
 Default: `32768` (32 KB)
 
 
+UI.MAX_REQUEST_SIZE
+
+Used by `Copy as Curl` command to determine whether to inline request body or
+include as a file
+
+Default: `2048` (2 KB)
+
+
 UI.SHOW_REQUEST_SUMMARY
 
 Enable/disable request summary in the output window.
