@@ -1,4 +1,4 @@
-POST https://httpbin.org/post
+POST https://echo.getkulala.net/post
 Content-Type: application/json
 
 < ./body-from-file.json

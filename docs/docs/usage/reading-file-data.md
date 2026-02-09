@@ -8,7 +8,7 @@ that you want to use in the request.
 
 
 ```http title="include-file.http"
-POST https://httpbin.org/post HTTP/1.1
+POST https://echo.getkulala.net/post HTTP/1.1
 Content-Type: application/json
 Accept: application/json
 

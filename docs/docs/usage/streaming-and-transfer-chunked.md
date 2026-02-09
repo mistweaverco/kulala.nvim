@@ -8,6 +8,6 @@ To instruct Kulala to process a response as a stream, you need to set the `@acce
 
 ```http
 # @accept chunked
-POST https://httpbin.org/index HTTP/1.1
+POST https://echo.getkulala.net/index HTTP/1.1
 ```
 
