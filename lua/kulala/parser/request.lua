@@ -572,8 +572,13 @@ local function build_curl_command(request)
 
   _ = #request.request_target > 0 and vim.list_extend(request.cmd, { "--request-target", request.request_target })
 
-  table.insert(request.cmd, "-X")
-  table.insert(request.cmd, request.method)
+  if request.method == "HEAD" then
+    table.insert(request.cmd, "--head") -- cURL manual says that we must use '--head' for HEAD instead of '-X HEAD'
+  else
+    table.insert(request.cmd, "-X")
+    table.insert(request.cmd, request.method)
+  end
+
   table.insert(request.cmd, "-v") -- verbose mode
 
   _ = request.http_version and table.insert(request.cmd, "--http" .. request.http_version)
