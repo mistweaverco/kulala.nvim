@@ -16,7 +16,54 @@ The CLI executable is `kulala.nvim/lua/cli/kulala_cli.lua` file, which you can p
 
 ## Configuration
 
-The CLI comes with some sane defaults, but you can override them in `kulala.nvim/lua/cli/config.lua`.
+The CLI comes with some sane defaults, but you can override them in several ways:
+
+### Config Resolution Order (lowest to highest priority)
+
+1. **Default CLI config** (`kulala.nvim/lua/cli/config.lua`)
+2. **User config** (`~/.config/nvim/kulala/cli.lua`)
+3. **Project-local config** (`.kulala-cli.lua` in current working directory)
+4. **CLI-specified config** (`-c` or `--config` option)
+5. **Inline overrides** (`--set` option)
+6. **Direct CLI flags** (`-e`, `-v`, `--halt`, etc.)
+
+### Custom Config File
+
+You can specify a custom config file with the `-c` or `--config` option:
+
+```bash
+kulala_cli -c ./my-config.lua api.http
+```
+
+### Inline Config Overrides
+
+You can override specific config values with the `--set` option. Multiple values can be passed space-separated:
+
+```bash
+# Override a simple value
+kulala_cli --set default_env=prod api.http
+
+# Override nested values using dot notation
+kulala_cli --set ui.default_view=verbose api.http
+
+# Override multiple values
+kulala_cli --set default_env=prod halt_on_error=true request_timeout=5000 api.http
+```
+
+### Project-Local Config
+
+Create a `.kulala-cli.lua` file in your project root to set project-specific defaults:
+
+```lua
+-- .kulala-cli.lua
+return {
+  default_env = "dev",
+  halt_on_error = true,
+  ui = {
+    default_view = "report",
+  },
+}
+```
 
 ## Kulala CLI
 
@@ -28,6 +75,8 @@ Usage:
       [-v {body,headers,headers_body,verbose,script_output,report}]
 
       [-e <env>] [-n <name> ...] [-l <line> ...]
+
+      [-c <config>] [--set <key=value> ...]
 
       [<input>] ...
 
@@ -58,6 +107,10 @@ Options:
                                 
       --mono (-m)                No color output
 
+      --config (-c) <path>       Path to custom config file
+
+      --set <key=value> ...      Override config values (supports nested keys)
+
       --from (-f)                Import from {postman, openapi, bruno}
 
       --help (-h)                Help
@@ -67,6 +120,18 @@ Options:
 kulala_cli http_examples/cli.http -e prod -v report -n Login Request -l 15 20 
 kulala_cli cli.http grpc.http --sub token=abcd1234 user=42
 kulala_cli http_examples --list
+
+# Use a custom config file
+kulala_cli -c ./my-config.lua api.http
+
+# Override config values inline
+kulala_cli --set default_env=prod halt_on_error=true api.http
+
+# Override nested config values
+kulala_cli --set ui.default_view=verbose ui.report.show_summary=true api.http
+
+# Combine config file with inline overrides
+kulala_cli -c ./base-config.lua --set default_env=staging api.http
 
 kulala_cli import collection.json --from postman
 kulala_cli export requests.http

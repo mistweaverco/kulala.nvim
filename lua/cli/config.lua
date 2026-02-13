@@ -1,3 +1,21 @@
+-- Kulala CLI Default Configuration
+--
+-- This file contains the default configuration for the Kulala CLI.
+-- You can override these settings in several ways (in order of priority):
+--
+-- 1. Default CLI config (this file)
+-- 2. User config: ~/.config/nvim/kulala/cli.lua
+-- 3. Project-local config: .kulala-cli.lua in current working directory
+-- 4. CLI-specified config: -c/--config <path>
+-- 5. Inline overrides: --set key=value (supports nested keys like ui.default_view=body)
+-- 6. Direct CLI flags: -e, -v, --halt, etc.
+--
+-- To create a custom config, copy this file and modify the values.
+-- Example usage:
+--   nvim --headless -l kulala_cli.lua -c ./my-config.lua api.http
+--   nvim --headless -l kulala_cli.lua --set default_env=prod api.http
+--   nvim --headless -l kulala_cli.lua --set ui.default_view=verbose halt_on_error=true api.http
+
 local M = {
   default_env = "dev",
 
