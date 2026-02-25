@@ -16,7 +16,8 @@ Table of Contents                    *kulala.http-file-spec-table-of-contents*
 REQUESTS
 
 Kulala supports `absolute`, `origin` and `asterisk path` formats for HTTP
-request.
+request. absolute format is enabled by default, you can toggle the HTTPVersion append via
+`opts.lsp.formatter.http_version_append`.
 
 `Absolute` format: `HTTPMethod` `URL` `HTTPVersion`:
 

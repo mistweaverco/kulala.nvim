@@ -379,7 +379,11 @@ format_rules = {
 
     if #target_url > 0 then -- format url and request children only if url is present
       format_children(node)
-      request.url = ("%s %s %s"):format(method, request.url, http_version)
+      if format_opts.http_version_append then
+        request.url = ("%s %s %s"):format(method, request.url, http_version)
+      else
+        request.url = ("%s %s"):format(method, request.url)
+      end
     end
 
     _ = #request.pre_request_script > 0

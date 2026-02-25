@@ -248,6 +248,7 @@ local M = {
       },
       quote_json_variables = true, -- add quotes around {{variable}} in JSON bodies
       indent = 2, -- base indentation for scripts
+      http_version_append = true, -- toggle HTTPVersion append
     },
 
     on_attach = nil, -- function called when Kulala LSP attaches to the buffer
