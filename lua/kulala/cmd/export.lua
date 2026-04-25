@@ -183,7 +183,7 @@ local function get_url(request)
   local url = new(Postman.url, { raw = request.url })
 
   local protocol, rest = request.url:match("^([^:]+)://(.*)$")
-  url.protocol = protocol or "http"
+  url.protocol = protocol
 
   rest = protocol and rest or request.url
 

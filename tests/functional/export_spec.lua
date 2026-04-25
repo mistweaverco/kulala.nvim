@@ -190,7 +190,7 @@ describe("export to Postman", function()
 
     assert.has_properties(item.request.url, {
       raw = "httpbin.org/post",
-      protocol = "http",
+      protocol = nil,
     })
 
     sort(item.request.body.urlencoded, "key")
