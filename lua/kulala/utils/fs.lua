@@ -210,6 +210,14 @@ M.file_exists = function(filename)
   return vim.fn.filereadable(filename) == 1
 end
 
+-- Check if a directory exists
+--- @param dir string
+--- @return boolean
+--- @usage local p = fs.dir_exists('.cache')
+M.dir_exists = function(dir)
+  return vim.fn.isdirectory(dir) == 1
+end
+
 M.copy_dir = function(source, destination)
   if M.os == "unix" or M.os == "mac" then
     vim.system({ "cp", "-r", source .. M.ps .. ".", destination }):wait()
