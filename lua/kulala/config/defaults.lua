@@ -3,6 +3,14 @@ local M = {
   -- if you have curl installed in a non-standard path,
   -- you can specify it here
   curl_path = "curl",
+  -- Path to the kulala-core executable (see https://github.com/mistweaverco/kulala-core).
+  -- When set and executable, HTTP files are parsed and executed by kulala-core instead of the
+  -- built-in Lua parser and curl/javascript runner. gRPC and WebSocket blocks still use the legacy runner.
+  kulala_core_path = nil,
+  -- Optional override for kulala-core persistence (cookies, OAuth, prompts). Default matches kulala-core CLI:
+  -- Linux: ~/.local/share/kulala-core or $XDG_DATA_HOME/kulala-core; macOS: ~/Library/Application Support/kulala-core
+  kulala_core_data_dir = nil,
+
   -- additional cURL options
   -- see: https://curl.se/docs/manpage.html
   additional_curl_options = {},
@@ -18,7 +26,7 @@ local M = {
   environment_scope = "b",
   -- dev, test, prod, can be anything
   -- see: https://learn.microsoft.com/en-us/aspnet/core/test/http-files?view=aspnetcore-8.0#environment-files
-  default_env = "dev",
+  default_env = "default",
   -- enable reading vscode rest client environment variables
   vscode_rest_client_environmentvars = false,
 

@@ -578,7 +578,7 @@ local function get_symbols()
     if not request.url then return end
 
     local cnum = 0
-    local line = request.show_icon_line_number - 2
+    local line = request.show_icon_line_number - 1
 
     symbol = get_symbol(request.name, kind.Function, line)
     if not symbol then return end

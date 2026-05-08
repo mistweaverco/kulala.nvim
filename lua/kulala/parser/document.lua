@@ -29,7 +29,7 @@ local M = {}
 ---
 ---@field start_line number
 ---@field end_line number
----@field show_icon_line_number number
+---@field show_icon_line_number number -- 1-based `###` delimiter line (icons / timings)
 ---
 ---@field redirect_response_body_to_files ResponseBodyToFile[]
 ---
@@ -91,6 +91,12 @@ local default_document_request = {
   file = nil,
   nested_requests = {},
 }
+
+---Deep copy of an empty request (used by kulala-core adapter).
+---@return DocumentRequest
+function M.new_empty_document_request()
+  return vim.deepcopy(default_document_request)
+end
 
 local parse_document
 
@@ -316,7 +322,6 @@ end
 local function parse_request_urL_method(request, line, lnum)
   request.method, request.url, request.http_version = parse_url(request, line)
   request.name = request.name or (request.method or "") .. " " .. (request.url or "")
-  request.show_icon_line_number = lnum
 end
 
 local function parse_multiline_url(request, line)
@@ -539,6 +544,8 @@ function parse_document(lines, path)
       infer_headers_from_body(request)
     end
 
+    request.show_icon_line_number = math.max(1, request.start_line - 1)
+
     if request.name == "Shared" or request.name == "Shared each" then
       shared = request
       shared.url = #shared.url > 0 and shared.url ~= "NOP" and shared.url or nil
@@ -570,6 +577,24 @@ end
 ---@param path string|nil
 ---@return DocumentRequest[]|nil, DocumentRequest[]|nil
 M.get_document = function(lines, path)
+  local Bridge = require("kulala.cmd.kulala_core_bridge")
+  local DocCore = require("kulala.parser.document_core")
+
+  if Bridge.enabled() then
+    local buf = DB.get_current_buffer()
+    if not path then Diagnostics.clear_diagnostics(buf, "parser") end
+
+    local content_lines = lines or vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+    local content = table.concat(content_lines, "\n")
+    local filepath_core, parse_cwd, filepath_display = Bridge.resolve_document_paths(buf, path)
+
+    local doc, parse_err = Bridge.parse_document(content, filepath_core, parse_cwd)
+    if doc and not parse_err and not DocCore.needs_legacy_parser(doc) and doc.blocks and #doc.blocks > 0 then
+      local requests = DocCore.to_document_requests(doc, content, filepath_display)
+      if #requests > 0 then return requests, {} end
+    end
+  end
+
   local status, result = xpcall(function()
     return { parse_document(lines, path) }
   end, debug.traceback, lines, path)

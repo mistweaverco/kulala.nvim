@@ -32,6 +32,14 @@ M.check = function(health)
 
   Health.start("Tools:")
 
+  if type(config.kulala_core_path) == "string" and config.kulala_core_path ~= "" then
+    check_executable("kulala-core", config.kulala_core_path)
+    local Bridge = require("kulala.cmd.kulala_core_bridge")
+    Health.info("{kulala-core} data dir: " .. Bridge.effective_data_dir())
+  else
+    Health.info("{kulala-core} not configured (optional; set `kulala_core_path` to use kulala-core for HTTP)")
+  end
+
   check_executable("cURL", config.curl_path)
   check_executable("gRPCurl", config.grpcurl_path)
   check_executable("websocat", config.websocat_path)

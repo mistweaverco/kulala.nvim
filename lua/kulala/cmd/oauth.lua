@@ -677,7 +677,7 @@ M.refresh_token = function(config_id)
       Cmd.queue:resume()
     elseif Cmd.queue.previous_task then
       vim.schedule(function()
-        Inlay.show(DB.current_buffer, "error", Cmd.queue.previous_task.data.request.show_icon_line_number)
+        Inlay.show(DB.current_buffer, "error", Inlay.icon_line_for_request(Cmd.queue.previous_task.data.request))
       end)
     end
   end)

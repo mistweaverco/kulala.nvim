@@ -38,7 +38,7 @@ local M = {}
 ---@field body_display string|nil -- The body with variables and dynamic variables replaced and sanitized
 ---(e.g. with binary files replaced with a placeholder)
 ---
----@field show_icon_line_number number|nil -- The line number to show the icon
+---@field show_icon_line_number number|nil -- 1-based `###` delimiter line for icons / timings
 ---
 ---@field redirect_response_body_to_files ResponseBodyToFile[]
 ---

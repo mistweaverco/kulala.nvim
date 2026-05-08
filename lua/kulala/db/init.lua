@@ -38,6 +38,9 @@ M.session = {}
 ---
 ---@field script_pre_output string
 ---@field script_post_output string
+---@field _kulala_core boolean|nil -- response produced via kulala-core executable
+---@field _kulala_body_type string|nil -- kulala-core body discriminator: `"json"` | `"text"` (from runner)
+---@field _kulala_redirect_chain table[]|nil -- kulala-core redirect hops (status, url, headers, body, timings)
 ---
 ---@field assert_output table
 ---@field assert_status boolean

@@ -210,11 +210,25 @@ local function show(contents, filetype, mode)
   show_progress()
 end
 
-local function format_body(view)
-  local headers = get_current_response().headers
-  local body = get_current_response().body
+---Prefer kulala-core `body.type` (`json` / `text`) over MIME sniffing for UI filetype and jq.
+---@param r Response
+---@return table|nil config or nil to fall back to headers
+local function content_config_from_kulala_core(r)
+  if not r._kulala_core or not r._kulala_body_type then return nil end
+  if r._kulala_body_type == "json" then
+    local json = CONFIG.get().contenttypes["application/json"]
+    if type(json) == "string" then return CONFIG.get().contenttypes[json] end
+    return json
+  end
+  return CONFIG.default_contenttype
+end
 
-  local contenttype = INT_PROCESSING.get_config_contenttype(headers, view)
+local function format_body(view)
+  local r = get_current_response()
+  local headers = r.headers
+  local body = r.body
+
+  local contenttype = content_config_from_kulala_core(r) or INT_PROCESSING.get_config_contenttype(headers, view)
   local filetype
 
   if body and contenttype.formatter then
@@ -293,9 +307,17 @@ M.show_headers_body = function()
 end
 
 M.show_verbose = function()
-  local body, filetype = format_body("verbose")
-  local errors = get_current_response().errors
-  show(errors .. "\n" .. body, filetype, "verbose")
+  local r = get_current_response()
+  local body, filetype
+  if r._kulala_core then
+    body = require("kulala.ui.verbose_kulala_core").format(r)
+    local cfg = content_config_from_kulala_core(r)
+    filetype = (cfg and cfg.ft ~= "text" and cfg.ft) or INT_PROCESSING.get_config_contenttype(r.headers, "verbose").ft
+  else
+    body, filetype = format_body("verbose")
+    body = (r.errors or "") .. "\n" .. body
+  end
+  show(body, filetype, "verbose")
 end
 
 M.show_stats = function()

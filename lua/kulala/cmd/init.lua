@@ -3,12 +3,14 @@ local Api = require("kulala.api")
 local CONFIG = require("kulala.config")
 local DB = require("kulala.db")
 local DOCUMENT_PARSER = require("kulala.parser.document")
+local ENV_PARSER = require("kulala.parser.env")
 local EXT_PROCESSING = require("kulala.external_processing")
 local FS = require("kulala.utils.fs")
 local GLOBALS = require("kulala.globals")
 local INLAY = require("kulala.inlay")
 local INT_PROCESSING = require("kulala.internal_processing")
 local Json = require("kulala.utils.json")
+local KULALA_CORE = require("kulala.cmd.kulala_core_bridge")
 local Logger = require("kulala.logger")
 local REQUEST_PARSER = require("kulala.parser.request")
 local Scripts = require("kulala.parser.scripts")
@@ -125,11 +127,42 @@ local function process_internal(result)
   INT_PROCESSING.redirect_response_body_to_file(result.redirect_response_body_to_files)
 end
 
-local function process_external(request, response)
-  if Scripts.run("post_request", request, response) then REQUEST_PARSER.process_variables(request, true) end
+--- kulala-core returns merged pre/post script lines as `scriptConsole`; map to UI pre/post strings.
+---@param lines table[]|nil
+---@return string pre
+---@return string post
+local function kulala_script_console_to_pre_post(lines)
+  if type(lines) ~= "table" then return "", "" end
+  local out = {}
+  for _, entry in ipairs(lines) do
+    if type(entry) == "table" and entry.message then
+      local lvl = entry.level or "log"
+      local prefix = lvl == "error" and "[error] "
+        or lvl == "warn" and "[warn] "
+        or lvl == "info" and "[info] "
+        or lvl == "debug" and "[debug] "
+        or ""
+      table.insert(out, prefix .. tostring(entry.message))
+    end
+  end
+  local text = table.concat(out, "\n")
+  -- Single sequence from core (pre scripts then post); show under Post Script Output like file-based runner.
+  return "", text
+end
 
-  response.script_pre_output = FS.read_file(GLOBALS.SCRIPT_PRE_OUTPUT_FILE) or ""
-  response.script_post_output = FS.read_file(GLOBALS.SCRIPT_POST_OUTPUT_FILE) or ""
+local function process_external(request, response)
+  if not request._kulala_core then
+    if Scripts.run("post_request", request, response) then REQUEST_PARSER.process_variables(request, true) end
+  end
+
+  if request._kulala_core and request._kulala_script_console ~= nil then
+    response.script_pre_output, response.script_post_output =
+      kulala_script_console_to_pre_post(request._kulala_script_console)
+    request._kulala_script_console = nil
+  else
+    response.script_pre_output = FS.read_file(GLOBALS.SCRIPT_PRE_OUTPUT_FILE) or ""
+    response.script_post_output = FS.read_file(GLOBALS.SCRIPT_POST_OUTPUT_FILE) or ""
+  end
   response.assert_output = FS.read_json(GLOBALS.ASSERT_OUTPUT_FILE) or {}
 
   response.assert_status = response.assert_output.status
@@ -248,7 +281,12 @@ local function save_response(request_status, parsed_request)
     buf_name = vim.fn.bufname(buf),
     line = line,
     buf = buf,
+    _kulala_core = parsed_request._kulala_core == true,
+    _kulala_redirect_chain = parsed_request._kulala_redirect_chain,
+    _kulala_body_type = request_status._kulala_body_type,
   }
+
+  parsed_request._kulala_redirect_chain = nil
 
   response = modify_grpc_response(response)
   response = set_request_stats(response)
@@ -317,7 +355,7 @@ local function handle_response(request_status, parsed_request, callback)
   _ = not (code and processing_status) and process_errors(parsed_request, request_status, processing_errors)
   _ = (not success and config.halt_on_error) and M.queue:reset() or M.queue:run_next()
 
-  callback(success, request_status.duration, parsed_request.show_icon_line_number)
+  callback(success, request_status.duration, INLAY.icon_line_for_request(parsed_request))
 end
 
 local function received_unbffured(request, response)
@@ -356,6 +394,8 @@ end
 local function parse_request(requests, request)
   if not process_pre_request_commands(request) then return end
 
+  if request._kulala_core then return request end
+
   local parsed_request, status = REQUEST_PARSER.parse(requests, request)
 
   if not parsed_request then
@@ -389,6 +429,308 @@ local function process_ws_request(request, callback)
   return callback(status, 0, response.line) and M.queue:reset()
 end
 
+local function write_kulala_core_response_files(result)
+  local body = result.body
+  if type(body) == "table" and body.type == "json" then
+    FS.write_file(GLOBALS.BODY_FILE, vim.json.encode(body.content))
+  elseif type(body) == "table" and body.type == "text" then
+    FS.write_file(GLOBALS.BODY_FILE, body.content or "")
+  else
+    FS.write_file(GLOBALS.BODY_FILE, "")
+  end
+
+  local lines = {}
+  for k, v in pairs(result.headers or {}) do
+    table.insert(lines, ("%s: %s"):format(k, tostring(v)))
+  end
+  table.sort(lines)
+  FS.write_file(GLOBALS.HEADERS_FILE, table.concat(lines, "\n") .. "\n\n")
+end
+
+local function kulala_core_stats_stdout(result)
+  local t = result.timings or {}
+  local timings = {
+    { name = "namelookup", duration = (t.dns or 0) / 1000 },
+    { name = "connect", duration = (t.tcp or 0) / 1000 },
+    { name = "appconnect", duration = (t.tls or 0) / 1000 },
+    { name = "pretransfer", duration = (t.startTransfer or 0) / 1000 },
+    { name = "starttransfer", duration = (t.firstByte or 0) / 1000 },
+    { name = "redirect", duration = (t.redirect or 0) / 1000 },
+  }
+  return vim.json.encode { response_code = result.status, timings = timings }
+end
+
+---Line for kulala-core `cursorPosition` must fall inside the parsed block (`findBlockAtCursor`).
+---Prefer `_kulala_limit_line` when the parser was scoped to a line; else the real cursor when this
+---window is the HTTP buffer and `line(".")` is in `[start_line, end_line]`.
+---Otherwise fall back to `show_icon_line_number` (the `###` delimiter line): replay, run-all, or
+---another window may have no meaningful cursor on this file, but that line still lies in the block.
+---@param parsed_request DocumentRequest
+---@return number
+local function kulala_core_cursor_line(parsed_request)
+  local ln = parsed_request._kulala_limit_line
+  parsed_request._kulala_limit_line = nil
+  local lo = parsed_request.start_line or 1
+  local hi = parsed_request.end_line or 2147483647
+
+  if type(ln) == "number" and ln > 0 and ln >= lo and ln <= hi then return ln end
+
+  if vim.api.nvim_get_current_buf() == DB.get_current_buffer() then
+    local cur = vim.fn.line(".")
+    if cur >= lo and cur <= hi then return cur end
+  end
+
+  return parsed_request.show_icon_line_number or 1
+end
+
+---Matches kulala-core KulalaPromptResponse (`prompt` or oauth/custom identifiers).
+---@param first table|nil
+---@return boolean
+local function kulala_core_result_is_prompt(first)
+  if type(first) ~= "table" then return false end
+  if first.prompt == true then return true end
+  if
+    type(first.promptId) == "string"
+    and first.promptId ~= ""
+    and type(first.promptType) == "string"
+    and first.promptType ~= ""
+  then
+    return true
+  end
+  return false
+end
+
+---Queue tasks run inside `vim.schedule`; calling `input()` there often returns immediately without a prompt.
+---Defer twice so cmdline input runs on the main loop (same pattern as needing a tick after schedule).
+---@param fn fun(): string
+---@return string|nil
+local function kulala_core_sync_input(fn)
+  local done = false
+  local result --- @type string|nil
+  vim.schedule(function()
+    vim.schedule(function()
+      local ok, r = pcall(fn)
+      result = ok and r or nil
+      done = true
+    end)
+  end)
+  local waited = vim.wait(600000, function()
+    return done
+  end, 20)
+  if not waited then
+    Logger.warn("kulala-core prompt input timed out")
+    return nil
+  end
+  return result
+end
+
+---kulala-core OAuth2 / @kulala-prompt: collect stdin for `action: continue`.
+---@param prompt { inputs?: { id: string, label?: string, type?: string, required?: boolean }[], message?: string }
+---@return { id: string, value: string }[]|nil
+local function kulala_core_collect_prompt_inputs(prompt)
+  local inputs_spec = prompt.inputs
+  if not inputs_spec or #inputs_spec == 0 then
+    Logger.warn("kulala-core prompt has no inputs")
+    return nil
+  end
+  local out = {}
+  for _, inp in ipairs(inputs_spec) do
+    local id = inp.id
+    if not id or id == "" then return nil end
+    local label = inp.label or id
+    local kind = inp.type or "text"
+    local value
+    if kind == "password" then
+      value = kulala_core_sync_input(function()
+        return vim.fn.inputsecret(vim.trim(label) .. ": ")
+      end)
+    else
+      value = kulala_core_sync_input(function()
+        return vim.fn.input(vim.trim(label) .. ": ")
+      end)
+    end
+    if value == nil then return nil end
+    value = tostring(value)
+    if inp.required and vim.trim(value) == "" then
+      Logger.warn("Required input missing: " .. id)
+      return nil
+    end
+    table.insert(out, { id = id, value = value })
+  end
+  return out
+end
+
+---@param parsed_request DocumentRequest
+---@param callback function
+---@param retry_depth number|nil after `continue`, re-run run (cap recursion)
+local function process_request_kulala_core(parsed_request, callback, retry_depth)
+  retry_depth = retry_depth or 0
+  if retry_depth > 6 then
+    handle_response({
+      code = 1,
+      errors = "kulala-core: exceeded prompt / retry limit",
+      stdout = "",
+      duration = 0,
+    }, parsed_request, callback)
+    return
+  end
+
+  local buf = DB.get_current_buffer()
+  local content = table.concat(vim.api.nvim_buf_get_lines(buf, 0, -1, false), "\n")
+  local start_time = vim.uv.hrtime()
+
+  local http_filepath, core_cwd = KULALA_CORE.resolve_document_paths(buf, parsed_request.file)
+
+  local run_payload = {
+    content = content,
+    env = ENV_PARSER.get_current_env() or "default",
+    limit = {
+      {
+        filter = "cursorPosition",
+        line = kulala_core_cursor_line(parsed_request),
+        column = math.max(1, vim.fn.col(".")),
+      },
+    },
+  }
+  if http_filepath then run_payload.filepath = http_filepath end
+
+  local wrapper, err = KULALA_CORE.run(run_payload, core_cwd)
+
+  local duration_wall = vim.uv.hrtime() - start_time
+
+  if err then
+    handle_response({
+      code = 1,
+      errors = err,
+      stdout = "",
+      duration = duration_wall,
+    }, parsed_request, callback)
+    return
+  end
+
+  if wrapper.type == "error" then
+    local msg = "kulala-core error"
+    if wrapper.data and wrapper.data[1] and wrapper.data[1].error then msg = wrapper.data[1].error end
+    handle_response({
+      code = 1,
+      errors = msg,
+      stdout = "",
+      duration = duration_wall,
+    }, parsed_request, callback)
+    return
+  end
+
+  local data = wrapper.data or {}
+  local first = data[1]
+  if not first then
+    handle_response({
+      code = 1,
+      errors = "kulala-core returned no result",
+      stdout = "",
+      duration = duration_wall,
+    }, parsed_request, callback)
+    return
+  end
+
+  if kulala_core_result_is_prompt(first) then
+    if type(first.message) == "string" and vim.trim(first.message) ~= "" then
+      vim.notify(vim.trim(first.message), vim.log.levels.INFO)
+    end
+    local inputs = kulala_core_collect_prompt_inputs(first)
+    if not inputs then
+      handle_response({
+        code = 1,
+        errors = "Prompt cancelled or incomplete",
+        stdout = "",
+        duration = duration_wall,
+      }, parsed_request, callback)
+      return
+    end
+    if not first.promptId or first.promptId == "" then
+      handle_response({
+        code = 1,
+        errors = "kulala-core prompt missing promptId",
+        stdout = "",
+        duration = duration_wall,
+      }, parsed_request, callback)
+      return
+    end
+
+    local cont_wrapper, cont_err = KULALA_CORE.continue({
+      promptId = first.promptId,
+      inputs = inputs,
+    }, core_cwd)
+    local cont_wall = vim.uv.hrtime() - start_time
+    if cont_err then
+      handle_response({
+        code = 1,
+        errors = cont_err,
+        stdout = "",
+        duration = cont_wall,
+      }, parsed_request, callback)
+      return
+    end
+    if not cont_wrapper or cont_wrapper.type == "error" then
+      local msg = "kulala-core continue failed"
+      if cont_wrapper and cont_wrapper.data and cont_wrapper.data[1] and cont_wrapper.data[1].error then
+        msg = cont_wrapper.data[1].error
+      end
+      handle_response({
+        code = 1,
+        errors = msg,
+        stdout = "",
+        duration = cont_wall,
+      }, parsed_request, callback)
+      return
+    end
+
+    local cont_first = (cont_wrapper.data or {})[1]
+    if not cont_first or cont_first.success ~= true then
+      handle_response({
+        code = 1,
+        errors = (cont_first and cont_first.error) or "continue did not succeed",
+        stdout = "",
+        duration = cont_wall,
+      }, parsed_request, callback)
+      return
+    end
+
+    -- Must not chain another `run` (or notify) in the same call stack as `input()` + `vim.wait`:
+    -- the cmdline can stay active or immediately re-prompt. Continue on the next main-loop tick.
+    local done_msg = type(cont_first.message) == "string" and vim.trim(cont_first.message) or ""
+    vim.schedule(function()
+      if done_msg ~= "" then vim.notify(done_msg, vim.log.levels.INFO) end
+      process_request_kulala_core(parsed_request, callback, retry_depth + 1)
+    end)
+    return
+  end
+
+  if first.success ~= true then
+    handle_response({
+      code = 1,
+      errors = first.error or "request failed",
+      stdout = "",
+      duration = duration_wall,
+    }, parsed_request, callback)
+    return
+  end
+
+  write_kulala_core_response_files(first)
+  local duration_ns = math.floor((first.timings and first.timings.total or 0) * 1e6)
+
+  parsed_request._kulala_script_console = first.scriptConsole or {}
+  local chain = first.redirectChain
+  parsed_request._kulala_redirect_chain = (vim.islist(chain) and #chain > 0) and chain or nil
+
+  handle_response({
+    code = 0,
+    stdout = kulala_core_stats_stdout(first),
+    errors = "",
+    duration = duration_ns,
+    _kulala_body_type = type(first.body) == "table" and first.body.type or nil,
+  }, parsed_request, callback)
+end
+
 ---Executes DocumentRequest
 ---@param requests DocumentRequest[]
 ---@param request DocumentRequest
@@ -407,6 +749,8 @@ function process_request(requests, request, callback)
   end
 
   if M.queue.status == "paused" then return end
+
+  if parsed_request._kulala_core then return process_request_kulala_core(parsed_request, callback) end
 
   local start_time = vim.uv.hrtime()
   local errors
@@ -471,8 +815,12 @@ M.run_parser = function(requests, line_nr, callback)
   requests = DOCUMENT_PARSER.get_request_at(requests, line_nr)
   if #requests == 0 then return Logger.error("No request found at current line") end
 
+  local limit_line = (type(line_nr) == "number" and line_nr > 0) and line_nr or nil
+
   for _, request in ipairs(requests) do
-    INLAY.show(DB.current_buffer, "loading", request.show_icon_line_number)
+    if request._kulala_core and limit_line then request._kulala_limit_line = limit_line end
+
+    INLAY.show(DB.current_buffer, "loading", INLAY.icon_line_for_request(request))
 
     M.queue:add({ request = request }, function()
       if execute_before_request(request) then
