@@ -5,6 +5,7 @@ local M = {}
 local parser_name = "kulala_http"
 local filetypes = { "http", "rest" }
 local queries_dir = vim.fs.joinpath(vim.fn.stdpath("data"), "site", "queries")
+local parsers_dir = vim.fs.joinpath(vim.fn.stdpath("data"), "site", "parser")
 local query_dir = vim.fs.joinpath(queries_dir, parser_name)
 local parser_path = Fs.get_plugin_path { "..", "tree-sitter" }
 
@@ -32,6 +33,16 @@ local function save_parser_ver()
 end
 
 local function setup_tree_sitter()
+  local ext = vim.fn.has("win32") == 1 and "dll" or vim.fn.has("macunix") == 1 and "dylib" or "so"
+  vim.uv.spawn("tree-sitter", {
+    args = { "build", "-o", vim.fs.joinpath(parsers_dir, parser_name .. "." .. ext) },
+    cwd = parser_path,
+  }, function(code, _)
+    if code ~= 0 then
+      print("Failed to build tree-sitter parser")
+      return
+    end
+  end)
   Fs.ensure_dir_exists(queries_dir)
   Fs.copy_dir(vim.fs.joinpath(parser_path, "queries", parser_name), vim.fs.joinpath(queries_dir, parser_name))
 end
