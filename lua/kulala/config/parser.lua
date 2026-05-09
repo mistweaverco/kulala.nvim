@@ -19,6 +19,12 @@ end
 
 local function register_parser()
   vim.treesitter.language.register(parser_name, filetypes)
+  vim.api.nvim_create_autocmd("FileType", {
+    callback = function(args)
+      if not vim.list_contains(filetypes, args.match) then return end
+      vim.treesitter.start(args.buf)
+    end,
+  })
 end
 
 local function save_parser_ver()
