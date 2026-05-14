@@ -226,6 +226,14 @@ M.copy_dir = function(source, destination)
   end
 end
 
+M.copy_dir_contents = function(source, destination)
+  if M.os == "unix" or M.os == "mac" then
+    vim.system({ "cp", "-r", source .. M.ps .. ".", destination }):wait()
+  elseif M.os == "windows" then
+    vim.system({ "xcopy", "/H", "/E", "/I", source .. M.ps .. "*", destination }):wait()
+  end
+end
+
 M.ensure_dir_exists = function(dir)
   if vim.fn.isdirectory(dir) == 0 then vim.fn.mkdir(dir, "p") end
 end

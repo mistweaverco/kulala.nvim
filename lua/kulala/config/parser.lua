@@ -44,7 +44,7 @@ local function setup_tree_sitter()
     end
   end)
   Fs.ensure_dir_exists(queries_dir)
-  Fs.copy_dir(vim.fs.joinpath(parser_path, "queries", parser_name), vim.fs.joinpath(queries_dir, parser_name))
+  Fs.copy_dir_contents(vim.fs.joinpath(parser_path, "queries", parser_name), vim.fs.joinpath(queries_dir, parser_name))
 end
 
 local function has_kulala_parser()
@@ -55,7 +55,7 @@ end
 M.set_kulala_parser = function()
   local is_current = is_parser_ver_current()
   local needs_install = not is_current or not has_kulala_parser()
-  if needs_install then return setup_tree_sitter() end
+  if needs_install then setup_tree_sitter() end
   if not is_current then save_parser_ver() end
   register_parser()
 end
