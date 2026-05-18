@@ -2,11 +2,23 @@ local CONFIG = require("kulala.config")
 
 local M = {}
 
+---User-configured path from setup (`kulala_core_path`), if any.
+---@return string|nil
+local function configured_core_path()
+  local p = CONFIG.get().kulala_core_path
+  if type(p) == "string" and vim.trim(p) ~= "" then return vim.trim(p) end
+  return nil
+end
+
+---Resolve kulala-core executable: explicit `kulala_core_path` wins; otherwise `kulala-core` on PATH.
 ---@return string|nil
 function M.executable_path()
-  local p = CONFIG.get().kulala_core_path
-  if type(p) ~= "string" or p == "" then return nil end
-  if vim.fn.executable(p) == 1 then return vim.fn.exepath(p) end
+  local configured = configured_core_path()
+  if configured then
+    if vim.fn.executable(configured) == 1 then return vim.fn.exepath(configured) end
+    return nil
+  end
+  if vim.fn.executable("kulala-core") == 1 then return vim.fn.exepath("kulala-core") end
   return nil
 end
 
@@ -14,8 +26,16 @@ function M.enabled()
   return M.executable_path() ~= nil
 end
 
+function M.require_enabled()
+  local exe = M.executable_path()
+  if exe then return exe end
+
+  local configured = configured_core_path()
+  if configured then error(("kulala_core_path is not executable: %s"):format(configured), 0) end
+  error("kulala-core not found on PATH. Install kulala-core or set `kulala_core_path` in your kulala setup.", 0)
+end
+
 ---Matches `packages/core/src/lib/runner/external-tools/paths.ts` (`getKulalaCoreDataDir`).
----Previously we used `stdpath("data")/kulala-core` (~/.local/share/nvim/kulala-core), which broke parity with the kulala-core CLI and left stale OAuth DB after deleting ~/.local/share/kulala-core.
 ---@return string
 local function default_kulala_core_data_dir()
   local explicit = vim.fn.getenv("KULALA_CORE_DATA_DIR")
@@ -36,7 +56,6 @@ local function default_kulala_core_data_dir()
   return vim.fn.expand("~/.local/share/kulala-core")
 end
 
----Resolved persistence directory (override or same default kulala-core CLI uses).
 ---@return string
 function M.effective_data_dir()
   local dir = CONFIG.get().kulala_core_data_dir
@@ -50,14 +69,20 @@ local function env_with_data_dir()
   return env
 end
 
----Resolve absolute path for kulala-core stdin and subprocess cwd.
----OAuth / http-client.env.json discovery uses `dirname(filepath)` when filepath is sent; otherwise kulala-core uses `process.cwd()` (the cwd we pass to `vim.system`).
----If the buffer path resolves to a non-existent file (wrong cwd + relative name), omit filepath so OAuth walks from `cwd` instead of a bogus directory.
+---Subprocess timeout (ms). Uses `kulala_core_timeout`, else 10 minutes.
+---@return number|nil nil disables vim.system timeout (not recommended)
+local function invoke_timeout_ms()
+  local t = CONFIG.get().kulala_core_timeout
+  if t == nil then return 600000 end
+  if type(t) == "number" and t > 0 then return t end
+  return nil
+end
+
 ---@param bufnr integer
----@param explicit_path string|nil path from parser (`parsed_request.file`) or caller (`get_document(lines, path)`)
----@return string|nil filepath absolute readable path, or nil to omit from JSON
----@return string cwd for kulala-core subprocess
----@return string display_path best-effort path for `DocumentRequest.file`
+---@param explicit_path string|nil
+---@return string|nil filepath
+---@return string cwd
+---@return string display_path
 function M.resolve_document_paths(bufnr, explicit_path)
   bufnr = bufnr or 0
   local candidates = {}
@@ -106,17 +131,29 @@ function M.resolve_document_paths(bufnr, explicit_path)
   return filepath_core, cwd, display
 end
 
----@param payload table must include `action`
----@param cwd string|nil if set, kulala-core runs with this working directory (matches CLI when run from the `.http` folder). OAuth walks parents of `dirname(filepath)` but falls back to `cwd()` when filepath is missing.
+---@param raw string|nil
+---@return table|nil doc
+local function decode_document_json(raw)
+  if type(raw) ~= "string" then return nil end
+  local trimmed = vim.trim(raw)
+  if trimmed == "" then return nil end
+  local ok, doc = pcall(vim.json.decode, trimmed)
+  if ok and type(doc) == "table" and type(doc.blocks) == "table" then return doc end
+  return nil
+end
+
+---@param payload table
+---@param cwd string|nil
 ---@return vim.SystemCompleted
 function M.invoke(payload, cwd)
-  local exe = assert(M.executable_path())
+  local exe = M.require_enabled()
   local opts = {
-    -- Trailing newline matches shell `echo '{...}' | kulala-core` and avoids rare stdin edge cases.
     stdin = vim.json.encode(payload) .. "\n",
     text = true,
     env = env_with_data_dir(),
   }
+  local timeout_ms = invoke_timeout_ms()
+  if timeout_ms then opts.timeout = timeout_ms end
   if type(cwd) == "string" and cwd ~= "" and vim.fn.isdirectory(cwd) == 1 then opts.cwd = cwd end
   return vim.system({ exe }, opts):wait()
 end
@@ -126,7 +163,6 @@ end
 local function is_prompt_item(first)
   if type(first) ~= "table" then return false end
   if first.prompt == true then return true end
-  -- Some JSON decoders / cores may represent booleans differently; promptId + promptType is unambiguous.
   if
     type(first.promptId) == "string"
     and first.promptId ~= ""
@@ -138,7 +174,6 @@ local function is_prompt_item(first)
   return false
 end
 
----Decode stdout JSON; used even when exit code != 0 (some builds still write a valid prompt wrapper).
 ---@param stdout string|nil
 ---@return table|nil
 local function try_decode_wrapper(stdout)
@@ -149,14 +184,13 @@ local function try_decode_wrapper(stdout)
   return nil
 end
 
----Parse HTTP document via kulala-core (`action: parse`).
 ---@param content string
 ---@param filepath string|nil
----@param cwd_override string|nil if set, subprocess cwd (e.g. from `resolve_document_paths`)
+---@param cwd_override string|nil
 ---@return table|nil doc
 ---@return string|nil err
 function M.parse_document(content, filepath, cwd_override)
-  if not M.enabled() then return nil, "kulala_core_path not configured" end
+  M.require_enabled()
   local cwd = cwd_override
   if not cwd and type(filepath) == "string" and filepath ~= "" then
     local d = vim.fn.fnamemodify(filepath, ":h")
@@ -165,21 +199,22 @@ function M.parse_document(content, filepath, cwd_override)
   local payload = { action = "parse", content = content }
   if type(filepath) == "string" and filepath ~= "" then payload.filepath = filepath end
   local job = M.invoke(payload, cwd)
+
+  local doc = decode_document_json(job.stdout) or decode_document_json(job.stderr)
+  if doc then return doc, nil end
+
   if job.code ~= 0 then
     return nil, vim.trim(job.stderr or "") ~= "" and vim.trim(job.stderr) or "kulala-core parse failed"
   end
-  local ok, doc = pcall(vim.json.decode, job.stdout)
-  if not ok or type(doc) ~= "table" then return nil, "invalid kulala-core parse output" end
-  return doc, nil
+  return nil, "invalid kulala-core parse output"
 end
 
----Run request(s) via kulala-core (`action: run`).
----@param payload table action, content, filepath, env, limit
----@param cwd string|nil working directory for kulala-core (dirname of `.http` file)
----@return table|nil wrapper KulalaResponseWrapper
+---@param payload table
+---@param cwd string|nil
+---@return table|nil wrapper
 ---@return string|nil err
 function M.run(payload, cwd)
-  if not M.enabled() then return nil, "kulala_core_path not configured" end
+  M.require_enabled()
   payload.action = "run"
   local job = M.invoke(payload, cwd)
   local wrapper = try_decode_wrapper(job.stdout)
@@ -188,7 +223,13 @@ function M.run(payload, cwd)
 
   if job.code ~= 0 and not is_prompt then
     local err = vim.trim(job.stderr or "")
-    if err == "" then err = "kulala-core run failed (exit " .. tostring(job.code) .. ")" end
+    if err == "" then
+      if job.code == 124 or job.code == -1 then
+        err = "kulala-core subprocess timed out"
+      else
+        err = "kulala-core run failed (exit " .. tostring(job.code) .. ")"
+      end
+    end
     return nil, err
   end
 
@@ -196,13 +237,12 @@ function M.run(payload, cwd)
   return wrapper, nil
 end
 
----Continue a kulala-core prompt (OAuth2 redirect URL, @kulala-prompt vars, etc.) (`action: continue`).
 ---@param payload { promptId: string, inputs: { id: string, value: string }[] }
----@param cwd string|nil same cwd as the preceding `run` (OAuth continuation)
----@return table|nil wrapper KulalaResponseWrapper
+---@param cwd string|nil
+---@return table|nil wrapper
 ---@return string|nil err
 function M.continue(payload, cwd)
-  if not M.enabled() then return nil, "kulala_core_path not configured" end
+  M.require_enabled()
   payload.action = "continue"
   local job = M.invoke(payload, cwd)
   local wrapper = try_decode_wrapper(job.stdout)
@@ -213,6 +253,96 @@ function M.continue(payload, cwd)
     return nil, err
   end
   return nil, "invalid kulala-core continue output"
+end
+
+---@param stdout string|nil
+---@return table|nil
+local function decode_action_response(stdout)
+  local raw = vim.trim(stdout or "")
+  if raw == "" then return nil end
+  local ok, res = pcall(vim.json.decode, raw)
+  if ok and type(res) == "table" then return res end
+  return nil
+end
+
+---@param op string
+---@param args table|nil
+---@param cwd string|nil
+---@return string|nil value
+---@return string|nil err
+function M.crypto(op, args, cwd)
+  M.require_enabled()
+  local payload = vim.tbl_extend("force", { action = "crypto", op = op }, args or {})
+  local job = M.invoke(payload, cwd)
+  local res = decode_action_response(job.stdout)
+  if res and res.success == true and res.value ~= nil then return tostring(res.value), nil end
+  if res and res.error then return nil, res.error end
+  if job.code ~= 0 then
+    return nil, vim.trim(job.stderr or "") ~= "" and vim.trim(job.stderr) or "kulala-core crypto failed"
+  end
+  return nil, "invalid kulala-core crypto output"
+end
+
+---@param opts { url: string, method?: string, headers?: table, body?: string, insecure?: boolean, timeoutSec?: number, connectionTimeoutSec?: number }
+---@param cwd string|nil
+---@return table|nil result { status, headers, body, url }
+---@return string|nil err
+function M.http_request(opts, cwd)
+  M.require_enabled()
+  local payload = vim.tbl_extend("force", {
+    action = "http_request",
+    url = opts.url,
+    method = opts.method or "GET",
+    headers = opts.headers or {},
+    body = opts.body,
+    insecure = opts.insecure,
+    timeoutSec = opts.timeoutSec,
+    connectionTimeoutSec = opts.connectionTimeoutSec,
+  }, {})
+  local job = M.invoke(payload, cwd)
+  local res = decode_action_response(job.stdout)
+  if res and res.success == true then
+    return {
+      status = res.status,
+      headers = res.headers or {},
+      body = res.body or "",
+      url = res.url or opts.url,
+    },
+      nil
+  end
+  if res and res.error then return nil, res.error end
+  if job.code ~= 0 then
+    return nil, vim.trim(job.stderr or "") ~= "" and vim.trim(job.stderr) or "kulala-core http_request failed"
+  end
+  return nil, "invalid kulala-core http_request output"
+end
+
+---Start a long-lived WebSocket session (native kulala-core, replaces websocat).
+---@param opts { url: string, body?: string, headers?: table }
+---@param handlers { on_stdout: function, on_stderr: function, on_exit: function }
+---@param cwd string|nil
+---@return vim.SystemObj|nil
+function M.websocket_start(opts, handlers, cwd)
+  M.require_enabled()
+  local exe = M.executable_path()
+  if not exe then return nil end
+
+  local tmp = vim.fn.tempname() .. ".json"
+  local payload = {
+    url = opts.url,
+    body = opts.body,
+    headers = opts.headers,
+  }
+  vim.fn.writefile({ vim.json.encode(payload) }, tmp)
+
+  return vim.system({ exe, "--websocket", "-i", tmp }, {
+    stdin = true,
+    text = true,
+    cwd = cwd,
+    env = env_with_data_dir(),
+    stdout = handlers.on_stdout,
+    stderr = handlers.on_stderr,
+  }, handlers.on_exit)
 end
 
 return M

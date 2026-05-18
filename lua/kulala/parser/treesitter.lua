@@ -1,4 +1,6 @@
-if not pcall(require, "nvim-treesitter") then return nil end
+local PARSERS_DIR = vim.fs.joinpath(vim.fn.stdpath("data"), "site", "parser")
+local PARSER_EXT = vim.fn.has("win32") == 1 and "dll" or vim.fn.has("macunix") == 1 and "dylib" or "so"
+if not vim.fs.exists(vim.fs.joinpath(PARSERS_DIR, "kulala_http." .. PARSER_EXT)) then return nil end
 
 local FS = require("kulala.utils.fs")
 local STRING_UTILS = require("kulala.utils.string")

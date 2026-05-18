@@ -19,67 +19,51 @@ local request_interval = 5000 -- 5 seconds
 local tcp_server
 local co, exit
 
-local function get_curl_flags()
-  if not DB.current_request then return {} end
-
-  local RequestParser = require("kulala.parser.request")
-  local request = vim.deepcopy(DB.current_request)
-
-  return Async.co_wrap(co, function()
-    RequestParser.parse_metadata(request)
-    return RequestParser.process_custom_curl_flags(request)
-  end)
-end
-
 ---@param url string
 ---@param body string
----@param request_desc string - description of the request
----@param params table|nil - additional parameters for the request
----@return table|nil, string|nil - response and error message
+---@param request_desc string
+---@param params table|nil
+---@return table|nil, string|nil
 local function make_request(url, body, request_desc, params)
-  local cmd = { Config.get().curl_path, "-s", "-X", "POST", "-H", "Content-Type: application/x-www-form-urlencoded" }
-
-  local headers = params and params.headers or {}
-  local curl_flags = get_curl_flags() or {}
-
-  vim.iter(headers):each(function(header)
-    vim.list_extend(cmd, { "-H", header })
-  end)
-
-  vim.list_extend(cmd, curl_flags)
-  vim.list_extend(cmd, { "-d", body, url })
-
-  local request = Shell.run(cmd, { err_msg = "Request error", abort_on_stderr = true }, function(system)
-    Logger.debug("Executed request: " .. request_desc .. "\n" .. vim.inspect(system))
-    vim.schedule(function()
-      Async.co_resume(co, system)
-    end)
-  end)
-
-  local debug_msg = { "Executing request: " .. request_desc, "Url: " .. url, "Payload: " .. body }
-  _ = #headers > 0 and table.insert(debug_msg, "Headers: " .. vim.inspect(headers))
-
-  Logger.debug(table.concat(debug_msg, "\n"))
-
-  if not request then return end
-
-  local status, response = Async.co_yield(co, request_timeout)
-  Logger.debug("Response: " .. vim.inspect(response))
-
-  if not status then return Logger.error("Request failed: " .. request_desc) end
-  if response == "timeout" then return Logger.error("Request timeout: " .. request_desc) end
-
-  local out = response.stdout == "" and "{}" or response.stdout
-
-  local result, error = Json.parse(out)
-  if not result then error = "Error parsing authentication response: " .. tostring(out) .. "\n" .. error end
-
-  if result and result.error and result.error ~= "authorization_pending" then
-    error = result.error .. "\n" .. (result.error_description or "")
+  local KULALA_CORE = require("kulala.cmd.kulala_core_bridge")
+  local header_map = { ["Content-Type"] = "application/x-www-form-urlencoded" }
+  if params and params.headers then
+    for _, h in ipairs(params.headers) do
+      local k, v = h:match("^([^:]+):%s*(.*)$")
+      if k then header_map[k] = v end
+    end
   end
-  if error then return Logger.error("Failed to: " .. request_desc .. ". " .. error, 2), error end
 
-  return result
+  Logger.debug(("Executing request via kulala-core: %s\nUrl: %s"):format(request_desc, url))
+
+  local result, err = KULALA_CORE.http_request {
+    url = url,
+    method = "POST",
+    headers = header_map,
+    body = body,
+    timeoutSec = 30,
+  }
+
+  if err then
+    Logger.error(("Failed to: %s. %s"):format(request_desc, err), 2)
+    return nil, err
+  end
+
+  local out = (result and result.body ~= "") and result.body or "{}"
+  local parsed, parse_err = Json.parse(out)
+  if not parsed then
+    local parse_error = "Error parsing authentication response: " .. tostring(out) .. "\n" .. (parse_err or "")
+    Logger.error(("Failed to: %s. %s"):format(request_desc, parse_error), 2)
+    return nil, parse_error
+  end
+
+  if parsed.error and parsed.error ~= "authorization_pending" then
+    local oauth_error = parsed.error .. "\n" .. (parsed.error_description or "")
+    Logger.error(("Failed to: %s. %s"):format(request_desc, oauth_error), 2)
+    return nil, oauth_error
+  end
+
+  return parsed, nil
 end
 
 local function parse_variables(config, env)

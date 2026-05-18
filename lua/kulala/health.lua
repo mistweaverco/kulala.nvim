@@ -32,19 +32,21 @@ M.check = function(health)
 
   Health.start("Tools:")
 
-  if type(config.kulala_core_path) == "string" and config.kulala_core_path ~= "" then
-    check_executable("kulala-core", config.kulala_core_path)
-    local Bridge = require("kulala.cmd.kulala_core_bridge")
+  local Bridge = require("kulala.cmd.kulala_core_bridge")
+  local configured = config.kulala_core_path
+  if Bridge.enabled() then
+    local resolved = Bridge.executable_path()
+    if type(configured) == "string" and vim.trim(configured) ~= "" then
+      Health.ok(("{kulala-core} configured: %s → %s"):format(vim.trim(configured), resolved))
+    else
+      Health.ok(("{kulala-core} resolved from PATH: %s"):format(resolved))
+    end
     Health.info("{kulala-core} data dir: " .. Bridge.effective_data_dir())
+  elseif type(configured) == "string" and vim.trim(configured) ~= "" then
+    Health.error(("{kulala-core} kulala_core_path is not executable: %s"):format(vim.trim(configured)))
   else
-    Health.info("{kulala-core} not configured (optional; set `kulala_core_path` to use kulala-core for HTTP)")
+    Health.error("{kulala-core} not found on PATH — install kulala-core or set `kulala_core_path`")
   end
-
-  check_executable("cURL", config.curl_path)
-  check_executable("gRPCurl", config.grpcurl_path)
-  check_executable("websocat", config.websocat_path)
-  check_executable("openssl", config.openssl_path)
-  check_executable("NPM", "npm")
 
   Health.start("Formatters:")
 

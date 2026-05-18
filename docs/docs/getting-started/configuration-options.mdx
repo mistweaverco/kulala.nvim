@@ -12,13 +12,11 @@ the Kulala plugin with the available `opts`:
 
 <CodeBlock language="lua" title="kulala.nvim/lua/config/defaults.lua">{Config}</CodeBlock>
 
-### curl_path
+### kulala_core_path
 
-cURL path.
+Path to the [kulala-core](https://github.com/mistweaverco/kulala-core) executable.
 
-If you have `curl` installed in a non-standard path, you can specify it here.
-
-Default: `curl`
+When set, this path is used exclusively. When `nil` (default), Kulala resolves `kulala-core` from your `PATH`.
 
 Example:
 
@@ -26,20 +24,16 @@ Example:
 {
   "mistweaverco/kulala.nvim",
   opts = {
-    curl_path = "/home/bonobo/.local/bin/curl",
+    kulala_core_path = "/home/bonobo/.local/bin/kulala-core",
   },
 }
 ```
 
-### additional_curl_options
+### kulala_core_timeout
 
-Additional cURL options.
+Subprocess timeout (milliseconds) for kulala-core invocations.
 
-Possible values:
-
-- `[table of strings]`
-
-Default: `{}`
+Default: `600000` (10 minutes). Set to `nil` to disable the Neovim-side timeout (not recommended).
 
 Example:
 
@@ -47,30 +41,14 @@ Example:
 {
   "mistweaverco/kulala.nvim",
   opts = {
-    additional_curl_options = { "--insecure", "-A", "Mozilla/5.0" },
+    kulala_core_timeout = 120000,
   },
 }
 ```
 
-### grpcurl_path
+### kulala_core_data_dir
 
-gRPCurl path.
-
-If you have `grpcurl` installed in a non-standard path, you can specify it here.
-You can get it at [gRPCurl](https://github.com/fullstorydev/grpcurl)
-
-Default: `grpcurl`
-
-Example:
-
-```lua
-{
-  "mistweaverco/kulala.nvim",
-  opts = {
-    grpcurl_path = "/home/bonobo/.local/bin/grpcurl",
-  },
-}
-```
+Override directory for kulala-core persistence (cookies, OAuth tokens, prompts). Defaults to the same path as the kulala-core CLI.
 
 ### environment_scope
 
@@ -168,28 +146,6 @@ Define your own dynamic variables here, e.g. $randomEmail
         return "user" .. random .. "@example.com"
       end,
     }
-  },
-}
-```
-
-### request_timeout
-
-Set request timeout period.
-
-Possible values:
-
-- `nil`
-- `[number]` in ms
-
-Default: `nil`
-
-Example:
-
-```lua
-{
-  "mistweaverco/kulala.nvim",
-  opts = {
-    request_timeout = 5000,
   },
 }
 ```

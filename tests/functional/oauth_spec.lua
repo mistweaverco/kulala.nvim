@@ -1,3 +1,4 @@
+local bridge = require("kulala.cmd.kulala_core_bridge")
 local cmd = require("kulala.cmd")
 local db = require("kulala.db")
 local fs = require("kulala.utils.fs")
@@ -50,7 +51,7 @@ local update_auth_data = function(tbl)
 end
 
 describe("oauth", function()
-  local curl, system, wait_for_requests
+  local curl, system, wait_for_requests, http_request_stub
   local http_buf
   local on_request, redirect_request
   local result = {}
@@ -103,6 +104,34 @@ describe("oauth", function()
       end,
     })
 
+    http_request_stub = stub(bridge, "http_request", function(opts)
+      local url = (opts.url or ""):match("^[^?]+") or opts.url
+      local mappings = vim.tbl_deep_extend("force", curl.url_mappings["*"] or {}, curl.url_mappings[url] or {})
+
+      local params = parse_params(opts.body)
+      params.url = opts.url
+      if type(opts.headers) == "table" then
+        local hdrs = {}
+        for k, v in pairs(opts.headers) do
+          table.insert(hdrs, ("%s: %s"):format(k, v))
+        end
+        params.headers = table.concat(hdrs, "\n")
+      end
+
+      system.add_log(params)
+      curl.requests_no = curl.requests_no + 1
+
+      if mappings.code and mappings.code ~= 0 then return nil, mappings.errors or "http_request failed" end
+
+      return {
+        status = 200,
+        headers = {},
+        body = mappings.stdout or "{}",
+        url = opts.url,
+      },
+        nil
+    end)
+
     wait_for_requests = function(requests_no, predicate)
       system:wait(3000, function()
         if curl.requests_no >= requests_no and (predicate == nil or predicate()) then return true end
@@ -133,6 +162,7 @@ describe("oauth", function()
     on_request = nil
 
     _ = type(cmd.queue.resume) == "table" and cmd.queue.resume:revert()
+    _ = http_request_stub and http_request_stub:revert()
     vim.ui.open:revert()
     tcp.server:revert()
 
@@ -712,19 +742,6 @@ describe("oauth", function()
         code = "auth_code",
         expires_in = 3500,
       })
-    end)
-
-    it("takes into account curl flags", function()
-      update_env { ["Grant Type"] = "Password" }
-
-      kulala_config.options.additional_curl_options = { "--location" }
-
-      kulala.run()
-      wait_for_requests(1)
-
-      assert.is_true(vim.tbl_contains(get_request().cmd, "--location"))
-      assert.is_true(vim.tbl_contains(get_request().cmd, "--verbose"))
-      assert.is_true(vim.tbl_contains(get_request().cmd, "--insecure"))
     end)
   end)
 

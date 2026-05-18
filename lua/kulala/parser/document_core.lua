@@ -3,24 +3,19 @@ local Document = require("kulala.parser.document")
 
 local M = {}
 
----Protocols handled by the embedded kulala.nvim runner (gRPC / WebSocket), not HTTP-node runner.
-local function block_needs_legacy_runner(block)
-  local m = block.request and block.request.method
-  return m == "GRPC" or m == "WS" or m == "WSS"
+---@param method string|nil
+---@return boolean
+local function method_supported_by_core(method)
+  return type(method) == "string" and method ~= ""
 end
 
 ---@param doc table KulalaDocument JSON
----@return boolean
-function M.needs_legacy_parser(doc)
-  if not doc or type(doc.blocks) ~= "table" then return true end
-  for _, block in ipairs(doc.blocks) do
-    if block_needs_legacy_runner(block) then return true end
-  end
-  return false
+---@return string|nil err first unsupported protocol message
+function M.unsupported_protocol_error(_doc)
+  return nil
 end
 
----kulala-core block positions are 1-based lines in content after top `import`/`run` directives are removed;
----Neovim uses the full buffer, so add this offset.
+---kulala-core block positions are 1-based lines in content after top `import`/`run` directives are removed.
 ---@param doc table
 ---@return number
 local function directive_offset(doc)
@@ -62,10 +57,19 @@ local function redirects_from_request(req)
   return out
 end
 
----Convert a Kulala core document to kulala.nvim DocumentRequest list.
+---JetBrains `# @name REQUEST_ID` for {{REQUEST_ID.response...}} references.
+---@param block table
+---@return string
+local function block_display_name(block)
+  for _, op in ipairs(block.operators or {}) do
+    if op.name == "name" and op.args and vim.trim(tostring(op.args)) ~= "" then return vim.trim(tostring(op.args)) end
+  end
+  return block.name or ""
+end
+
 ---@param doc table
----@param content string full buffer text
----@param path string|nil absolute path to .http file
+---@param content string
+---@param path string|nil
 ---@return DocumentRequest[]
 function M.to_document_requests(doc, _content, path)
   local off = directive_offset(doc)
@@ -90,10 +94,11 @@ function M.to_document_requests(doc, _content, path)
     else
       local req = block.request
       if req and req.url and req.url ~= "" then
+        local method = (req.method or "GET"):upper()
         local request = Document.new_empty_document_request()
         request.shared = shared
-        request.name = block.name
-        request.method = req.method or "GET"
+        request.name = block_display_name(block)
+        request.method = method
         request.url = req.url or ""
         request.http_version = req.httpVersion or ""
         request.headers, request.headers_raw = headers_from_section(req.headerSection)
@@ -105,7 +110,8 @@ function M.to_document_requests(doc, _content, path)
         request.file = path or ""
         request.redirect_response_body_to_files = redirects_from_request(req)
         request.environment = {}
-        request._kulala_core = true
+        request._kulala_core = method_supported_by_core(method)
+        request._kulala_unsupported_protocol = false
         request.cmd = { Bridge.executable_path() or "kulala-core" }
 
         table.insert(requests, request)

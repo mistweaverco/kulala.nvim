@@ -1,7 +1,5 @@
 local Config = require("kulala.config")
 local Logger = require("kulala.logger")
-local Shell = require("kulala.cmd.shell_utils")
-
 local M = {}
 
 local function redirect_script()
@@ -115,18 +113,29 @@ local function request(url, params, on_exit)
     abort_on_stderr = true,
   })
 
-  local cmd = { Config.get().curl_path, "-s", "-X", params.method }
+  local KULALA_CORE = require("kulala.cmd.kulala_core_bridge")
 
-  if next(params.headers) then
-    vim.iter(params.headers):each(function(key, value)
-      vim.list_extend(cmd, { "-H", ("%s: %s"):format(key, value) })
+  local result, err = KULALA_CORE.http_request {
+    url = url,
+    method = params.method,
+    headers = params.headers,
+    body = params.body,
+    timeoutSec = 30,
+  }
+
+  local system = {
+    code = err and 1 or 0,
+    stdout = result and result.body or "",
+    stderr = err or "",
+  }
+
+  if on_exit then
+    vim.schedule(function()
+      on_exit(system)
     end)
+    return system
   end
-
-  cmd = #params.body > 0 and vim.list_extend(cmd, { "-d", params.body }) or cmd
-  cmd = vim.list_extend(cmd, { url })
-
-  return Shell.run(cmd, params, on_exit)
+  return system
 end
 
 M.client = {

@@ -15,7 +15,7 @@ describe("websockets", function()
       return 1
     end)
 
-    system = h.System.stub({ "websocat" }, {
+    system = h.System.stub({ "--websocket" }, {
       on_call = function(system)
         system.async = true
       end,
@@ -71,7 +71,7 @@ describe("websockets", function()
     wait_for_requests(1)
 
     result = system.args.cmd
-    assert.are.same({ "websocat", "wss://echo.websocket.org" }, result)
+    assert.is_true(vim.tbl_contains(result, "--websocket"))
 
     result = h.get_buf_lines(ui_buf)
 
@@ -88,7 +88,7 @@ describe("websockets", function()
     kulala.run()
     wait_for_requests(1)
 
-    system.opts.write_to("stdout", "Hello, world!\n")
+    system.opts.write_to("stdout", '{"type":"message","data":"Hello, world!"}\n')
     wait_for_requests(2)
 
     result = h.get_buf_lines(ui_buf)

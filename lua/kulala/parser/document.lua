@@ -576,33 +576,63 @@ end
 ---@param lines string[]|nil
 ---@param path string|nil
 ---@return DocumentRequest[]|nil, DocumentRequest[]|nil
+local function set_core_parse_diagnostics(bufnr, doc)
+  Diagnostics.clear_diagnostics(bufnr, "parser")
+  if not doc or not doc.hasErrors then return end
+  local off = (type(doc.directiveLinesRemoved) == "number" and doc.directiveLinesRemoved) or 0
+  for _, block in ipairs(doc.blocks or {}) do
+    for _, err in ipairs(block.errors or {}) do
+      local rel = err.lineNumber or 0
+      local line = (block.position and block.position.start or 1) + rel + off
+      Diagnostics.add_diagnostics(
+        bufnr,
+        err.errorMessage or "parse error",
+        vim.diagnostic.severity.ERROR,
+        math.max(0, line - 1),
+        0,
+        math.max(0, line - 1),
+        1
+      )
+    end
+  end
+end
+
+---Parses the buffer via kulala-core only (no legacy Lua parser).
+---@param lines string[]|nil
+---@param path string|nil
+---@return DocumentRequest[]|nil, DocumentRequest[]|nil
 M.get_document = function(lines, path)
   local Bridge = require("kulala.cmd.kulala_core_bridge")
   local DocCore = require("kulala.parser.document_core")
 
-  if Bridge.enabled() then
-    local buf = DB.get_current_buffer()
-    if not path then Diagnostics.clear_diagnostics(buf, "parser") end
+  local buf = DB.get_current_buffer()
+  local content_lines = lines or vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+  local content = table.concat(content_lines, "\n")
+  local filepath_core, parse_cwd, filepath_display = Bridge.resolve_document_paths(buf, path)
 
-    local content_lines = lines or vim.api.nvim_buf_get_lines(buf, 0, -1, false)
-    local content = table.concat(content_lines, "\n")
-    local filepath_core, parse_cwd, filepath_display = Bridge.resolve_document_paths(buf, path)
-
-    local doc, parse_err = Bridge.parse_document(content, filepath_core, parse_cwd)
-    if doc and not parse_err and not DocCore.needs_legacy_parser(doc) and doc.blocks and #doc.blocks > 0 then
-      local requests = DocCore.to_document_requests(doc, content, filepath_display)
-      if #requests > 0 then return requests, {} end
-    end
+  local doc, parse_err = Bridge.parse_document(content, filepath_core, parse_cwd)
+  if parse_err then
+    Logger.error("kulala-core parse failed: " .. parse_err, 1, { report = true })
+    return nil, {}
   end
 
-  local status, result = xpcall(function()
-    return { parse_document(lines, path) }
-  end, debug.traceback, lines, path)
+  if not doc or not doc.blocks or #doc.blocks == 0 then
+    Logger.warn("No requests found in document")
+    return nil, {}
+  end
 
-  if not status then return Logger.error(("Errors parsing the document: %s"):format(result), 1, { report = true }) end
+  if not path then set_core_parse_diagnostics(buf, doc) end
 
-  ---@diagnostic disable-next-line: redundant-return-value
-  return unpack(result)
+  local proto_err = DocCore.unsupported_protocol_error(doc)
+  if proto_err then Logger.warn(proto_err) end
+
+  local requests = DocCore.to_document_requests(doc, content, filepath_display)
+  if #requests == 0 then
+    Logger.warn("No runnable HTTP requests in document")
+    return nil, {}
+  end
+
+  return requests, {}
 end
 
 local function apply_shared_data(shared, request)

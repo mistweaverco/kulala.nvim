@@ -1,4 +1,3 @@
-local Config = require("kulala.config")
 local Shlex = require("kulala.lib.shlex")
 local Stringutils = require("kulala.utils.string")
 
@@ -26,7 +25,7 @@ function M.parse(curl)
   curl = curl:gsub("%s+", " ")
 
   local parts = Shlex.split(curl)
-  if not parts[1]:find("^curl.*") and parts[1] ~= Config.get().curl_path then return end
+  if not parts[1]:find("^curl") then return end
 
   local command = {
     method = "",

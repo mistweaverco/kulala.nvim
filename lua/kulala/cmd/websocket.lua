@@ -1,4 +1,7 @@
 local Config = require("kulala.config")
+local FS = require("kulala.utils.fs")
+local GLOBALS = require("kulala.globals")
+local KULALA_CORE = require("kulala.cmd.kulala_core_bridge")
 local Keymaps = require("kulala.config.keymaps")
 local Logger = require("kulala.logger")
 
@@ -7,13 +10,43 @@ local M = {}
 M.connection = nil
 M.response = nil
 
+local function parse_ws_line(data)
+  if not data or data == "" then return nil end
+  local ok, msg = pcall(vim.json.decode, data)
+  if ok and type(msg) == "table" then return msg end
+  return nil
+end
+
+---Persist live WebSocket body so `save_response` and the UI read the current stream.
+local function persist_response_body()
+  if not M.response then return end
+  FS.write_file(GLOBALS.BODY_FILE, M.response.body or "")
+end
+
+---@param callback function
+---@param success boolean
+local function notify_ui(callback, success)
+  persist_response_body()
+  callback(success, 0, M.response and M.response.line or 0)
+end
+
 M.on_stdout = function(_, data, callback)
   if not data or #data == 0 then return end
 
-  data = "\n=> " .. data
-  M.response.body = M.response.body .. data
-
-  callback(true, 0, M.response.line)
+  for line in data:gmatch("[^\n]+") do
+    local msg = parse_ws_line(line)
+    if msg and msg.type == "message" and msg.data then
+      M.response.body = M.response.body .. ("\n=> " .. msg.data)
+      notify_ui(callback, true)
+    elseif msg and msg.type == "closed" then
+      M.response.status = false
+      M.response.code = -1
+      M.response.body = M.response.body:gsub("^.-\n.-\n", "Connection closed\n")
+      notify_ui(callback, false)
+    elseif msg and msg.type == "error" then
+      Logger.error("Error connecting to WS: " .. (msg.error or ""))
+    end
+  end
 end
 
 M.on_stderr = function(_, data, callback)
@@ -26,7 +59,7 @@ M.on_stderr = function(_, data, callback)
   M.response.body = M.response.body:gsub("^.-\n.-\n", "Connection closed\n")
   M.response.errors = M.response.errors .. "\n" .. data
 
-  callback(false, 0, M.response.line)
+  notify_ui(callback, false)
 end
 
 M.on_exit = function(system, _, callback)
@@ -35,7 +68,7 @@ M.on_exit = function(system, _, callback)
 
   M.response.body = M.response.body:gsub("^.-\n.-\n", "Connection closed\n")
 
-  callback(M.response.status, 0, M.response.line)
+  notify_ui(callback, false)
 end
 
 local function set_welcome_message()
@@ -50,17 +83,25 @@ local function set_welcome_message()
 end
 
 function M.connect(request, response, callback, opts)
-  local ws_cmd = Config.get().websocat_path
-  if vim.fn.executable(ws_cmd) == 0 then return Logger.error("Websocat command not found: " .. ws_cmd, 2) end
-
   opts = opts or {}
   response.body = ""
 
   _ = M.connection and M.close()
 
+  local _, core_cwd = KULALA_CORE.resolve_document_paths(0, request.file)
+
   local function handler(event)
     return function(system, data)
       vim.schedule(function()
+        if event == "on_stdout" and data then
+          for line in data:gmatch("[^\n]+") do
+            local msg = parse_ws_line(line)
+            if msg and msg.type == "ready" then
+              set_welcome_message()
+              notify_ui(callback, true)
+            end
+          end
+        end
         local call = opts[event] or M[event]
         call(system, data, callback)
       end)
@@ -68,21 +109,22 @@ function M.connect(request, response, callback, opts)
   end
 
   local status, result = xpcall(function()
-    return vim.system({ ws_cmd, request.url }, {
-      stdin = true,
-      text = true,
-      stdout = handler("on_stdout"),
-      stderr = handler("on_stderr"),
-    }, handler("on_exit"))
+    return KULALA_CORE.websocket_start({
+      url = request.url,
+      body = request.body_computed or request.body,
+      headers = request.headers,
+    }, {
+      on_stdout = handler("on_stdout"),
+      on_stderr = handler("on_stderr"),
+      on_exit = handler("on_exit"),
+    }, core_cwd)
   end, debug.traceback)
 
   if not status then return Logger.error("Failed to connect to websocket:\n" .. result, 2) end
+  if not result then return Logger.error("kulala-core WebSocket failed to start", 2) end
 
   M.connection = result
   M.response = response
-
-  _ = #request.body_computed > 0 and M.send(request.body_computed)
-  set_welcome_message()
 
   return result.pid
 end
@@ -119,7 +161,7 @@ function M.send(data)
   update_response()
 
   vim.iter(data):each(function(line)
-    conn:write(line .. "\n")
+    conn:write(vim.json.encode { op = "send", data = line } .. "\n")
   end)
 
   return true
@@ -129,7 +171,13 @@ function M.close()
   local conn = M.connection
   if not conn then return false end
 
-  _ = not conn:is_closing() and conn:kill(15) -- SIGTERM
+  if not conn:is_closing() then
+    conn:write(vim.json.encode { op = "close" } .. "\n")
+    vim.wait(500, function()
+      return conn:is_closing()
+    end)
+    if not conn:is_closing() then conn:kill(15) end
+  end
   M.connection = nil
 
   return true

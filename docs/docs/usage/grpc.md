@@ -6,7 +6,7 @@
 
 ### Dependencies
 
-Ensure you have `grpcurl` installed to use this feature. You can find it here: [gRPCurl](https://github.com/fullstorydev/grpcurl).
+gRPC requests are executed by [kulala-core](https://github.com/mistweaverco/kulala-core) using native `@grpc/grpc-js` (no `grpcurl` binary required). Install kulala-core on your `PATH` or set `kulala_core_path`.
 
 ### Making a gRPC Request
 

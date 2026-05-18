@@ -6,7 +6,7 @@
 
 ### Dependencies
 
-Ensure you have `websocat` installed to use this feature. You can find it here: [websocat](https://github.com/vi/websocat)
+WebSocket connections use the native client built into [kulala-core](https://github.com/mistweaverco/kulala-core) (no `websocat` binary required). Install kulala-core on your `PATH` or set `kulala_core_path`.
 
 ### Establishing a websocket connection
 

@@ -10,21 +10,17 @@ List of requirements for using kulala.
 
 - [Treesitter for HTTP syntax][ts]
 
-## cURL
+## kulala-core
 
-- [cURL](https://curl.se/) (tested with 8.5.0)
+- [kulala-core](https://github.com/mistweaverco/kulala-core) on your `PATH`, or set `kulala_core_path` in your Kulala setup
 
-## gRPCurl
+kulala-core handles HTTP (embedded cURL),
+gRPC (`@grpc/grpc-js`),
+WebSockets (native client),
+OAuth token requests, and crypto (JWT / PKCE).
 
-- [gRPCurl](https://github.com/fullstorydev/grpcurl) for GRPC requests
-
-## Websocat
-
-- [Websocat](https://github.com/vi/websocat) for WebSocket requests
-
-## OpenSSL
-
-- Required for JWT and PKCE signing (comes preinstalled with macOS and most Linux distributions and is part of git installation on Windows)
+You don't need separate `curl`, `grpcurl`, `websocat`, or `openssl`
+installs for Kulala itself.
 
 ## jq
 

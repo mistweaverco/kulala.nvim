@@ -15,7 +15,6 @@ local Logger = require("kulala.logger")
 local REQUEST_PARSER = require("kulala.parser.request")
 local Scripts = require("kulala.parser.scripts")
 local UI_utils = require("kulala.ui.utils")
-local WS = require("kulala.cmd.websocket")
 
 local M = {}
 
@@ -186,6 +185,11 @@ end
 
 local function modify_grpc_response(response)
   if response.method ~= "GRPC" then return response end
+  if response._kulala_core then
+    local content_type = response.errors == "" and "application/json" or "kulala/grpc_error"
+    add_content_type_header(response, content_type)
+    return response
+  end
 
   response.body_raw = response.stats
   response.stats = ""
@@ -201,7 +205,12 @@ end
 local function set_request_stats(response)
   response.stats = Json.parse(tostring(response.stats)) or {}
   response.response_code = tonumber(response.stats.response_code) or response.code
-  response.status = response.code == 0 and response.response_code < 400
+  -- kulala-core already applies # @kulala-expect-status-code; do not re-fail 4xx/5xx here.
+  if response._kulala_core then
+    response.status = response.code == 0
+  else
+    response.status = response.code == 0 and response.response_code < 400
+  end
   response.assert_status = response.status and response.assert_status
 
   return response
@@ -247,6 +256,28 @@ local function save_response(request_status, parsed_request)
   local responses = DB.global_update().responses
   if #responses > 0 and responses[#responses].id == id and responses[#responses].code == -1 then
     table.remove(responses) -- remove the last response if it's the same request and status was unfinished (for chunked response)
+  end
+
+  local method_upper = (parsed_request.method or ""):upper()
+  if method_upper == "WS" or method_upper == "WSS" then
+    local ws_response = require("kulala.cmd.websocket").response
+    if ws_response and ws_response.id == id then
+      for i = #responses, 1, -1 do
+        if responses[i].id == id then
+          local existing = responses[i]
+          existing.code = request_status.code or -1
+          existing.duration = request_status.duration or existing.duration
+          existing.errors = request_status.errors or existing.errors
+          existing.stats = request_status.stdout or existing.stats
+          existing.body_raw = FS.read_file(GLOBALS.BODY_FILE) or ""
+          existing.body = truncate_body(existing)
+          existing.json = Json.parse(existing.body) or {}
+          existing = set_request_stats(existing)
+          existing.status = existing.code == 0
+          return existing
+        end
+      end
+    end
   end
 
   ---@type Response
@@ -322,10 +353,8 @@ end
 
 local function process_errors(request, request_status, processing_errors)
   if request_status.code == 124 then
-    request_status.errors = ("%s\nRequest timed out (%s ms)"):format(
-      request_status.errors or "",
-      CONFIG.get().request_timeout or ""
-    )
+    local t = CONFIG.get().kulala_core_timeout or 600000
+    request_status.errors = ("%s\nRequest timed out (%s ms)"):format(request_status.errors or "", tostring(t))
   end
 
   local message = ("Errors in request %s at line: %s\n%s"):format(
@@ -358,81 +387,21 @@ local function handle_response(request_status, parsed_request, callback)
   callback(success, request_status.duration, INLAY.icon_line_for_request(parsed_request))
 end
 
-local function received_unbffured(request, response)
-  local unbuffered = vim.tbl_contains(request.cmd, "-N")
-  return unbuffered and response:find("Connected") and FS.file_exists(GLOBALS.BODY_FILE)
-end
-
-local function process_pre_request_commands(request)
-  if not process_prompt_vars(request) then
-    return Logger.warn("Prompt failed. Skipping this and all following requests.")
+local function parse_request(_requests, request)
+  if not request._kulala_core then
+    Logger.error("Request is not configured for kulala-core", 1)
+    return "skipped"
   end
 
-  local int_meta_processors = {
-    ["delay"] = "delay",
-  }
-
-  local ext_meta_processors = {
-    ["stdin-cmd-pre"] = "stdin_cmd",
-    ["env-stdin-cmd-pre"] = "env_stdin_cmd",
-  }
-
-  local processor
-  for _, metadata in ipairs(request.metadata) do
-    processor = int_meta_processors[metadata.name]
-    _ = processor and INT_PROCESSING[processor](metadata.value)
-  end
-
-  for _, metadata in ipairs(request.metadata) do
-    processor = ext_meta_processors[metadata.name]
-    _ = processor and EXT_PROCESSING[processor](metadata.value)
-  end
-
-  return true
-end
-
-local function parse_request(requests, request)
-  if not process_pre_request_commands(request) then return end
-
-  if request._kulala_core then return request end
-
-  local parsed_request, status = REQUEST_PARSER.parse(requests, request)
-
-  if not parsed_request then
-    if status == "empty" then return status end
-
-    local msg = status == "skipped" and "is skipped" or "could not be parsed"
-    Logger.warn(("Request at line: %s " .. msg):format(request.start_line or request.show_icon_line_number))
-
-    return status
-  end
-
-  return parsed_request
-end
-
-local function check_executable(cmd)
-  local executable = cmd[1]
-  if vim.fn.executable(executable) == 0 then
-    return Logger.error(("Executable %s is not found or not executable"):format(executable))
-  end
-
-  return true
-end
-
-local function process_ws_request(request, callback)
-  local response = save_response({ code = 0 }, request)
-  local status = WS.connect(request, response, callback)
-
-  response.code = status and 0 or -1
-  response.status = status and true or false
-
-  return callback(status, 0, response.line) and M.queue:reset()
+  return request
 end
 
 local function write_kulala_core_response_files(result)
   local body = result.body
   if type(body) == "table" and body.type == "json" then
-    FS.write_file(GLOBALS.BODY_FILE, vim.json.encode(body.content))
+    local encoded = vim.json.encode(body.content)
+    if not encoded then encoded = vim.inspect(body.content) end
+    FS.write_file(GLOBALS.BODY_FILE, encoded)
   elseif type(body) == "table" and body.type == "text" then
     FS.write_file(GLOBALS.BODY_FILE, body.content or "")
   else
@@ -715,6 +684,51 @@ local function process_request_kulala_core(parsed_request, callback, retry_depth
     return
   end
 
+  if first.protocol == "websocket" then
+    local WEBSOCKET = require("kulala.cmd.websocket")
+    FS.write_file(GLOBALS.HEADERS_FILE, "Content-Type: text/plain\n\n")
+    local response = {
+      id = (DB.get_current_buffer() or 0) .. ":" .. (parsed_request.show_icon_line_number or 0),
+      name = parsed_request.name or "",
+      url = parsed_request.url or "",
+      method = parsed_request.method or "WS",
+      request = { headers_tbl = parsed_request.headers, body = parsed_request.body },
+      code = 0,
+      response_code = 0,
+      status = true,
+      time = vim.fn.localtime(),
+      duration = 0,
+      body_raw = "",
+      body = "",
+      json = {},
+      filter = nil,
+      headers = "",
+      headers_tbl = {},
+      cookies = {},
+      errors = "",
+      stats = "",
+      script_pre_output = "",
+      script_post_output = "",
+      assert_output = {},
+      assert_status = true,
+      file = parsed_request.file or "",
+      buf_name = vim.api.nvim_buf_get_name(DB.get_current_buffer() or 0),
+      line = parsed_request.show_icon_line_number or 0,
+      buf = DB.get_current_buffer(),
+      _kulala_core = true,
+    }
+    parsed_request.body_computed = first.initialMessage or parsed_request.body
+    WEBSOCKET.connect(parsed_request, response, function(success, duration, line)
+      handle_response({
+        code = success and 0 or 1,
+        stdout = "",
+        errors = response.errors or "",
+        duration = duration or 0,
+      }, parsed_request, callback)
+    end)
+    return
+  end
+
   write_kulala_core_response_files(first)
   local duration_ns = math.floor((first.timings and first.timings.total or 0) * 1e6)
 
@@ -750,38 +764,7 @@ function process_request(requests, request, callback)
 
   if M.queue.status == "paused" then return end
 
-  if parsed_request._kulala_core then return process_request_kulala_core(parsed_request, callback) end
-
-  local start_time = vim.uv.hrtime()
-  local errors
-
-  if not check_executable(parsed_request.cmd) then return callback(false, 0, parsed_request.show_icon_line_number) end
-
-  if parsed_request.method == "WS" or parsed_request.method == "WEBSOCKET" then
-    return process_ws_request(parsed_request, callback)
-  end
-
-  vim.system(parsed_request.cmd, {
-    text = true,
-    timeout = CONFIG.get().request_timeout,
-    stderr = function(_, data)
-      if data then
-        errors = (errors or "") .. data:gsub("\r\n", "\n")
-
-        if received_unbffured(parsed_request, errors) then
-          vim.schedule(function()
-            save_response({ code = -1 }, parsed_request)
-            callback(nil, 0, parsed_request.show_icon_line_number)
-          end)
-        end
-      end
-    end,
-  }, function(job_status)
-    job_status.errors = errors
-    job_status.duration = vim.uv.hrtime() - start_time
-
-    handle_response(job_status, parsed_request, callback)
-  end)
+  return process_request_kulala_core(parsed_request, callback)
 end
 
 ---@param request DocumentRequest
@@ -808,6 +791,15 @@ end
 ---@param callback function
 M.run_parser = function(requests, line_nr, callback)
   M.queue:reset()
+
+  if not KULALA_CORE.enabled() then
+    local msg = "kulala-core not found on PATH. Install kulala-core or set `kulala_core_path` in setup."
+    local configured = CONFIG.get().kulala_core_path
+    if type(configured) == "string" and vim.trim(configured) ~= "" then
+      msg = ("kulala_core_path is not executable: %s"):format(vim.trim(configured))
+    end
+    return Logger.error(msg, 1, { report = true })
+  end
 
   if not requests then requests = DOCUMENT_PARSER.get_document() end
   if not requests then return Logger.error("No requests found in the document") end

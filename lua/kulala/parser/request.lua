@@ -476,7 +476,7 @@ end
 local function process_custom_curl_flags(request)
   local env = DB.find_unique("http_client_env") or {}
 
-  local flags = vim.list_extend({}, CONFIG.get().additional_curl_options or {})
+  local flags = {}
   local ssl_config = vim.tbl_get(env, ENV_PARSER.get_current_env(), "SSLConfiguration", "verifyHostCertificate")
 
   if ssl_config == false and not vim.tbl_contains(flags, "--insecure") and not vim.tbl_contains(flags, "-k") then
@@ -551,7 +551,7 @@ end
 local function build_grpc_command(request)
   local grpc_command = parse_grpc_command(request)
 
-  table.insert(request.cmd, CONFIG.get().grpcurl_path)
+  table.insert(request.cmd, "grpcurl")
 
   if request.body_computed and #request.body_computed > 1 then
     table.insert(request.cmd, "-d") -- data
@@ -577,7 +577,7 @@ local function build_grpc_command(request)
 end
 
 local function build_curl_command(request)
-  table.insert(request.cmd, CONFIG.get().curl_path)
+  table.insert(request.cmd, "curl")
   table.insert(request.cmd, "-D")
   table.insert(request.cmd, FS.normalize_path(GLOBALS.HEADERS_FILE))
   table.insert(request.cmd, "-o")
@@ -681,10 +681,11 @@ M.parse = function(requests, document_request)
   end
 
   if request.method == "GRPC" then
-    build_grpc_command(request)
     request.type = "grpc"
+  elseif request.method == "WS" or request.method == "WSS" then
+    request.type = "websocket"
   else
-    build_curl_command(request)
+    request.type = "rest"
   end
 
   DB.update().previous_request = DB.find_unique("current_request")

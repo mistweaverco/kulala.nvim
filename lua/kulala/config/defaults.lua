@@ -1,25 +1,12 @@
 local M = {
-  -- cURL path
-  -- if you have curl installed in a non-standard path,
-  -- you can specify it here
-  curl_path = "curl",
-  -- Path to the kulala-core executable (see https://github.com/mistweaverco/kulala-core).
-  -- When set and executable, HTTP files are parsed and executed by kulala-core instead of the
-  -- built-in Lua parser and curl/javascript runner. gRPC and WebSocket blocks still use the legacy runner.
+  -- Optional path to the kulala-core executable (https://github.com/mistweaverco/kulala-core).
+  -- When set, this path is used exclusively. When nil (default), resolves `kulala-core` from PATH.
   kulala_core_path = nil,
+  -- Subprocess timeout (ms) for kulala-core. Default 600000 (10 min); nil disables the vim.system timeout.
+  kulala_core_timeout = nil,
   -- Optional override for kulala-core persistence (cookies, OAuth, prompts). Default matches kulala-core CLI:
   -- Linux: ~/.local/share/kulala-core or $XDG_DATA_HOME/kulala-core; macOS: ~/Library/Application Support/kulala-core
   kulala_core_data_dir = nil,
-
-  -- additional cURL options
-  -- see: https://curl.se/docs/manpage.html
-  additional_curl_options = {},
-  -- gRPCurl path, get from https://github.com/fullstorydev/grpcurl.git
-  grpcurl_path = "grpcurl",
-  -- websocat path, get from https://github.com/vi/websocat.git
-  websocat_path = "websocat",
-  -- openssl path
-  openssl_path = "openssl",
 
   -- set scope for environment and request variables
   -- possible values: b = buffer, g = global
@@ -35,8 +22,6 @@ local M = {
   -- define your own dynamic variables here, e.g. $randomEmail
   custom_dynamic_variables = {}, ---@type { [string]: fun():string }
 
-  -- default timeout for the request, set to nil to disable
-  request_timeout = nil,
   -- continue running requests when a request failure is encountered
   halt_on_error = true,
 
