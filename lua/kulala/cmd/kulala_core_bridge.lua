@@ -2,6 +2,9 @@ local CONFIG = require("kulala.config")
 
 local M = {}
 
+---@type vim.SystemObj|nil
+M.active_job = nil
+
 ---User-configured path from setup (`kulala_core_path`), if any.
 ---@return string|nil
 local function configured_core_path()
@@ -142,10 +145,32 @@ local function decode_document_json(raw)
   return nil
 end
 
+---@param stdout string|nil
+---@return table|nil
+function M.try_decode_wrapper(stdout)
+  local raw = vim.trim(stdout or "")
+  if raw == "" then return nil end
+  local ok, w = pcall(vim.json.decode, raw)
+  if ok and type(w) == "table" and w.type then return w end
+  return nil
+end
+
+---Stop the in-flight kulala-core subprocess (e.g. Ctrl+C interrupt).
+---@return boolean stopped
+function M.interrupt_active()
+  local job = M.active_job
+  if not job then return false end
+  M.active_job = nil
+  pcall(function()
+    job:kill("sigterm")
+  end)
+  return true
+end
+
 ---@param payload table
 ---@param cwd string|nil
----@return vim.SystemCompleted
-function M.invoke(payload, cwd)
+---@param on_done fun(job: vim.SystemCompleted)
+function M.invoke_async(payload, cwd, on_done)
   local exe = M.require_enabled()
   local opts = {
     stdin = vim.json.encode(payload) .. "\n",
@@ -155,7 +180,27 @@ function M.invoke(payload, cwd)
   local timeout_ms = invoke_timeout_ms()
   if timeout_ms then opts.timeout = timeout_ms end
   if type(cwd) == "string" and cwd ~= "" and vim.fn.isdirectory(cwd) == 1 then opts.cwd = cwd end
-  return vim.system({ exe }, opts):wait()
+
+  M.active_job = vim.system({ exe }, opts, function(job)
+    if M.active_job == job then M.active_job = nil end
+    on_done(job)
+  end)
+end
+
+---@param payload table
+---@param cwd string|nil
+---@return vim.SystemCompleted
+function M.invoke(payload, cwd)
+  local done = false
+  local completed ---@type vim.SystemCompleted
+  M.invoke_async(payload, cwd, function(job)
+    completed = job
+    done = true
+  end)
+  vim.wait(invoke_timeout_ms() or 600000, function()
+    return done
+  end, 20)
+  return completed or { code = 124, stdout = "", stderr = "kulala-core subprocess timed out" }
 end
 
 ---@param first table|nil
@@ -172,16 +217,6 @@ local function is_prompt_item(first)
     return true
   end
   return false
-end
-
----@param stdout string|nil
----@return table|nil
-local function try_decode_wrapper(stdout)
-  local raw = vim.trim(stdout or "")
-  if raw == "" then return nil end
-  local ok, w = pcall(vim.json.decode, raw)
-  if ok and type(w) == "table" and w.type then return w end
-  return nil
 end
 
 ---@param content string
@@ -209,15 +244,11 @@ function M.parse_document(content, filepath, cwd_override)
   return nil, "invalid kulala-core parse output"
 end
 
----@param payload table
----@param cwd string|nil
+---@param job vim.SystemCompleted
 ---@return table|nil wrapper
 ---@return string|nil err
-function M.run(payload, cwd)
-  M.require_enabled()
-  payload.action = "run"
-  local job = M.invoke(payload, cwd)
-  local wrapper = try_decode_wrapper(job.stdout)
+local function run_result_from_job(job)
+  local wrapper = M.try_decode_wrapper(job.stdout)
   local first = wrapper and wrapper.data and wrapper.data[1]
   local is_prompt = wrapper and wrapper.type == "responses" and is_prompt_item(first)
 
@@ -237,15 +268,31 @@ function M.run(payload, cwd)
   return wrapper, nil
 end
 
----@param payload { promptId: string, inputs: { id: string, value: string }[] }
+function M.run(payload, cwd)
+  M.require_enabled()
+  payload.action = "run"
+  local job = M.invoke(payload, cwd)
+  return run_result_from_job(job)
+end
+
+---Non-blocking run; calls `on_done(wrapper, err)` on the main loop when finished.
+---@param payload table
 ---@param cwd string|nil
+---@param on_done fun(wrapper: table|nil, err: string|nil)
+function M.run_async(payload, cwd, on_done)
+  M.require_enabled()
+  payload.action = "run"
+  M.invoke_async(payload, cwd, function(job)
+    local wrapper, err = run_result_from_job(job)
+    on_done(wrapper, err)
+  end)
+end
+
+---@param job vim.SystemCompleted
 ---@return table|nil wrapper
 ---@return string|nil err
-function M.continue(payload, cwd)
-  M.require_enabled()
-  payload.action = "continue"
-  local job = M.invoke(payload, cwd)
-  local wrapper = try_decode_wrapper(job.stdout)
+local function continue_result_from_job(job)
+  local wrapper = M.try_decode_wrapper(job.stdout)
   if wrapper then return wrapper, nil end
   if job.code ~= 0 then
     local err = vim.trim(job.stderr or "")
@@ -253,6 +300,25 @@ function M.continue(payload, cwd)
     return nil, err
   end
   return nil, "invalid kulala-core continue output"
+end
+
+function M.continue(payload, cwd)
+  M.require_enabled()
+  payload.action = "continue"
+  local job = M.invoke(payload, cwd)
+  return continue_result_from_job(job)
+end
+
+---@param payload table
+---@param cwd string|nil
+---@param on_done fun(wrapper: table|nil, err: string|nil)
+function M.continue_async(payload, cwd, on_done)
+  M.require_enabled()
+  payload.action = "continue"
+  M.invoke_async(payload, cwd, function(job)
+    local wrapper, err = continue_result_from_job(job)
+    on_done(wrapper, err)
+  end)
 end
 
 ---@param stdout string|nil
@@ -263,6 +329,29 @@ local function decode_action_response(stdout)
   local ok, res = pcall(vim.json.decode, raw)
   if ok and type(res) == "table" then return res end
   return nil
+end
+
+---@param key_or_keys string|string[]|nil nil clears all global script variables
+---@return boolean ok
+---@return string|nil err
+function M.clear_globals(key_or_keys)
+  M.require_enabled()
+  local names = nil
+  if type(key_or_keys) == "string" then
+    names = { key_or_keys }
+  elseif type(key_or_keys) == "table" then
+    names = key_or_keys
+  end
+  local payload = { action = "clear_globals" }
+  if names then payload.names = names end
+  local job = M.invoke(payload, nil)
+  local res = decode_action_response(job.stdout)
+  if res and res.success == true then return true, nil end
+  if res and res.error then return false, res.error end
+  if job.code ~= 0 then
+    return false, vim.trim(job.stderr or "") ~= "" and vim.trim(job.stderr) or "kulala-core clear_globals failed"
+  end
+  return false, "invalid kulala-core clear_globals output"
 end
 
 ---@param op string
@@ -283,7 +372,15 @@ function M.crypto(op, args, cwd)
   return nil, "invalid kulala-core crypto output"
 end
 
----@param opts { url: string, method?: string, headers?: table, body?: string, insecure?: boolean, timeoutSec?: number, connectionTimeoutSec?: number }
+---@param opts {
+---   url: string,
+---   method?: string,
+---   headers?: table,
+---   body?: string,
+---   insecure?: boolean,
+---   timeoutSec?: number,
+---   connectionTimeoutSec?: number,
+--- }
 ---@param cwd string|nil
 ---@return table|nil result { status, headers, body, url }
 ---@return string|nil err

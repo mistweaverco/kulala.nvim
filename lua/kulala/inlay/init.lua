@@ -28,7 +28,7 @@ M.clear = function(name)
 
   local signs = name and vim.fn.sign_getplaced(buf, { group = "kulala" }) or {}
   vim.iter(signs[1].signs or {}):each(function(s)
-    _ = s.name == name and vim.fn.sign_unplace("kulala", { id = s.id, buffer = buf })
+    if s.name == name then vim.fn.sign_unplace("kulala", { id = s.id, buffer = buf }) end
   end)
 end
 

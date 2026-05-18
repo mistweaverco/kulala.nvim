@@ -85,12 +85,8 @@ local M = {
   format_json_on_redirect = true,
 
   -- enable/disable/customize before_request hook.  Default hook is request highlight.
-  before_request = true, ---@type boolean|fun(request: DocumentRequest):boolean - return true to continue request execution, false to stop
-
-  scripts = {
-    -- resolves "NODE_PATH" environment variable for node scripts. Defaults to the first "node_modules" directory found upwards from "script_file_dir".
-    node_path_resolver = nil, ---@type fun(http_file_dir: string, script_file_dir: string, script_data: ScriptData): string|nil
-  },
+  ---@type boolean|fun(request: DocumentRequest):boolean
+  before_request = true, -- return true to continue request execution, false to stop
 
   ui = {
     -- display mode: possible values: "split", "float"
@@ -251,7 +247,8 @@ local M = {
   -- enable/disable bug reports on all errors
   generate_bug_report = false,
 
-  -- set to true to enable default keymaps (check docs or {plugins_path}/kulala.nvim/lua/kulala/config/keymaps.lua for details)
+  -- set to true to enable default keymaps
+  -- (see docs or lua/kulala/config/keymaps.lua)
   -- or override default keymaps as shown in the example below.
   ---@type boolean|table
   global_keymaps = false,
@@ -281,7 +278,8 @@ local M = {
   -- Prefix for global keymaps
   global_keymaps_prefix = "<leader>R",
 
-  -- Kulala UI keymaps, override with custom keymaps as required (check docs or {plugins_path}/kulala.nvim/lua/kulala/config/keymaps.lua for details)
+  -- Kulala UI keymaps; override with custom keymaps as required
+  -- (see docs or lua/kulala/config/keymaps.lua)
   ---@type boolean|table
   kulala_keymaps = true,
   --[[

@@ -34,16 +34,16 @@ M.log = function(message, level, opts)
 end
 
 M.info = function(message, opts)
-  _ = debug_level() > 2 and M.log(message, log_levels.INFO, opts)
+  if debug_level() > 2 then M.log(message, log_levels.INFO, opts) end
 end
 
 M.warn = function(message, opts)
-  _ = debug_level() > 1 and M.log(message, log_levels.WARN, opts)
+  if debug_level() > 1 then M.log(message, log_levels.WARN, opts) end
 end
 
 ---@param message string
 ---@param lines_no number|nil -- no of error lines to show
----@param report boolean|nil -- whether to generate a bug report
+---@param opts { report?: boolean }|nil -- `report` generates a bug report
 M.error = function(message, lines_no, opts)
   opts = opts or {}
 

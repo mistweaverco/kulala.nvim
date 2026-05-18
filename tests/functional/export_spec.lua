@@ -43,7 +43,7 @@ describe("export to Postman", function()
       schema = "https://schema.getpostman.com/json/collection/v2.1.0/",
     })
 
-    assert.has_properties(item, { id = "export_1:2", name = "Request 1" })
+    assert.has_properties(item, { id = "export_1:1", name = "Request 1" })
 
     assert.has_properties(item.event[1], {
       listen = "prerequest",
@@ -102,7 +102,7 @@ describe("export to Postman", function()
 
     item = group.item[2]
     assert.has_properties(item, {
-      id = "export_1:28",
+      id = "export_1:27",
       name = "Request 2",
       request = { method = "GET", url = { raw = "https://httpbin.org/get?param1=value1&param2=value" } },
     })
@@ -138,7 +138,7 @@ describe("export to Postman", function()
     })
 
     assert.has_properties(group.item[1], {
-      id = "export_1:2",
+      id = "export_1:1",
       name = "Request 1",
     })
 
@@ -331,11 +331,11 @@ describe("export to Postman", function()
       url = { raw = "{{URL}}/post" },
       header = {
         { key = "Accept", value = "{{header_content_type}}", disabled = false },
-        { disabled = false, key = "Content-Type", value = "application/json" },
+        { disabled = false, key = "Cookie", value = "{{cookie_name}}={{cookie_value}}" },
       },
       body = {
         mode = "raw",
-        raw = '{\n  "username": "{{USERNAME}}",\n  "password": "{{PASSWORD}}"\n}',
+        raw = '{"password":"{{PASSWORD}}","username":"{{USERNAME}}"}',
       },
     })
 

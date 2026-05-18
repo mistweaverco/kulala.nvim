@@ -63,10 +63,10 @@ describe("UI", function()
 
     lines = h.to_table(
       [[
+        ### Request 1
         GET http://localhost:3001/request_1
 
-        ###
-
+        ### Request 2
         GET http://localhost:3001/request_2
       ]],
       true
@@ -301,6 +301,7 @@ describe("UI", function()
       h.set_buf_lines(
         http_buf,
         ([[
+          ### Request 1
           GET http://localhost:3001/request_1
 
           > {%
@@ -483,10 +484,13 @@ describe("UI", function()
 
       h.create_buf(
         ([[
+          ### Request 1
           POST https://request_1
-          ###
+
+          ### Request 2
           POST https://request_1
-          ###
+
+          ### Request 3
           POST https://request_2
 
       ]]):to_table(true),
@@ -511,10 +515,13 @@ describe("UI", function()
     it("it clears responses history", function()
       h.create_buf(
         ([[
+          ### Request 1
           POST https://request_1
-          ###
+
+          ### Request 2
           POST https://request_1
-          ###
+
+          ### Request 3
           POST https://request_2
 
       ]]):to_table(true),

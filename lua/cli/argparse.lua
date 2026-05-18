@@ -1788,7 +1788,7 @@ end
 function ParseState:invoke(option, name)
   self:close()
   option:set_name(name)
-  self:check_mutexes(option, name)
+  self:check_mutexes(option)
 
   if option:invoke() then self.option = option end
 end

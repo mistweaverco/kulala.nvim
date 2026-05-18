@@ -1,5 +1,4 @@
 test = nvim -l tests/minit.lua tests --shuffle-tests -o utfTerminal -Xoutput --color -v
-build_ts = scripts/build_ts.sh
 
 tag ?= wip
 watch = '*.lua'
@@ -34,6 +33,3 @@ watch:
 
 watch_tag:
 	@while sleep 0.1; do $(git_ls) | entr -d -c $(test) --tags=$(tag); done
-
-watch_ts:
-	@while sleep 0.1; do find . -name '*.ts' | entr -d -c $(build_ts); done

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://raw.githubusercontent.com/LuaLS/vscode-lua/master/setting/schema.json",
+  "Lua.runtime.version": "LuaJIT",
+  "Lua.diagnostics.globals": [
+    "describe",
+    "it",
+    "before_each",
+    "after_each",
+    "before_all",
+    "after_all",
+    "setup",
+    "teardown",
+    "stub",
+    "pending",
+    "insulate",
+    "expose",
+    "randomize",
+    "request",
+    "client"
+  ]
+}

@@ -7,11 +7,7 @@
 Test and assertion cases can be written in either `Lua` or `Javascript` scripts. The API is the same except for some snake case vs camelCase differences.
 Check the [Lua scripts](../scripts/lua-scripts.md) for more details.
 
-:::warning
-
-[Node.js](https://nodejs.org) must be installed on your system to run `Javascript` scripts.
-
-:::
+Scripts are executed by [kulala-core](https://github.com/mistweaverco/kulala-core) when you run requests from Kulala.
 
 ### Testing HTTP Requests with Assert Functions
 

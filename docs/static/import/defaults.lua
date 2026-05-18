@@ -25,10 +25,6 @@ local M = {
   format_json_on_redirect = true,
   before_request = true,
 
-  scripts = {
-    node_path_resolver = nil,
-  },
-
   ui = {},
 
   lsp = {

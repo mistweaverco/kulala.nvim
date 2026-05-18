@@ -1,24 +1,9 @@
 local Config = require("kulala.config")
-local Fs = require("kulala.utils.fs")
 local Globals = require("kulala.globals")
 
 local M = {}
 
 local Health
-
-local function check_executable(name, path)
-  if Fs.command_exists(path) then
-    path = Fs.command_path(path)
-
-    local version = vim.system({ path, "--version" }, { text = true }):wait()
-    version = #version.stdout > 0 and version.stdout or version.stderr
-    version = version and version:match("%sv?([%d%.]+)%s*") or "unknown"
-
-    Health.ok(("{%s} found: %s (version: %s)"):format(name, path, version))
-  else
-    Health.error(string.format("{%s} not found", name))
-  end
-end
 
 M.check = function(health)
   Health = health or vim.health

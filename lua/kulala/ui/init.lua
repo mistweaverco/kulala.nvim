@@ -165,7 +165,7 @@ local function open_kulala_window(buf)
     if not status then Logger.error("Failed to set window option `" .. key .. "`: " .. (error or "")) end
   end)
 
-  _ = config.display_mode == "float" and vim.api.nvim_set_current_win(win)
+  if config.display_mode == "float" then vim.api.nvim_set_current_win(win) end
 
   return win
 end
@@ -180,7 +180,7 @@ local function show_progress()
 
   local row_offset = vim.fn.bufwinnr("kulala://news_footer") > 0 and 3 or 2
   local message = ("Running.. %s/%s"):format(CMD.queue.done, CMD.queue.total)
-  message = message .. " - press <C-c> to cancel  "
+  message = message .. " - <C-c> cancels requests (newest first)  "
 
   Float.create_window_footer(message, {
     buf = get_kulala_buffer(),
@@ -196,7 +196,7 @@ local function show(contents, filetype, mode)
   local buf = open_kulala_buffer(filetype)
 
   set_buffer_contents(buf, contents, filetype)
-  _ = mode ~= "report" and REPORT.set_response_summary(buf)
+  if mode ~= "report" then REPORT.set_response_summary(buf) end
 
   local win = open_kulala_window(buf)
   local lnum = mode == "report" and vim.api.nvim_buf_line_count(buf) or 4
@@ -272,8 +272,11 @@ local function jump_to_response()
     local lnum = tonumber(vim.api.nvim_get_current_line():match("^%s*%d+"))
     if not lnum then return end
 
+    local current_name = get_current_response().name
     for i = #responses, 1, -1 do
-      if responses[i].line == lnum then
+      if
+        responses[i].line == lnum and (not current_name or current_name == "" or responses[i].name == current_name)
+      then
         set_current_response(i)
         break
       end
@@ -285,7 +288,7 @@ local function jump_to_response()
     vim.api.nvim_win_set_cursor(win, { get_current_response().line, 0 })
 
     win = get_kulala_window()
-    _ = vim.api.nvim_win_get_config(win).relative == "editor" and vim.api.nvim_win_close(win, true)
+    if vim.api.nvim_win_get_config(win).relative == "editor" then vim.api.nvim_win_close(win, true) end
   end
 end
 
@@ -297,7 +300,7 @@ end
 M.show_body = function()
   local body, filetype = format_body()
   show(body, filetype, "body")
-  _ = get_current_response().filter and M.toggle_filter()
+  if get_current_response().filter then M.toggle_filter() end
 end
 
 M.show_headers_body = function()
@@ -457,7 +460,7 @@ M.show_news = function()
   REPORT.hide_response_summary()
 
   local footer = vim.fn.bufnr("kulala://news_footer")
-  _ = footer > -1 and vim.api.nvim_buf_delete(footer, { force = true })
+  if footer > -1 then vim.api.nvim_buf_delete(footer, { force = true }) end
 
   DB.settings:write { news_ver = GLOBALS.VERSION }
 end
@@ -473,7 +476,7 @@ M.open_default_view = function()
   local open_view = type(default_view) == "function" and default_view or M["show_" .. default_view]
 
   local status, errors = xpcall(function()
-    _ = open_view and open_view(get_current_response())
+    if open_view then open_view(get_current_response()) end
   end, debug.traceback)
 
   if not status then Logger.error("Errors displaying response: " .. (errors or ""), 1, { report = true }) end
@@ -502,7 +505,8 @@ M.open_all = function(_, line_nr)
       status = success == nil and "loading" or "error"
     end
 
-    set_current_response(#db.responses)
+    local first_new = math.max(1, (db.previous_response_pos or 0) + 1)
+    set_current_response(math.min(first_new, #db.responses))
 
     INLAY.show(buf, status, icon_linenr, elapsed_ms)
     M.open_default_view()
@@ -534,11 +538,14 @@ M.keymap_enter = function()
 end
 
 M.interrupt_requests = function()
-  if get_current_response().method == "WS" then return require("kulala.cmd.websocket").close() end
+  local current = get_current_response()
+  if current and current.method == "WS" then return require("kulala.cmd.websocket").close() end
 
-  CMD.queue:reset()
+  local acted = CMD.queue.interrupt_progressive()
+  if not acted then return end
+
   INLAY.clear("kulala.loading")
-  hide_progress()
+  if #CMD.queue.tasks == 0 and CMD.queue.status ~= "running" then hide_progress() end
 end
 
 M.replay = function()

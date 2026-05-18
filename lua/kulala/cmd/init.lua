@@ -12,8 +12,6 @@ local INT_PROCESSING = require("kulala.internal_processing")
 local Json = require("kulala.utils.json")
 local KULALA_CORE = require("kulala.cmd.kulala_core_bridge")
 local Logger = require("kulala.logger")
-local REQUEST_PARSER = require("kulala.parser.request")
-local Scripts = require("kulala.parser.scripts")
 local UI_utils = require("kulala.ui.utils")
 
 local M = {}
@@ -35,6 +33,28 @@ local queue = {
     self.status = "idle"
     table.insert(self.tasks, 1, self.previous_task)
     self:run_next()
+  end,
+  ---Drop the last queued task (newest pending first).
+  ---@return boolean cancelled
+  cancel_last_pending = function(self)
+    if #self.tasks == 0 then return false end
+    table.remove(self.tasks)
+    self.total = math.max(self.done, self.total - 1)
+    return true
+  end,
+  ---Kill the in-flight kulala-core subprocess for the currently running task.
+  ---@return boolean interrupted
+  interrupt_running = function(self)
+    if self.status ~= "running" then return false end
+    KULALA_CORE.interrupt_active()
+    return true
+  end,
+  ---One Ctrl+C step: cancel the newest still-pending request, or stop the active one.
+  ---Order for requests 1..N: pending N, N-1, … then the running request (1 if nothing else left).
+  ---@return boolean acted
+  interrupt_progressive = function(self)
+    if self:cancel_last_pending() then return true end
+    return self:interrupt_running()
   end,
 }
 
@@ -80,24 +100,7 @@ function queue.run_next(self)
 end
 
 local function initialize()
-  FS.delete_request_scripts_files()
   FS.delete_cached_files(true)
-end
-
-local function process_prompt_vars(res)
-  for _, metadata in ipairs(res.metadata) do
-    local secret = metadata.name == "secret"
-
-    if
-      (metadata.name == "prompt" or secret)
-      and not vim.g.kulala_cli
-      and not INT_PROCESSING.prompt_var(metadata.value, secret)
-    then
-      return false
-    end
-  end
-
-  return true
 end
 
 local function process_metadata(request, response)
@@ -115,10 +118,10 @@ local function process_metadata(request, response)
   local processor
   for _, metadata in ipairs(request.metadata) do
     processor = int_meta_processors[metadata.name]
-    _ = processor and INT_PROCESSING[processor](metadata.value, response)
+    if processor then INT_PROCESSING[processor](metadata.value, response) end
 
     processor = ext_meta_processors[metadata.name]
-    _ = processor and EXT_PROCESSING[processor](metadata.value, response)
+    if processor then EXT_PROCESSING[processor](metadata.value, response) end
   end
 end
 
@@ -150,25 +153,18 @@ local function kulala_script_console_to_pre_post(lines)
 end
 
 local function process_external(request, response)
-  if not request._kulala_core then
-    if Scripts.run("post_request", request, response) then REQUEST_PARSER.process_variables(request, true) end
-  end
-
-  if request._kulala_core and request._kulala_script_console ~= nil then
+  if request._kulala_script_console ~= nil then
     response.script_pre_output, response.script_post_output =
       kulala_script_console_to_pre_post(request._kulala_script_console)
     request._kulala_script_console = nil
   else
-    response.script_pre_output = FS.read_file(GLOBALS.SCRIPT_PRE_OUTPUT_FILE) or ""
-    response.script_post_output = FS.read_file(GLOBALS.SCRIPT_POST_OUTPUT_FILE) or ""
+    response.script_pre_output = ""
+    response.script_post_output = ""
   end
-  response.assert_output = FS.read_json(GLOBALS.ASSERT_OUTPUT_FILE) or {}
+  response.assert_output = {}
 
-  response.assert_status = response.assert_output.status
-  response.status = response.status and response.assert_status ~= false
-
-  local replay = request.environment["__replay_request"] == "true"
-  request.environment["__replay_request"] = nil
+  local replay = request.environment and request.environment["__replay_request"] == "true"
+  if request.environment then request.environment["__replay_request"] = nil end
 
   return replay and "replay"
 end
@@ -232,7 +228,7 @@ local function inject_payload(errors, request)
   local body = FS.read_file(request.body_temp_file) or ""
   body = #body > 1000 and request.body or body
 
-  _ = #vim.trim(body) > 0 and table.insert(lines, lnum + 1, "> Payload:\n\n" .. body .. "\n")
+  if #vim.trim(body) > 0 then table.insert(lines, lnum + 1, "> Payload:\n\n" .. body .. "\n") end
 
   return table.concat(lines, "\n")
 end
@@ -252,10 +248,16 @@ local function save_response(request_status, parsed_request)
   local buf = DB.get_current_buffer()
   local line = parsed_request.show_icon_line_number or 0
   local id = buf .. ":" .. line
+  if type(parsed_request._kulala_block_name) == "string" and parsed_request._kulala_block_name ~= "" then
+    id = id .. ":" .. parsed_request._kulala_block_name
+  end
+  local body_from_snapshot = type(request_status._kulala_body_snapshot) == "string"
+  local headers_from_snapshot = type(request_status._kulala_headers_snapshot) == "string"
 
   local responses = DB.global_update().responses
   if #responses > 0 and responses[#responses].id == id and responses[#responses].code == -1 then
-    table.remove(responses) -- remove the last response if it's the same request and status was unfinished (for chunked response)
+    -- Drop unfinished chunked response for the same request id.
+    table.remove(responses)
   end
 
   local method_upper = (parsed_request.method or ""):upper()
@@ -295,11 +297,12 @@ local function save_response(request_status, parsed_request)
     status = false,
     time = vim.fn.localtime(),
     duration = request_status.duration or 0,
-    body_raw = FS.read_file(GLOBALS.BODY_FILE) or "",
+    body_raw = body_from_snapshot and request_status._kulala_body_snapshot or (FS.read_file(GLOBALS.BODY_FILE) or ""),
     body = "",
     json = {},
     filter = nil,
-    headers = FS.read_file(GLOBALS.HEADERS_FILE) or "",
+    headers = headers_from_snapshot and request_status._kulala_headers_snapshot
+      or (FS.read_file(GLOBALS.HEADERS_FILE) or ""),
     headers_tbl = INT_PROCESSING.get_headers() or {},
     cookies = INT_PROCESSING.get_cookies() or {},
     errors = request_status.errors or "",
@@ -364,7 +367,7 @@ local function process_errors(request, request_status, processing_errors)
   )
 
   Logger.error(message, 2)
-  _ = processing_errors and Logger.error(processing_errors, 2, { report = true })
+  if processing_errors then Logger.error(processing_errors, 2, { report = true }) end
 
   request_status.errors = processing_errors and request_status.errors .. "\n" .. processing_errors
     or request_status.errors
@@ -372,7 +375,9 @@ local function process_errors(request, request_status, processing_errors)
   save_response(request_status, request)
 end
 
-local function handle_response(request_status, parsed_request, callback)
+---@param advance_queue? boolean when false, do not advance the request queue (multi-response batch)
+---@param invoke_ui_callback? boolean when false, skip the outer run_parser callback (multi-response batch)
+local function handle_response_impl(request_status, parsed_request, callback, advance_queue, invoke_ui_callback)
   local config = CONFIG.get()
   local code = request_status.code == 0
   local success
@@ -381,11 +386,21 @@ local function handle_response(request_status, parsed_request, callback)
     success = code and process_response(request_status, parsed_request, callback)
   end, debug.traceback)
 
-  _ = not (code and processing_status) and process_errors(parsed_request, request_status, processing_errors)
-  _ = (not success and config.halt_on_error) and M.queue:reset() or M.queue:run_next()
+  if not (code and processing_status) then process_errors(parsed_request, request_status, processing_errors) end
+  if advance_queue ~= false then
+    if not success and config.halt_on_error then
+      M.queue:reset()
+    else
+      M.queue:run_next()
+    end
+  end
 
-  callback(success, request_status.duration, INLAY.icon_line_for_request(parsed_request))
+  if invoke_ui_callback ~= false then
+    callback(success, request_status.duration, INLAY.icon_line_for_request(parsed_request))
+  end
 end
+
+local handle_response = vim.schedule_wrap(handle_response_impl)
 
 local function parse_request(_requests, request)
   if not request._kulala_core then
@@ -396,24 +411,27 @@ local function parse_request(_requests, request)
   return request
 end
 
-local function write_kulala_core_response_files(result)
-  local body = result.body
+local function kulala_core_body_text(body)
   if type(body) == "table" and body.type == "json" then
     local encoded = vim.json.encode(body.content)
-    if not encoded then encoded = vim.inspect(body.content) end
-    FS.write_file(GLOBALS.BODY_FILE, encoded)
-  elseif type(body) == "table" and body.type == "text" then
-    FS.write_file(GLOBALS.BODY_FILE, body.content or "")
-  else
-    FS.write_file(GLOBALS.BODY_FILE, "")
+    return encoded or vim.inspect(body.content)
   end
+  if type(body) == "table" and body.type == "text" then return body.content or "" end
+  return ""
+end
 
+local function kulala_core_headers_text(headers)
   local lines = {}
-  for k, v in pairs(result.headers or {}) do
+  for k, v in pairs(headers or {}) do
     table.insert(lines, ("%s: %s"):format(k, tostring(v)))
   end
   table.sort(lines)
-  FS.write_file(GLOBALS.HEADERS_FILE, table.concat(lines, "\n") .. "\n\n")
+  return table.concat(lines, "\n") .. "\n\n"
+end
+
+local function write_kulala_core_response_files(result)
+  FS.write_file(GLOBALS.BODY_FILE, kulala_core_body_text(result.body))
+  FS.write_file(GLOBALS.HEADERS_FILE, kulala_core_headers_text(result.headers))
 end
 
 local function kulala_core_stats_stdout(result)
@@ -530,47 +548,139 @@ local function kulala_core_collect_prompt_inputs(prompt)
 end
 
 ---@param parsed_request DocumentRequest
+---@return DocumentRequest[]
+local function kulala_core_run_targets(parsed_request)
+  if parsed_request._kulala_run_expander and parsed_request.nested_requests and #parsed_request.nested_requests > 0 then
+    return parsed_request.nested_requests
+  end
+  return { parsed_request }
+end
+
+---@param item table kulala-core result entry
+---@param targets DocumentRequest[]
+---@param index number 1-based index in the batch
+---@return DocumentRequest
+local function kulala_core_target_for_item(item, targets, index)
+  if type(item.blockName) == "string" and item.blockName ~= "" then
+    for _, target in ipairs(targets) do
+      if target._kulala_block_name == item.blockName then return target end
+    end
+  end
+  return targets[index] or targets[1]
+end
+
+---@param item table
+---@param target DocumentRequest
+---@param duration_wall number
 ---@param callback function
----@param retry_depth number|nil after `continue`, re-run run (cap recursion)
-local function process_request_kulala_core(parsed_request, callback, retry_depth)
-  retry_depth = retry_depth or 0
-  if retry_depth > 6 then
-    handle_response({
+---@param advance_queue boolean
+local function kulala_core_deliver_result(item, target, duration_wall, callback, advance_queue, invoke_ui_callback)
+  if item.success ~= true then
+    handle_response_impl({
       code = 1,
-      errors = "kulala-core: exceeded prompt / retry limit",
+      errors = item.error or "request failed",
       stdout = "",
-      duration = 0,
-    }, parsed_request, callback)
+      duration = duration_wall,
+    }, target, callback, advance_queue, invoke_ui_callback)
     return
   end
 
-  local buf = DB.get_current_buffer()
-  local content = table.concat(vim.api.nvim_buf_get_lines(buf, 0, -1, false), "\n")
-  local start_time = vim.uv.hrtime()
+  if item.protocol == "websocket" then
+    local WEBSOCKET = require("kulala.cmd.websocket")
+    FS.write_file(GLOBALS.HEADERS_FILE, "Content-Type: text/plain\n\n")
+    local response = {
+      id = (DB.get_current_buffer() or 0) .. ":" .. (target.show_icon_line_number or 0),
+      name = target.name or "",
+      url = target.url or "",
+      method = target.method or "WS",
+      request = { headers_tbl = target.headers, body = target.body },
+      code = 0,
+      response_code = 0,
+      status = true,
+      time = vim.fn.localtime(),
+      duration = 0,
+      body_raw = "",
+      body = "",
+      json = {},
+      filter = nil,
+      headers = "",
+      headers_tbl = {},
+      cookies = {},
+      errors = "",
+      stats = "",
+      script_pre_output = "",
+      script_post_output = "",
+      assert_output = {},
+      assert_status = true,
+      file = target.file or "",
+      buf_name = vim.api.nvim_buf_get_name(DB.get_current_buffer() or 0),
+      line = target.show_icon_line_number or 0,
+      buf = DB.get_current_buffer(),
+      _kulala_core = true,
+    }
+    target.body_computed = item.initialMessage or target.body
+    WEBSOCKET.connect(target, response, function(success, duration)
+      handle_response({
+        code = success and 0 or 1,
+        stdout = "",
+        errors = response.errors or "",
+        duration = duration or 0,
+      }, target, callback, advance_queue, invoke_ui_callback)
+    end)
+    return
+  end
 
-  local http_filepath, core_cwd = KULALA_CORE.resolve_document_paths(buf, parsed_request.file)
+  write_kulala_core_response_files(item)
+  local duration_ns = math.floor((item.timings and item.timings.total or 0) * 1e6)
 
-  local run_payload = {
-    content = content,
-    env = ENV_PARSER.get_current_env() or "default",
-    limit = {
-      {
-        filter = "cursorPosition",
-        line = kulala_core_cursor_line(parsed_request),
-        column = math.max(1, vim.fn.col(".")),
-      },
-    },
-  }
-  if http_filepath then run_payload.filepath = http_filepath end
+  target._kulala_script_console = item.scriptConsole or {}
+  local chain = item.redirectChain
+  target._kulala_redirect_chain = (vim.islist(chain) and #chain > 0) and chain or nil
 
-  local wrapper, err = KULALA_CORE.run(run_payload, core_cwd)
+  handle_response_impl({
+    code = 0,
+    stdout = kulala_core_stats_stdout(item),
+    errors = "",
+    duration = duration_ns,
+    _kulala_body_type = type(item.body) == "table" and item.body.type or nil,
+    _kulala_body_snapshot = kulala_core_body_text(item.body),
+    _kulala_headers_snapshot = kulala_core_headers_text(item.headers),
+  }, target, callback, advance_queue, invoke_ui_callback)
+end
 
+---@param wrapper table
+---@param parsed_request DocumentRequest
+---@param duration_wall number
+---@param callback function
+local function kulala_core_deliver_run_results(wrapper, parsed_request, duration_wall, callback)
+  local data = wrapper.data or {}
+  local targets = kulala_core_run_targets(parsed_request)
+  for i, item in ipairs(data) do
+    local advance_queue = i == #data
+    local invoke_ui_callback = advance_queue
+    local target = kulala_core_target_for_item(item, targets, i)
+    kulala_core_deliver_result(item, target, duration_wall, callback, advance_queue, invoke_ui_callback)
+  end
+end
+
+---@param parsed_request DocumentRequest
+---@param callback function
+---@param retry_depth number|nil
+local process_request_kulala_core
+
+---@param wrapper table
+---@param parsed_request DocumentRequest
+---@param callback function
+---@param retry_depth number
+---@param start_time number
+---@param core_cwd string|nil
+local function finish_kulala_core_wrapper(wrapper, parsed_request, callback, retry_depth, start_time, core_cwd)
   local duration_wall = vim.uv.hrtime() - start_time
 
-  if err then
+  if not wrapper or type(wrapper) ~= "table" then
     handle_response({
       code = 1,
-      errors = err,
+      errors = "invalid kulala-core run output",
       stdout = "",
       duration = duration_wall,
     }, parsed_request, callback)
@@ -625,124 +735,94 @@ local function process_request_kulala_core(parsed_request, callback, retry_depth
       return
     end
 
-    local cont_wrapper, cont_err = KULALA_CORE.continue({
-      promptId = first.promptId,
-      inputs = inputs,
-    }, core_cwd)
-    local cont_wall = vim.uv.hrtime() - start_time
-    if cont_err then
-      handle_response({
-        code = 1,
-        errors = cont_err,
-        stdout = "",
-        duration = cont_wall,
-      }, parsed_request, callback)
-      return
-    end
-    if not cont_wrapper or cont_wrapper.type == "error" then
-      local msg = "kulala-core continue failed"
-      if cont_wrapper and cont_wrapper.data and cont_wrapper.data[1] and cont_wrapper.data[1].error then
-        msg = cont_wrapper.data[1].error
+    KULALA_CORE.continue_async(
+      {
+        promptId = first.promptId,
+        inputs = inputs,
+      },
+      core_cwd,
+      function(cont_wrapper, cont_err)
+        vim.schedule(function()
+          local cont_wall = vim.uv.hrtime() - start_time
+          if cont_err then
+            handle_response({
+              code = 1,
+              errors = cont_err,
+              stdout = "",
+              duration = cont_wall,
+            }, parsed_request, callback)
+            return
+          end
+          local cont_first = cont_wrapper and (cont_wrapper.data or {})[1]
+          if not cont_first or cont_first.success ~= true then
+            handle_response({
+              code = 1,
+              errors = (cont_first and cont_first.error) or "continue did not succeed",
+              stdout = "",
+              duration = cont_wall,
+            }, parsed_request, callback)
+            return
+          end
+          local done_msg = type(cont_first.message) == "string" and vim.trim(cont_first.message) or ""
+          if done_msg ~= "" then vim.notify(done_msg, vim.log.levels.INFO) end
+          process_request_kulala_core(parsed_request, callback, retry_depth + 1)
+        end)
       end
-      handle_response({
-        code = 1,
-        errors = msg,
-        stdout = "",
-        duration = cont_wall,
-      }, parsed_request, callback)
-      return
-    end
-
-    local cont_first = (cont_wrapper.data or {})[1]
-    if not cont_first or cont_first.success ~= true then
-      handle_response({
-        code = 1,
-        errors = (cont_first and cont_first.error) or "continue did not succeed",
-        stdout = "",
-        duration = cont_wall,
-      }, parsed_request, callback)
-      return
-    end
-
-    -- Must not chain another `run` (or notify) in the same call stack as `input()` + `vim.wait`:
-    -- the cmdline can stay active or immediately re-prompt. Continue on the next main-loop tick.
-    local done_msg = type(cont_first.message) == "string" and vim.trim(cont_first.message) or ""
-    vim.schedule(function()
-      if done_msg ~= "" then vim.notify(done_msg, vim.log.levels.INFO) end
-      process_request_kulala_core(parsed_request, callback, retry_depth + 1)
-    end)
+    )
     return
   end
 
-  if first.success ~= true then
+  kulala_core_deliver_run_results(wrapper, parsed_request, duration_wall, callback)
+end
+
+---@param parsed_request DocumentRequest
+---@param callback function
+---@param retry_depth number|nil after `continue`, re-run run (cap recursion)
+process_request_kulala_core = function(parsed_request, callback, retry_depth)
+  retry_depth = retry_depth or 0
+  if retry_depth > 6 then
     handle_response({
       code = 1,
-      errors = first.error or "request failed",
+      errors = "kulala-core: exceeded prompt / retry limit",
       stdout = "",
-      duration = duration_wall,
+      duration = 0,
     }, parsed_request, callback)
     return
   end
 
-  if first.protocol == "websocket" then
-    local WEBSOCKET = require("kulala.cmd.websocket")
-    FS.write_file(GLOBALS.HEADERS_FILE, "Content-Type: text/plain\n\n")
-    local response = {
-      id = (DB.get_current_buffer() or 0) .. ":" .. (parsed_request.show_icon_line_number or 0),
-      name = parsed_request.name or "",
-      url = parsed_request.url or "",
-      method = parsed_request.method or "WS",
-      request = { headers_tbl = parsed_request.headers, body = parsed_request.body },
-      code = 0,
-      response_code = 0,
-      status = true,
-      time = vim.fn.localtime(),
-      duration = 0,
-      body_raw = "",
-      body = "",
-      json = {},
-      filter = nil,
-      headers = "",
-      headers_tbl = {},
-      cookies = {},
-      errors = "",
-      stats = "",
-      script_pre_output = "",
-      script_post_output = "",
-      assert_output = {},
-      assert_status = true,
-      file = parsed_request.file or "",
-      buf_name = vim.api.nvim_buf_get_name(DB.get_current_buffer() or 0),
-      line = parsed_request.show_icon_line_number or 0,
-      buf = DB.get_current_buffer(),
-      _kulala_core = true,
-    }
-    parsed_request.body_computed = first.initialMessage or parsed_request.body
-    WEBSOCKET.connect(parsed_request, response, function(success, duration, line)
-      handle_response({
-        code = success and 0 or 1,
-        stdout = "",
-        errors = response.errors or "",
-        duration = duration or 0,
-      }, parsed_request, callback)
+  local buf = DB.get_current_buffer()
+  local content = table.concat(vim.api.nvim_buf_get_lines(buf, 0, -1, false), "\n")
+  local start_time = vim.uv.hrtime()
+
+  local http_filepath, core_cwd = KULALA_CORE.resolve_document_paths(buf, parsed_request.file)
+
+  local run_payload = {
+    content = content,
+    env = ENV_PARSER.get_current_env() or "default",
+    limit = {
+      {
+        filter = "cursorPosition",
+        line = kulala_core_cursor_line(parsed_request),
+        column = math.max(1, vim.fn.col(".")),
+      },
+    },
+  }
+  if http_filepath then run_payload.filepath = http_filepath end
+
+  KULALA_CORE.run_async(run_payload, core_cwd, function(wrapper, err)
+    vim.schedule(function()
+      if err then
+        handle_response({
+          code = 1,
+          errors = err,
+          stdout = "",
+          duration = vim.uv.hrtime() - start_time,
+        }, parsed_request, callback)
+        return
+      end
+      finish_kulala_core_wrapper(wrapper, parsed_request, callback, retry_depth, start_time, core_cwd)
     end)
-    return
-  end
-
-  write_kulala_core_response_files(first)
-  local duration_ns = math.floor((first.timings and first.timings.total or 0) * 1e6)
-
-  parsed_request._kulala_script_console = first.scriptConsole or {}
-  local chain = first.redirectChain
-  parsed_request._kulala_redirect_chain = (vim.islist(chain) and #chain > 0) and chain or nil
-
-  handle_response({
-    code = 0,
-    stdout = kulala_core_stats_stdout(first),
-    errors = "",
-    duration = duration_ns,
-    _kulala_body_type = type(first.body) == "table" and first.body.type or nil,
-  }, parsed_request, callback)
+  end)
 end
 
 ---Executes DocumentRequest
@@ -751,8 +831,6 @@ end
 ---@param callback function
 function process_request(requests, request, callback)
   local config = CONFIG.get()
-  --  to allow running fastAPI within vim.system callbacks
-  handle_response = vim.schedule_wrap(handle_response)
 
   local parsed_request = parse_request(requests, request)
 
@@ -809,12 +887,12 @@ M.run_parser = function(requests, line_nr, callback)
 
   local limit_line = (type(line_nr) == "number" and line_nr > 0) and line_nr or nil
 
-  for _, request in ipairs(requests) do
+  for batch_index, request in ipairs(requests) do
     if request._kulala_core and limit_line then request._kulala_limit_line = limit_line end
 
     INLAY.show(DB.current_buffer, "loading", INLAY.icon_line_for_request(request))
 
-    M.queue:add({ request = request }, function()
+    M.queue:add({ request = request, batch_index = batch_index, batch_size = #requests }, function()
       if execute_before_request(request) then
         initialize()
         process_request(requests, request, callback)

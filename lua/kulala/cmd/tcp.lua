@@ -1,4 +1,3 @@
-local Config = require("kulala.config")
 local Logger = require("kulala.logger")
 local M = {}
 
@@ -10,7 +9,7 @@ local function redirect_script()
       <p>Processing authentication...</p>
       <script>
         const fragment = window.location.hash.substring(1);
-        
+
         if (fragment && fragment.includes('access_token=')) {
           window.location.href = '\/?' + fragment;
         } else {
@@ -34,14 +33,14 @@ M.server = {
       return Logger.warn(("TCP server: failed to bind on %s:%s (%s)"):format(host, port, err or ""))
     end
 
-    status, err = server:listen(128, function(err)
-      if err then return Logger.error("TCP server: failed to accept connection: " .. err) end
+    status, err = server:listen(128, function(listen_err)
+      if listen_err then return Logger.error("TCP server: failed to accept connection: " .. listen_err) end
 
       local client = vim.uv.new_tcp() or {}
       server:accept(client)
 
-      client:read_start(function(err, chunk)
-        if err then return Logger.error("TCP server: failed to process request: " .. err) end
+      client:read_start(function(read_err, chunk)
+        if read_err then return Logger.error("TCP server: failed to process request: " .. read_err) end
         if not chunk then return self:stop(client) end
 
         local response = ""
@@ -82,8 +81,8 @@ M.server = {
     tcp = tcp or self.server
 
     return pcall(function()
-      _ = tcp.shutdown and tcp:shutdown()
-      _ = tcp.close and tcp:close()
+      if tcp.shutdown then tcp:shutdown() end
+      if tcp.close then tcp:close() end
     end)
   end,
 }

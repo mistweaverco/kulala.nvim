@@ -120,8 +120,8 @@ local has_properties = function(state, args)
   local key_paths = get_key_paths(properties) or {}
 
   for _, path in ipairs(key_paths) do
-    local o_value = vim.tbl_get(o, unpack(path))
-    local prop_value = vim.tbl_get(properties, unpack(path))
+    local o_value = vim.tbl_get(o, table.unpack(path))
+    local prop_value = vim.tbl_get(properties, table.unpack(path))
 
     if o_value ~= prop_value then
       result = false
@@ -131,7 +131,7 @@ local has_properties = function(state, args)
       table.remove(parent_path)
       parent_path = #parent_path == 0 and path or parent_path
 
-      missing_o[parent_path] = vim.tbl_get(o, unpack(parent_path))
+      missing_o[parent_path] = vim.tbl_get(o, table.unpack(parent_path))
     end
   end
 

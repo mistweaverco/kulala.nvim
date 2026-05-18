@@ -32,7 +32,7 @@ local set_autocomands = function()
     group = vim.api.nvim_create_augroup("Kulala filetype setup", { clear = true }),
     pattern = M.options.lsp.filetypes,
     callback = function(ev)
-      _ = M.options.lsp.enable and require("kulala.cmd.lsp").start(ev.buf, ev.match)
+      if M.options.lsp.enable then require("kulala.cmd.lsp").start(ev.buf, ev.match) end
     end,
   })
 end
@@ -53,7 +53,7 @@ M.setup = function(config)
   set_syntax_hl()
   set_autocomands()
 
-  _ = M.options.show_icons == "signcolumn" and pcall(set_signcolumn_icons)
+  if M.options.show_icons == "signcolumn" then pcall(set_signcolumn_icons) end
   M.options.global_keymaps, M.options.ft_keymaps = keymaps.setup_global_keymaps()
 
   M.options.initialized = true

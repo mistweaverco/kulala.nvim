@@ -46,7 +46,7 @@ resolving XML request variables)
 
 - [stylua](https://github.com/JohnnyMorganz/StyLua)
 
-(Required for Lua scripts)
+(Only required for formatting Lua in `.http` files, not for running scripts)
 
 # Optional Requirements
 
@@ -71,12 +71,14 @@ If you have Neovim `0.10.x`, you might get an error `ABI version mismatch for ku
 
 You need to install `tree-sitter CLI` and recompile the parser:
 
-1. Delete the existing parser at `nvim-treesitter/parser/kulala_http`
+1. Delete the existing parser at `vim.fs.joinpath(vim.fn.stdpath("data"), "site", "parser", "kulala_http")`
 2. Install the `tree-sitter CLI` (if not installed already):
     - from distribution repositories
+    - via npm: `npm install -g tree-sitter-cli`
+    - via [Zana](https://getzana.net)
     - or from https://github.com/tree-sitter/tree-sitter/tree/master/crates/cli
 3. Recompile the parser:
     - Open a  `http` file in Neovim (this will load Kulala)
-    - Run `:TSInstallFromGrammar kulala_http`
+      and kick off the compilation automatically
    
 [xmllint]: https://packages.ubuntu.com/noble/libxml2-utils

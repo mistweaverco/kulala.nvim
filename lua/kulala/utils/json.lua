@@ -15,7 +15,7 @@ M.parse = function(str, opts, filename)
 
   local status, result = pcall(vim.json.decode, str or "", opts)
   if not status then
-    _ = opts.verbose and Logger.error(("Failed to parse %s: %s"):format(filename or "JSON", result))
+    if opts.verbose then Logger.error(("Failed to parse %s: %s"):format(filename or "JSON", result)) end
     return nil, result
   end
 

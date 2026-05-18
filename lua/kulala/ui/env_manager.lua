@@ -144,7 +144,7 @@ local open_telescope = function()
         actions.select_default:replace(function()
           local selection = action_state.get_selected_entry()
           actions.close(prompt_bufnr)
-          _ = selection and select_env(selection.value)
+          if selection then select_env(selection.value) end
         end)
 
         return true
@@ -215,7 +215,11 @@ end
 
 M.open = function()
   if has_snacks then
-    _ = snacks_picker.config.get().ui_select and open_snacks() or open_selector()
+    if snacks_picker.config.get().ui_select then
+      open_snacks()
+    else
+      open_selector()
+    end
   elseif has_fzf then
     open_fzf()
   elseif has_telescope then

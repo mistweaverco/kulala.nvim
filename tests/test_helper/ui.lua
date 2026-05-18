@@ -52,7 +52,7 @@ end
 
 ---@param self string
 string.to_object = function(self)
-  return loadstring("return " .. self:gsub("[\n\r]*", ""))()
+  return load("return " .. self:gsub("[\n\r]*", ""), "@string.to_object", "t")()
 end
 
 ---@param tbl string[]|string

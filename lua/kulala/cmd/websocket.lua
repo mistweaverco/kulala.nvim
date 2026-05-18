@@ -1,4 +1,3 @@
-local Config = require("kulala.config")
 local FS = require("kulala.utils.fs")
 local GLOBALS = require("kulala.globals")
 local KULALA_CORE = require("kulala.cmd.kulala_core_bridge")
@@ -86,7 +85,7 @@ function M.connect(request, response, callback, opts)
   opts = opts or {}
   response.body = ""
 
-  _ = M.connection and M.close()
+  if M.connection then M.close() end
 
   local _, core_cwd = KULALA_CORE.resolve_document_paths(0, request.file)
 

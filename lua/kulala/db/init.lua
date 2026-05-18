@@ -113,9 +113,8 @@ end
 local function save_data()
   if CONFIG.get().environment_scope == "b" then
     if vim.fn.bufexists(M.data.scope_nr) > 0 then vim.b[M.data.scope_nr].kulala_data = M.data end
-  elseif CONFIG.get().environment_scope == "g" then
-    -- keep in lua only
   end
+  -- global scope (`"g"`): data stays in module state only, nothing to persist here
 end
 
 M.global_find_many = function()

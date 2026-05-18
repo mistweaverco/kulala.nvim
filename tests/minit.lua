@@ -15,9 +15,6 @@ vim.opt.rtp:append(vim.uv.cwd())
 
 _, _G.DevTools = pcall(require, "log")
 
--- Install JS scripts dependencies
-require("kulala.parser.scripts.engines.javascript").install_dependencies(true)
-
 require("lazy.minit").busted({
   headless = {
     process = false,
@@ -26,7 +23,8 @@ require("lazy.minit").busted({
     colors = true, -- use ansi colors
   },
   spec = {
-    { dir = vim.uv.cwd() }, -- Current working directory for tests
-    { "nvim-treesitter/nvim-treesitter" },
+    {
+      dir = vim.uv.cwd(),
+    },
   },
 }, { install = { missing = true } })

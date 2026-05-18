@@ -51,6 +51,7 @@ describe("websockets", function()
 
     h.create_buf(
       ([[
+          ### WebSocket
           WS wss://echo.websocket.org
 
           {"name": "world"}

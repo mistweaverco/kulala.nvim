@@ -77,9 +77,15 @@ local function get_script_output(response)
   local sep = (" "):rep(4)
   local out = {}
 
-  _ = #pre > 0 and vim.list_extend(out, { "--> Pre-script:" }) and vim.list_extend(out, vim.split(pre, "\n"))
-  _ = #post > 0 and vim.list_extend(out, { "<-- Post-script:" }) and vim.list_extend(out, vim.split(post, "\n"))
-  _ = #out > 0 and table.insert(out, 1, " ")
+  if #pre > 0 then
+    vim.list_extend(out, { "--> Pre-script:" })
+    vim.list_extend(out, vim.split(pre, "\n"))
+  end
+  if #post > 0 then
+    vim.list_extend(out, { "<-- Post-script:" })
+    vim.list_extend(out, vim.split(post, "\n"))
+  end
+  if #out > 0 then table.insert(out, 1, " ") end
 
   return vim
     .iter(out)
@@ -200,20 +206,19 @@ local function generate_requests_report()
 
     table.insert(report, { row, response.status and config.successHighlight or config.errorHighlight })
 
-    _ = show_script
-      and not (response.status and show_script == "on_error")
-      and vim.list_extend(report, get_script_output(response))
+    if show_script and not (response.status and show_script == "on_error") then
+      vim.list_extend(report, get_script_output(response))
+    end
 
-    _ = show_asserts
-      and #asserts > 0
-      and not (response.assert_status and show_asserts == "on_error")
-      and vim.list_extend(report, { { "" } })
-      and vim.list_extend(report, asserts)
+    if show_asserts and #asserts > 0 and not (response.assert_status and show_asserts == "on_error") then
+      vim.list_extend(report, { { "" } })
+      vim.list_extend(report, asserts)
+    end
 
     table.insert(report, { "" })
   end)
 
-  _ = config.show_summary and vim.list_extend(report, get_report_summary(stats or {}))
+  if config.show_summary then vim.list_extend(report, get_report_summary(stats or {})) end
 
   local contents, highlights = {}, {}
   for i, line in ipairs(report) do
@@ -241,7 +246,7 @@ local function print_http_spec(spec, curl)
     table.insert(lines, header .. ": " .. spec.headers[header])
   end)
 
-  _ = #spec.cookie > 0 and table.insert(lines, "Cookie: " .. spec.cookie)
+  if #spec.cookie > 0 then table.insert(lines, "Cookie: " .. spec.cookie) end
 
   if #spec.body > 0 then
     table.insert(lines, "")

@@ -1,4 +1,3 @@
-local Json = require("kulala.utils.json")
 local KULALA_CORE = require("kulala.cmd.kulala_core_bridge")
 local Logger = require("kulala.logger")
 
@@ -20,7 +19,7 @@ end
 ---@param input string
 ---@return string
 M.base64_encode = function(input)
-  return vim.base64.encode(input):gsub("+", "-"):gsub("/", "_"):gsub("=+$", "")
+  return (vim.base64.encode(input):gsub("+", "-"):gsub("/", "_"):gsub("=+$", ""))
 end
 
 ---@return string|nil

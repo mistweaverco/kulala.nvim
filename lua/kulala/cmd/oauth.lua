@@ -1,5 +1,4 @@
 local Async = require("kulala.utils.async")
-local Config = require("kulala.config")
 local Crypto = require("kulala.cmd.crypto")
 local DB = require("kulala.db")
 local Env = require("kulala.parser.env")
@@ -141,7 +140,7 @@ local function add_pkce(config_id, body, request_type)
   local verifier = config.auth_data.pkce_verifier or pkce["Code Verifier"] or Crypto.pkce_verifier()
 
   config.auth_data.pkce_verifier = request_type == "auth" and verifier or nil
-  config = update_auth_data(config_id, config.auth_data, true)
+  update_auth_data(config_id, config.auth_data, true)
 
   local challenge = Crypto.pkce_challenge(verifier, challenge_method)
 
@@ -343,7 +342,8 @@ M.receive_code = function(config_id)
     local params = parse_params(request) or {}
 
     if params.code or params.access_token then
-      params.expires_in = params.expires_in or config["Expires In"] or 10 -- to allow for resuming requests with new token
+      -- Default expiry so resumed requests can pick up the new token.
+      params.expires_in = params.expires_in or config["Expires In"] or 10
 
       vim.schedule(function()
         update_auth_data(config_id, params)
@@ -360,7 +360,7 @@ M.receive_code = function(config_id)
 
   local _, result = Async.co_yield(co, request_timeout)
   if not result or result == "timeout" then
-    _ = tcp_server and tcp_server:stop()
+    if tcp_server then tcp_server:stop() end
     return Logger.error("Timeout waiting for authorization code/token for: " .. config_id)
   end
 
@@ -447,7 +447,7 @@ end
 
 local function launch_browser(cmd, auth_url, redirect_url)
   local status, error
-  local browser_cmd = {}
+  local browser_cmd
 
   cmd = cmd or ""
 
@@ -488,7 +488,7 @@ M.acquire_auth = function(config_id)
   body = config["Scope"] and body .. "&scope=" .. config["Scope"] or body
 
   body = add_pkce(config_id, body, "auth")
-  body, headers = add_client_credentials(config_id, body, headers)
+  body = add_client_credentials(config_id, body, headers)
   body = add_custom_params(config_id, body, "In Auth Request")
 
   local uri = url .. "?" .. body
@@ -502,7 +502,7 @@ M.acquire_auth = function(config_id)
   if not code then return Logger.error("Failed to acquire code for config: " .. config_id) end
 
   Logger.info("Authorization code/token acquired for config: " .. config_id)
-  config = update_auth_data(config_id, { code = code, acquired_at = os.time() })
+  update_auth_data(config_id, { code = code, acquired_at = os.time() })
 
   return code
 end
@@ -762,8 +762,9 @@ M.is_token_expired = function(config_id, type)
   if not acquired_at or not expires_in then return true end
 
   local diff = os.difftime(os.time(), acquired_at)
-  _ = diff > expires_in
-    and Logger.warn((type == "" and "Access" or "Refresh") .. " token expired for config: " .. config_id)
+  if diff > expires_in then
+    Logger.warn((type == "" and "Access" or "Refresh") .. " token expired for config: " .. config_id)
+  end
 
   return diff > expires_in, expires_in - diff
 end

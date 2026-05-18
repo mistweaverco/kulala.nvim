@@ -22,7 +22,6 @@ http-client.env.json
 !/tests/**/*.http
 
 
-.luarc.json
 selene.toml
 neovim.yml
 .todo.md
