@@ -148,6 +148,9 @@ function M.to_document_requests(doc, path)
     local method = (req.method or "GET"):upper()
     local request = Document.new_empty_document_request()
     request.shared = shared
+    vim.iter(shared.variables):each(function(k, v)
+      request.variables[k] = v
+    end)
     request.name = block_display_name(block)
     request.method = method
     request.url = req.url or ""

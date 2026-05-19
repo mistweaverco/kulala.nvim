@@ -1,7 +1,11 @@
 local Bridge = require("kulala.cmd.kulala_core_bridge")
+local CONFIG = require("kulala.config")
 local DocCore = require("kulala.parser.document_core")
 
 describe("document_core", function()
+  before_each(function()
+    require("kulala").setup(require("test_helper.kulala_core").config {})
+  end)
   it("maps kulala-core blocks to document requests", function()
     local content = table.concat({
       "### Request A",

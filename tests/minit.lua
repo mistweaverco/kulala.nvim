@@ -25,6 +25,9 @@ require("lazy.minit").busted({
   spec = {
     {
       dir = vim.uv.cwd(),
+      config = function()
+        require("kulala").setup(require("test_helper.kulala_core").config {})
+      end,
     },
   },
 }, { install = { missing = true } })

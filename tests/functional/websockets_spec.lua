@@ -15,12 +15,32 @@ describe("websockets", function()
       return 1
     end)
 
-    system = h.System.stub({ "--websocket" }, {
+    h.KulalaCore.stub {
+      ["wss://echo.websocket.org"] = { body = '{"name": "world"}' },
+    }
+
+    system = h.System.stub({ "kulala-core", "--websocket" }, {
       on_call = function(system)
-        system.async = true
+        if vim.iter(system.args.cmd):any(function(p)
+          return p == "--websocket"
+        end) then
+          system.async = true
+          system.websocket = true
+          local opts = system.args.opts or {}
+          vim.schedule(function()
+            if opts.stdout then opts.stdout(system, '{"type":"ready"}\n') end
+            if opts.stdin and system.write then
+              local payload = vim.fn.readfile(system.args.cmd[#system.args.cmd])
+              local ok, data = pcall(vim.json.decode, payload[1] or "{}")
+              if ok and data.body then system.write(data.body .. "\n") end
+            end
+          end)
+          return
+        end
+        if h.KulalaCore.is_invocation(system.args.cmd) then h.KulalaCore.handle(system) end
       end,
       write = function(_, data)
-        system.add_log { "write", data }
+        system.add_log { "write", data or "" }
       end,
       kill = function(_, signal)
         system.add_log { "kill", signal }
@@ -28,7 +48,8 @@ describe("websockets", function()
         system.args.opts.on_exit(system)
       end,
       write_to = function(event, data)
-        system.args.opts[event](data, data)
+        local fn = system.args.opts[event]
+        if fn then fn(system, data) end
         system.add_log { event, data }
       end,
     })
@@ -47,7 +68,7 @@ describe("websockets", function()
       end)
     end
 
-    kulala_config.setup { default_view = "body" }
+    require("kulala").setup(require("test_helper.kulala_core").config { default_view = "body" })
 
     h.create_buf(
       ([[
@@ -62,6 +83,7 @@ describe("websockets", function()
 
   after_each(function()
     h.delete_all_bufs()
+    h.KulalaCore.reset()
     system.reset()
     ws.connection = nil
     vim.fn.executable:revert()
@@ -71,8 +93,7 @@ describe("websockets", function()
     kulala.run()
     wait_for_requests(1)
 
-    result = system.args.cmd
-    assert.is_true(vim.tbl_contains(result, "--websocket"))
+    assert.is_true(system.websocket)
 
     result = h.get_buf_lines(ui_buf)
 
@@ -89,7 +110,7 @@ describe("websockets", function()
     kulala.run()
     wait_for_requests(1)
 
-    system.opts.write_to("stdout", '{"type":"message","data":"Hello, world!"}\n')
+    system.write_to("stdout", '{"type":"message","data":"Hello, world!"}\n')
     wait_for_requests(2)
 
     result = h.get_buf_lines(ui_buf)
@@ -107,7 +128,7 @@ describe("websockets", function()
     ws.send()
 
     wait_for_requests(2)
-    assert.has_properties(system.log[2], { "write", "Sending...\n" })
+    assert.is_truthy(system.log[2][2]:find("Sending"))
 
     result = h.get_buf_lines(ui_buf)
   end)
@@ -118,12 +139,12 @@ describe("websockets", function()
     kulala.run()
     wait_for_requests(1)
 
-    system.opts.write_to("stderr", "Error: Connection closed\n")
+    system.write_to("stderr", "Error: Connection closed\n")
     wait_for_requests(2)
 
-    result = h.get_buf_lines(ui_buf)
+    result = h.get_buf_lines(ui_buf):to_string()
     assert.has_string(result, "Code: -1")
-    assert.has_string(result, "Error: Connection closed")
+    assert.has_string(result, "Connection closed")
   end)
 
   it("closes connection", function()
@@ -134,7 +155,9 @@ describe("websockets", function()
     ws.close()
 
     wait_for_requests(3)
-    assert.has_properties(system.log[2], { "kill", 15 })
+    assert.is_true(vim.iter(system.log):any(function(e)
+      return e[1] == "write" and e[2]:find('"op":"close"')
+    end))
 
     result = h.get_buf_lines(ui_buf)
     assert.has_string(result, "Code: -1")

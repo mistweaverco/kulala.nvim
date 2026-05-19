@@ -123,7 +123,7 @@ M.get_config_contenttype = function(headers, view)
     primary = vim.trim(vim.split(primary, ";")[1])
 
     if view == "verbose" then
-      return primary == "kulala/grpc_error" and { ft = "kulala_grpc_error" } or { ft = "kulala_verbose_result" }
+      return primary == "kulala/grpc_error" and { ft = "kulala_grpc_error" } or { ft = "markdown" }
     end
 
     local config_key = vim.iter(CONFIG.get().contenttypes):find(function(k, _)

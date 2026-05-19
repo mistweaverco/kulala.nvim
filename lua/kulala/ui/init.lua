@@ -192,10 +192,11 @@ local function show_progress()
 end
 
 local function show(contents, filetype, mode)
-  filetype = filetype and filetype .. ".kulala_ui" or "text.kulala_ui"
-  local buf = open_kulala_buffer(filetype)
+  -- Verbose view is markdown; use plain `markdown` so TS/highlight plugins apply.
+  local buf_ft = mode == "verbose" and "markdown" or (filetype and filetype .. ".kulala_ui" or "text.kulala_ui")
+  local buf = open_kulala_buffer(buf_ft)
 
-  set_buffer_contents(buf, contents, filetype)
+  set_buffer_contents(buf, contents, buf_ft)
   if mode ~= "report" then REPORT.set_response_summary(buf) end
 
   local win = open_kulala_window(buf)
@@ -311,16 +312,9 @@ end
 
 M.show_verbose = function()
   local r = get_current_response()
-  local body, filetype
-  if r._kulala_core then
-    body = require("kulala.ui.verbose_kulala_core").format(r)
-    local cfg = content_config_from_kulala_core(r)
-    filetype = (cfg and cfg.ft ~= "text" and cfg.ft) or INT_PROCESSING.get_config_contenttype(r.headers, "verbose").ft
-  else
-    body, filetype = format_body("verbose")
-    body = (r.errors or "") .. "\n" .. body
-  end
-  show(body, filetype, "verbose")
+  local Verbose = require("kulala.ui.verbose")
+  local body = r._kulala_core and Verbose.format(r) or Verbose.format_legacy(r)
+  show(body, "markdown", "verbose")
 end
 
 M.show_stats = function()

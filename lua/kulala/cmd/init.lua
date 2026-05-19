@@ -321,10 +321,12 @@ local function save_response(request_status, parsed_request)
     buf = buf,
     _kulala_core = parsed_request._kulala_core == true,
     _kulala_redirect_chain = parsed_request._kulala_redirect_chain,
+    _kulala_verbose_trace = parsed_request._kulala_verbose_trace,
     _kulala_body_type = request_status._kulala_body_type,
   }
 
   parsed_request._kulala_redirect_chain = nil
+  parsed_request._kulala_verbose_trace = nil
 
   response = modify_grpc_response(response)
   response = set_request_stats(response)
@@ -656,6 +658,7 @@ local function kulala_core_deliver_result(item, target, duration_wall, callback,
   target._kulala_script_console = item.scriptConsole or {}
   local chain = item.redirectChain
   target._kulala_redirect_chain = (vim.islist(chain) and #chain > 0) and chain or nil
+  target._kulala_verbose_trace = type(item.verboseTrace) == "string" and item.verboseTrace or nil
 
   handle_response_impl({
     code = 0,

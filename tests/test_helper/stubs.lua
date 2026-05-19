@@ -255,9 +255,168 @@ function Jobstart.reset()
 end
 
 local function job_cmd_match(cmd, cmd_stub)
-  return vim.iter(cmd_stub):all(function(flag)
-    return vim.tbl_contains(cmd, flag)
+  return vim.iter(cmd_stub):any(function(flag)
+    return vim.iter(cmd):any(function(part)
+      return part == flag or (type(part) == "string" and part:find(flag, 1, true))
+    end)
   end)
+end
+
+local KulalaCore = {
+  run_mappings = {},
+  requests_no = 0,
+  requests = {},
+}
+
+---@param headers_text string
+---@return table<string, string>
+local function parse_headers_text(headers_text)
+  local headers = {}
+  for line in vim.gsplit(headers_text or "", "\n", { plain = true, trimempty = true }) do
+    local k, v = line:match("^([^:]+):%s*(.*)$")
+    if k and not k:match("^HTTP/") then headers[k] = v end
+  end
+  return headers
+end
+
+---@param payload table
+---@return string|nil
+local function url_for_run_payload(payload)
+  local content = payload.content or ""
+  local line = payload.limit and payload.limit[1] and payload.limit[1].line
+  if type(line) == "number" and line > 0 then
+    local lineno = 0
+    local current_url
+    for l in vim.gsplit(content, "\n", { plain = true }) do
+      lineno = lineno + 1
+      local u = l:match("(wss?://%S+)") or l:match("(https?://%S+)")
+      if u then current_url = vim.split(u, "?")[1] end
+      if lineno >= line and current_url then return current_url end
+    end
+  end
+  return content:match("(wss?://[%w%-%.:/_]+)") or content:match("(https?://[%w%-%.:/_]+)")
+end
+
+---@param url string
+---@param mapping table
+---@return table
+local function build_websocket_item(url, mapping)
+  return {
+    success = true,
+    protocol = "websocket",
+    url = url,
+    initialMessage = mapping.body or "",
+    request = { method = "WS", url = url },
+  }
+end
+
+---@param url string
+---@param mapping table
+---@return table
+local function build_success_item(url, mapping)
+  if url:match("^wss?://") then return build_websocket_item(url, mapping) end
+
+  local headers_text = mapping.headers or ""
+  local body = mapping.body or ""
+  local errors = mapping.errors or ""
+  local status = mapping.status or 200
+  if mapping.stats then
+    local ok, stats = pcall(vim.json.decode, mapping.stats)
+    if ok and type(stats) == "table" and stats.response_code then status = stats.response_code end
+  end
+
+  local method = mapping.method or "GET"
+
+  return {
+    success = true,
+    status = status,
+    url = url,
+    headers = parse_headers_text(headers_text),
+    body = { type = "text", content = body },
+    timings = {
+      dns = 5.449,
+      tcp = 35.805,
+      tls = 150.167,
+      request = 0,
+      redirect = 0,
+      firstByte = 150.565,
+      startTransfer = 150.565,
+      total = 492,
+    },
+    verboseTrace = errors,
+    scriptConsole = mapping.script_console,
+    request = {
+      method = method,
+      url = url,
+    },
+  }
+end
+
+function KulalaCore.stub(opts)
+  KulalaCore.run_mappings = vim.tbl_deep_extend("force", KulalaCore.run_mappings, opts or {})
+  return KulalaCore
+end
+
+function KulalaCore.reset()
+  KulalaCore.requests_no = 0
+  KulalaCore.requests = {}
+  KulalaCore.run_mappings = {}
+end
+
+---Mirror curl.stub URL mappings for kulala-core run responses.
+---@param curl_mappings table
+function KulalaCore.mirror_curl_stub(curl_mappings)
+  local core = {}
+  for url, mapping in pairs(curl_mappings) do
+    if url ~= "*" then core[url] = mapping end
+  end
+  return KulalaCore.stub(core)
+end
+
+function KulalaCore.is_invocation(cmd)
+  return job_cmd_match(cmd, { "kulala-core" })
+end
+
+---@param system table
+function KulalaCore.handle(system)
+  local stdin = (system.args.opts or {}).stdin or ""
+  local payload = vim.json.decode(stdin:match("^(.-)\n?$") or stdin) or {}
+  local action = payload.action
+
+  if action == "parse" or action == "environments" then
+    local done = false
+    System._system(system.args.cmd, system.args.opts, function(completed)
+      system.code = completed.code
+      system.stdout = completed.stdout or ""
+      system.stderr = completed.stderr or ""
+      done = true
+    end)
+    vim.wait(60000, function()
+      return done
+    end, 20)
+    return
+  end
+
+  if action == "run" or action == "continue" then
+    local url = url_for_run_payload(payload)
+    url = url and vim.split(url, "?")[1]
+    local mapping = url and KulalaCore.run_mappings[url]
+    local data = {}
+    if mapping then
+      table.insert(data, build_success_item(url, mapping))
+      KulalaCore.requests_no = KulalaCore.requests_no + 1
+      table.insert(KulalaCore.requests, url)
+    end
+
+    system.code = #data > 0 and 0 or 1
+    system.stdout = vim.json.encode { type = "responses", data = data }
+    system.stderr = ""
+    return
+  end
+
+  system.code = 1
+  system.stdout = ""
+  system.stderr = "unsupported kulala-core action in test stub"
 end
 
 function Jobstart.run(cmd, opts)
@@ -292,6 +451,7 @@ function System.stub(cmd, opts, on_exit)
 
   System.write = opts.write
   System.kill = opts.kill
+  System.write_to = opts.write_to
 
   System.on_exit = on_exit
 
@@ -356,6 +516,7 @@ return {
   Curl = Curl,
   Jobstart = Jobstart,
   System = System,
+  KulalaCore = KulalaCore,
   Fs = Fs,
   Notify = Notify,
   Input = Input,

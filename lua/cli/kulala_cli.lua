@@ -152,7 +152,6 @@ local function print_response()
   pcall(vim.treesitter.start, ui_buf, filetype)
   vim.bo[ui_buf].syntax = "on"
 
-  if Config.ui.default_view == "verbose" then vim.cmd("so " .. kulala_path .. "/syntax/kulala_verbose_result.vim") end
   vim.cmd("redraw")
 
   io.write("\n\n")
