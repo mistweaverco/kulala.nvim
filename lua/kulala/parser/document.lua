@@ -141,7 +141,9 @@ local function get_visual_selection()
   vim.api.nvim_input("<Esc>")
 
   local line_s, line_e = vim.fn.getpos(".")[2], vim.fn.getpos("v")[2]
-  if line_s > line_e then line_s, line_e = line_e, line_s end
+  if line_s > line_e then
+    line_s, line_e = line_e, line_s
+  end
 
   return vim.api.nvim_buf_get_lines(DB.get_current_buffer(), line_s - 1, line_e, false), line_s - 1
 end
@@ -156,9 +158,8 @@ local function ensure_block_header(lines)
 end
 
 ---@param lines string[]|nil
----@param path string|nil
 ---@return string[]
-local function resolve_content_lines(lines, path)
+local function resolve_content_lines(lines)
   if lines then return lines end
 
   local buf = DB.get_current_buffer()
@@ -190,10 +191,10 @@ M.expand_included_filepath = function(path, lnum, file)
   end
 end
 
----Parses given lines or DB.current_buffer document
----returns a list of DocumentRequests, imported DocumentRequests or nil if no valid requests found
----@param lines string[]|nil
----@param path string|nil
+---Sets diagnostics for kulala-core parse errors,
+---which are not associated with specific requests and should be cleared on each parse.
+---@param bufnr number
+---@param doc table|nil
 ---@return DocumentRequest[]|nil, DocumentRequest[]|nil
 local function set_core_parse_diagnostics(bufnr, doc)
   Diagnostics.clear_diagnostics(bufnr, "parser")
@@ -225,7 +226,7 @@ M.get_document = function(lines, path)
   local DocCore = require("kulala.parser.document_core")
 
   local buf = DB.get_current_buffer()
-  local content_lines = resolve_content_lines(lines, path)
+  local content_lines = resolve_content_lines(lines)
   local content = table.concat(content_lines, "\n")
   local filepath_core, parse_cwd, filepath_display = Bridge.resolve_document_paths(buf, path)
 

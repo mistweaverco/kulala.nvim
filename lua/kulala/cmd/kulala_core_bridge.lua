@@ -1,3 +1,4 @@
+local Backend = require("kulala.backend")
 local CONFIG = require("kulala.config")
 
 local M = {}
@@ -13,7 +14,10 @@ local function configured_core_path()
   return nil
 end
 
----Resolve kulala-core executable: explicit `kulala_core_path` wins; otherwise `kulala-core` on PATH.
+---Resolve kulala-core executable: explicit `kulala_core_path` wins;
+---otherwise default download location
+---from `Backend.get_bin_path()`, if executable.
+---Returns nil if not found or not executable.
 ---@return string|nil
 function M.executable_path()
   local configured = configured_core_path()
@@ -21,7 +25,7 @@ function M.executable_path()
     if vim.fn.executable(configured) == 1 then return vim.fn.exepath(configured) end
     return nil
   end
-  if vim.fn.executable("kulala-core") == 1 then return vim.fn.exepath("kulala-core") end
+  if vim.fn.executable(Backend.get_bin_path()) == 1 then return vim.fn.exepath(Backend.get_bin_path()) end
   return nil
 end
 

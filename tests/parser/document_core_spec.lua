@@ -1,5 +1,5 @@
-local DocCore = require("kulala.parser.document_core")
 local Bridge = require("kulala.cmd.kulala_core_bridge")
+local DocCore = require("kulala.parser.document_core")
 
 describe("document_core", function()
   it("maps kulala-core blocks to document requests", function()

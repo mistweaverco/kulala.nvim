@@ -18,6 +18,13 @@ local function generate_bug_report(message)
   end)
 end
 
+M.LoggerLogLevels = {
+  error = log_levels.ERROR,
+  warn = log_levels.WARN,
+  info = log_levels.INFO,
+  debug = log_levels.DEBUG,
+}
+
 M.log = function(message, level, opts)
   opts = vim.tbl_extend("force", default_options, opts or {})
   level = level or log_levels.INFO
@@ -32,6 +39,8 @@ M.log = function(message, level, opts)
 
   notify(message, level, opts)
 end
+
+M.notify = M.log
 
 M.info = function(message, opts)
   if debug_level() > 2 then M.log(message, log_levels.INFO, opts) end

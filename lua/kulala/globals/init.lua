@@ -1,10 +1,15 @@
-local FS = require("kulala.utils.fs")
-
+local backend_version = require("kulala.globals.versions.backend")
+local fs = require("kulala.utils.fs")
+local plugin_version = require("kulala.globals.versions.plugin")
+local plugin_tmp_dir = fs.get_plugin_tmp_dir()
 local M = {}
 
-local plugin_tmp_dir = FS.get_plugin_tmp_dir()
-
-M.VERSION = "5.3.4"
+M.VERSION = plugin_version
+M.BACKEND_VERSION = backend_version
+-- M.KULALA_CORE_DOWNLOAD_URL = "https://github.com/mistweaverco/kulala-core/releases/download/%s/%s"
+M.KULALA_CORE_DOWNLOAD_URL = "http://localhost:3000/%s/%s"
+M.KULALA_CORE_BINARY_NAME = "kulala-core"
+M.NAME = "kulala.nvim"
 M.UI_ID = "kulala://ui"
 M.SCRATCHPAD_ID = "kulala://scratchpad"
 M.HEADERS_FILE = plugin_tmp_dir .. "/headers.txt"

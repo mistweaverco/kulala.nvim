@@ -1,4 +1,5 @@
 local Augroups = require("kulala.augroups")
+local Backend = require("kulala.backend")
 local CONFIG = require("kulala.config")
 local Export = require("kulala.cmd.export")
 local Fmt = require("kulala.formatter.fmt")
@@ -13,6 +14,11 @@ local M = {}
 
 M.setup = function(config)
   CONFIG.setup(config)
+  local kulala_core_path = CONFIG.get().kulala_core_path
+  if kulala_core_path == nil or not Fs.file_exists(kulala_core_path) then
+    Backend.ensure_installed()
+    return
+  end
   Augroups.setup()
 end
 
