@@ -6,7 +6,9 @@
 
 ### Dependencies
 
-gRPC requests are executed by [kulala-core](https://github.com/mistweaverco/kulala-core) using native `@grpc/grpc-js` (no `grpcurl` binary required). Install kulala-core on your `PATH` or set `kulala_core_path`.
+gRPC requests are executed by
+[kulala-core](https://github.com/mistweaverco/kulala-core)
+using native `@grpc/grpc-js` (no `grpcurl` binary required).
 
 ### Making a gRPC Request
 

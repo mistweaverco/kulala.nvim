@@ -12,28 +12,13 @@ the Kulala plugin with the available `opts`:
 
 <CodeBlock language="lua" title="kulala.nvim/lua/config/defaults.lua">{Config}</CodeBlock>
 
-### kulala_core_path
+### kulala_core.path
 
-Path to the [kulala-core](https://github.com/mistweaverco/kulala-core) executable.
-
-When set, this path is used exclusively. When `nil` (default), Kulala resolves `kulala-core` from your `PATH`.
-
-Example:
-
-```lua
-{
-  "mistweaverco/kulala.nvim",
-  opts = {
-    kulala_core_path = "/home/bonobo/.local/bin/kulala-core",
-  },
-}
-```
-
-### kulala_core_timeout
-
-Subprocess timeout (milliseconds) for kulala-core invocations.
-
-Default: `600000` (10 minutes). Set to `nil` to disable the Neovim-side timeout (not recommended).
+Optional path to the kulala-core executable
+(https://github.com/mistweaverco/kulala-core).
+When set, this path is used exclusively.
+When nil (default), auto-download and
+use kulala-core from GitHub releases based on the user's OS and architecture.
 
 Example:
 
@@ -41,38 +26,57 @@ Example:
 {
   "mistweaverco/kulala.nvim",
   opts = {
-    kulala_core_timeout = 120000,
+    kulala_core: {
+      path = "/home/bonobo/.local/bin/kulala-core",
+    },
   },
 }
 ```
 
-### kulala_core_data_dir
+### kulala_core.timeout
 
-Override directory for kulala-core persistence (cookies, OAuth tokens, prompts). Defaults to the same path as the kulala-core CLI.
-
-### environment_scope
-
-While using request variables the results will be stored for later use.
-As usual variables they're file relevant and should be stored in the buffer.
-If you want to share the variables between buffers you can use the global scope.
-
-Possible values:
-
-- `"b"` (buffer)
-- `"g"` (global)
-
-Default: `"b"`
+Optional subprocess timeout (ms) for kulala-core.
+Default is 60000 (1 minute).
+nil disables the vim.system timeout.
 
 Example:
 
 ```lua
 {
-"mistweaverco/kulala.nvim",
+  "mistweaverco/kulala.nvim",
   opts = {
-    environment_scope = "b",
+    kulala_core: {
+      timeout = 60000, -- timeout in milliseconds
+    },
   },
 }
 ```
+
+### kulala_core.data_dir
+
+Optional override for kulala-core persistence
+(cookies, OAuth, prompts).
+
+Default matches kulala-core CLI:
+- Linux: ~/.local/share/kulala-core
+  or $XDG_DATA_HOME/kulala-core
+- macOS: ~/Library/Application
+  or Support/kulala-core
+- Windows: %APPDATA%\kulala-core
+
+Example:
+
+```lua
+{
+  "mistweaverco/kulala.nvim",
+  opts = {
+    kulala_core: {
+      data_dir = vim.fn.stdpath("data") .. "/kulala-core",
+    },
+  },
+}
+```
+
 
 ### default_env
 
@@ -84,7 +88,7 @@ Possible values:
 
 - `[any string]`
 
-Default: `dev`
+Default: `default`
 
 Example:
 
@@ -92,7 +96,7 @@ Example:
 {
   "mistweaverco/kulala.nvim",
   opts = {
-    default_env = "dev",
+    default_env = "default",
   },
 }
 ```
@@ -124,134 +128,6 @@ Example:
   },
 }
 ```
-
-### variables_scope
-
-Set variable scope: "document" - variables shared across all requests in the document, no matter where they are defined, later declarations shadow earlier ones.
-"request" - variables scoped to the request they are defined in, variables in Shared block are immutable.
-
-Default: `document`
-
-### custom_dynamic_variables
-
-Define your own dynamic variables here, e.g. $randomEmail
-
-```lua
-{
-  opts = {
-    ---@type { [string]: fun():string }
-    custom_dynamic_variables = {
-      ["$randomEmail"] = function()
-        local random = math.random(1000, 9999)
-        return "user" .. random .. "@example.com"
-      end,
-    }
-  },
-}
-```
-
-### halt_on_error
-
-Allows to halt/continue running a sequence of requests when a request failure is encountered.
-
-### certificates
-
-A hash array of certificates to be used for requests.
-
-The key is the hostname and optional the port. 
-If no port is given, the certificate will be used for all ports where no dedicated one is defined.
-
-Each certificate definition needs 
-
-- `cert` the path to the certificate file
-- `key` the path to the key files
-- `cacert` (optional) the path to the CA certificate file
-- `password` (optional) the password for the certificate file
-
-Example:
-
-```lua
-{
-"mistweaverco/kulala.nvim",
-  opts = {
-    certificates = {
-      ["localhost"] = {
-        cert = vim.fn.stdpath("config") .. "/certs/localhost.crt",
-        key = vim.fn.stdpath("config") .. "/certs/localhost.key",
-        cacert = vim.fn.stdpath("config") .. "/certs/ca-bundle.pem",
-      },
-      ["www.somewhere.com:8443"] = {
-        cert = "/home/userx/certs/somewhere.crt",
-        key = "/home/userx/certs/somewhere.key",
-        cacert = "/home/userx/certs/ca-cert.pem",
-      },
-    },
-  },
-}
-```
-
-The `cacert` field specifies a Certificate Authority (CA) bundle file that
-curl will use to verify the server's certificate. This is useful when
-connecting to servers that use self-signed certificates or certificates
-issued by a custom CA.
-
-The `password` field can be used if your private key file is encrypted with a password.  
-If specified, this password will be provided to curl when accessing the private key.  
-This is necessary for password-protected key files, and should be kept secure.
-
-Hostnames with prefix `*.` will be used as wildcard certificates for the host itself and all subdomains.
-
-`*.company.com` will match
-
-- `company.com`
-- `www.company.com`
-- `api.company.com`
-- `sub.api.company.com`
-- etc.
-
-### urlencode
-
-Specify how to escape query parameters.
-
-Possible values:
-
-- `always`
-- `skipencoded` = keep already encoded `%xx` as is
-
-Default: `always`
-
-### urlencode_skip
-
-Skip urlencoding characters, specified as lua regex pattern.
-
-### urlencode_force
-
-Force urlencoding characters, specified as lua regex pattern.
-
-Example:
-
-```lua
-{
-  "mistweaverco/kulala.nvim",
-  opts = {
-    urlencode = "skipencoded",
-    urlencode_skip = "%[%]",
-    urlencode_force = "%(%)",
-  },
-}
-```
-
-### write_cookies
-
-Write cookies to cookie jar on response, i.e. use `--cookie-jar` option with cURL.
-
-Default: `true`
-
-### infer_content_type
-
-Infer content type from the body and add it to the request headers
-
-Default: `true`
 
 ### contenttypes
 
@@ -493,31 +369,6 @@ Example:
 Generate a bug report on error.
 
 Default: `false`
-
-### format_json_on_redirect
-
-Format json response when redirecting to file
-
-Default: `true`
-
-### before_request
-
-Enable/disable/customize before_request hook.  Default hook is request highlight.
-
-```lua
-{
-  opts = {
-    before_request = true, ---@type boolean|fun(request: DocumentRequest):boolean - return true to continue request execution, false to stop
-  }
-}
-```
-
-:::info
-
-The `after_request` hook can be effectively implemented with the option `default_view`,
-which accepts a function with `Response` object as argument.
-
-:::
 
 ## UI Options
 
@@ -813,30 +664,6 @@ Highlight groups for http syntax highlighting
         ["@redirect_path.kulala_http"] = "Number",
         ["@external_body_path.kulala_http"] = "String",
       },
-    }
-  },
-}
-```
-
-### ui.disable_script_print_output
-
-Disable the vim.print output of the scripts as they are executed.
-The output will be still saved, but not printed immediately.
-
-Possible values:
-
-- `true|false`
-
-Default: `false`
-
-Example:
-
-```lua
-{
-  "mistweaverco/kulala.nvim",
-  opts = {
-    ui = {
-      disable_script_print_output = true,
     }
   },
 }

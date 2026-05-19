@@ -1,7 +1,12 @@
 local M = {
   default_env = "dev",
 
-  kulala_core_timeout = nil,
+  kulala_core = {
+    path = nil,
+    timeout = 60000,
+    data_dir = nil,
+  },
+
   halt_on_error = false,
 
   lsp = { enable = false },

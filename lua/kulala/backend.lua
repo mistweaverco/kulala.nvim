@@ -522,13 +522,14 @@ M.install = function(version, callback)
   version = version or "latest"
   local version_tag = version:match("^v") and version ~= "latest" and version or "v" .. version
   version = version:match("^v") and version:sub(2) or version
+  local download_url = require("kulala.config").get().kulala_core.download_url
 
   -- Handle "latest" specially - use the /latest/download/ URL redirect
   local url
   if version == "latest" then
-    url = string.format(Globals.KULALA_CORE_DOWNLOAD_URL, "latest", M.get_release_bin_name())
+    url = string.format(download_url, "latest", M.get_release_bin_name())
   else
-    url = string.format(Globals.KULALA_CORE_DOWNLOAD_URL, version_tag, M.get_release_bin_name())
+    url = string.format(download_url, version_tag, M.get_release_bin_name())
   end
   Logger.info("Downloading backend from URL: " .. url)
 

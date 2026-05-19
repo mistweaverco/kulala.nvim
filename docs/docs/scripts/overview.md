@@ -3,12 +3,8 @@
 You can use scripts to automate tasks in the editor.
 Scripts can be written in **Lua**, **JavaScript**, or **TypeScript**.
 
-Kulala runs them via **[kulala-core](https://github.com/mistweaverco/kulala-core)** (required on your `PATH` or via `kulala_core_path`):
-
 - **Lua** — wasmoon (Lua 5.1)
-- **JavaScript / TypeScript** — transpiled and executed by Bun inside kulala-core
-
-The Neovim plugin does not ship a separate Node-based script runner.
+- **JavaScript / TypeScript** — transpiled and executed by kulala-core
 
 ### Current working directory
 

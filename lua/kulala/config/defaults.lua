@@ -1,48 +1,32 @@
 local M = {
-  -- Optional path to the kulala-core executable (https://github.com/mistweaverco/kulala-core).
-  -- When set, this path is used exclusively. When nil (default), resolves `kulala-core` from PATH.
-  kulala_core_path = nil,
-  -- Subprocess timeout (ms) for kulala-core. Default 600000 (10 min); nil disables the vim.system timeout.
-  kulala_core_timeout = nil,
-  -- Optional override for kulala-core persistence (cookies, OAuth, prompts). Default matches kulala-core CLI:
-  -- Linux: ~/.local/share/kulala-core or $XDG_DATA_HOME/kulala-core; macOS: ~/Library/Application Support/kulala-core
-  kulala_core_data_dir = nil,
-
-  -- set scope for environment and request variables
-  -- possible values: b = buffer, g = global
-  environment_scope = "b",
+  kulala_core = {
+    -- Optional path to the kulala-core executable
+    -- (https://github.com/mistweaverco/kulala-core).
+    -- When set, this path is used exclusively.
+    -- When nil (default), auto-download and
+    -- use kulala-core from GitHub releases based on the user's OS and architecture.
+    path = nil,
+    -- Subprocess timeout (ms) for kulala-core.
+    -- Default is 60000 (1 minute).
+    -- nil disables the vim.system timeout.
+    timeout = 60000,
+    -- Optional override for kulala-core persistence
+    -- (cookies, OAuth, prompts).
+    -- Default matches kulala-core CLI:
+    -- - Linux: ~/.local/share/kulala-core
+    --   or $XDG_DATA_HOME/kulala-core
+    -- - macOS: ~/Library/Application
+    --   or Support/kulala-core
+    -- - Windows: %APPDATA%\kulala-core
+    data_dir = nil,
+    -- Optional override for download url
+    download_url = "https://github.com/mistweaverco/kulala-core/releases/download/%s/%s",
+  },
   -- dev, test, prod, can be anything
   -- see: https://learn.microsoft.com/en-us/aspnet/core/test/http-files?view=aspnetcore-8.0#environment-files
   default_env = "default",
   -- enable reading vscode rest client environment variables
   vscode_rest_client_environmentvars = false,
-
-  -- set variable scope:  document or request
-  variables_scope = "document", ---@type "document"|"request"
-  -- define your own dynamic variables here, e.g. $randomEmail
-  custom_dynamic_variables = {}, ---@type { [string]: fun():string }
-
-  -- continue running requests when a request failure is encountered
-  halt_on_error = true,
-
-  -- certificates
-  certificates = {},
-
-  -- Specify how to escape query parameters
-  -- possible values: always, skipencoded = keep %xx as is
-  urlencode = "always",
-
-  -- skip urlencoding characters, specified as lua regex pattern, e.g. "%[%]"
-  urlencode_skip = "",
-
-  -- force urlencoding characters, specified as lua regex pattern, e.g. "%[%]"
-  urlencode_force = "",
-
-  -- write cookies to cookie jar one response
-  write_cookies = true,
-
-  -- Infer content type from the body and add it to the request headers
-  infer_content_type = true,
 
   -- default formatters/pathresolver for different content types
   contenttypes = {
@@ -80,13 +64,6 @@ local M = {
       pathresolver = nil,
     },
   },
-
-  -- format json response when redirecting to file
-  format_json_on_redirect = true,
-
-  -- enable/disable/customize before_request hook.  Default hook is request highlight.
-  ---@type boolean|fun(request: DocumentRequest):boolean
-  before_request = true, -- return true to continue request execution, false to stop
 
   ui = {
     -- display mode: possible values: "split", "float"
@@ -152,8 +129,6 @@ local M = {
 
     -- enable/disable request summary in the output window
     show_request_summary = true,
-    -- disable notifications of script output
-    disable_script_print_output = false,
 
     -- do not show responses over maximum size, in bytes
     max_response_size = 32768,

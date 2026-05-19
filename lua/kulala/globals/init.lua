@@ -6,8 +6,6 @@ local M = {}
 
 M.VERSION = plugin_version
 M.BACKEND_VERSION = backend_version
--- M.KULALA_CORE_DOWNLOAD_URL = "https://github.com/mistweaverco/kulala-core/releases/download/%s/%s"
-M.KULALA_CORE_DOWNLOAD_URL = "http://localhost:3000/%s/%s"
 M.KULALA_CORE_BINARY_NAME = "kulala-core"
 M.NAME = "kulala.nvim"
 M.UI_ID = "kulala://ui"

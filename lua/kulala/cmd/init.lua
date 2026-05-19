@@ -356,7 +356,7 @@ end
 
 local function process_errors(request, request_status, processing_errors)
   if request_status.code == 124 then
-    local t = CONFIG.get().kulala_core_timeout or 600000
+    local t = CONFIG.get().kulala_core.timeout or 60000
     request_status.errors = ("%s\nRequest timed out (%s ms)"):format(request_status.errors or "", tostring(t))
   end
 
@@ -871,10 +871,11 @@ M.run_parser = function(requests, line_nr, callback)
   M.queue:reset()
 
   if not KULALA_CORE.enabled() then
-    local msg = "kulala-core not found on PATH. Install kulala-core or set `kulala_core_path` in setup."
-    local configured = CONFIG.get().kulala_core_path
+    local msg = "kulala-core not found. "
+      .. "Either let kulala.nvim auto-download and install kulala-core or set `kulala_core.path` in setup."
+    local configured = CONFIG.get().kulala_core.path
     if type(configured) == "string" and vim.trim(configured) ~= "" then
-      msg = ("kulala_core_path is not executable: %s"):format(vim.trim(configured))
+      msg = ("kulala_core.path is not executable: %s"):format(vim.trim(configured))
     end
     return Logger.error(msg, 1, { report = true })
   end

@@ -14,7 +14,7 @@ local M = {}
 
 M.setup = function(config)
   CONFIG.setup(config)
-  local kulala_core_path = CONFIG.get().kulala_core_path
+  local kulala_core_path = CONFIG.get().kulala_core.path
   if kulala_core_path == nil or not Fs.file_exists(kulala_core_path) then
     Backend.ensure_installed()
     return

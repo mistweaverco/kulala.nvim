@@ -18,7 +18,7 @@ M.check = function(health)
   Health.start("Tools:")
 
   local Bridge = require("kulala.cmd.kulala_core_bridge")
-  local configured = config.kulala_core_path
+  local configured = config.kulala_core.path
   if Bridge.enabled() then
     local resolved = Bridge.executable_path()
     if type(configured) == "string" and vim.trim(configured) ~= "" then
@@ -28,9 +28,13 @@ M.check = function(health)
     end
     Health.info("{kulala-core} data dir: " .. Bridge.effective_data_dir())
   elseif type(configured) == "string" and vim.trim(configured) ~= "" then
-    Health.error(("{kulala-core} kulala_core_path is not executable: %s"):format(vim.trim(configured)))
+    Health.error(("{kulala-core} kulala_core.path is not executable: %s"):format(vim.trim(configured)))
   else
-    Health.error("{kulala-core} not found on PATH — install kulala-core or set `kulala_core_path`")
+    Health.error(
+      "{kulala-core} "
+        .. "kulala-core not found. "
+        .. "Either let kulala.nvim auto-download and install kulala-core or set `kulala_core.path` in setup."
+    )
   end
 
   Health.start("Formatters:")

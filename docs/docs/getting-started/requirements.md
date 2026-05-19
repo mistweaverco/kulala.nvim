@@ -12,7 +12,12 @@ List of requirements for using kulala.
 
 ## kulala-core
 
-- [kulala-core](https://github.com/mistweaverco/kulala-core) on your `PATH`, or set `kulala_core_path` in your Kulala setup
+- [kulala-core](https://github.com/mistweaverco/kulala-core)
+will automatically download a precompiled binary for
+your platform and architecture on first run.
+
+If you want to use a custom build of kulala-core,
+make sure to set `kulala_core.path` in your Kulala setup.
 
 kulala-core handles HTTP (embedded cURL),
 gRPC (`@grpc/grpc-js`),

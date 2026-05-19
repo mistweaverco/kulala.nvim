@@ -1,29 +1,15 @@
 local M = {
-  kulala_core_path = nil,
-  kulala_core_timeout = nil,
-  kulala_core_data_dir = nil,
-  environment_scope = "b",
-  default_env = "dev",
+  kulala_core = {
+    path = nil,
+    timeout = nil,
+    data_dir = nil,
+  },
+  default_env = "default",
   vscode_rest_client_environmentvars = false,
-
-  variables_scope = "document",
-  custom_dynamic_variables = {},
 
   halt_on_error = true,
 
-  certificates = {},
-
-  urlencode = "always",
-  urlencode_skip = "",
-  urlencode_force = "",
-
-  write_cookies = true,
-  infer_content_type = true,
-
   contenttypes = {},
-
-  format_json_on_redirect = true,
-  before_request = true,
 
   ui = {},
 

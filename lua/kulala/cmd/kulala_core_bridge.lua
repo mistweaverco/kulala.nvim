@@ -6,15 +6,15 @@ local M = {}
 ---@type vim.SystemObj|nil
 M.active_job = nil
 
----User-configured path from setup (`kulala_core_path`), if any.
+---User-configured path from setup (`kulala_core.path`), if any.
 ---@return string|nil
 local function configured_core_path()
-  local p = CONFIG.get().kulala_core_path
+  local p = CONFIG.get().kulala_core.path
   if type(p) == "string" and vim.trim(p) ~= "" then return vim.trim(p) end
   return nil
 end
 
----Resolve kulala-core executable: explicit `kulala_core_path` wins;
+---Resolve kulala-core executable: explicit `kulala_core.path` wins;
 ---otherwise default download location
 ---from `Backend.get_bin_path()`, if executable.
 ---Returns nil if not found or not executable.
@@ -38,8 +38,12 @@ function M.require_enabled()
   if exe then return exe end
 
   local configured = configured_core_path()
-  if configured then error(("kulala_core_path is not executable: %s"):format(configured), 0) end
-  error("kulala-core not found on PATH. Install kulala-core or set `kulala_core_path` in your kulala setup.", 0)
+  if configured then error(("kulala_core.path is not executable: %s"):format(configured), 0) end
+  error(
+    "kulala-core not found. "
+      .. "Either let kulala.nvim auto-download and install kulala-core or set `kulala_core.path` in setup.",
+    0
+  )
 end
 
 ---Matches `packages/core/src/lib/runner/external-tools/paths.ts` (`getKulalaCoreDataDir`).
@@ -65,7 +69,7 @@ end
 
 ---@return string
 function M.effective_data_dir()
-  local dir = CONFIG.get().kulala_core_data_dir
+  local dir = CONFIG.get().kulala_core.data_dir
   if type(dir) == "string" and dir ~= "" then return dir end
   return default_kulala_core_data_dir()
 end
@@ -76,11 +80,11 @@ local function env_with_data_dir()
   return env
 end
 
----Subprocess timeout (ms). Uses `kulala_core_timeout`, else 10 minutes.
+---Subprocess timeout (ms). Uses `kulala_core.timeout`, else 1 minute.
 ---@return number|nil nil disables vim.system timeout (not recommended)
 local function invoke_timeout_ms()
-  local t = CONFIG.get().kulala_core_timeout
-  if t == nil then return 600000 end
+  local t = CONFIG.get().kulala_core.timeout
+  if t == nil then return 60000 end
   if type(t) == "number" and t > 0 then return t end
   return nil
 end

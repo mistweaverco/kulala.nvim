@@ -104,7 +104,8 @@ Additionally, you can clear a list of global variables by
 passing a table of variable names like so:
 `require('kulala').scripts_clear_global({'variable_name1', 'variable_name2'})`.
 
-Requires `kulala-core` on your `PATH` (or `kulala_core_path` in your setup).
+Requires `kulala-core`
+(automatically downloaded - or `kulala_core.path` in your setup).
 
 ### clear_cached_files
 
