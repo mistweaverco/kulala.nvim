@@ -227,11 +227,51 @@ local function is_prompt_item(first)
   return false
 end
 
----@param content string
----@param filepath string|nil
----@param cwd_override string|nil
----@return table|nil doc
+---@param job vim.SystemCompleted
+---@return table|nil catalog
 ---@return string|nil err
+local function catalog_from_job(job)
+  local raw = vim.trim(job.stdout or "")
+  if raw == "" then
+    return nil, vim.trim(job.stderr or "") ~= "" and vim.trim(job.stderr) or "kulala-core environments failed"
+  end
+  local ok, catalog = pcall(vim.json.decode, raw)
+  if ok and type(catalog) == "table" and type(catalog.environments) == "table" then return catalog, nil end
+  if job.code ~= 0 then
+    return nil, vim.trim(job.stderr or "") ~= "" and vim.trim(job.stderr) or "kulala-core environments failed"
+  end
+  return nil, "invalid kulala-core environments output"
+end
+
+---@param cwd string|nil
+---@return table|nil catalog `{ environments, $shared? }`
+---@return string|nil err
+function M.list_environments(cwd)
+  M.require_enabled()
+  cwd = cwd or vim.loop.cwd()
+  local payload = { action = "environments", cwd = cwd }
+  local job = M.invoke(payload, cwd)
+  return catalog_from_job(job)
+end
+
+---@param cwd string|nil
+---@param on_done fun(catalog: table|nil, err: string|nil)
+function M.list_environments_async(cwd, on_done)
+  if not M.enabled() then
+    vim.schedule(function()
+      on_done(nil, "kulala-core not found")
+    end)
+    return
+  end
+  cwd = cwd or vim.loop.cwd()
+  local payload = { action = "environments", cwd = cwd }
+  M.invoke_async(payload, cwd, function(job)
+    vim.schedule(function()
+      on_done(catalog_from_job(job))
+    end)
+  end)
+end
+
 function M.parse_document(content, filepath, cwd_override)
   M.require_enabled()
   local cwd = cwd_override

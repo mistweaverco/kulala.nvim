@@ -14,7 +14,7 @@ M.session = {}
 ---
 ---@field url string -- request url
 ---@field method string -- request method
----@field request { headers_tbl: table, body: string } -- request
+---@field request { url?: string, headers_tbl: table, body: string } -- request as sent
 ---
 ---@field status boolean -- status of the request
 ---@field code number -- request command exit code
@@ -89,29 +89,29 @@ local function default_data()
   }
 end
 
+local function is_global_env_scope()
+  return CONFIG.get().environment_scope == "g"
+end
+
 local function get_current_scope_nr()
-  if CONFIG.get().environment_scope == "b" then
-    return M.get_current_buffer()
-  elseif CONFIG.get().environment_scope == "g" then
-    return 0
-  end
+  if is_global_env_scope() then return 0 end
+  return M.get_current_buffer()
 end
 
 local function load_data()
-  if CONFIG.get().environment_scope == "b" then
+  if is_global_env_scope() then
+    if not M.data then M.data = default_data() end
+  else
     local buf = M.get_current_buffer()
     local kulala_data = buf and vim.b[buf].kulala_data
-
     M.data = kulala_data and kulala_data or default_data()
-  elseif CONFIG.get().environment_scope == "g" then
-    -- keep in lua only
-    if not M.data then M.data = default_data() end
   end
   M.data.scope_nr = get_current_scope_nr()
 end
 
 local function save_data()
-  if CONFIG.get().environment_scope == "b" then
+  if not M.data then return end
+  if not is_global_env_scope() then
     if vim.fn.bufexists(M.data.scope_nr) > 0 then vim.b[M.data.scope_nr].kulala_data = M.data end
   end
   -- global scope (`"g"`): data stays in module state only, nothing to persist here

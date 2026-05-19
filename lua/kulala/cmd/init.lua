@@ -282,13 +282,17 @@ local function save_response(request_status, parsed_request)
     end
   end
 
+  local sent_url = parsed_request._kulala_sent_url
+  local display_url = parsed_request._kulala_final_url or sent_url or parsed_request.url or ""
+
   ---@type Response
   local response = {
     id = id,
     name = parsed_request.name or "",
-    url = parsed_request.url or "",
+    url = display_url,
     method = parsed_request.method or "",
     request = {
+      url = sent_url or parsed_request.url or "",
       headers_tbl = parsed_request.headers,
       body = parsed_request.body,
     },
@@ -409,6 +413,20 @@ local function parse_request(_requests, request)
   end
 
   return request
+end
+
+---Apply kulala-core `request` snapshot (resolved URL/headers/body) for UI display.
+---@param item table kulala-core result entry
+---@param target DocumentRequest
+local function kulala_core_apply_sent_request(item, target)
+  local sent = item.request
+  if type(sent) ~= "table" then return end
+
+  if type(sent.method) == "string" and sent.method ~= "" then target.method = sent.method end
+  if type(sent.url) == "string" and vim.trim(sent.url) ~= "" then target._kulala_sent_url = sent.url end
+  if type(sent.headers) == "table" then target.headers = sent.headers end
+  if type(sent.body) == "string" then target.body = sent.body end
+  if type(item.url) == "string" and vim.trim(item.url) ~= "" then target._kulala_final_url = item.url end
 end
 
 local function kulala_core_body_text(body)
@@ -585,13 +603,15 @@ local function kulala_core_deliver_result(item, target, duration_wall, callback,
     return
   end
 
+  kulala_core_apply_sent_request(item, target)
+
   if item.protocol == "websocket" then
     local WEBSOCKET = require("kulala.cmd.websocket")
     FS.write_file(GLOBALS.HEADERS_FILE, "Content-Type: text/plain\n\n")
     local response = {
       id = (DB.get_current_buffer() or 0) .. ":" .. (target.show_icon_line_number or 0),
       name = target.name or "",
-      url = target.url or "",
+      url = target._kulala_final_url or target._kulala_sent_url or target.url or "",
       method = target.method or "WS",
       request = { headers_tbl = target.headers, body = target.body },
       code = 0,

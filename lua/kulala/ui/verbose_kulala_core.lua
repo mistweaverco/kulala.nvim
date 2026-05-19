@@ -129,7 +129,8 @@ function M.format(r)
 
   if r.errors and vim.trim(r.errors) ~= "" then add("=== Errors ===", r.errors) end
 
-  add("=== Request ===", ("%s %s"):format(r.method or "?", r.url or "?"))
+  local req_url = r.request and r.request.url or r.url
+  add("=== Request ===", ("%s %s"):format(r.method or "?", req_url or "?"))
 
   local req_body = r.request and r.request.body
   if type(req_body) == "string" and vim.trim(req_body) ~= "" then

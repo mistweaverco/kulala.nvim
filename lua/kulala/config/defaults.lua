@@ -25,6 +25,8 @@ local M = {
   -- dev, test, prod, can be anything
   -- see: https://learn.microsoft.com/en-us/aspnet/core/test/http-files?view=aspnetcore-8.0#environment-files
   default_env = "default",
+  -- `"b"` = per-buffer env (default), `"g"` = global
+  environment_scope = "b",
   -- enable reading vscode rest client environment variables
   vscode_rest_client_environmentvars = false,
 

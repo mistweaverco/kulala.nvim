@@ -2,6 +2,7 @@
 .tests
 .nvim
 .log*
+nvim.log
 
 node_modules
 package-lock.json
