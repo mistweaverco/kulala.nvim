@@ -12,6 +12,7 @@ local INT_PROCESSING = require("kulala.internal_processing")
 local Json = require("kulala.utils.json")
 local KULALA_CORE = require("kulala.cmd.kulala_core_bridge")
 local Logger = require("kulala.logger")
+local Markdown = require("kulala.ui.markdown")
 local UI_utils = require("kulala.ui.utils")
 
 local M = {}
@@ -129,38 +130,36 @@ local function process_internal(result)
   INT_PROCESSING.redirect_response_body_to_file(result.redirect_response_body_to_files)
 end
 
---- kulala-core returns merged pre/post script lines as `scriptConsole`; map to UI pre/post strings.
----@param lines table[]|nil
----@return string pre
----@return string post
-local function kulala_script_console_to_pre_post(lines)
-  if type(lines) ~= "table" then return "", "" end
-  local out = {}
-  for _, entry in ipairs(lines) do
-    if type(entry) == "table" and entry.message then
-      local lvl = entry.level or "log"
-      local prefix = lvl == "error" and "[error] "
-        or lvl == "warn" and "[warn] "
-        or lvl == "info" and "[info] "
-        or lvl == "debug" and "[debug] "
-        or ""
-      table.insert(out, prefix .. tostring(entry.message))
-    end
-  end
-  local text = table.concat(out, "\n")
-  -- Single sequence from core (pre scripts then post); show under Post Script Output like file-based runner.
-  return "", text
+---@param item table|nil
+---@return table|nil
+local function kulala_core_script_console(item)
+  if type(item) ~= "table" then return nil end
+  return item.scriptConsole or item.script_console
 end
 
-local function process_external(request, response)
-  if request._kulala_script_console ~= nil then
-    response.script_pre_output, response.script_post_output =
-      kulala_script_console_to_pre_post(request._kulala_script_console)
-    request._kulala_script_console = nil
-  else
+---@param request_status table|nil
+---@param request DocumentRequest|nil
+---@param response Response
+local function apply_script_console_to_response(request_status, request, response)
+  local lines = (request_status and request_status._kulala_script_console)
+    or (request and request._kulala_script_console)
+  if type(lines) ~= "table" then
+    response.script_console = nil
     response.script_pre_output = ""
     response.script_post_output = ""
+    return
   end
+  response.script_console = lines
+  local request_file = (response.file and response.file ~= "") and response.file
+    or (response.buf_name and response.buf_name ~= "") and response.buf_name
+    or nil
+  response.script_pre_output, response.script_post_output = Markdown.split_script_console(lines, request_file)
+  if request_status then request_status._kulala_script_console = nil end
+  if request then request._kulala_script_console = nil end
+end
+
+local function process_external(request_status, request, response)
+  apply_script_console_to_response(request_status, request, response)
   response.assert_output = {}
 
   local replay = request.environment and request.environment["__replay_request"] == "true"
@@ -350,7 +349,7 @@ local function process_response(request_status, parsed_request, callback)
   process_metadata(parsed_request, response)
   process_internal(parsed_request)
 
-  if process_external(parsed_request, response) == "replay" then
+  if process_external(request_status, parsed_request, response) == "replay" then
     M.queue:add({ request = parsed_request }, function()
       process_request({ parsed_request }, parsed_request, callback)
     end, 1)
@@ -379,7 +378,8 @@ local function process_errors(request, request_status, processing_errors)
   request_status.errors = processing_errors and request_status.errors .. "\n" .. processing_errors
     or request_status.errors
 
-  save_response(request_status, request)
+  local response = save_response(request_status, request)
+  apply_script_console_to_response(request_status, request, response)
 end
 
 ---@param advance_queue? boolean when false, do not advance the request queue (multi-response batch)
@@ -597,11 +597,14 @@ end
 ---@param advance_queue boolean
 local function kulala_core_deliver_result(item, target, duration_wall, callback, advance_queue, invoke_ui_callback)
   if item.success ~= true then
+    local console = kulala_core_script_console(item)
+    target._kulala_script_console = console
     handle_response_impl({
       code = 1,
       errors = item.error or "request failed",
       stdout = "",
       duration = duration_wall,
+      _kulala_script_console = console,
     }, target, callback, advance_queue, invoke_ui_callback)
     return
   end
@@ -656,7 +659,8 @@ local function kulala_core_deliver_result(item, target, duration_wall, callback,
   write_kulala_core_response_files(item)
   local duration_ns = math.floor((item.timings and item.timings.total or 0) * 1e6)
 
-  target._kulala_script_console = item.scriptConsole or {}
+  local console = kulala_core_script_console(item)
+  target._kulala_script_console = console
   local chain = item.redirectChain
   target._kulala_redirect_chain = (vim.islist(chain) and #chain > 0) and chain or nil
   target._kulala_verbose_trace = type(item.verboseTrace) == "string" and item.verboseTrace or nil
@@ -669,6 +673,7 @@ local function kulala_core_deliver_result(item, target, duration_wall, callback,
     _kulala_body_type = type(item.body) == "table" and item.body.type or nil,
     _kulala_body_snapshot = kulala_core_body_text(item.body),
     _kulala_headers_snapshot = kulala_core_headers_text(item.headers),
+    _kulala_script_console = console,
   }, target, callback, advance_queue, invoke_ui_callback)
 end
 

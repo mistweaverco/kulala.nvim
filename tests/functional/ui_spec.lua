@@ -30,8 +30,30 @@ describe("UI", function()
         body = h.load_fixture("fixtures/request_1_body.txt"),
         errors = h.load_fixture("fixtures/request_1_errors.txt"),
         script_console = {
-          { level = "log", message = "Sun, 26 Jan 2025 00:14:41 GMT" },
-          { level = "log", message = "JS: TEST" },
+          {
+            level = "log",
+            message = "Sun, 26 Jan 2025 00:14:41 GMT",
+            origin = {
+              phase = "postRequest",
+              source = "inline",
+              file = "/tmp/test.http",
+              httpDirectiveLine = 4,
+              line = 5,
+              column = 11,
+            },
+          },
+          {
+            level = "log",
+            message = "JS: TEST",
+            origin = {
+              phase = "postRequest",
+              source = "inline",
+              file = "/tmp/test.http",
+              httpDirectiveLine = 4,
+              line = 6,
+              column = 11,
+            },
+          },
         },
       },
       ["http://localhost:3001/request_2"] = {
@@ -341,7 +363,8 @@ describe("UI", function()
       result = h.get_buf_lines(ui_buf):to_string()
 
       assert.has_string(result, "JS: TEST")
-      assert.has_string(result, "Post Script Output")
+      assert.has_string(result, "Post-request script")
+      assert.has_string(result, "post-request")
     end)
 
     it("replays last request", function()
@@ -407,8 +430,30 @@ describe("UI", function()
           body = h.load_fixture("fixtures/advanced_E1_body.txt"),
           errors = h.load_fixture("fixtures/request_1_errors.txt"),
           script_console = {
-            { level = "log", message = "JS: PRE TEST" },
-            { level = "log", message = "JS: POST TEST" },
+            {
+              level = "log",
+              message = "JS: PRE TEST",
+              origin = {
+                phase = "preRequest",
+                source = "inline",
+                file = "/requests/advanced_E.http",
+                httpDirectiveLine = 2,
+                line = 3,
+                column = 1,
+              },
+            },
+            {
+              level = "log",
+              message = "JS: POST TEST",
+              origin = {
+                phase = "postRequest",
+                source = "inline",
+                file = "/requests/advanced_E.http",
+                httpDirectiveLine = 12,
+                line = 14,
+                column = 1,
+              },
+            },
           },
         },
         ["https://httpbin.org/advanced_e2"] = {
@@ -494,6 +539,8 @@ describe("UI", function()
       assert.has_string(result, "Request: 1/3")
       assert.has_string(result, "JS: PRE TEST")
       assert.has_string(result, "JS: POST TEST")
+      assert.has_string(result, "pre-request")
+      assert.has_string(result, "post-request")
     end)
 
     it("shows failed requests and errors", function()

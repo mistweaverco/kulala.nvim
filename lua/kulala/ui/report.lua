@@ -183,7 +183,7 @@ local function generate_requests_report()
     stats = update_report_stats(stats, response.status, assert_stats or { total = 0, success = 0, failed = 0 })
 
     if show_script and not (response.status and show_script == "on_error") then
-      local script = Markdown.format_script_sections(response.script_pre_output, response.script_post_output)
+      local script = Markdown.format_script_output(response)
       if script ~= "_No script output_\n" then
         table.insert(parts, "#### Script output\n")
         table.insert(parts, script)

@@ -135,7 +135,7 @@ function M.format(r)
     table.insert(parts, st)
   end
 
-  local script = Markdown.format_script_sections(r.script_pre_output, r.script_post_output)
+  local script = Markdown.format_script_output(r)
   if script ~= "_No script output_\n" then Markdown.add_section(parts, "## Script output\n", script) end
 
   return Markdown.trim(table.concat(parts, "\n"))

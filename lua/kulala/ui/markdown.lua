@@ -398,6 +398,160 @@ function M.format_headers_body_view(r, body)
   return M.format_headers_view(r) .. "\n" .. M.format_body_view(body or r.body)
 end
 
+---@param path string|nil
+---@return string
+local function normalize_path(path)
+  if type(path) ~= "string" or path == "" then return "" end
+  return vim.fs.normalize(vim.fn.fnamemodify(path, ":p"))
+end
+
+---@param a string|nil
+---@param b string|nil
+---@return boolean
+local function paths_equal(a, b)
+  local na, nb = normalize_path(a), normalize_path(b)
+  return na ~= "" and nb ~= "" and na == nb
+end
+
+---@param origin_file string|nil
+---@param request_file string|nil
+---@return string|nil relative path, or nil when same as request file (omit in UI)
+local function script_console_display_path(origin_file, request_file)
+  if type(origin_file) ~= "string" or origin_file == "" then return "?" end
+  if type(request_file) ~= "string" or request_file == "" then return vim.fn.fnamemodify(origin_file, ":t") end
+  if paths_equal(origin_file, request_file) then return nil end
+
+  local origin_abs = normalize_path(origin_file)
+  local request_abs = normalize_path(request_file)
+  local request_dir = vim.fn.fnamemodify(request_abs, ":p:h")
+
+  local rel = vim.fs.relpath(origin_abs, request_dir)
+  if type(rel) == "string" and rel ~= "" and rel ~= "." then return rel end
+
+  return vim.fn.fnamemodify(origin_abs, ":t")
+end
+
+---@param r Response|nil
+---@return string|nil
+local function resolve_request_file(r)
+  if type(r) ~= "table" then return nil end
+  if type(r.file) == "string" and vim.trim(r.file) ~= "" then return r.file end
+  if type(r.buf_name) == "string" and vim.trim(r.buf_name) ~= "" then return r.buf_name end
+  return nil
+end
+
+---@param origin table|nil
+---@return boolean
+local function script_console_is_pre(origin)
+  if type(origin) ~= "table" then return false end
+  local ph = origin.phase or origin["phase"]
+  if ph == nil or type(ph) ~= "string" and type(ph) ~= "number" then return false end
+  ph = tostring(ph)
+  return ph == "preRequest" or ph == "pre-request" or ph == "pre_request"
+end
+
+---@param origin table|nil
+---@param request_file string|nil
+---@return string
+local function format_script_console_origin(origin, request_file)
+  if type(origin) ~= "table" then return "[?]" end
+  local src = tostring(origin.source or origin["source"] or "?")
+  local origin_file = origin.file or origin["file"]
+  local fp = script_console_display_path(type(origin_file) == "string" and origin_file or nil, request_file)
+  local loc
+  if type(origin.line) == "number" then
+    loc = "L" .. tostring(origin.line)
+    if type(origin.column) == "number" then loc = loc .. ":" .. tostring(origin.column) end
+  else
+    loc = "directive L" .. tostring(origin.httpDirectiveLine or origin["httpDirectiveLine"] or "?")
+  end
+  if fp then return ("[%s · %s · %s]"):format(src, fp, loc) end
+  return ("[%s · %s]"):format(src, loc)
+end
+
+---@param lines table|nil
+---@return table[]
+local function script_console_entries(lines)
+  if type(lines) ~= "table" then return {} end
+  if vim.islist(lines) then return lines end
+  local indexed = {}
+  for k, v in pairs(lines) do
+    if type(v) == "table" then
+      local n = tonumber(k)
+      if n then indexed[n] = v end
+    end
+  end
+  if next(indexed) then
+    local keys = vim.tbl_keys(indexed)
+    table.sort(keys)
+    local out = {}
+    for _, k in ipairs(keys) do
+      table.insert(out, indexed[k])
+    end
+    return out
+  end
+  return {}
+end
+
+---@param entry table
+---@return string|nil
+local function script_console_message(entry)
+  if type(entry) ~= "table" then return nil end
+  local msg = entry.message
+  if msg == nil then msg = entry["message"] end
+  if msg == nil then return nil end
+  msg = tostring(msg)
+  if msg == "" then return nil end
+  return msg
+end
+
+---@param entry table
+---@param request_file string|nil
+---@return string
+local function format_script_console_line(entry, request_file)
+  local msg = script_console_message(entry) or ""
+  local lvl = entry.level or entry["level"] or "log"
+  local lvl_prefix = lvl == "error" and "[error] "
+    or lvl == "warn" and "[warn] "
+    or lvl == "info" and "[info] "
+    or lvl == "debug" and "[debug] "
+    or ""
+  local origin = entry.origin or entry["origin"]
+  if type(origin) == "table" then
+    return ("%s%s %s"):format(lvl_prefix, format_script_console_origin(origin, request_file), msg)
+  end
+  return ("%s%s"):format(lvl_prefix, msg)
+end
+
+--- kulala-core `scriptConsole` → pre/post text (for API/report fields).
+---@param lines table[]|nil
+---@param request_file string|nil HTTP document path for relative / omitted file display
+---@return string pre
+---@return string post
+function M.split_script_console(lines, request_file)
+  local pre_lines, post_lines = {}, {}
+  for _, entry in ipairs(script_console_entries(lines)) do
+    local msg = script_console_message(entry)
+    if msg then
+      local line = format_script_console_line(entry, request_file)
+      if script_console_is_pre(entry.origin or entry["origin"]) then
+        table.insert(pre_lines, line)
+      else
+        table.insert(post_lines, line)
+      end
+    end
+  end
+  return table.concat(pre_lines, "\n"), table.concat(post_lines, "\n")
+end
+
+---@param lines table[]|nil
+---@param request_file string|nil
+---@return string
+function M.format_script_console_lines(lines, request_file)
+  local pre, post = M.split_script_console(lines, request_file)
+  return M.format_script_sections(pre, post)
+end
+
 ---@param pre string|nil
 ---@param post string|nil
 ---@return string
@@ -419,7 +573,15 @@ end
 ---@param r Response
 ---@return string
 function M.format_script_output(r)
-  return M.format_script_sections(r.script_pre_output, r.script_post_output)
+  local request_file = resolve_request_file(r)
+  if type(r.script_console) == "table" then
+    local out = M.format_script_console_lines(r.script_console, request_file)
+    if out ~= "_No script output_\n" then return out end
+  end
+  if M.trim(r.script_pre_output or "") ~= "" or M.trim(r.script_post_output or "") ~= "" then
+    return M.format_script_sections(r.script_pre_output, r.script_post_output)
+  end
+  return "_No script output_\n"
 end
 
 return M
