@@ -4,6 +4,16 @@ local NS = vim.api.nvim_create_namespace("kulala_inlay_hints")
 
 local M = {}
 
+---show_icon_line_number is the 1-based `###` delimiter line; offsets in M.show are relative to that.
+---@param request { show_icon_line_number?: number }|nil
+---@return number|nil
+M.icon_line_for_request = function(request)
+  if not request then return nil end
+  local ln = request.show_icon_line_number
+  if not ln then return nil end
+  return ln
+end
+
 ---Get the current line number, 1-indexed
 M.get_current_line_number = function()
   local win_id = vim.fn.bufwinid(DB.get_current_buffer())
@@ -18,7 +28,7 @@ M.clear = function(name)
 
   local signs = name and vim.fn.sign_getplaced(buf, { group = "kulala" }) or {}
   vim.iter(signs[1].signs or {}):each(function(s)
-    _ = s.name == name and vim.fn.sign_unplace("kulala", { id = s.id, buffer = buf })
+    if s.name == name then vim.fn.sign_unplace("kulala", { id = s.id, buffer = buf }) end
   end)
 end
 
@@ -40,10 +50,10 @@ local function set_signcolumn()
 end
 
 local line_offset = {
-  ["signcolumn"] = -1,
-  ["on_request"] = -1,
-  ["above_request"] = -2,
-  ["below_request"] = 0,
+  ["signcolumn"] = 0,
+  ["on_request"] = 0,
+  ["above_request"] = -1,
+  ["below_request"] = 1,
 }
 
 M.show = function(buf, event, linenr, text)

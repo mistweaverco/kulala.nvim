@@ -1,0 +1,6 @@
+{
+  "$schema": "https://raw.githubusercontent.com/LuaLS/vscode-lua/master/setting/schema.json",
+  "Lua.runtime.version": "LuaJIT",
+  "Lua.workspace.checkThirdParty": false,
+  "Lua.workspace.library": ["$VIMRUNTIME", "${3rd}/luv/library"]
+}

@@ -59,12 +59,12 @@ M.run = function(cmd, opts, on_exit)
         local err_msg = (system.stderr and system.stderr ~= "") and system.stderr or system.stdout or ""
         err_msg = strip_escape_codes(err_msg)
 
-        _ = opts.verbose and Logger.error(opts.err_msg .. "Code: " .. system.code .. ", " .. err_msg, 2)
-        _ = opts.on_error and opts.on_error(system)
+        if opts.verbose then Logger.error(opts.err_msg .. "Code: " .. system.code .. ", " .. err_msg, 2) end
+        if opts.on_error then opts.on_error(system) end
         return
       end
 
-      _ = on_exit and on_exit(system)
+      if on_exit then on_exit(system) end
     end)
   end)
 

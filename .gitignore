@@ -2,6 +2,9 @@
 .tests
 .nvim
 .log*
+nvim.log
+
+doc/tags
 
 node_modules
 package-lock.json
@@ -22,7 +25,6 @@ http-client.env.json
 !/tests/**/*.http
 
 
-.luarc.json
 selene.toml
 neovim.yml
 .todo.md

@@ -40,7 +40,7 @@ M.shlex.__index = M.shlex
 
 local sr = require("kulala.lib.shlex.stringreader")
 
-function M.shlex:create(str, posix, punctuation_chars)
+function M.shlex.create(str, posix, punctuation_chars)
   local o = {}
   setmetatable(o, M.shlex)
 
@@ -97,9 +97,6 @@ function M.shlex:read_token()
       print("shlex: in state '" .. (self.state or "nil") .. "' I see character: '" .. (nextchar or "nil") .. "'")
     end
 
-    -- lua doesn't have continue statements and Lua 5.1 sadly don't have goto
-    local continue = false
-
     if none(self.state) then
       self.token = ""
       break
@@ -109,38 +106,30 @@ function M.shlex:read_token()
         break
       elseif self.whitespace:find(nextchar, 1, true) then
         if self.debug >= 2 then print("shlex: I see whitespace in whitespace state") end
-        if some(self.token) or (self.posix and quoted) then
-          break
-        else
-          continue = true
-        end
-      elseif not continue and self.commenters:find(nextchar, 1, true) then
+        if some(self.token) or (self.posix and quoted) then break end
+      elseif self.commenters:find(nextchar, 1, true) then
         self.sr:readline()
         self.lineno = self.lineno + 1
-      elseif not continue and self.posix and self.escape:find(nextchar, 1, true) then
+      elseif self.posix and self.escape:find(nextchar, 1, true) then
         escapedstate = "a"
         self.state = nextchar
-      elseif not continue and self.wordchars:find(nextchar, 1, true) then
+      elseif self.wordchars:find(nextchar, 1, true) then
         self.token = nextchar
         self.state = "a"
-      elseif not continue and self.punctuation_chars:find(nextchar, 1, true) then
+      elseif self.punctuation_chars:find(nextchar, 1, true) then
         self.token = nextchar
         self.state = "c"
-      elseif not continue and self.quotes:find(nextchar, 1, true) then
+      elseif self.quotes:find(nextchar, 1, true) then
         if not self.posix then self.token = nextchar end
         self.state = nextchar
-      elseif not continue and self.whitespace_split then
+      elseif self.whitespace_split then
         self.token = nextchar
         self.state = "a"
-      elseif not continue then
+      else
         self.token = nextchar
-        if some(self.token) or (self.posix and quoted) then
-          break
-        else
-          continue = true
-        end
+        if some(self.token) or (self.posix and quoted) then break end
       end
-    elseif not continue and self.quotes:find(self.state, 1, true) then
+    elseif self.quotes:find(self.state, 1, true) then
       quoted = true
       if none(nextchar) then
         if self.debug >= 2 then print("shlex: I see EOF in quotes state") end
@@ -160,7 +149,7 @@ function M.shlex:read_token()
       else
         self.token = self.token .. nextchar
       end
-    elseif not continue and self.escape:find(self.state, 1, true) then
+    elseif self.escape:find(self.state, 1, true) then
       if none(nextchar) then
         if self.debug >= 2 then print("shlex: I see EOF in escape state") end
         error("no escaped character")
@@ -170,30 +159,22 @@ function M.shlex:read_token()
       end
       self.token = self.token .. nextchar
       self.state = escapedstate
-    elseif not continue and self.state == "a" or self.state == "c" then
+    elseif self.state == "a" or self.state == "c" then
       if none(nextchar) then
         self.state = nil
         break
       elseif self.whitespace:find(nextchar, 1, true) then
         if self.debug >= 2 then print("shlex: I see whitespace in word state") end
         self.state = " "
-        if some(self.token) or (self.posix and quoted) then
-          break
-        else
-          continue = true
-        end
-      elseif not continue and self.commenters:find(nextchar, 1, true) then
+        if some(self.token) or (self.posix and quoted) then break end
+      elseif self.commenters:find(nextchar, 1, true) then
         self.sr:readline()
         self.lineno = self.lineno + 1
         if self.posix then
           self.state = " "
-          if some(self.token) or (self.posix and quoted) then
-            break
-          else
-            continue = true
-          end
+          if some(self.token) or (self.posix and quoted) then break end
         end
-      elseif not continue and self.state == "c" then
+      elseif self.state == "c" then
         if self.punctuation_chars:find(nextchar, 1, true) then
           self.token = self.token .. nextchar
         else
@@ -201,32 +182,25 @@ function M.shlex:read_token()
           self.state = " "
           break
         end
-      elseif not continue and self.posix and self.quotes:find(nextchar, 1, true) then
+      elseif self.posix and self.quotes:find(nextchar, 1, true) then
         self.state = nextchar
-      elseif not continue and self.posix and self.escape:find(nextchar, 1, true) then
+      elseif self.posix and self.escape:find(nextchar, 1, true) then
         escapedstate = "a"
         self.state = nextchar
       elseif
-        not continue
-        and (
-          self.wordchars:find(nextchar, 1, true)
-          or self.quotes:find(nextchar, 1, true)
-          or (self.whitespace_split and not self.punctuation_chars:find(nextchar, 1, true))
-        )
+        self.wordchars:find(nextchar, 1, true)
+        or self.quotes:find(nextchar, 1, true)
+        or (self.whitespace_split and not self.punctuation_chars:find(nextchar, 1, true))
       then
         self.token = self.token .. nextchar
-      elseif not continue then
+      else
         if some(self.punctuation_chars) then
           table.insert(self._pushback_chars, nextchar)
         else
           table.insert(self.pushback, nextchar)
         end
         self.state = " "
-        if some(self.token) or (self.posix and quoted) then
-          break
-        else
-          continue = true
-        end
+        if some(self.token) or (self.posix and quoted) then break end
       end
     end
   end
@@ -262,7 +236,9 @@ function M.shlex:list()
 end
 
 setmetatable(M.shlex, {
-  __call = M.shlex.create,
+  __call = function(_, str, posix, punctuation_chars)
+    return M.shlex.create(str, posix, punctuation_chars)
+  end,
 })
 
 function M.split(str, comments, posix)

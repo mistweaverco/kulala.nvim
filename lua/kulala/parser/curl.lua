@@ -1,4 +1,3 @@
-local Config = require("kulala.config")
 local Shlex = require("kulala.lib.shlex")
 local Stringutils = require("kulala.utils.string")
 
@@ -26,7 +25,7 @@ function M.parse(curl)
   curl = curl:gsub("%s+", " ")
 
   local parts = Shlex.split(curl)
-  if not parts[1]:find("^curl.*") and parts[1] ~= Config.get().curl_path then return end
+  if not parts[1]:find("^curl") then return end
 
   local command = {
     method = "",
@@ -70,9 +69,7 @@ function M.parse(curl)
 
   local function parse_flag_value(cmd, part)
     local flag = cmd.previous_flag
-    if part:match("curl") then
-      -- skip
-    elseif part:match("^[a-z0-9]+://") and cmd.url == "" then
+    if not part:match("curl") and part:match("^[a-z0-9]+://") and cmd.url == "" then
       cmd.url = part
     elseif flag == "headers" then
       set_header(cmd.headers, Stringutils.cut(part, ":"))
@@ -86,13 +83,17 @@ function M.parse(curl)
   end
 
   local cmd = vim.iter(parts):fold(command, function(cmd, part)
-    _ = part:match("^%-") and parse_flag(cmd, part) or parse_flag_value(cmd, part)
+    if part:match("^%-") then
+      parse_flag(cmd, part)
+    else
+      parse_flag_value(cmd, part)
+    end
     return cmd
   end)
 
-  _ = #cmd.body > 0
-    and not cmd.headers["content-type"]
-    and set_header(cmd.headers, "content-type", "application/x-www-form-urlencoded")
+  if #cmd.body > 0 and not cmd.headers["content-type"] then
+    set_header(cmd.headers, "content-type", "application/x-www-form-urlencoded")
+  end
 
   cmd.method = #cmd.method > 0 and cmd.method or (#cmd.body > 0 and "POST" or "GET")
 

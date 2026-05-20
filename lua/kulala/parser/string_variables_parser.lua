@@ -77,7 +77,7 @@ function get_var_value(variable_name, variables, env, silent)
     value = "{{" .. variable_name .. "}}"
 
     local msg = "The variable " .. value .. " was not found in the document or in the environment."
-    _ = not silent and parse_counter == max_retries and Logger.info(msg)
+    if not silent and parse_counter == max_retries then Logger.info(msg) end
   end
 
   if contains_binary_data(value) then return value end

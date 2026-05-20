@@ -42,7 +42,7 @@ local function make_item(label, description, kind, detail, documentation, text, 
   }
 end
 
----@param source Source
+---@param source LspSourceTuple
 local function generic_source(source)
   local src_tbl, description, global, kind, format, score = unpack(source)
   kind = kind or lsp_kind.Value
@@ -157,7 +157,6 @@ local function document_variables()
 end
 
 local function dynamic_variables()
-  local kind = lsp_kind.Variable
   local items = {}
 
   local auth_vars = {
@@ -172,7 +171,7 @@ local function dynamic_variables()
     table.insert(items, make_item(name, "Dynamic var", lsp_kind.Variable, name, value, name))
   end)
 
-  kind = lsp_kind.Snippet
+  local kind = lsp_kind.Snippet
   local format = lsp_format.Snippet
 
   vim.iter(auth_vars):each(function(name, value)
@@ -272,13 +271,14 @@ local function get_graphql_fields(req_name, fields)
       local details = { "`type`: " .. get_graphql_type(req_name, field.name, field.type) }
       local args = get_graphql_args(req_name, field.name, field.args)
 
-      _ = #args > 0
-        and table.insert(details, "\n**args**:\n" .. vim
+      if #args > 0 then
+        table.insert(details, "\n**args**:\n" .. vim
           .iter(args)
           :fold("", function(acc, item)
             return acc .. item.documentation.value .. "\n"
           end)
           :gsub("\n$", ""))
+      end
 
       local item = make_item(field.name, "GQL:field", kind, field.name, table.concat(details, "\n"), field.name)
       item.args = args
@@ -298,12 +298,13 @@ local function get_graphql_types(req_name, types)
       local details = {}
 
       table.insert(details, "**kind**: " .. type.kind)
-      _ = type.description and table.insert(details, "**description:** " .. type.description)
+      if type.description then table.insert(details, "**description:** " .. type.description) end
 
-      _ = #fields > 0
-        and table.insert(details, "\n**fields:**\n\n" .. vim.iter(fields):fold("", function(acc, item)
+      if #fields > 0 then
+        table.insert(details, "\n**fields:**\n\n" .. vim.iter(fields):fold("", function(acc, item)
           return acc .. item.documentation.value .. "\n"
         end))
+      end
 
       local item = make_item(type.name, "GQL:type", kind, type.name, table.concat(details, "\n"), type.name)
       item.fields = fields
@@ -341,8 +342,9 @@ local function graphql()
 
     if not schema then
       -- show warining only once
-      _ = not cache.graphql[schema_name]
-        and Logger.warn("Cannot find " .. schema_path .. ". LSP GraphQL features will not be available.")
+      if not cache.graphql[schema_name] then
+        Logger.warn("Cannot find " .. schema_path .. ". LSP GraphQL features will not be available.")
+      end
       cache.graphql[schema_name] = "no_schema"
       return {}
     end
@@ -375,14 +377,14 @@ local function graphql()
   return parent_type.fields
 end
 
----@class Source
+---@class LspSourceTuple
 ---@field [1] SourceTable The source table
 ---@field [2] string The source name
 ---@field [3] boolean|nil Whether the source has global options
 ---@field [4] integer|nil The source kind lsp_kind
 ---@field [5] integer|nil The source insert text format lsp_format
 
----@type table<string, Source|function>
+---@type table<string, LspSourceTuple|function>
 local sources = {
   request_names = request_names,
   request_urls = request_urls,
@@ -578,7 +580,7 @@ local function get_symbols()
     if not request.url then return end
 
     local cnum = 0
-    local line = request.show_icon_line_number - 2
+    local line = request.show_icon_line_number - 1
 
     symbol = get_symbol(request.name, kind.Function, line)
     if not symbol then return end
@@ -621,7 +623,16 @@ local function get_symbols()
 end
 
 local function get_hover(_)
-  return { contents = { language = "http", value = table.concat(Inspect.get_contents(), "\n") } }
+  local Bridge = require("kulala.cmd.kulala_core_bridge")
+  local lines, err
+  if Bridge.enabled() then
+    lines, err = Bridge.inspect_request_at_cursor()
+    if err and Bridge.is_preview_unsupported_err(err) then
+      return { contents = { language = "plaintext", value = err } }
+    end
+  end
+  if not lines then lines = Inspect.get_contents() end
+  return { contents = { language = "http", value = table.concat(lines, "\n") } }
 end
 
 local function format(params)
@@ -745,7 +756,7 @@ local function new_server()
     function srv.request(method, params, handler)
       local status, error = xpcall(function()
         set_current_buf(params)
-        _ = handlers[method] and handler(nil, handlers[method](params))
+        if handlers[method] then handler(nil, handlers[method](params)) end
       end, debug.traceback)
 
       if not status then
@@ -794,8 +805,8 @@ function M.start_lsp(buf, ft)
     root_dir = ft,
     bufnr = buf,
     on_attach = function(client, bufnr)
-      _ = (ft == "http" or ft == "rest") and Diagnostics.setup(bufnr)
-      _ = Config.options.lsp.on_attach and Config.options.lsp.on_attach(client, bufnr)
+      if ft == "http" or ft == "rest" then Diagnostics.setup(bufnr) end
+      if Config.options.lsp.on_attach then Config.options.lsp.on_attach(client, bufnr) end
     end,
     commands = vim.iter(actions):fold({}, function(acc, action)
       acc[action.command] = action.fn

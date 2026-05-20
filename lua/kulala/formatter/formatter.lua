@@ -29,8 +29,8 @@ local function trim(str, collapse)
   return collapse and str:gsub("[ \t]+", " ") or str
 end
 
-local function indent(str, n)
-  n = Config.options.lsp.formatter.indent
+local function indent(str)
+  local n = Config.options.lsp.formatter.indent
 
   return vim.iter(vim.split(str, "\n")):fold("", function(acc, line)
     return acc .. string.rep(" ", n) .. line .. "\n"
@@ -101,7 +101,7 @@ local function format(ft, text, opts)
     stop_formatters()
 
     id = get_formatter_id(ft, opts)
-    status, ret = pcall(vim.fn.chansend, id, text)
+    ret = select(2, pcall(vim.fn.chansend, id, text))
   end
 
   if ret == 0 then return end
@@ -302,7 +302,7 @@ format_rules = {
     local variable_declaration = ("@%s = %s"):format(name or "", value or "")
 
     table.insert(current_section().variables, variable_declaration)
-    _ = format_opts.sort.variables and table.sort(current_section().variables)
+    if format_opts.sort.variables then table.sort(current_section().variables) end
 
     return variable_declaration
   end,
@@ -326,7 +326,7 @@ format_rules = {
     local metadata = str:format(name, value)
 
     table.insert(current_section().metadata, metadata)
-    _ = format_opts.sort.metadata and table.sort(current_section().metadata)
+    if format_opts.sort.metadata then table.sort(current_section().metadata) end
 
     return metadata
   end,
@@ -339,7 +339,7 @@ format_rules = {
     formatted = vars and formatted .. " (" .. vars .. ")" or formatted
 
     table.insert(current_section().commands, formatted)
-    _ = format_opts.sort.commands and table.sort(current_section().commands)
+    if format_opts.sort.commands then table.sort(current_section().commands) end
 
     return formatted
   end,
@@ -382,15 +382,17 @@ format_rules = {
       request.url = ("%s %s %s"):format(method, request.url, http_version)
     end
 
-    _ = #request.pre_request_script > 0
-      and table.insert(formatted, table.concat(request.pre_request_script, "\n\n") .. "\n")
+    if #request.pre_request_script > 0 then
+      table.insert(formatted, table.concat(request.pre_request_script, "\n\n") .. "\n")
+    end
 
-    _ = #request.url > 0 and table.insert(formatted, request.url)
+    if #request.url > 0 then table.insert(formatted, request.url) end
 
-    _ = #request.headers > 0 and table.insert(formatted, table.concat(request.headers, "\n"))
-    _ = #request.body > 0 and table.insert(formatted, "\n" .. request.body)
-    _ = #request.res_handler_script > 0
-      and table.insert(formatted, "\n" .. table.concat(request.res_handler_script, "\n\n"))
+    if #request.headers > 0 then table.insert(formatted, table.concat(request.headers, "\n")) end
+    if #request.body > 0 then table.insert(formatted, "\n" .. request.body) end
+    if #request.res_handler_script > 0 then
+      table.insert(formatted, "\n" .. table.concat(request.res_handler_script, "\n\n"))
+    end
 
     current_section().request.formatted = table.concat(formatted, "\n")
     return current_section().request.formatted
@@ -565,8 +567,8 @@ format_rules = {
 }
 
 local function get_nodes_in_range(line_s, line_e, node)
-  local function contains(_node)
-    local start_row, _, end_row, _ = _node:range()
+  local function contains(inner_node)
+    local start_row, _, end_row, _ = inner_node:range()
     return start_row >= line_s and end_row <= line_e + 1
   end
 
@@ -596,10 +598,10 @@ local function make_text_edit(text, ls, cs, le, ce)
   }
 end
 
-local function add_request_separator(buf)
-  for i, line in ipairs(vim.api.nvim_buf_get_lines(buf, 0, -1, false)) do
+local function add_request_separator(buffer)
+  for i, line in ipairs(vim.api.nvim_buf_get_lines(buffer, 0, -1, false)) do
     if line:match("^###") then return end
-    if not line:match("^%s*$") then return vim.api.nvim_buf_set_lines(buf, i - 1, i - 1, false, { "###" }) end
+    if not line:match("^%s*$") then return vim.api.nvim_buf_set_lines(buffer, i - 1, i - 1, false, { "###" }) end
   end
 end
 

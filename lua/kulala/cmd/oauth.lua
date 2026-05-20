@@ -1,5 +1,4 @@
 local Async = require("kulala.utils.async")
-local Config = require("kulala.config")
 local Crypto = require("kulala.cmd.crypto")
 local DB = require("kulala.db")
 local Env = require("kulala.parser.env")
@@ -19,67 +18,51 @@ local request_interval = 5000 -- 5 seconds
 local tcp_server
 local co, exit
 
-local function get_curl_flags()
-  if not DB.current_request then return {} end
-
-  local RequestParser = require("kulala.parser.request")
-  local request = vim.deepcopy(DB.current_request)
-
-  return Async.co_wrap(co, function()
-    RequestParser.parse_metadata(request)
-    return RequestParser.process_custom_curl_flags(request)
-  end)
-end
-
 ---@param url string
 ---@param body string
----@param request_desc string - description of the request
----@param params table|nil - additional parameters for the request
----@return table|nil, string|nil - response and error message
+---@param request_desc string
+---@param params table|nil
+---@return table|nil, string|nil
 local function make_request(url, body, request_desc, params)
-  local cmd = { Config.get().curl_path, "-s", "-X", "POST", "-H", "Content-Type: application/x-www-form-urlencoded" }
-
-  local headers = params and params.headers or {}
-  local curl_flags = get_curl_flags() or {}
-
-  vim.iter(headers):each(function(header)
-    vim.list_extend(cmd, { "-H", header })
-  end)
-
-  vim.list_extend(cmd, curl_flags)
-  vim.list_extend(cmd, { "-d", body, url })
-
-  local request = Shell.run(cmd, { err_msg = "Request error", abort_on_stderr = true }, function(system)
-    Logger.debug("Executed request: " .. request_desc .. "\n" .. vim.inspect(system))
-    vim.schedule(function()
-      Async.co_resume(co, system)
-    end)
-  end)
-
-  local debug_msg = { "Executing request: " .. request_desc, "Url: " .. url, "Payload: " .. body }
-  _ = #headers > 0 and table.insert(debug_msg, "Headers: " .. vim.inspect(headers))
-
-  Logger.debug(table.concat(debug_msg, "\n"))
-
-  if not request then return end
-
-  local status, response = Async.co_yield(co, request_timeout)
-  Logger.debug("Response: " .. vim.inspect(response))
-
-  if not status then return Logger.error("Request failed: " .. request_desc) end
-  if response == "timeout" then return Logger.error("Request timeout: " .. request_desc) end
-
-  local out = response.stdout == "" and "{}" or response.stdout
-
-  local result, error = Json.parse(out)
-  if not result then error = "Error parsing authentication response: " .. tostring(out) .. "\n" .. error end
-
-  if result and result.error and result.error ~= "authorization_pending" then
-    error = result.error .. "\n" .. (result.error_description or "")
+  local KULALA_CORE = require("kulala.cmd.kulala_core_bridge")
+  local header_map = { ["Content-Type"] = "application/x-www-form-urlencoded" }
+  if params and params.headers then
+    for _, h in ipairs(params.headers) do
+      local k, v = h:match("^([^:]+):%s*(.*)$")
+      if k then header_map[k] = v end
+    end
   end
-  if error then return Logger.error("Failed to: " .. request_desc .. ". " .. error, 2), error end
 
-  return result
+  Logger.debug(("Executing request via kulala-core: %s\nUrl: %s"):format(request_desc, url))
+
+  local result, err = KULALA_CORE.http_request {
+    url = url,
+    method = "POST",
+    headers = header_map,
+    body = body,
+    timeoutSec = 30,
+  }
+
+  if err then
+    Logger.error(("Failed to: %s. %s"):format(request_desc, err), 2)
+    return nil, err
+  end
+
+  local out = (result and result.body ~= "") and result.body or "{}"
+  local parsed, parse_err = Json.parse(out)
+  if not parsed then
+    local parse_error = "Error parsing authentication response: " .. tostring(out) .. "\n" .. (parse_err or "")
+    Logger.error(("Failed to: %s. %s"):format(request_desc, parse_error), 2)
+    return nil, parse_error
+  end
+
+  if parsed.error and parsed.error ~= "authorization_pending" then
+    local oauth_error = parsed.error .. "\n" .. (parsed.error_description or "")
+    Logger.error(("Failed to: %s. %s"):format(request_desc, oauth_error), 2)
+    return nil, oauth_error
+  end
+
+  return parsed, nil
 end
 
 local function parse_variables(config, env)
@@ -157,7 +140,7 @@ local function add_pkce(config_id, body, request_type)
   local verifier = config.auth_data.pkce_verifier or pkce["Code Verifier"] or Crypto.pkce_verifier()
 
   config.auth_data.pkce_verifier = request_type == "auth" and verifier or nil
-  config = update_auth_data(config_id, config.auth_data, true)
+  update_auth_data(config_id, config.auth_data, true)
 
   local challenge = Crypto.pkce_challenge(verifier, challenge_method)
 
@@ -359,7 +342,8 @@ M.receive_code = function(config_id)
     local params = parse_params(request) or {}
 
     if params.code or params.access_token then
-      params.expires_in = params.expires_in or config["Expires In"] or 10 -- to allow for resuming requests with new token
+      -- Default expiry so resumed requests can pick up the new token.
+      params.expires_in = params.expires_in or config["Expires In"] or 10
 
       vim.schedule(function()
         update_auth_data(config_id, params)
@@ -376,7 +360,7 @@ M.receive_code = function(config_id)
 
   local _, result = Async.co_yield(co, request_timeout)
   if not result or result == "timeout" then
-    _ = tcp_server and tcp_server:stop()
+    if tcp_server then tcp_server:stop() end
     return Logger.error("Timeout waiting for authorization code/token for: " .. config_id)
   end
 
@@ -463,7 +447,7 @@ end
 
 local function launch_browser(cmd, auth_url, redirect_url)
   local status, error
-  local browser_cmd = {}
+  local browser_cmd
 
   cmd = cmd or ""
 
@@ -504,7 +488,7 @@ M.acquire_auth = function(config_id)
   body = config["Scope"] and body .. "&scope=" .. config["Scope"] or body
 
   body = add_pkce(config_id, body, "auth")
-  body, headers = add_client_credentials(config_id, body, headers)
+  body = add_client_credentials(config_id, body, headers)
   body = add_custom_params(config_id, body, "In Auth Request")
 
   local uri = url .. "?" .. body
@@ -518,7 +502,7 @@ M.acquire_auth = function(config_id)
   if not code then return Logger.error("Failed to acquire code for config: " .. config_id) end
 
   Logger.info("Authorization code/token acquired for config: " .. config_id)
-  config = update_auth_data(config_id, { code = code, acquired_at = os.time() })
+  update_auth_data(config_id, { code = code, acquired_at = os.time() })
 
   return code
 end
@@ -677,7 +661,7 @@ M.refresh_token = function(config_id)
       Cmd.queue:resume()
     elseif Cmd.queue.previous_task then
       vim.schedule(function()
-        Inlay.show(DB.current_buffer, "error", Cmd.queue.previous_task.data.request.show_icon_line_number)
+        Inlay.show(DB.current_buffer, "error", Inlay.icon_line_for_request(Cmd.queue.previous_task.data.request))
       end)
     end
   end)
@@ -778,8 +762,9 @@ M.is_token_expired = function(config_id, type)
   if not acquired_at or not expires_in then return true end
 
   local diff = os.difftime(os.time(), acquired_at)
-  _ = diff > expires_in
-    and Logger.warn((type == "" and "Access" or "Refresh") .. " token expired for config: " .. config_id)
+  if diff > expires_in then
+    Logger.warn((type == "" and "Access" or "Refresh") .. " token expired for config: " .. config_id)
+  end
 
   return diff > expires_in, expires_in - diff
 end

@@ -10,7 +10,7 @@ end
 
 -- custom writer for pandoc
 
-local unpack = unpack or table.unpack
+local unpack = table.unpack
 local format = string.format
 local stringify = pandoc.utils.stringify
 local layout = pandoc.layout

@@ -33,23 +33,20 @@ M.print_buf = function(buf)
   for l, line in ipairs(lines) do
     if _G.arg.mono then
       io.write(line)
-      goto continue
+    else
+      for c = 0, #line do
+        char = line:sub(c, c)
+        char_i = vim.inspect_pos(buf, l - 1, c)
+
+        extmarks_hl = char_i.extmarks[1] and char_i.extmarks[1].opts.hl_group
+        treesitter_hl = not extmarks_hl and char_i.treesitter and char_i.treesitter[1] and char_i.treesitter[1].hl_group
+        syntax_hl = not treesitter_hl and char_i.syntax and char_i.syntax[1] and char_i.syntax[1].hl_group
+
+        color_char = M.get_hl_ansi(extmarks_hl or treesitter_hl or syntax_hl, char)
+
+        io.write(color_char)
+      end
     end
-
-    for c = 0, #line do
-      char = line:sub(c, c)
-      char_i = vim.inspect_pos(buf, l - 1, c)
-
-      extmarks_hl = char_i.extmarks[1] and char_i.extmarks[1].opts.hl_group
-      treesitter_hl = not extmarks_hl and char_i.treesitter and char_i.treesitter[1] and char_i.treesitter[1].hl_group
-      syntax_hl = not treesitter_hl and char_i.syntax and char_i.syntax[1] and char_i.syntax[1].hl_group
-
-      color_char = M.get_hl_ansi(extmarks_hl or treesitter_hl or syntax_hl, char)
-
-      io.write(color_char)
-    end
-
-    ::continue::
     io.write("\n")
   end
 end

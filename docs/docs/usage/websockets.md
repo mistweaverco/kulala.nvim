@@ -6,7 +6,9 @@
 
 ### Dependencies
 
-Ensure you have `websocat` installed to use this feature. You can find it here: [websocat](https://github.com/vi/websocat)
+WebSocket connections use the native client built into
+[kulala-core](https://github.com/mistweaverco/kulala-core)
+(no `websocat` binary required).
 
 ### Establishing a websocket connection
 
@@ -18,7 +20,8 @@ WS wss://echo.websocket.org
 { "name": "world" }
 ```
 
-If there is a body in the request, it will be sent upon connection to the server.
+If there is a body in the request,
+it'll be sent upon connection to the server.
 
 ### Receiving messages
 

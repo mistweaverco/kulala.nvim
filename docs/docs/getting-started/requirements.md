@@ -10,21 +10,22 @@ List of requirements for using kulala.
 
 - [Treesitter for HTTP syntax][ts]
 
-## cURL
+## kulala-core
 
-- [cURL](https://curl.se/) (tested with 8.5.0)
+- [kulala-core](https://github.com/mistweaverco/kulala-core)
+will automatically download a precompiled binary for
+your platform and architecture on first run.
 
-## gRPCurl
+If you want to use a custom build of kulala-core,
+make sure to set `kulala_core.path` in your Kulala setup.
 
-- [gRPCurl](https://github.com/fullstorydev/grpcurl) for GRPC requests
+kulala-core handles HTTP (embedded cURL),
+gRPC (`@grpc/grpc-js`),
+WebSockets (native client),
+OAuth token requests, and crypto (JWT / PKCE).
 
-## Websocat
-
-- [Websocat](https://github.com/vi/websocat) for WebSocket requests
-
-## OpenSSL
-
-- Required for JWT and PKCE signing (comes preinstalled with macOS and most Linux distributions and is part of git installation on Windows)
+You don't need separate `curl`, `grpcurl`, `websocat`, or `openssl`
+installs for Kulala itself.
 
 ## jq
 
@@ -50,7 +51,7 @@ resolving XML request variables)
 
 - [stylua](https://github.com/JohnnyMorganz/StyLua)
 
-(Required for Lua scripts)
+(Only required for formatting Lua in `.http` files, not for running scripts)
 
 # Optional Requirements
 
@@ -75,12 +76,14 @@ If you have Neovim `0.10.x`, you might get an error `ABI version mismatch for ku
 
 You need to install `tree-sitter CLI` and recompile the parser:
 
-1. Delete the existing parser at `nvim-treesitter/parser/kulala_http`
+1. Delete the existing parser at `vim.fs.joinpath(vim.fn.stdpath("data"), "site", "parser", "kulala_http")`
 2. Install the `tree-sitter CLI` (if not installed already):
     - from distribution repositories
+    - via npm: `npm install -g tree-sitter-cli`
+    - via [Zana](https://getzana.net)
     - or from https://github.com/tree-sitter/tree-sitter/tree/master/crates/cli
 3. Recompile the parser:
     - Open a  `http` file in Neovim (this will load Kulala)
-    - Run `:TSInstallFromGrammar kulala_http`
+      and kick off the compilation automatically
    
 [xmllint]: https://packages.ubuntu.com/noble/libxml2-utils

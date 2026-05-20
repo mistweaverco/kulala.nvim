@@ -37,7 +37,8 @@ local function get_body_value_from_path(name, method, subpath)
   local contenttype = INT_PROCESSING.get_config_contenttype(base_table.headers_tbl)
 
   if type(contenttype.pathresolver) == "function" then
-    return contenttype.pathresolver(base_table.json or base_table.body, subpath) -- response body may be json parsed already
+    -- response body may already be parsed JSON
+    return contenttype.pathresolver(base_table.json or base_table.body, subpath)
   elseif type(contenttype.pathresolver) == "table" then
     local cmd = {}
 

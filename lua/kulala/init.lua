@@ -1,18 +1,24 @@
 local Augroups = require("kulala.augroups")
+local Backend = require("kulala.backend")
 local CONFIG = require("kulala.config")
 local Export = require("kulala.cmd.export")
 local Fmt = require("kulala.formatter.fmt")
 local Fs = require("kulala.utils.fs")
 local GLOBALS = require("kulala.globals")
 local Graphql = require("kulala.graphql")
+local KulalaCore = require("kulala.cmd.kulala_core_bridge")
 local Logger = require("kulala.logger")
-local ScriptsUtils = require("kulala.parser.scripts.utils")
 local UI = require("kulala.ui")
 
 local M = {}
 
 M.setup = function(config)
   CONFIG.setup(config)
+  local kulala_core_path = CONFIG.get().kulala_core.path
+  if kulala_core_path == nil or not Fs.file_exists(kulala_core_path) then
+    Backend.ensure_installed()
+    return
+  end
   Augroups.setup()
 end
 
@@ -78,7 +84,14 @@ M.search = function()
 end
 
 M.scripts_clear_global = function(key_or_keys)
-  ScriptsUtils.clear_global(key_or_keys)
+  local ok, err = KulalaCore.clear_globals(key_or_keys)
+  if not ok then
+    Logger.error(err or "Failed to clear global script variables", 1, { report = true })
+    return
+  end
+  local label = key_or_keys
+  if type(key_or_keys) == "table" then label = table.concat(key_or_keys, ", ") end
+  Logger.info("Cleared global variables: " .. (label or "all"))
 end
 
 M.download_graphql_schema = function()

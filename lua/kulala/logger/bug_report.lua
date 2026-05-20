@@ -24,11 +24,11 @@ local template = [[
 
 *Steps to reproduce the behavior*
 
-## Request 
+## Request
 
 %s
 
-## Error 
+## Error
 
 ```lua
 %s
@@ -84,9 +84,13 @@ M.create_issue = function(title, body, labels, type)
     verbose = false,
     abort_on_stderr = true,
     on_error = function(system)
-      local msg = system.stderr:find("gh auth login")
-          and "GitHub CLI is not authenticated. Please run `gh auth login` to authenticate or set GH_TOKEN environment variable.\n"
-        or "Failed to create issue, code: " .. system.code .. ", " .. system.stderr
+      local msg
+      if system.stderr:find("gh auth login") then
+        msg = "GitHub CLI is not authenticated. Please run `gh auth login` "
+          .. "to authenticate or set GH_TOKEN environment variable.\n"
+      else
+        msg = "Failed to create issue, code: " .. system.code .. ", " .. system.stderr
+      end
       Logger.error(msg, 2)
     end,
   })
@@ -95,7 +99,7 @@ M.create_issue = function(title, body, labels, type)
   result = Json.parse(result.stdout)
 
   local link = result and result.html_url
-  _ = link and Logger.info("Issue created successfully: " .. link)
+  if link then Logger.info("Issue created successfully: " .. link) end
 
   return true
 end

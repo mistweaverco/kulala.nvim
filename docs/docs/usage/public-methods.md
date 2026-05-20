@@ -95,7 +95,7 @@ file or fallback to using `vim.ui.select`.
 
 `require('kulala').scripts_clear_global('variable_name')`
 clears a global variable set via
-[`client.global.set`](../scripts/client-reference).
+[`client.global.set`](../scripts/client-reference) in **kulala-core’s** persistence store (SQLite under your kulala-core data directory).
 
 You can clear all globals by omitting the `variable_name` like so:
 `require('kulala').scripts_clear_global()`.
@@ -103,6 +103,9 @@ You can clear all globals by omitting the `variable_name` like so:
 Additionally, you can clear a list of global variables by
 passing a table of variable names like so:
 `require('kulala').scripts_clear_global({'variable_name1', 'variable_name2'})`.
+
+Requires `kulala-core`
+(automatically downloaded - or `kulala_core.path` in your setup).
 
 ### clear_cached_files
 

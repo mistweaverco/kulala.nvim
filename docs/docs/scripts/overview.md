@@ -1,13 +1,10 @@
 # Scripts overview
 
 You can use scripts to automate tasks in the editor.
-Scripts can be either written in `Lua` or in `JavaScript` and executed via `node`.
+Scripts can be written in **Lua**, **JavaScript**, or **TypeScript**.
 
-:::warning
-
-[Node.js](https://nodejs.org) must be installed on your system to run `Javascript` scripts.
-
-:::
+- **Lua** — wasmoon (Lua 5.1)
+- **JavaScript / TypeScript** — transpiled and executed by kulala-core
 
 ### Current working directory
 
@@ -36,29 +33,11 @@ All inline scripts are executed in the
 current working directory of the HTTP file,
 which is the `http` directory in this case.
 
-By default, the `NODE_PATH` environment variable is resolved to the first `node_modules` directory found upwards from the script working directory.
-
-You can provide a custom `node_path_resolver` function in your configuration, by setting the `scripts.node_path_resolver` option.
-
-```lua
-{
-  opts = {
-    scripts = {
-      node_path_resolver = nil, ---@type fun(http_file_dir: string, script_file_dir: string, script_data: ScriptData): string|nil
-    }
-  }
-}
-
-```
 ### Lua scripts
 
 Please read [Lua scripting](./lua-scripts) for more information.
 
-:::warning
-
-Mixing inline Lua scripts with JavaScript scripts in the same request is not supported.  Script language is determined by the first script in the pre-request or post-request section.
-
-:::
+Use `lang=lua`, `lang=js`, or `lang=ts` on inline script markers when needed, for example `< {% lang=lua`.
 
 ### LSP support for auto completion
 
@@ -76,9 +55,9 @@ To do this, add `javascript`/`lua` to `lsp.filetypes` in your [Configuration opt
 }
 ```
 
-### Using node modules
+### Using npm modules in JavaScript scripts
 
-You can use any Node.js module in your scripts.
+JavaScript and TypeScript scripts can `require()` npm packages when they are installed where kulala-core can resolve them (typically next to the script or HTTP file).
 
 If you have a folder structure like this:
 
@@ -167,7 +146,7 @@ client.global.set("BONOBO", "bar");
 :::tip
 
 Variables set via `client.global.set` are available in all requests and
-persist between neovim restarts.
+persist in kulala-core’s data store between Neovim sessions.
 
 To clear a global variable,
 run `lua require('kulala').scripts_clear_global('BONOBO')`.

@@ -6,6 +6,7 @@ std = "lua51+nvim"
 
 read_globals = {
   "vim",
+  "unpack",
 }
 
 globals = {

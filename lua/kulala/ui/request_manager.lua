@@ -38,8 +38,8 @@ local goto_request = function(request)
   vim.cmd("normal! " .. start_line .. "Gzz")
 end
 
-local set_request = function(bufnr, requests, name)
-  local request = requests[name]
+local set_request = function(bufnr, req_map, name)
+  local request = req_map[name]
   if not request then return end
 
   local lines = vim.api.nvim_buf_get_lines(DB.get_current_buffer(), request.start_line - 1, request.end_line - 1, false)
@@ -50,7 +50,7 @@ local set_request = function(bufnr, requests, name)
   vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
 end
 
-local function run_request(ctx, item, action)
+local function run_request(ctx, item)
   ctx:close()
   goto_request(requests[item.label])
   Ui.open()
@@ -165,11 +165,11 @@ local open_telescope = function()
 end
 
 local function open_selector()
-  local requests, names = get_requests()
+  local doc_requests, doc_names = get_requests()
   local opts = { prompt = "Search requests" }
 
-  vim.ui.select(names, opts, function(result)
-    if result then goto_request(requests[result]) end
+  vim.ui.select(doc_names, opts, function(result)
+    if result then goto_request(doc_requests[result]) end
   end)
 end
 

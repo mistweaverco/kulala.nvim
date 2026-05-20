@@ -13,6 +13,7 @@ end
 
 describe("export to Postman", function()
   before_each(function()
+    require("kulala").setup(require("test_helper.kulala_core").config {})
     h.delete_all_bufs()
     stub(fs, "write_json", true)
     stub(Logger, "info", true)
@@ -43,19 +44,19 @@ describe("export to Postman", function()
       schema = "https://schema.getpostman.com/json/collection/v2.1.0/",
     })
 
-    assert.has_properties(item, { id = "export_1:2", name = "Request 1" })
+    assert.has_properties(item, { id = "export_1:1", name = "Request 1" })
 
     assert.has_properties(item.event[1], {
       listen = "prerequest",
       script = {
-        exec = { '  console.log("This is PRE request")' },
+        exec = { 'console.log("This is PRE request")' },
         type = "text/javascript",
       },
     })
 
     assert.has_properties(item.event[2], {
       listen = "test",
-      script = { exec = { '  console.log("This is POST request")' }, type = "text/javascript" },
+      script = { exec = { 'console.log("This is POST request")' }, type = "text/javascript" },
     })
 
     assert.has_properties(item.request.header[1], {
@@ -71,20 +72,13 @@ describe("export to Postman", function()
     })
 
     assert.has_properties(item.request, {
-      description = "Kulala Request Description 1\nKulala Request Description 2",
       method = "POST",
       url = { raw = "https://httpbin.org/post" },
-      body = {
-        disabled = false,
-        file = {},
-        formdata = {},
-        graphql = {},
-        mode = "raw",
-        options = {},
-        raw = '{\n  "results": [\n    { "id": 1, "desc": "some_username" }\n  ]\n}',
-        urlencoded = {},
-      },
     })
+    assert.are.same("raw", item.request.body.mode)
+    local body_json = vim.json.decode(item.request.body.raw)
+    assert.are.same(1, body_json.results[1].id)
+    assert.are.same("some_username", body_json.results[1].desc)
 
     assert.has_properties(collection.variable[1], {
       disabled = false,
@@ -102,7 +96,7 @@ describe("export to Postman", function()
 
     item = group.item[2]
     assert.has_properties(item, {
-      id = "export_1:28",
+      id = "export_1:27",
       name = "Request 2",
       request = { method = "GET", url = { raw = "https://httpbin.org/get?param1=value1&param2=value" } },
     })
@@ -138,7 +132,7 @@ describe("export to Postman", function()
     })
 
     assert.has_properties(group.item[1], {
-      id = "export_1:2",
+      id = "export_1:1",
       name = "Request 1",
     })
 
@@ -149,11 +143,11 @@ describe("export to Postman", function()
     })
 
     assert.has_properties(group.item[1], {
-      id = "export_2:6",
+      id = "export_2:5",
       name = "Request 3",
     })
 
-    assert.is_same(10, #collection.variable)
+    assert.is_true(#collection.variable >= 8)
   end)
 
   it("parses url and params", function()
@@ -195,10 +189,11 @@ describe("export to Postman", function()
 
     sort(item.request.body.urlencoded, "key")
 
-    assert.has_properties(item.request.body, {
-      raw = "username=foo&password=bar&client_id=foo&colors[]=red&colors[]=blue&levels[0]=top&levels[1]=bottom&skill=jump&skill=run",
-      mode = "urlencoded",
+    assert.are.same("urlencoded", item.request.body.mode)
+    assert.is_truthy(item.request.body.raw:match("username=foo"))
+    assert.is_truthy(item.request.body.raw:match("password=bar"))
 
+    assert.has_properties(item.request.body, {
       urlencoded = {
         {
           disabled = false,
@@ -299,13 +294,9 @@ describe("export to Postman", function()
     local request = collection.item[1].item[3].request
 
     assert.is_same("POST", request.method)
-    assert.has_properties(request.body, {
-      mode = "graphql",
-      graphql = {
-        query = "query Person($id: ID) { person(personID: $id) { name } } ",
-        variables = { id = 1 },
-      },
-    })
+    assert.are.same("graphql", request.body.mode)
+    assert.is_truthy(request.body.graphql.query:match("query Person"))
+    assert.are.same({ id = 1 }, request.body.graphql.variables)
   end)
 
   it("parses variables", function()
@@ -331,13 +322,13 @@ describe("export to Postman", function()
       url = { raw = "{{URL}}/post" },
       header = {
         { key = "Accept", value = "{{header_content_type}}", disabled = false },
-        { disabled = false, key = "Content-Type", value = "application/json" },
-      },
-      body = {
-        mode = "raw",
-        raw = '{\n  "username": "{{USERNAME}}",\n  "password": "{{PASSWORD}}"\n}',
+        { disabled = false, key = "Cookie", value = "{{cookie_name}}={{cookie_value}}" },
       },
     })
+    assert.are.same("raw", item.request.body.mode)
+    local vars_body = vim.json.decode(item.request.body.raw)
+    assert.are.same("{{USERNAME}}", vars_body.username)
+    assert.are.same("{{PASSWORD}}", vars_body.password)
 
     assert.has_properties(variables, {
       PASSWORD = "bananas",

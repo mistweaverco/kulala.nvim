@@ -1,42 +1,45 @@
-@DOCUMENT_VAR = TEST_DOCUMENT_VAR
+@document_var = TEST_DOCUMENT_VAR
+
+### Request 1
+
 < ./../scripts/advanced_E_pre.js
-# @prompt PROMPT_VAR PROMPT_VAR prompt
-# @name REQUEST_ONE
+# @prompt PROMPT_VAR
+
 POST https://httpbin.org/advanced_e1?foo=bar&baz=bax HTTP/1.1
 Accept: application/json
 Content-Type: application/json
 
 {
-  "document_var": "{{DOCUMENT_VAR}}",
+  "document_var": "{{document_var}}",
   "js_set_request_var": "{{JS_SET_REQUEST_VAR}}",
   "prompt_var": "{{PROMPT_VAR}}"
 }
 
 > ./../scripts/advanced_E_post.js
 
-### This is a comment for the next request
+### Request 2
 
-# @name REQUEST_TWO
 POST https://httpbin.org/advanced_e2 HTTP/1.1
-accept: application/json
-content-type: application/json
-# @env-json-key AUTH_TOKEN json.env_json_key
+Accept: application/json
+Content-Type: application/json
 
 {
-  "named_request_response_var": "{{REQUEST_ONE.response.body.$.json.js_set_request_var}}",
+  "named_request_response_var": "{{JS_SET_REQUEST_VAR}}",
   "js_computed_val": "{{JS_RESPONSE_VAR}}",
   "env_json_key": "{{PROMPT_VAR}}"
 }
 
-### This is a comment for the next request
+### Request 3
+
+# @env dev
 
 POST https://httpbin.org/advanced_e3 HTTP/1.1
-accept: application/json
-content-type: application/json
+Accept: application/json
+Content-Type: application/json
 
 {
-  "named_request_response_var": "{{REQUEST_TWO.response.body.$.json.named_request_response_var}}",
-  "js_computed_val": "{{REQUEST_TWO.response.body.$.json.js_computed_val}}",
-  "env_json_key": "{{AUTH_TOKEN}}",
-  "dev_env.json": "{{pokemon}}"
+  "named_request_response_var": "{{JS_SET_REQUEST_VAR}}",
+  "js_computed_val": "{{JS_RESPONSE_VAR}}",
+  "env_json_key": "{{PROMPT_VAR}}",
+  "dev_env.json": "{{dev_env.json}}"
 }

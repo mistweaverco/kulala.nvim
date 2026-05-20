@@ -12,10 +12,15 @@ M.get_contents = function()
     return contents
   end
 
-  table.insert(
-    contents,
-    request.method .. " " .. request.url .. (request.http_version and " HTTP/" .. request.http_version or "")
-  )
+  local version_suffix = ""
+  if request.http_version and request.http_version ~= "" then
+    if request.http_version:match("^HTTP/") then
+      version_suffix = " " .. request.http_version
+    else
+      version_suffix = " HTTP/" .. request.http_version
+    end
+  end
+  table.insert(contents, request.method .. " " .. request.url .. version_suffix)
 
   for header_key, header_value in pairs(request.headers_display) do
     table.insert(contents, header_key .. ": " .. header_value)
