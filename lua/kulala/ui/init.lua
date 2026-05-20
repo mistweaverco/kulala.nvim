@@ -568,14 +568,35 @@ M.replay = function()
   local last_request = DB.global_find_unique("replay")
   if not last_request then return Logger.warn("No request to replay") end
 
-  local db = DB.global_update()
+  local run_opts = CMD.replay_run_opts(last_request)
+  if not run_opts then
+    return Logger.error("Cannot replay: missing HTTP file content for " .. (last_request.file or "unknown"))
+  end
 
-  CMD.run_parser({ last_request }, nil, function(_)
-    set_current_response(#db.responses)
+  local db = DB.global_update()
+  local line = last_request.show_icon_line_number or last_request.start_line
+  local buf = DB.get_current_buffer()
+  local status, elapsed_ms
+
+  db.previous_response_pos = #db.responses
+  INLAY.clear()
+
+  -- Re-parse the HTTP buffer and send full document content to kulala-core (all scripts, vars, Shared).
+  CMD.run_parser(nil, line, function(success, duration, icon_linenr, response_id)
+    if success then
+      elapsed_ms = UI_utils.pretty_ms(duration)
+      status = "done"
+    else
+      status = success == nil and "loading" or "error"
+    end
+
+    if not set_current_response_by_id(db, response_id) then set_current_response(#db.responses) end
+
+    INLAY.show(buf, status, icon_linenr or INLAY.icon_line_for_request(last_request), elapsed_ms)
     M.open_default_view()
 
     return true
-  end)
+  end, run_opts)
 end
 
 M.close = function()
@@ -586,6 +607,18 @@ M.close = function()
 end
 
 M.copy = function()
+  local Bridge = require("kulala.cmd.kulala_core_bridge")
+
+  if Bridge.enabled() then
+    local curl, err = Bridge.to_curl_at_cursor(nil, GLOBALS.NAME .. "/" .. GLOBALS.VERSION)
+    if curl then
+      vim.fn.setreg("+", curl)
+      Logger.info("Copied to clipboard")
+      return
+    end
+    if err then Logger.warn(err .. " — falling back to legacy copy") end
+  end
+
   local request = PARSER.parse()
   if not request then return Logger.error("No request found") end
 
@@ -619,19 +652,43 @@ end
 
 M.from_curl = function()
   local clipboard = vim.fn.getreg("+")
+  local Bridge = require("kulala.cmd.kulala_core_bridge")
+
+  if Bridge.enabled() then
+    local lines, err = Bridge.from_curl(clipboard)
+    if lines then
+      vim.api.nvim_put(lines, "l", false, false)
+      return
+    end
+    if err then Logger.warn(err .. " — falling back to Lua curl parser") end
+  end
+
   local spec, curl = CURL_PARSER.parse(clipboard)
 
   if not spec then
     Logger.error("Failed to parse curl command")
     return
   end
-  -- put the curl command in the buffer as comment
   REPORT.print_http_spec(spec, curl)
 end
 
 M.inspect = function()
-  local content = Inspect.get_contents()
-  if #content == 0 then return end
+  local Bridge = require("kulala.cmd.kulala_core_bridge")
+  local content
+
+  if Bridge.enabled() then
+    local lines, err = Bridge.inspect_request_at_cursor()
+    if lines then
+      content = lines
+    else
+      if err then Logger.warn(err .. " — falling back to buffer parse") end
+      content = Inspect.get_contents()
+    end
+  else
+    content = Inspect.get_contents()
+  end
+
+  if not content or #content == 0 then return end
 
   Float.create(content, {
     name = "kulala://inspect",

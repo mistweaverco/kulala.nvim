@@ -397,6 +397,114 @@ function KulalaCore.handle(system)
     return
   end
 
+  if action == "from_curl" then
+    local CURL = require("kulala.parser.curl")
+    local spec = CURL.parse(payload.curl or "")
+    if spec then
+      local lines = { "# " .. (payload.curl or "") }
+      local url = spec.method .. " " .. spec.url
+      if spec.http_version and spec.http_version ~= "" then url = url .. " " .. spec.http_version end
+      table.insert(lines, url)
+      for k, v in pairs(spec.headers or {}) do
+        table.insert(lines, k .. ": " .. v)
+      end
+      if spec.cookie and spec.cookie ~= "" then table.insert(lines, "Cookie: " .. spec.cookie) end
+      if spec.body and #spec.body > 0 then
+        table.insert(lines, "")
+        for i, part in ipairs(spec.body) do
+          table.insert(lines, i < #spec.body and (part .. "&") or part)
+        end
+      end
+      system.code = 0
+      system.stdout = vim.json.encode { ok = true, lines = lines }
+    else
+      system.code = 0
+      system.stdout = vim.json.encode { ok = false, error = "Failed to parse curl command" }
+    end
+    system.stderr = ""
+    return
+  end
+
+  if action == "inspect_request" or action == "to_curl" then
+    local content = payload.content or ""
+    local line = payload.line or 1
+    local lines_tbl = vim.split(content, "\n", { plain = true })
+    local block_start = 1
+    for i = line, 1, -1 do
+      if (lines_tbl[i] or ""):match("^###") then
+        block_start = i
+        break
+      end
+    end
+    local vars = {}
+    local method, url, httpver
+    local headers = {}
+    local body_lines = {}
+    local phase = "preamble"
+    for i = block_start, #lines_tbl do
+      local l = lines_tbl[i] or ""
+      if i > block_start and l:match("^###") then break end
+      local k, v = l:match("^@([%w_%.%-]+)%s*=%s*(.+)$")
+      if k and v then vars[k] = v:gsub("^%s+", ""):gsub("%s+$", "") end
+      if not method then
+        method, url, httpver = l:match("^(%u+)%s+(%S+)%s*(HTTP/%S*)")
+        if method then phase = "headers" end
+      elseif phase == "headers" and l:find(":") then
+        local hk, hv = l:match("^([^:]+):%s*(.*)$")
+        if hk then
+          headers[hk] = (hv or ""):gsub("{{([^}]+)}}", function(n)
+            return vars[n:match("%s*(.-)%s*")] or ""
+          end)
+        end
+      elseif phase == "headers" and l == "" then
+        phase = "body"
+      elseif phase == "body" then
+        table.insert(body_lines, l)
+      end
+    end
+    url = (url or ""):gsub("{{([^}]+)}}", function(n)
+      return vars[n:match("%s*(.-)%s*")] or ""
+    end)
+    for k, v in pairs(headers) do
+      headers[k] = v:gsub("{{([^}]+)}}", function(n)
+        return vars[n:match("%s*(.-)%s*")] or ""
+      end)
+    end
+    for i, bl in ipairs(body_lines) do
+      body_lines[i] = bl:gsub("{{([^}]+)}}", function(n)
+        return vars[n:match("%s*(.-)%s*")] or ""
+      end)
+    end
+    if action == "inspect_request" then
+      local out = { (method or "GET") .. " " .. (url or "") .. (httpver and (" " .. httpver) or "") }
+      for k, v in pairs(headers) do
+        table.insert(out, k .. ": " .. v)
+      end
+      if #body_lines > 0 then
+        table.insert(out, "")
+        for _, bl in ipairs(body_lines) do
+          table.insert(out, bl)
+        end
+      end
+      system.code = 0
+      system.stdout = vim.json.encode { ok = true, lines = out }
+    else
+      local body = table.concat(body_lines, "\n")
+      local curl = ("curl -X '%s' -v -s"):format(method or "GET")
+      for k, v in pairs(headers) do
+        if k:lower() ~= "cookie" then curl = curl .. (" -H '%s:%s'"):format(k, v) end
+      end
+      if body ~= "" then curl = curl .. (" --data-binary '%s'"):format(body) end
+      local cookie = headers.Cookie or headers.cookie
+      if cookie then curl = curl .. (" --cookie '%s'"):format(cookie) end
+      curl = curl .. (" '%s'"):format(url or "")
+      system.code = 0
+      system.stdout = vim.json.encode { ok = true, curl = curl }
+    end
+    system.stderr = ""
+    return
+  end
+
   if action == "run" or action == "continue" then
     local url = url_for_run_payload(payload)
     url = url and vim.split(url, "?")[1]

@@ -104,6 +104,147 @@ local function initialize()
   FS.delete_cached_files(true)
 end
 
+---Fields set only after a run; must not be reused on replay.
+local REPLAY_RUNTIME_FIELDS = {
+  "_kulala_sent_url",
+  "_kulala_final_url",
+  "_kulala_script_console",
+  "_kulala_limit_line",
+  "_kulala_replay_run_opts",
+  "body_computed",
+}
+
+---@param request DocumentRequest
+local function strip_replay_runtime_fields(request)
+  for _, key in ipairs(REPLAY_RUNTIME_FIELDS) do
+    request[key] = nil
+  end
+end
+
+---Persist last runnable request for `require("kulala").replay()` (kulala-core path skips request.lua parse).
+---@param request DocumentRequest|nil
+local function save_replay_snapshot(request)
+  if type(request) ~= "table" then return end
+  if not request._kulala_core then return end
+  local snapshot = vim.deepcopy(request)
+  strip_replay_runtime_fields(snapshot)
+  snapshot.show_icon_line_number = request.show_icon_line_number or request.start_line
+  DB.global_update().replay = snapshot
+end
+
+---@class KulalaCoreRunOpts
+---@field content? string document text (defaults to current buffer)
+---@field cwd? string working directory for kulala-core
+---@field filepath? string absolute path for kulala-core (imports, external scripts)
+---@field limit? table[] kulala-core run limit (cursorPosition or name)
+
+---Line for kulala-core `cursorPosition` must fall inside the parsed block (`findBlockAtCursor`).
+---Prefer `_kulala_limit_line` when the parser was scoped to a line; else the real cursor when this
+---window is the HTTP buffer and `line(".")` is in `[start_line, end_line]`.
+---Otherwise fall back to `show_icon_line_number` (the `###` delimiter line): replay, run-all, or
+---another window may have no meaningful cursor on this file, but that line still lies in the block.
+---@param parsed_request DocumentRequest
+---@return number
+local function kulala_core_cursor_line(parsed_request)
+  local ln = parsed_request._kulala_limit_line
+  parsed_request._kulala_limit_line = nil
+  local lo = parsed_request.start_line or 1
+  local hi = parsed_request.end_line or 2147483647
+
+  if type(ln) == "number" and ln > 0 and ln >= lo and ln <= hi then return ln end
+
+  if vim.api.nvim_get_current_buf() == DB.get_current_buffer() then
+    local cur = vim.fn.line(".")
+    if cur >= lo and cur <= hi then return cur end
+  end
+
+  return parsed_request.show_icon_line_number or 1
+end
+
+---@param parsed_request DocumentRequest
+---@param run_opts KulalaCoreRunOpts|nil
+---@return table payload
+---@return string|nil cwd
+local function build_kulala_core_run_payload(parsed_request, run_opts)
+  run_opts = run_opts or {}
+  local buf = DB.get_current_buffer()
+  local content = run_opts.content
+  if type(content) ~= "string" then content = table.concat(vim.api.nvim_buf_get_lines(buf, 0, -1, false), "\n") end
+
+  local http_filepath, resolved_cwd = KULALA_CORE.resolve_document_paths(buf, parsed_request.file)
+  local cwd = run_opts.cwd or resolved_cwd
+
+  local limit = run_opts.limit
+  if not limit then
+    limit = {
+      {
+        filter = "cursorPosition",
+        line = kulala_core_cursor_line(parsed_request),
+        column = math.max(1, vim.fn.col(".")),
+      },
+    }
+  end
+
+  local run_payload = {
+    content = content,
+    env = ENV_PARSER.get_current_env() or "default",
+    limit = limit,
+  }
+  local filepath = run_opts.filepath or http_filepath
+  if filepath then run_payload.filepath = filepath end
+
+  return run_payload, cwd
+end
+
+---@param file string|nil
+---@return number|nil buf
+local function ensure_http_buffer(file)
+  if type(file) ~= "string" or file == "" then return nil end
+  local buf = vim.fn.bufnr(file)
+  if buf >= 0 then return buf end
+  if vim.fn.filereadable(file) ~= 1 then return nil end
+  buf = vim.fn.bufadd(file)
+  if buf >= 0 then vim.fn.bufload(buf) end
+  return buf >= 0 and buf or nil
+end
+
+---Build run context to replay a stored request from its source .http file.
+---@param request DocumentRequest
+---@return KulalaCoreRunOpts|nil
+function M.replay_run_opts(request)
+  if type(request) ~= "table" then return nil end
+  request._kulala_core = request._kulala_core ~= false
+  strip_replay_runtime_fields(request)
+
+  local file = request.file
+  local buf = ensure_http_buffer(file)
+  if buf then DB.set_current_buffer(buf) end
+
+  local content
+  local filepath
+  if buf then
+    content = table.concat(vim.api.nvim_buf_get_lines(buf, 0, -1, false), "\n")
+    local bufname = vim.api.nvim_buf_get_name(buf)
+    if type(bufname) == "string" and bufname ~= "" then filepath = vim.fn.fnamemodify(bufname, ":p") end
+  elseif type(file) == "string" and file ~= "" and vim.fn.filereadable(file) == 1 then
+    content = table.concat(vim.fn.readfile(file), "\n")
+    filepath = vim.fn.fnamemodify(file, ":p")
+  end
+  if not content or content == "" then return nil end
+
+  local cwd = filepath and vim.fn.fnamemodify(filepath, ":h") or nil
+
+  local limit
+  if type(request._kulala_block_name) == "string" and request._kulala_block_name ~= "" then
+    limit = { { filter = "name", name = request._kulala_block_name } }
+  else
+    local line = request.show_icon_line_number or request.start_line or 1
+    limit = { { filter = "cursorPosition", line = line, column = 1 } }
+  end
+
+  return { content = content, cwd = cwd, filepath = filepath, limit = limit }
+end
+
 local function process_metadata(request, response)
   local int_meta_processors = {
     ["env-json-key"] = "env_json_key",
@@ -372,8 +513,13 @@ local function process_response(request_status, parsed_request, callback)
   process_internal(parsed_request)
 
   if process_external(request_status, parsed_request, response) == "replay" then
+    local run_opts = M.replay_run_opts(parsed_request)
     M.queue:add({ request = parsed_request }, function()
-      process_request({ parsed_request }, parsed_request, callback)
+      if not run_opts then
+        Logger.error("Cannot replay: missing HTTP file content for " .. (parsed_request.file or "unknown"))
+        return M.queue:run_next()
+      end
+      process_request(nil, parsed_request, callback, run_opts)
     end, 1)
   end
 
@@ -495,29 +641,6 @@ local function kulala_core_stats_stdout(result)
   return vim.json.encode { response_code = result.status, timings = timings }
 end
 
----Line for kulala-core `cursorPosition` must fall inside the parsed block (`findBlockAtCursor`).
----Prefer `_kulala_limit_line` when the parser was scoped to a line; else the real cursor when this
----window is the HTTP buffer and `line(".")` is in `[start_line, end_line]`.
----Otherwise fall back to `show_icon_line_number` (the `###` delimiter line): replay, run-all, or
----another window may have no meaningful cursor on this file, but that line still lies in the block.
----@param parsed_request DocumentRequest
----@return number
-local function kulala_core_cursor_line(parsed_request)
-  local ln = parsed_request._kulala_limit_line
-  parsed_request._kulala_limit_line = nil
-  local lo = parsed_request.start_line or 1
-  local hi = parsed_request.end_line or 2147483647
-
-  if type(ln) == "number" and ln > 0 and ln >= lo and ln <= hi then return ln end
-
-  if vim.api.nvim_get_current_buf() == DB.get_current_buffer() then
-    local cur = vim.fn.line(".")
-    if cur >= lo and cur <= hi then return cur end
-  end
-
-  return parsed_request.show_icon_line_number or 1
-end
-
 ---Matches kulala-core KulalaPromptResponse (`prompt` or oauth/custom identifiers).
 ---@param first table|nil
 ---@return boolean
@@ -623,6 +746,8 @@ end
 ---@param callback function
 ---@param advance_queue boolean
 local function kulala_core_deliver_result(item, target, duration_wall, callback, advance_queue, invoke_ui_callback)
+  if item.success == true then save_replay_snapshot(target) end
+
   if item.success ~= true then
     local console = kulala_core_script_console(item)
     target._kulala_script_console = console
@@ -834,8 +959,11 @@ end
 ---@param parsed_request DocumentRequest
 ---@param callback function
 ---@param retry_depth number|nil after `continue`, re-run run (cap recursion)
-process_request_kulala_core = function(parsed_request, callback, retry_depth)
+process_request_kulala_core = function(parsed_request, callback, retry_depth, run_opts)
   retry_depth = retry_depth or 0
+  if run_opts then parsed_request._kulala_replay_run_opts = run_opts end
+  run_opts = run_opts or parsed_request._kulala_replay_run_opts
+
   if retry_depth > 6 then
     handle_response({
       code = 1,
@@ -846,24 +974,8 @@ process_request_kulala_core = function(parsed_request, callback, retry_depth)
     return
   end
 
-  local buf = DB.get_current_buffer()
-  local content = table.concat(vim.api.nvim_buf_get_lines(buf, 0, -1, false), "\n")
   local start_time = vim.uv.hrtime()
-
-  local http_filepath, core_cwd = KULALA_CORE.resolve_document_paths(buf, parsed_request.file)
-
-  local run_payload = {
-    content = content,
-    env = ENV_PARSER.get_current_env() or "default",
-    limit = {
-      {
-        filter = "cursorPosition",
-        line = kulala_core_cursor_line(parsed_request),
-        column = math.max(1, vim.fn.col(".")),
-      },
-    },
-  }
-  if http_filepath then run_payload.filepath = http_filepath end
+  local run_payload, core_cwd = build_kulala_core_run_payload(parsed_request, run_opts)
 
   KULALA_CORE.run_async(run_payload, core_cwd, function(wrapper, err)
     vim.schedule(function()
@@ -885,7 +997,7 @@ end
 ---@param requests DocumentRequest[]
 ---@param request DocumentRequest
 ---@param callback function
-function process_request(requests, request, callback)
+function process_request(requests, request, callback, run_opts)
   local config = CONFIG.get()
 
   local parsed_request = parse_request(requests, request)
@@ -898,7 +1010,7 @@ function process_request(requests, request, callback)
 
   if M.queue.status == "paused" then return end
 
-  return process_request_kulala_core(parsed_request, callback)
+  return process_request_kulala_core(parsed_request, callback, 0, run_opts)
 end
 
 ---@param request DocumentRequest
@@ -923,7 +1035,8 @@ end
 ---@param requests? DocumentRequest[]|nil
 ---@param line_nr? number|nil
 ---@param callback function
-M.run_parser = function(requests, line_nr, callback)
+---@param run_opts? KulalaCoreRunOpts
+M.run_parser = function(requests, line_nr, callback, run_opts)
   M.queue:reset()
 
   if not KULALA_CORE.enabled() then
@@ -952,7 +1065,7 @@ M.run_parser = function(requests, line_nr, callback)
     M.queue:add({ request = request, batch_index = batch_index, batch_size = #requests }, function()
       if execute_before_request(request) then
         initialize()
-        process_request(requests, request, callback)
+        process_request(requests, request, callback, run_opts)
       end
     end)
   end

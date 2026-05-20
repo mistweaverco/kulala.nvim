@@ -467,6 +467,76 @@ end
 ---@param handlers { on_stdout: function, on_stderr: function, on_exit: function }
 ---@param cwd string|nil
 ---@return vim.SystemObj|nil
+---@param bufnr? integer
+---@return table payload
+---@return string|nil cwd
+local function cursor_request_payload(bufnr)
+  bufnr = bufnr or vim.api.nvim_get_current_buf()
+  local content = table.concat(vim.api.nvim_buf_get_lines(bufnr, 0, -1, false), "\n")
+  local filepath, cwd = M.resolve_document_paths(bufnr, nil)
+  local payload = {
+    content = content,
+    line = vim.fn.line("."),
+    column = math.max(1, vim.fn.col(".")),
+    env = require("kulala.parser.env").get_current_env() or "default",
+  }
+  if filepath then payload.filepath = filepath end
+  return payload, cwd
+end
+
+---@param bufnr? integer
+---@return string[]|nil lines
+---@return string|nil err
+function M.inspect_request_at_cursor(bufnr)
+  if not M.enabled() then return nil, "kulala-core not found" end
+  local payload, cwd = cursor_request_payload(bufnr)
+  payload.action = "inspect_request"
+  local job = M.invoke(payload, cwd)
+  local res = decode_action_response(job.stdout)
+  if res and res.ok == true and type(res.lines) == "table" then return res.lines, nil end
+  if res and res.error then return nil, res.error end
+  if res and res.prompt then return nil, "prompt required" end
+  if job.code ~= 0 then
+    return nil, vim.trim(job.stderr or "") ~= "" and vim.trim(job.stderr) or "kulala-core inspect_request failed"
+  end
+  return nil, "invalid kulala-core inspect_request output"
+end
+
+---@param bufnr? integer
+---@param user_agent? string
+---@return string|nil curl
+---@return string|nil err
+function M.to_curl_at_cursor(bufnr, user_agent)
+  if not M.enabled() then return nil, "kulala-core not found" end
+  local payload, cwd = cursor_request_payload(bufnr)
+  payload.action = "to_curl"
+  if user_agent then payload.userAgent = user_agent end
+  local job = M.invoke(payload, cwd)
+  local res = decode_action_response(job.stdout)
+  if res and res.ok == true and type(res.curl) == "string" then return res.curl, nil end
+  if res and res.error then return nil, res.error end
+  if res and res.prompt then return nil, "prompt required" end
+  if job.code ~= 0 then
+    return nil, vim.trim(job.stderr or "") ~= "" and vim.trim(job.stderr) or "kulala-core to_curl failed"
+  end
+  return nil, "invalid kulala-core to_curl output"
+end
+
+---@param curl string
+---@return string[]|nil lines
+---@return string|nil err
+function M.from_curl(curl)
+  if not M.enabled() then return nil, "kulala-core not found" end
+  local job = M.invoke({ action = "from_curl", curl = curl }, nil)
+  local res = decode_action_response(job.stdout)
+  if res and res.ok == true and type(res.lines) == "table" then return res.lines, nil end
+  if res and res.error then return nil, res.error end
+  if job.code ~= 0 then
+    return nil, vim.trim(job.stderr or "") ~= "" and vim.trim(job.stderr) or "kulala-core from_curl failed"
+  end
+  return nil, "invalid kulala-core from_curl output"
+end
+
 function M.websocket_start(opts, handlers, cwd)
   M.require_enabled()
   local exe = M.executable_path()

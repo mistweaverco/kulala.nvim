@@ -354,7 +354,7 @@ M.parse = function(requests, document_request)
   -- Save this to global, so .replay() can be triggered from any buffer or window
   DB.global_update().replay = vim.deepcopy(request)
   DB.global_update().replay.url_raw = request.url
-  DB.global_update().replay.show_icon_line_number = nil
+  DB.global_update().replay.show_icon_line_number = request.show_icon_line_number or request.start_line
 
   return request
 end

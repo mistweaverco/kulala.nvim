@@ -623,7 +623,13 @@ local function get_symbols()
 end
 
 local function get_hover(_)
-  return { contents = { language = "http", value = table.concat(Inspect.get_contents(), "\n") } }
+  local Bridge = require("kulala.cmd.kulala_core_bridge")
+  local lines
+  if Bridge.enabled() then
+    lines, _ = Bridge.inspect_request_at_cursor()
+  end
+  if not lines then lines = Inspect.get_contents() end
+  return { contents = { language = "http", value = table.concat(lines, "\n") } }
 end
 
 local function format(params)

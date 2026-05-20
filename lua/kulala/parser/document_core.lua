@@ -154,7 +154,9 @@ function M.to_document_requests(doc, path)
     request.name = block_display_name(block)
     request.method = method
     request.url = req.url or ""
-    request.http_version = req.httpVersion or ""
+    local http_version = req.httpVersion or ""
+    if http_version:match("^HTTP/") then http_version = http_version:gsub("^HTTP/", "") end
+    request.http_version = http_version
     request.headers, request.headers_raw = headers_from_section(req.headerSection)
     request.body = body_to_string(req.body)
     request.body_display = request.body
