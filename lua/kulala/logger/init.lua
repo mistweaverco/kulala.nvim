@@ -65,7 +65,8 @@ M.error = function(message, lines_no, opts)
   local short_message = table.concat(lines, "\n", 1, lines_no)
   M.log(short_message, log_levels.ERROR)
 
-  if require("kulala.config").options.generate_bug_report or opts.report then generate_bug_report(message) end
+  -- Disable until the lsp is fixed
+  -- if require("kulala.config").options.generate_bug_report or opts.report then generate_bug_report(message) end
 end
 
 M.debug = function(message, opts)
