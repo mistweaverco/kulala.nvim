@@ -307,7 +307,8 @@ local function save_response(request_status, parsed_request)
     filter = nil,
     headers = headers_from_snapshot and request_status._kulala_headers_snapshot
       or (FS.read_file(GLOBALS.HEADERS_FILE) or ""),
-    headers_tbl = INT_PROCESSING.get_headers() or {},
+    headers_tbl = INT_PROCESSING.get_headers(headers_from_snapshot and request_status._kulala_headers_snapshot or nil)
+      or {},
     cookies = INT_PROCESSING.get_cookies() or {},
     errors = request_status.errors or "",
     stats = request_status.stdout or "",

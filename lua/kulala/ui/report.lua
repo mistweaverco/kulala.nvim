@@ -1,5 +1,6 @@
 local CONFIG = require("kulala.config")
 local DB = require("kulala.db")
+local Markdown = require("kulala.ui.markdown")
 local UI_utils = require("kulala.ui.utils")
 
 ---To avoid circular dependencies
@@ -72,83 +73,59 @@ local function set_response_summary(buf)
   )
 end
 
-local function get_script_output(response)
-  local pre, post = response.script_pre_output, response.script_post_output
-  local sep = (" "):rep(4)
-  local out = {}
+---@param response Response
+---@param show_asserts string|boolean
+---@return string|nil, table stats
+local function format_assert_output(response, show_asserts)
+  local results = response.assert_output and response.assert_output.results or {}
+  if #results == 0 then return nil end
 
-  if #pre > 0 then
-    vim.list_extend(out, { "--> Pre-script:" })
-    vim.list_extend(out, vim.split(pre, "\n"))
-  end
-  if #post > 0 then
-    vim.list_extend(out, { "<-- Post-script:" })
-    vim.list_extend(out, vim.split(post, "\n"))
-  end
-  if #out > 0 then table.insert(out, 1, " ") end
-
-  return vim
-    .iter(out)
-    :map(function(line)
-      return #line > 0 and { sep .. line } or nil
-    end)
-    :totable()
-end
-
-local function get_assert_output(response)
-  local config = CONFIG.get().ui.report
-  local show_asserts = config.show_asserts_output
-  local sep = (" "):rep(2)
-
-  local hl, test_suite = "", nil
-  local out, value, message = {}, nil, ""
+  local parts = { "#### Asserts\n" }
   local stats = { total = 0, success = 0, failed = 0 }
+  local test_suite = nil
 
-  vim.iter(response.assert_output.results or {}):each(function(assert)
-    value = assert.status and "success" or "failed"
+  vim.iter(results):each(function(assert)
+    local value = assert.status and "success" or "failed"
     stats[value] = stats[value] + 1
     stats.total = stats.total + 1
 
-    if not (assert.status and show_asserts == "failed_only") then
-      hl = assert.status and config.successHighlight or config.errorHighlight
+    if assert.status and show_asserts == "failed_only" then return end
 
-      if #assert.name > 0 and test_suite ~= assert.name then
-        test_suite = assert.name
-        table.insert(out, { sep .. test_suite .. ":", config.headersHighlight })
-      elseif #assert.name == 0 then
-        test_suite = nil
-      end
-
-      message = test_suite and sep .. assert.message or assert.message
-      vim.iter(vim.split(message, "\n")):each(function(line)
-        table.insert(out, { sep .. line, hl })
-      end)
+    if #assert.name > 0 and test_suite ~= assert.name then
+      test_suite = assert.name
+      table.insert(parts, ("**%s**\n"):format(Markdown.md_escape_cell(test_suite)))
+    elseif #assert.name == 0 then
+      test_suite = nil
     end
+
+    local status = assert.status and "PASS" or "FAIL"
+    local message = assert.message or ""
+    table.insert(parts, ("- **%s** %s\n"):format(status, Markdown.md_escape_cell(message)))
   end)
 
-  return out, stats
+  if #parts == 1 then return nil, stats end
+  return table.concat(parts, "\n"), stats
 end
 
-local function get_report_summary(stats)
-  local config = CONFIG.get().ui.report
-  local summary = {}
-
-  local tbl = UI_utils.Ptable:new {
-    header = { "Summary", "Total", "Successful", "Failed" },
-    widths = { 20, 20, 20, 20 },
+---@param stats table
+---@return string
+local function format_report_summary(stats)
+  local rows = {
+    { "", "Total", "Successful", "Failed" },
+    {
+      "Requests",
+      Markdown.md_table_cell(tostring(stats.total or 0)),
+      Markdown.md_table_cell(tostring(stats.success or 0)),
+      Markdown.md_table_cell(tostring(stats.failed or 0)),
+    },
+    {
+      "Asserts",
+      Markdown.md_table_cell(tostring(stats.assert_total or 0)),
+      Markdown.md_table_cell(tostring(stats.assert_success or 0)),
+      Markdown.md_table_cell(tostring(stats.assert_failed or 0)),
+    },
   }
-
-  table.insert(summary, { tbl:get_headers(), config.headersHighlight })
-  table.insert(summary, {
-    tbl:get_row({ "Requests", stats.total, stats.success, stats.failed }, 1),
-    { config.successHighlight, 40, 60, config.errorHighlight, 60, 80 },
-  })
-  table.insert(summary, {
-    tbl:get_row({ "Asserts", stats.assert_total, stats.assert_success, stats.assert_failed }, 1),
-    { config.successHighlight, 40, 60, config.errorHighlight, 60, 80 },
-  })
-
-  return summary
+  return "## Summary\n\n" .. Markdown.md_table(rows, "r") .. "\n"
 end
 
 local function update_report_stats(stats, response_status, asserts)
@@ -175,57 +152,54 @@ end
 
 local function generate_requests_report()
   local db = DB.global_update()
-  if #db.responses == 0 then return {} end
+  if #db.responses == 0 then return "" end
 
   local config = CONFIG.get().ui.report
   local show_script = config.show_script_output
   local show_asserts = config.show_asserts_output
 
-  local row, report = "", {}
+  local parts = { "# Requests report\n" }
   local stats
 
-  local tbl = UI_utils.Ptable:new {
-    header = { "Line", "URL", "Status", "Time", "Duration" },
-    widths = { 5, 50, 8, 10, 15 },
-  }
-
-  table.insert(report, { tbl:get_headers(), config.headersHighlight })
-  table.insert(report, { "" })
-
   vim.iter(db.responses):skip(db.previous_response_pos):each(function(response)
-    row = tbl:get_row({
-      response.line,
-      response.url,
-      response.response_code,
-      vim.fn.strftime("%H:%M:%S", response.time),
-      UI_utils.pretty_ms(response.duration),
-    }, 1)
+    table.insert(
+      parts,
+      ("## Line %s — HTTP %s\n"):format(
+        Markdown.md_escape_cell(tostring(response.line)),
+        Markdown.md_escape_cell(tostring(response.response_code or "?"))
+      )
+    )
 
-    local asserts, assert_stats = get_assert_output(response)
-    stats = update_report_stats(stats, response.status, assert_stats)
+    local row = {
+      { "Field", "Value" },
+      { "URL", Markdown.md_table_cell(response.url) },
+      { "Status", Markdown.md_table_cell(tostring(response.response_code or "?")) },
+      { "Time", Markdown.md_table_cell(vim.fn.strftime("%H:%M:%S", response.time)) },
+      { "Duration", Markdown.md_table_cell(UI_utils.pretty_ms(response.duration)) },
+    }
+    table.insert(parts, Markdown.md_table(row) .. "\n")
 
-    table.insert(report, { row, response.status and config.successHighlight or config.errorHighlight })
+    local asserts, assert_stats = format_assert_output(response, show_asserts)
+    stats = update_report_stats(stats, response.status, assert_stats or { total = 0, success = 0, failed = 0 })
 
     if show_script and not (response.status and show_script == "on_error") then
-      vim.list_extend(report, get_script_output(response))
+      local script = Markdown.format_script_sections(response.script_pre_output, response.script_post_output)
+      if script ~= "_No script output_\n" then
+        table.insert(parts, "#### Script output\n")
+        table.insert(parts, script)
+        table.insert(parts, "")
+      end
     end
 
-    if show_asserts and #asserts > 0 and not (response.assert_status and show_asserts == "on_error") then
-      vim.list_extend(report, { { "" } })
-      vim.list_extend(report, asserts)
+    if show_asserts and asserts and not (response.assert_status and show_asserts == "on_error") then
+      table.insert(parts, asserts)
+      table.insert(parts, "")
     end
-
-    table.insert(report, { "" })
   end)
 
-  if config.show_summary then vim.list_extend(report, get_report_summary(stats or {})) end
+  if config.show_summary then table.insert(parts, format_report_summary(stats or {})) end
 
-  local contents, highlights = {}, {}
-  for i, line in ipairs(report) do
-    contents[i], highlights[i] = unpack(line)
-  end
-
-  return contents, highlights
+  return Markdown.trim(table.concat(parts, "\n"))
 end
 
 ---Prints the parsed Request table into current buffer - uses nvim_put

@@ -191,9 +191,19 @@ local function show_progress()
   })
 end
 
+local MARKDOWN_VIEWS = {
+  verbose = true,
+  headers = true,
+  body = true,
+  headers_body = true,
+  script_output = true,
+  report = true,
+}
+
 local function show(contents, filetype, mode)
-  -- Verbose view is markdown; use plain `markdown` so TS/highlight plugins apply.
-  local buf_ft = mode == "verbose" and "markdown" or (filetype and filetype .. ".kulala_ui" or "text.kulala_ui")
+  -- Markdown views use plain `markdown` so TS/highlight plugins apply.
+  local buf_ft = MARKDOWN_VIEWS[mode] and "markdown" or (filetype and filetype .. ".kulala_ui" or "text.kulala_ui")
+  if MARKDOWN_VIEWS[mode] then contents = require("kulala.ui.markdown").normalize_headings(contents) end
   local buf = open_kulala_buffer(buf_ft)
 
   set_buffer_contents(buf, contents, buf_ft)
@@ -230,14 +240,12 @@ local function format_body(view)
   local body = r.body
 
   local contenttype = content_config_from_kulala_core(r) or INT_PROCESSING.get_config_contenttype(headers, view)
-  local filetype
 
   if body and contenttype.formatter then
-    filetype = contenttype.ft
-    body = FORMATTER.format(filetype, contenttype.formatter, body, { verbose = false })
+    body = FORMATTER.format(contenttype.ft, contenttype.formatter, body, { verbose = false })
   end
 
-  return body, filetype or contenttype.ft
+  return body
 end
 
 local function update_filter()
@@ -265,12 +273,16 @@ M.toggle_filter = function()
   UI_utils.highlight_range(buf, 0, { row, 10 }, { row, -1 }, "Special")
 end
 
+local function parse_report_line(line)
+  return tonumber(line:match("^## Line (%d+)") or line:match("^%s*|%s*(%d+)%s*|") or line:match("^%s*(%d+)"))
+end
+
 local function jump_to_response()
   local responses = DB.global_update().responses
   local win = vim.fn.bufwinid(get_current_response().buf)
 
   if CONFIG.get().default_view == "report" then
-    local lnum = tonumber(vim.api.nvim_get_current_line():match("^%s*%d+"))
+    local lnum = parse_report_line(vim.api.nvim_get_current_line())
     if not lnum then return end
 
     local current_name = get_current_response().name
@@ -294,20 +306,20 @@ local function jump_to_response()
 end
 
 M.show_headers = function()
-  local headers = get_current_response().headers
-  show(headers, "text", "headers")
+  local Markdown = require("kulala.ui.markdown")
+  show(Markdown.format_headers_view(get_current_response()), "markdown", "headers")
 end
 
 M.show_body = function()
-  local body, filetype = format_body()
-  show(body, filetype, "body")
+  local Markdown = require("kulala.ui.markdown")
+  show(Markdown.format_body_view(format_body()), "markdown", "body")
   if get_current_response().filter then M.toggle_filter() end
 end
 
 M.show_headers_body = function()
-  local headers = get_current_response().headers
-  local body, filetype = format_body()
-  show(headers .. body, filetype, "headers_body")
+  local Markdown = require("kulala.ui.markdown")
+  local r = get_current_response()
+  show(Markdown.format_headers_body_view(r, format_body()), "markdown", "headers_body")
 end
 
 M.show_verbose = function()
@@ -330,19 +342,12 @@ M.show_stats = function()
 end
 
 M.show_script_output = function()
-  local pre_file_contents = get_current_response().script_pre_output
-  local post_file_contents = get_current_response().script_post_output
-
-  local contents = "===== Pre Script Output =====================================\n\n" .. pre_file_contents
-  contents = contents .. "\n\n===== Post Script Output ====================================\n\n" .. post_file_contents
-
-  show(contents, "text", "script_output")
+  local Markdown = require("kulala.ui.markdown")
+  show(Markdown.format_script_output(get_current_response()), "markdown", "script_output")
 end
 
 M.show_report = function()
-  local report, highlights = REPORT.generate_requests_report()
-  show(table.concat(report or {}, "\n"), "text", "report")
-  UI_utils.highlight_buffer(get_kulala_buffer(), 0, highlights or {}, 100)
+  show(REPORT.generate_requests_report(), "markdown", "report")
 end
 
 M.show_next = function()

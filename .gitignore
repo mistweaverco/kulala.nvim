@@ -4,6 +4,8 @@
 .log*
 nvim.log
 
+doc/tags
+
 node_modules
 package-lock.json
 
