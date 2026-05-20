@@ -10,7 +10,7 @@ Kulala CLI is basically a CLI interface for Kulala, so it requires Neovim (nvim)
 
 You can install it either as you would usually install Kulala as a Neovim plugin, or you can manually clone the repository.
 
-Optionally, grpcurl (for GRPC), websocat (for Websockets), jq (for JSON formatting) and nvim-treesitter for response highlighting may be installed.
+Optionally, jq (for JSON formatting) and nvim-treesitter for response highlighting may be installed. GRPC and WebSockets are handled by kulala-core (no grpcurl or websocat required).
 
 The CLI executable is `kulala.nvim/lua/cli/kulala_cli.lua` file, which you can put on your PATH.
 

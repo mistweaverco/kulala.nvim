@@ -210,7 +210,23 @@ M.file_exists = function(filename)
   return vim.fn.filereadable(filename) == 1
 end
 
+-- Check if a directory exists
+--- @param dir string
+--- @return boolean
+--- @usage local p = fs.dir_exists('.cache')
+M.dir_exists = function(dir)
+  return vim.fn.isdirectory(dir) == 1
+end
+
 M.copy_dir = function(source, destination)
+  if M.os == "unix" or M.os == "mac" then
+    vim.system({ "cp", "-r", source .. M.ps .. ".", destination }):wait()
+  elseif M.os == "windows" then
+    vim.system({ "xcopy", "/H", "/E", "/I", source .. M.ps .. "*", destination }):wait()
+  end
+end
+
+M.copy_dir_contents = function(source, destination)
   if M.os == "unix" or M.os == "mac" then
     vim.system({ "cp", "-r", source .. M.ps .. ".", destination }):wait()
   elseif M.os == "windows" then
@@ -236,25 +252,6 @@ end
 
 M.get_scripts_dir = function()
   local dir = M.join_paths(M.get_plugin_root_dir(), "parser", "scripts")
-  return dir
-end
-
-M.get_tmp_scripts_build_dir = function()
-  local dir = M.join_paths(M.get_plugin_tmp_dir(), "scripts", "build")
-  return dir
-end
-
-M.get_tmp_scripts_dir = function()
-  local dir = M.join_paths(M.get_plugin_tmp_dir(), "scripts")
-  M.ensure_dir_exists(dir)
-
-  return dir
-end
-
-M.get_request_scripts_dir = function()
-  local dir = M.join_paths(M.get_plugin_tmp_dir(), "scripts", "requests")
-  M.ensure_dir_exists(dir)
-
   return dir
 end
 
@@ -289,22 +286,6 @@ M.delete_files_in_directory = function(dir, skip_files)
   end
 
   return deleted_files
-end
-
-M.get_request_scripts_variables = function()
-  return M.read_json(M.get_request_scripts_variables_file_path())
-end
-
-M.get_request_scripts_variables_file_path = function()
-  return M.join_paths(M.get_request_scripts_dir(), "request_variables.json")
-end
-
-M.get_global_scripts_variables_file_path = function()
-  return M.join_paths(M.get_tmp_scripts_dir(), "global_variables.json")
-end
-
-M.get_global_scripts_variables = function()
-  return M.read_json(M.get_global_scripts_variables_file_path())
 end
 
 -- Check if a command is available
@@ -450,12 +431,6 @@ M.include_file = function(file, path)
   end
 
   return status and file_to_include:close()
-end
-
---- Delete *.js request script files and request_variables.json
-M.delete_request_scripts_files = function() -- .cache/nvim/kulala/scripts/requests
-  local dir = M.get_request_scripts_dir()
-  M.delete_files_in_directory(dir)
 end
 
 ---Deletes cached files: request.json and script output

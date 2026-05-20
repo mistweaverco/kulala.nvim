@@ -58,16 +58,16 @@ M.check_formatter = function(callback, wait)
       vim.g.kulala_fmt_installing = false
     end)
 
-    _ = callback and callback()
+    if callback then callback() end
     progress.hide()
   end)
 
   Async.co_resume(co)
 
-  _ = wait and cmd_install:wait()
+  if wait then cmd_install:wait() end
   if not cmd_build then return false end -- close coutine if install failed ?
 
-  _ = wait and cmd_build:wait()
+  if wait then cmd_build:wait() end
 
   return false
 end
@@ -109,16 +109,16 @@ M.convert = function(from, path)
   from = type(from) == "string" and from or "postman"
 
   vim.list_extend(cmd, { "--from", from, path })
-  local result = Shell.run(cmd, { err_msg = "Formatter error: " })
+  local job = Shell.run(cmd, { err_msg = "Formatter error: " })
 
-  result = result and result:wait()
-  if not result or result.stdout == "" then return end
+  job = job and job:wait()
+  if not job or job.stdout == "" then return end
 
-  local out = result.stdout:gsub("\n", "")
+  local out = job.stdout:gsub("\n", "")
   Logger.info(out)
 
   local file = table.remove(vim.split(out, " "))
-  _ = vim.fn.filereadable(file) == 1 and vim.cmd.edit(file)
+  if vim.fn.filereadable(file) == 1 then vim.cmd.edit(file) end
 end
 
 return M

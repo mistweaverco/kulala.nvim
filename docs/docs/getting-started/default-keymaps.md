@@ -26,6 +26,7 @@ Keymaps with `ft` set will only be available in buffers with the specified filet
   ["Send request"] = { "s", function() require("kulala").run() end, mode = { "n", "v" }, },
   ["Send request <cr>"] = { "<CR>", function() require("kulala").run() end, mode = { "n", "v" }, ft = { "http", "rest" }, },
   ["Send all requests"] = { "a", function() require("kulala").run_all() end, mode = { "n", "v" }, },
+  ["Interrupt requests"] = { "<C-c>", function() require("kulala.ui").interrupt_requests() end },
 
   ["Inspect current request"] = { "i", function() require("kulala").inspect() end, ft = { "http", "rest" } },
   ["Open cookies jar"] = { "j", function() require("kulala").open_cookies_jar() end, ft = { "http", "rest" } },
@@ -57,7 +58,7 @@ Keymaps with `ft` set will only be available in buffers with the specified filet
   ["Show filter"] = { "F", function() require("kulala.ui").toggle_filter() end },
 
   ["Send WS message"] = { "<S-CR>", function() require("kulala.cmd.websocket").send() end, mode = { "n", "v" }, },
-  ["Interrupt requests"] = { "<C-c>", function() require("kulala.cmd.websocket").close() end, desc = "also: CLose WS connection" },
+  ["Close WS connection"] = { "<C-c>", function() require("kulala.cmd.websocket").close() end },
 
   ["Next response"] = { "]", function() require("kulala.ui").show_next() end, },
   ["Previous response"] = { "[", function() require("kulala.ui").show_previous() end, },

@@ -18,6 +18,13 @@ local function generate_bug_report(message)
   end)
 end
 
+M.LoggerLogLevels = {
+  error = log_levels.ERROR,
+  warn = log_levels.WARN,
+  info = log_levels.INFO,
+  debug = log_levels.DEBUG,
+}
+
 M.log = function(message, level, opts)
   opts = vim.tbl_extend("force", default_options, opts or {})
   level = level or log_levels.INFO
@@ -33,17 +40,19 @@ M.log = function(message, level, opts)
   notify(message, level, opts)
 end
 
+M.notify = M.log
+
 M.info = function(message, opts)
-  _ = debug_level() > 2 and M.log(message, log_levels.INFO, opts)
+  if debug_level() > 2 then M.log(message, log_levels.INFO, opts) end
 end
 
 M.warn = function(message, opts)
-  _ = debug_level() > 1 and M.log(message, log_levels.WARN, opts)
+  if debug_level() > 1 then M.log(message, log_levels.WARN, opts) end
 end
 
 ---@param message string
 ---@param lines_no number|nil -- no of error lines to show
----@param report boolean|nil -- whether to generate a bug report
+---@param opts { report?: boolean }|nil -- `report` generates a bug report
 M.error = function(message, lines_no, opts)
   opts = opts or {}
 
@@ -56,7 +65,8 @@ M.error = function(message, lines_no, opts)
   local short_message = table.concat(lines, "\n", 1, lines_no)
   M.log(short_message, log_levels.ERROR)
 
-  if require("kulala.config").options.generate_bug_report or opts.report then generate_bug_report(message) end
+  -- Disable until the lsp is fixed
+  -- if require("kulala.config").options.generate_bug_report or opts.report then generate_bug_report(message) end
 end
 
 M.debug = function(message, opts)

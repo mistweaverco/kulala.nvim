@@ -65,13 +65,13 @@ describe("format", function()
       result = section.request.pre_request_script
       assert.has_properties(result, {
         "< ../scripts/post.js",
-        '< {%\n  client.log("post request executed");\n%}',
+        '< {%\nclient.log("post request executed");\n%}',
       })
 
       result = section.request.res_handler_script
       assert.has_properties(result, {
         "> ../scripts/post.js",
-        '> {%\n  client.log("post request executed");\n%}',
+        '> {%\nclient.log("post request executed");\n%}',
       })
     end)
 
@@ -210,7 +210,7 @@ describe("format", function()
           # @curl-connect-timeout 200
 
           < {%
-            console.log("pre request 0");
+          console.log("pre request 0");
           %}
 
           < ./tests/functional/scripts/advanced_E_pre.js

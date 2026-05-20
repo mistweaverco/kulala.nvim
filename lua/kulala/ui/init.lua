@@ -65,6 +65,21 @@ local function set_current_response(response_pos)
   DB.global_update().current_response_pos = response_pos
 end
 
+---Keep the UI on an existing response (e.g. live WebSocket stream) instead of using stale `previous_response_pos`.
+---@param db table
+---@param response_id? string
+---@return boolean positioned when true
+local function set_current_response_by_id(db, response_id)
+  if not response_id then return false end
+  for i = #db.responses, 1, -1 do
+    if db.responses[i].id == response_id then
+      set_current_response(i)
+      return true
+    end
+  end
+  return false
+end
+
 M.close_kulala_buffer = function()
   local buf = get_kulala_buffer()
   if buf then vim.api.nvim_buf_delete(buf, { force = true }) end
@@ -165,7 +180,7 @@ local function open_kulala_window(buf)
     if not status then Logger.error("Failed to set window option `" .. key .. "`: " .. (error or "")) end
   end)
 
-  _ = config.display_mode == "float" and vim.api.nvim_set_current_win(win)
+  if config.display_mode == "float" then vim.api.nvim_set_current_win(win) end
 
   return win
 end
@@ -180,7 +195,7 @@ local function show_progress()
 
   local row_offset = vim.fn.bufwinnr("kulala://news_footer") > 0 and 3 or 2
   local message = ("Running.. %s/%s"):format(CMD.queue.done, CMD.queue.total)
-  message = message .. " - press <C-c> to cancel  "
+  message = message .. " - <C-c> cancels requests (newest first)  "
 
   Float.create_window_footer(message, {
     buf = get_kulala_buffer(),
@@ -191,12 +206,23 @@ local function show_progress()
   })
 end
 
-local function show(contents, filetype, mode)
-  filetype = filetype and filetype .. ".kulala_ui" or "text.kulala_ui"
-  local buf = open_kulala_buffer(filetype)
+local MARKDOWN_VIEWS = {
+  verbose = true,
+  headers = true,
+  body = true,
+  headers_body = true,
+  script_output = true,
+  report = true,
+}
 
-  set_buffer_contents(buf, contents, filetype)
-  _ = mode ~= "report" and REPORT.set_response_summary(buf)
+local function show(contents, filetype, mode)
+  -- Markdown views use plain `markdown` so TS/highlight plugins apply.
+  local buf_ft = MARKDOWN_VIEWS[mode] and "markdown" or (filetype and filetype .. ".kulala_ui" or "text.kulala_ui")
+  if MARKDOWN_VIEWS[mode] then contents = require("kulala.ui.markdown").normalize_headings(contents) end
+  local buf = open_kulala_buffer(buf_ft)
+
+  set_buffer_contents(buf, contents, buf_ft)
+  if mode ~= "report" then REPORT.set_response_summary(buf) end
 
   local win = open_kulala_window(buf)
   local lnum = mode == "report" and vim.api.nvim_buf_line_count(buf) or 4
@@ -210,19 +236,31 @@ local function show(contents, filetype, mode)
   show_progress()
 end
 
-local function format_body(view)
-  local headers = get_current_response().headers
-  local body = get_current_response().body
+---Prefer kulala-core `body.type` (`json` / `text`) over MIME sniffing for UI filetype and jq.
+---@param r Response
+---@return table|nil config or nil to fall back to headers
+local function content_config_from_kulala_core(r)
+  if not r._kulala_core or not r._kulala_body_type then return nil end
+  if r._kulala_body_type == "json" then
+    local json = CONFIG.get().contenttypes["application/json"]
+    if type(json) == "string" then return CONFIG.get().contenttypes[json] end
+    return json
+  end
+  return CONFIG.default_contenttype
+end
 
-  local contenttype = INT_PROCESSING.get_config_contenttype(headers, view)
-  local filetype
+local function format_body(view)
+  local r = get_current_response()
+  local headers = r.headers
+  local body = r.body
+
+  local contenttype = content_config_from_kulala_core(r) or INT_PROCESSING.get_config_contenttype(headers, view)
 
   if body and contenttype.formatter then
-    filetype = contenttype.ft
-    body = FORMATTER.format(filetype, contenttype.formatter, body, { verbose = false })
+    body = FORMATTER.format(contenttype.ft, contenttype.formatter, body, { verbose = false })
   end
 
-  return body, filetype or contenttype.ft
+  return body
 end
 
 local function update_filter()
@@ -250,16 +288,23 @@ M.toggle_filter = function()
   UI_utils.highlight_range(buf, 0, { row, 10 }, { row, -1 }, "Special")
 end
 
+local function parse_report_line(line)
+  return tonumber(line:match("^## Line (%d+)") or line:match("^%s*|%s*(%d+)%s*|") or line:match("^%s*(%d+)"))
+end
+
 local function jump_to_response()
   local responses = DB.global_update().responses
   local win = vim.fn.bufwinid(get_current_response().buf)
 
   if CONFIG.get().default_view == "report" then
-    local lnum = tonumber(vim.api.nvim_get_current_line():match("^%s*%d+"))
+    local lnum = parse_report_line(vim.api.nvim_get_current_line())
     if not lnum then return end
 
+    local current_name = get_current_response().name
     for i = #responses, 1, -1 do
-      if responses[i].line == lnum then
+      if
+        responses[i].line == lnum and (not current_name or current_name == "" or responses[i].name == current_name)
+      then
         set_current_response(i)
         break
       end
@@ -271,31 +316,32 @@ local function jump_to_response()
     vim.api.nvim_win_set_cursor(win, { get_current_response().line, 0 })
 
     win = get_kulala_window()
-    _ = vim.api.nvim_win_get_config(win).relative == "editor" and vim.api.nvim_win_close(win, true)
+    if vim.api.nvim_win_get_config(win).relative == "editor" then vim.api.nvim_win_close(win, true) end
   end
 end
 
 M.show_headers = function()
-  local headers = get_current_response().headers
-  show(headers, "text", "headers")
+  local Markdown = require("kulala.ui.markdown")
+  show(Markdown.format_headers_view(get_current_response()), "markdown", "headers")
 end
 
 M.show_body = function()
-  local body, filetype = format_body()
-  show(body, filetype, "body")
-  _ = get_current_response().filter and M.toggle_filter()
+  local Markdown = require("kulala.ui.markdown")
+  show(Markdown.format_body_view(format_body()), "markdown", "body")
+  if get_current_response().filter then M.toggle_filter() end
 end
 
 M.show_headers_body = function()
-  local headers = get_current_response().headers
-  local body, filetype = format_body()
-  show(headers .. body, filetype, "headers_body")
+  local Markdown = require("kulala.ui.markdown")
+  local r = get_current_response()
+  show(Markdown.format_headers_body_view(r, format_body()), "markdown", "headers_body")
 end
 
 M.show_verbose = function()
-  local body, filetype = format_body("verbose")
-  local errors = get_current_response().errors
-  show(errors .. "\n" .. body, filetype, "verbose")
+  local r = get_current_response()
+  local Verbose = require("kulala.ui.verbose")
+  local body = r._kulala_core and Verbose.format(r) or Verbose.format_legacy(r)
+  show(body, "markdown", "verbose")
 end
 
 M.show_stats = function()
@@ -311,19 +357,12 @@ M.show_stats = function()
 end
 
 M.show_script_output = function()
-  local pre_file_contents = get_current_response().script_pre_output
-  local post_file_contents = get_current_response().script_post_output
-
-  local contents = "===== Pre Script Output =====================================\n\n" .. pre_file_contents
-  contents = contents .. "\n\n===== Post Script Output ====================================\n\n" .. post_file_contents
-
-  show(contents, "text", "script_output")
+  local Markdown = require("kulala.ui.markdown")
+  show(Markdown.format_script_output(get_current_response()), "markdown", "script_output")
 end
 
 M.show_report = function()
-  local report, highlights = REPORT.generate_requests_report()
-  show(table.concat(report or {}, "\n"), "text", "report")
-  UI_utils.highlight_buffer(get_kulala_buffer(), 0, highlights or {}, 100)
+  show(REPORT.generate_requests_report(), "markdown", "report")
 end
 
 M.show_next = function()
@@ -435,7 +474,7 @@ M.show_news = function()
   REPORT.hide_response_summary()
 
   local footer = vim.fn.bufnr("kulala://news_footer")
-  _ = footer > -1 and vim.api.nvim_buf_delete(footer, { force = true })
+  if footer > -1 then vim.api.nvim_buf_delete(footer, { force = true }) end
 
   DB.settings:write { news_ver = GLOBALS.VERSION }
 end
@@ -451,7 +490,7 @@ M.open_default_view = function()
   local open_view = type(default_view) == "function" and default_view or M["show_" .. default_view]
 
   local status, errors = xpcall(function()
-    _ = open_view and open_view(get_current_response())
+    if open_view then open_view(get_current_response()) end
   end, debug.traceback)
 
   if not status then Logger.error("Errors displaying response: " .. (errors or ""), 1, { report = true }) end
@@ -472,7 +511,7 @@ M.open_all = function(_, line_nr)
   db.previous_response_pos = #db.responses
   INLAY.clear()
 
-  CMD.run_parser(nil, line_nr, function(success, duration, icon_linenr)
+  CMD.run_parser(nil, line_nr, function(success, duration, icon_linenr, response_id)
     if success then
       elapsed_ms = UI_utils.pretty_ms(duration)
       status = "done"
@@ -480,7 +519,10 @@ M.open_all = function(_, line_nr)
       status = success == nil and "loading" or "error"
     end
 
-    set_current_response(#db.responses)
+    if not set_current_response_by_id(db, response_id) then
+      local first_new = math.max(1, (db.previous_response_pos or 0) + 1)
+      set_current_response(math.min(first_new, #db.responses))
+    end
 
     INLAY.show(buf, status, icon_linenr, elapsed_ms)
     M.open_default_view()
@@ -512,25 +554,49 @@ M.keymap_enter = function()
 end
 
 M.interrupt_requests = function()
-  if get_current_response().method == "WS" then return require("kulala.cmd.websocket").close() end
+  local current = get_current_response()
+  if current and current.method == "WS" then return require("kulala.cmd.websocket").close() end
 
-  CMD.queue:reset()
+  local acted = CMD.queue.interrupt_progressive()
+  if not acted then return end
+
   INLAY.clear("kulala.loading")
-  hide_progress()
+  if #CMD.queue.tasks == 0 and CMD.queue.status ~= "running" then hide_progress() end
 end
 
 M.replay = function()
   local last_request = DB.global_find_unique("replay")
   if not last_request then return Logger.warn("No request to replay") end
 
-  local db = DB.global_update()
+  local run_opts = CMD.replay_run_opts(last_request)
+  if not run_opts then
+    return Logger.error("Cannot replay: missing HTTP file content for " .. (last_request.file or "unknown"))
+  end
 
-  CMD.run_parser({ last_request }, nil, function(_)
-    set_current_response(#db.responses)
+  local db = DB.global_update()
+  local line = last_request.show_icon_line_number or last_request.start_line
+  local buf = DB.get_current_buffer()
+  local status, elapsed_ms
+
+  db.previous_response_pos = #db.responses
+  INLAY.clear()
+
+  -- Re-parse the HTTP buffer and send full document content to kulala-core (all scripts, vars, Shared).
+  CMD.run_parser(nil, line, function(success, duration, icon_linenr, response_id)
+    if success then
+      elapsed_ms = UI_utils.pretty_ms(duration)
+      status = "done"
+    else
+      status = success == nil and "loading" or "error"
+    end
+
+    if not set_current_response_by_id(db, response_id) then set_current_response(#db.responses) end
+
+    INLAY.show(buf, status, icon_linenr or INLAY.icon_line_for_request(last_request), elapsed_ms)
     M.open_default_view()
 
     return true
-  end)
+  end, run_opts)
 end
 
 M.close = function()
@@ -541,6 +607,21 @@ M.close = function()
 end
 
 M.copy = function()
+  local Bridge = require("kulala.cmd.kulala_core_bridge")
+
+  if Bridge.enabled() then
+    local curl, err = Bridge.to_curl_at_cursor(nil, GLOBALS.NAME .. "/" .. GLOBALS.VERSION)
+    if curl then
+      vim.fn.setreg("+", curl)
+      Logger.info("Copied to clipboard")
+      return
+    end
+    if err then
+      if Bridge.is_preview_unsupported_err(err) then return Logger.warn(err) end
+      Logger.warn(err .. " — falling back to legacy copy")
+    end
+  end
+
   local request = PARSER.parse()
   if not request then return Logger.error("No request found") end
 
@@ -574,19 +655,46 @@ end
 
 M.from_curl = function()
   local clipboard = vim.fn.getreg("+")
+  local Bridge = require("kulala.cmd.kulala_core_bridge")
+
+  if Bridge.enabled() then
+    local lines, err = Bridge.from_curl(clipboard)
+    if lines then
+      vim.api.nvim_put(lines, "l", false, false)
+      return
+    end
+    if err then Logger.warn(err .. " — falling back to Lua curl parser") end
+  end
+
   local spec, curl = CURL_PARSER.parse(clipboard)
 
   if not spec then
     Logger.error("Failed to parse curl command")
     return
   end
-  -- put the curl command in the buffer as comment
   REPORT.print_http_spec(spec, curl)
 end
 
 M.inspect = function()
-  local content = Inspect.get_contents()
-  if #content == 0 then return end
+  local Bridge = require("kulala.cmd.kulala_core_bridge")
+  local content
+
+  if Bridge.enabled() then
+    local lines, err = Bridge.inspect_request_at_cursor()
+    if lines then
+      content = lines
+    else
+      if err then
+        if Bridge.is_preview_unsupported_err(err) then return Logger.warn(err) end
+        Logger.warn(err .. " — falling back to buffer parse")
+      end
+      content = Inspect.get_contents()
+    end
+  else
+    content = Inspect.get_contents()
+  end
+
+  if not content or #content == 0 then return end
 
   Float.create(content, {
     name = "kulala://inspect",

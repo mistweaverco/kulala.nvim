@@ -13,12 +13,12 @@ M.format = function(ft, formatter, contents, opts)
   })
 
   if type(formatter) == "function" then return formatter(contents) end
-  if not type(formatter) == "table" then return contents end
+  if type(formatter) ~= "table" then return contents end
 
   local executable = formatter[1]
 
   if vim.fn.executable(executable) == 0 then
-    _ = opts.versbose and Logger.warn("Formatting failed: " .. executable .. " is not available.")
+    if opts.versbose then Logger.warn("Formatting failed: " .. executable .. " is not available.") end
     return contents
   end
 
@@ -47,7 +47,7 @@ M.json = function(contents, opts)
   formatter = vim.deepcopy(formatter.formatter)
 
   opts = vim.tbl_deep_extend("keep", opts or {}, { sort = true })
-  _ = opts.sort and table.insert(formatter, 2, "--sort-keys")
+  if opts.sort then table.insert(formatter, 2, "--sort-keys") end
 
   contents = type(contents) == "table" and vim.json.encode(contents, opts) or contents
 

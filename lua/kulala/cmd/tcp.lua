@@ -1,7 +1,4 @@
-local Config = require("kulala.config")
 local Logger = require("kulala.logger")
-local Shell = require("kulala.cmd.shell_utils")
-
 local M = {}
 
 local function redirect_script()
@@ -12,7 +9,7 @@ local function redirect_script()
       <p>Processing authentication...</p>
       <script>
         const fragment = window.location.hash.substring(1);
-        
+
         if (fragment && fragment.includes('access_token=')) {
           window.location.href = '\/?' + fragment;
         } else {
@@ -36,14 +33,14 @@ M.server = {
       return Logger.warn(("TCP server: failed to bind on %s:%s (%s)"):format(host, port, err or ""))
     end
 
-    status, err = server:listen(128, function(err)
-      if err then return Logger.error("TCP server: failed to accept connection: " .. err) end
+    status, err = server:listen(128, function(listen_err)
+      if listen_err then return Logger.error("TCP server: failed to accept connection: " .. listen_err) end
 
       local client = vim.uv.new_tcp() or {}
       server:accept(client)
 
-      client:read_start(function(err, chunk)
-        if err then return Logger.error("TCP server: failed to process request: " .. err) end
+      client:read_start(function(read_err, chunk)
+        if read_err then return Logger.error("TCP server: failed to process request: " .. read_err) end
         if not chunk then return self:stop(client) end
 
         local response = ""
@@ -84,8 +81,8 @@ M.server = {
     tcp = tcp or self.server
 
     return pcall(function()
-      _ = tcp.shutdown and tcp:shutdown()
-      _ = tcp.close and tcp:close()
+      if tcp.shutdown then tcp:shutdown() end
+      if tcp.close then tcp:close() end
     end)
   end,
 }
@@ -115,18 +112,29 @@ local function request(url, params, on_exit)
     abort_on_stderr = true,
   })
 
-  local cmd = { Config.get().curl_path, "-s", "-X", params.method }
+  local KULALA_CORE = require("kulala.cmd.kulala_core_bridge")
 
-  if next(params.headers) then
-    vim.iter(params.headers):each(function(key, value)
-      vim.list_extend(cmd, { "-H", ("%s: %s"):format(key, value) })
+  local result, err = KULALA_CORE.http_request {
+    url = url,
+    method = params.method,
+    headers = params.headers,
+    body = params.body,
+    timeoutSec = 30,
+  }
+
+  local system = {
+    code = err and 1 or 0,
+    stdout = result and result.body or "",
+    stderr = err or "",
+  }
+
+  if on_exit then
+    vim.schedule(function()
+      on_exit(system)
     end)
+    return system
   end
-
-  cmd = #params.body > 0 and vim.list_extend(cmd, { "-d", params.body }) or cmd
-  cmd = vim.list_extend(cmd, { url })
-
-  return Shell.run(cmd, params, on_exit)
+  return system
 end
 
 M.client = {

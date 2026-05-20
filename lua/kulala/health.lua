@@ -1,24 +1,9 @@
 local Config = require("kulala.config")
-local Fs = require("kulala.utils.fs")
 local Globals = require("kulala.globals")
 
 local M = {}
 
 local Health
-
-local function check_executable(name, path)
-  if Fs.command_exists(path) then
-    path = Fs.command_path(path)
-
-    local version = vim.system({ path, "--version" }, { text = true }):wait()
-    version = #version.stdout > 0 and version.stdout or version.stderr
-    version = version and version:match("%sv?([%d%.]+)%s*") or "unknown"
-
-    Health.ok(("{%s} found: %s (version: %s)"):format(name, path, version))
-  else
-    Health.error(string.format("{%s} not found", name))
-  end
-end
 
 M.check = function(health)
   Health = health or vim.health
@@ -32,11 +17,25 @@ M.check = function(health)
 
   Health.start("Tools:")
 
-  check_executable("cURL", config.curl_path)
-  check_executable("gRPCurl", config.grpcurl_path)
-  check_executable("websocat", config.websocat_path)
-  check_executable("openssl", config.openssl_path)
-  check_executable("NPM", "npm")
+  local Bridge = require("kulala.cmd.kulala_core_bridge")
+  local configured = config.kulala_core.path
+  if Bridge.enabled() then
+    local resolved = Bridge.executable_path()
+    if type(configured) == "string" and vim.trim(configured) ~= "" then
+      Health.ok(("{kulala-core} configured: %s → %s"):format(vim.trim(configured), resolved))
+    else
+      Health.ok(("{kulala-core} resolved from PATH: %s"):format(resolved))
+    end
+    Health.info("{kulala-core} data dir: " .. Bridge.effective_data_dir())
+  elseif type(configured) == "string" and vim.trim(configured) ~= "" then
+    Health.error(("{kulala-core} kulala_core.path is not executable: %s"):format(vim.trim(configured)))
+  else
+    Health.error(
+      "{kulala-core} "
+        .. "kulala-core not found. "
+        .. "Either let kulala.nvim auto-download and install kulala-core or set `kulala_core.path` in setup."
+    )
+  end
 
   Health.start("Formatters:")
 

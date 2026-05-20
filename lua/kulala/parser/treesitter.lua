@@ -1,6 +1,7 @@
-if not pcall(require, "nvim-treesitter") then return nil end
+local PARSERS_DIR = vim.fs.joinpath(vim.fn.stdpath("data"), "site", "parser")
+local PARSER_EXT = vim.fn.has("win32") == 1 and "dll" or vim.fn.has("macunix") == 1 and "dylib" or "so"
+if not vim.fs.exists(vim.fs.joinpath(PARSERS_DIR, "kulala_http." .. PARSER_EXT)) then return nil end
 
-local CONFIG = require("kulala.config")
 local FS = require("kulala.utils.fs")
 local STRING_UTILS = require("kulala.utils.string")
 
@@ -61,18 +62,6 @@ local REQUEST_VISITORS = {
     req.start_line = start_line
     req.block_line_count = end_line - start_line
     req.lines_length = end_line - start_line
-
-    req.show_icon_line_number = nil
-    local show_icons = CONFIG.get().show_icons
-    if show_icons ~= nil then
-      if show_icons == "on_request" then
-        req.show_icon_line_number = start_line + 1
-      elseif show_icons == "above_req" then
-        req.show_icon_line_number = start_line
-      elseif show_icons == "below_req" then
-        req.show_icon_line_number = end_line
-      end
-    end
   end,
 
   header = function(req, args)
@@ -187,6 +176,9 @@ local function parse_request(section_node)
       })
     end
   end
+
+  local delim_0, _, _, _ = section_node:range()
+  req.show_icon_line_number = delim_0 + 1
 
   return req
 end

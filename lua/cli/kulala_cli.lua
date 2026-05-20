@@ -2,14 +2,24 @@
 
 --TODO: make windows compatible: paths and install scripts
 
---# selene: allow(unscoped_variables)
---# selene: allow(unused_variable)
---# selene: allow(undefined_variable)
-
 local kulala_path
 
 local args = {}
 local opts = {}
+
+local Config
+local Globals
+local Cmd
+local Db
+local Parser
+local Export
+local Fmt
+local Colors
+local Ui
+local UI_utils
+local Logger
+
+local Request_timout
 
 local setup = function()
   pcall(require, "nvim-treesitter")
@@ -38,7 +48,6 @@ local setup = function()
     },
   }))
 
-  require("kulala.parser.scripts.engines.javascript").install_dependencies(true)
   vim.g.kulala_cli = true
 end
 
@@ -59,11 +68,11 @@ local function init()
   local plugins = vim.fn.stdpath("data")
   local treesitter_path = vim.fs.find("nvim-treesitter", { path = plugins, type = "directory", limit = 1 })[1]
 
-  _ = treesitter_path and vim.opt.rtp:prepend(treesitter_path)
+  if treesitter_path then vim.opt.rtp:prepend(treesitter_path) end
 end
 
 local function get_args()
-  Argparse = require("cli.argparse")
+  local Argparse = require("cli.argparse")
 
   local parser = Argparse() {
     name = "Kulala CLI",
@@ -143,7 +152,6 @@ local function print_response()
   pcall(vim.treesitter.start, ui_buf, filetype)
   vim.bo[ui_buf].syntax = "on"
 
-  _ = Config.ui.default_view == "verbose" and vim.cmd("so " .. kulala_path .. "/syntax/kulala_verbose_result.vim")
   vim.cmd("redraw")
 
   io.write("\n\n")
@@ -242,8 +250,8 @@ end
 local function run_command()
   if #args.input == 0 then return Logger.error("No input file specified") end
 
-  _ = args.command == "export" and Export.export_requests(args.input[1])
-  _ = args.command == "import" and Fmt.convert(args.from, args.input[1])
+  if args.command == "export" then Export.export_requests(args.input[1]) end
+  if args.command == "import" then Fmt.convert(args.from, args.input[1]) end
 
   return true
 end

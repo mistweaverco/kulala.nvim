@@ -7,8 +7,6 @@ local Parser = require("kulala.parser.document")
 local Parser_utils = require("kulala.parser.utils")
 local Var_parser = require("kulala.parser.string_variables_parser")
 
-local lsp = vim.lsp
-
 local M = {}
 
 local Postman = {
@@ -145,6 +143,7 @@ local function get_headers(request)
 end
 
 local function parse_params(body)
+  body = (body or ""):gsub("\r\n", "\n"):gsub("\n", "")
   local params_map, params = {}, {}
 
   -- Handle arrays
@@ -183,7 +182,7 @@ local function get_url(request)
   local url = new(Postman.url, { raw = request.url })
 
   local protocol, rest = request.url:match("^([^:]+)://(.*)$")
-  url.protocol = protocol or "http"
+  url.protocol = protocol
 
   rest = protocol and rest or request.url
 
@@ -216,6 +215,7 @@ end
 -- ... more parts ...
 -- --boundary--\r\n
 local function parse_formdata(body, boundary)
+  body = (body or ""):gsub("\r\n", "\n"):gsub("\n", "\r\n")
   local formdata_items, parts = {}, {}
   local escaped_boundary = ("--" .. boundary):gsub("([%.%-%+%[%]%(%)%^%$%*%?%%])", "%%%1")
 
@@ -236,8 +236,8 @@ local function parse_formdata(body, boundary)
     body = body:sub(4 + #boundary + #part)
   end
 
-  for _, part in ipairs(parts) do
-    local headers, content = part:match("(.-)\r\n\r\n(.*)")
+  for _, segment in ipairs(parts) do
+    local headers, content = segment:match("(.-)\r\n\r\n(.*)")
 
     if headers and content then
       local name = headers:match('name="([^"]+)"')
@@ -272,10 +272,14 @@ local function get_body(request)
   if request_type(request, "GRAPHQL") then
     request.method = "POST" -- Postman expects POST for GraphQL requests
 
-    local _, json = Graphql.get_json(request.body)
-
     body.mode = "graphql"
-    body.graphql = json or {}
+    local ok, decoded = pcall(vim.json.decode, request.body or "")
+    if ok and type(decoded) == "table" and type(decoded.query) == "string" then
+      body.graphql = decoded
+    else
+      local _, json = Graphql.get_json(request.body)
+      body.graphql = json or {}
+    end
   end
 
   if request_type(request, "application/x-www-form-urlencoded") then
@@ -390,7 +394,7 @@ local function get_env(path)
   Db.set_current_buffer(temp_buf or current_buf)
   local env = Env.get_env() or {}
 
-  _ = temp_buf and vim.api.nvim_buf_delete(temp_buf, { force = true })
+  if temp_buf then vim.api.nvim_buf_delete(temp_buf, { force = true }) end
   return env
 end
 
@@ -406,19 +410,19 @@ local function to_postman(path, export_type)
 
   local env = get_env(files[1])
 
-  vim.iter(files):each(function(path)
-    local lines = vim.split(Fs.read_file(path) or "", "\n")
+  vim.iter(files):each(function(file_path)
+    local lines = vim.split(Fs.read_file(file_path) or "", "\n")
 
     local requests = Parser.get_document(lines)
     local variables = {}
 
     if #requests == 0 then return end
 
-    local filename = vim.fn.fnamemodify(path, ":t:r")
+    local filename = vim.fn.fnamemodify(file_path, ":t:r")
 
     local item_group = new(Postman.item_group, {
       name = filename,
-      description = "Kulala Export: " .. path,
+      description = "Kulala Export: " .. file_path,
     })
 
     vim.iter(requests):each(function(request)

@@ -107,16 +107,6 @@ M.update_http_client_auth = function(config_id, data)
   FS.write_json(env_path, env, true)
 end
 
-local function get_scripts_variables(env)
-  local global_scripts_variables = FS.get_global_scripts_variables()
-  local request_scripts_variables = FS.get_request_scripts_variables()
-
-  if global_scripts_variables then env = vim.tbl_extend("force", env, global_scripts_variables) end
-  if request_scripts_variables then env = vim.tbl_extend("force", env, request_scripts_variables) end
-
-  return env
-end
-
 M.get_current_env = function()
   return vim.g.kulala_selected_env or Config.get().default_env
 end
@@ -148,8 +138,6 @@ M.get_env = function()
   for key, value in pairs(db_env) do
     env[key] = value
   end
-
-  env = get_scripts_variables(env)
 
   return env
 end

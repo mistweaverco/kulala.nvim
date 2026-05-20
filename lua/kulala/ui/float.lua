@@ -92,7 +92,7 @@ local function set_autoclose(buf, win)
     buffer = buf,
     once = true,
     callback = function()
-      _ = vim.api.nvim_win_is_valid(win) and vim.api.nvim_win_close(win, true)
+      if vim.api.nvim_win_is_valid(win) then vim.api.nvim_win_close(win, true) end
     end,
   })
 end
@@ -135,29 +135,29 @@ M.create = function(text, opts)
   local buf = vim.api.nvim_create_buf(false, true)
 
   local existing = vim.fn.bufnr(opts.name)
-  _ = existing > -1 and vim.api.nvim_buf_delete(existing, { force = true })
-  _ = vim.fn.bufnr(opts.name) == -1 and vim.api.nvim_buf_set_name(buf, opts.name)
+  if existing > -1 then vim.api.nvim_buf_delete(existing, { force = true }) end
+  if vim.fn.bufnr(opts.name) == -1 then vim.api.nvim_buf_set_name(buf, opts.name) end
 
   vim.api.nvim_buf_set_lines(buf, 0, -1, true, text)
 
   if opts.ft then vim.bo[buf].filetype = opts.ft end
   if opts.hl_group then Utils.highlight_range(buf, 0, 0, 0, opts.hl_group) end
 
-  _ = opts.auto_size and set_autosize(text, opts)
+  if opts.auto_size then set_autosize(text, opts) end
 
   local win = vim.api.nvim_open_win(buf, opts.focusable, float_defaults(opts))
 
-  _ = opts.auto_close and set_autoclose(opts.buf, win)
-  _ = opts.close_keymaps and set_close_keymaps(buf, win, opts.close_keymaps)
-  _ = opts.bo and set_buffer_options(buf, opts.bo)
-  _ = opts.wo and set_window_options(win, opts.wo)
+  if opts.auto_close then set_autoclose(opts.buf, win) end
+  if opts.close_keymaps then set_close_keymaps(buf, win, opts.close_keymaps) end
+  if opts.bo then set_buffer_options(buf, opts.bo) end
+  if opts.wo then set_window_options(win, opts.wo) end
 
   return {
     buf = buf,
     win = win,
     close = function()
-      _ = vim.api.nvim_win_is_valid(win) and vim.api.nvim_win_close(win, true)
-      _ = vim.api.nvim_buf_is_valid(buf) and vim.api.nvim_buf_delete(buf, { force = true })
+      if vim.api.nvim_win_is_valid(win) then vim.api.nvim_win_close(win, true) end
+      if vim.api.nvim_buf_is_valid(buf) then vim.api.nvim_buf_delete(buf, { force = true }) end
     end,
   }
 end
@@ -212,7 +212,7 @@ M.create_progress_float = function(text, opts)
       if not vim.api.nvim_buf_is_valid(float.buf) then return timer:close() end
 
       vim.api.nvim_buf_set_lines(float.buf, 0, -1, true, { msg })
-      _ = opts.hl_group and Utils.highlight_range(float.buf, 0, 0, 0, opts.hl_group)
+      if opts.hl_group then Utils.highlight_range(float.buf, 0, 0, 0, opts.hl_group) end
     end)
   end)
 

@@ -51,15 +51,15 @@ local get_last_headers_as_table = function(headers)
       if previously_empty then headers_table = {} end
       previously_empty = false
 
-      if header:find(":") then
-        local kv = vim.split(header, ":")
-        local key = kv[1]
-        local value = header:sub(#key + 2)
+      local colon = header:find(":")
+      if colon then
+        local key = vim.trim(header:sub(1, colon - 1))
+        local value = vim.trim(header:sub(colon + 1))
 
         if not headers_table[key] then
-          headers_table[key] = { vim.trim(value) }
+          headers_table[key] = { value }
         else
-          table.insert(headers_table[key], vim.trim(value))
+          table.insert(headers_table[key], value)
         end
       end
     end
@@ -116,19 +116,18 @@ end
 
 M.get_config_contenttype = function(headers, view)
   headers = get_lower_headers_as_table(headers)
-  local content_type = headers["content-type"]
+  local raw = headers["content-type"]
 
-  if content_type then
-    content_type = type(content_type) == "table" and content_type[1] or content_type
-    content_type = vim.split(content_type, ";")[1]
-    content_type = vim.trim(content_type)
+  if raw then
+    local primary = type(raw) == "table" and raw[1] or raw
+    primary = vim.trim(vim.split(primary, ";")[1])
 
     if view == "verbose" then
-      return content_type == "kulala/grpc_error" and { ft = "kulala_grpc_error" } or { ft = "kulala_verbose_result" }
+      return primary == "kulala/grpc_error" and { ft = "kulala_grpc_error" } or { ft = "markdown" }
     end
 
     local config_key = vim.iter(CONFIG.get().contenttypes):find(function(k, _)
-      return content_type:match(k)
+      return primary:match(k)
     end)
 
     local config = config_key and CONFIG.get().contenttypes[config_key]
