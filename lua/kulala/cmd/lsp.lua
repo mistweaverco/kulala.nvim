@@ -624,9 +624,12 @@ end
 
 local function get_hover(_)
   local Bridge = require("kulala.cmd.kulala_core_bridge")
-  local lines
+  local lines, err
   if Bridge.enabled() then
-    lines, _ = Bridge.inspect_request_at_cursor()
+    lines, err = Bridge.inspect_request_at_cursor()
+    if err and Bridge.is_preview_unsupported_err(err) then
+      return { contents = { language = "plaintext", value = err } }
+    end
   end
   if not lines then lines = Inspect.get_contents() end
   return { contents = { language = "http", value = table.concat(lines, "\n") } }

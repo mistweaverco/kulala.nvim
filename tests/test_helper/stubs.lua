@@ -475,6 +475,16 @@ function KulalaCore.handle(system)
         return vars[n:match("%s*(.-)%s*")] or ""
       end)
     end
+    local method_upper = (method or ""):upper()
+    if method_upper == "GRPC" or method_upper == "WS" or method_upper == "WSS" then
+      system.code = 0
+      system.stdout = vim.json.encode {
+        ok = false,
+        error = method_upper .. " requests cannot be shown as curl or HTTP inspect preview",
+      }
+      system.stderr = ""
+      return
+    end
     if action == "inspect_request" then
       local out = { (method or "GET") .. " " .. (url or "") .. (httpver and (" " .. httpver) or "") }
       for k, v in pairs(headers) do

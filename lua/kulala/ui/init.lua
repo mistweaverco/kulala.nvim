@@ -616,7 +616,10 @@ M.copy = function()
       Logger.info("Copied to clipboard")
       return
     end
-    if err then Logger.warn(err .. " — falling back to legacy copy") end
+    if err then
+      if Bridge.is_preview_unsupported_err(err) then return Logger.warn(err) end
+      Logger.warn(err .. " — falling back to legacy copy")
+    end
   end
 
   local request = PARSER.parse()
@@ -681,7 +684,10 @@ M.inspect = function()
     if lines then
       content = lines
     else
-      if err then Logger.warn(err .. " — falling back to buffer parse") end
+      if err then
+        if Bridge.is_preview_unsupported_err(err) then return Logger.warn(err) end
+        Logger.warn(err .. " — falling back to buffer parse")
+      end
       content = Inspect.get_contents()
     end
   else

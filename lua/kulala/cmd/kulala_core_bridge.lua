@@ -560,4 +560,10 @@ function M.websocket_start(opts, handlers, cwd)
   }, handlers.on_exit)
 end
 
+---@param err string|nil
+---@return boolean
+function M.is_preview_unsupported_err(err)
+  return type(err) == "string" and err:find("cannot be shown as curl or HTTP inspect preview", 1, true) ~= nil
+end
+
 return M
