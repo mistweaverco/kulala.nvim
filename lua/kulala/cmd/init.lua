@@ -232,6 +232,19 @@ local function inject_payload(errors, request)
   return table.concat(lines, "\n")
 end
 
+---Stable id for a request/response pair (must match between save_response and live WebSocket state).
+---@param buf number
+---@param request DocumentRequest
+---@return string
+local function request_response_id(buf, request)
+  local line = request.show_icon_line_number or 0
+  local id = buf .. ":" .. line
+  if type(request._kulala_block_name) == "string" and request._kulala_block_name ~= "" then
+    id = id .. ":" .. request._kulala_block_name
+  end
+  return id
+end
+
 local function truncate_body(response)
   local max_size = CONFIG.get().ui.max_response_size
 
@@ -246,10 +259,7 @@ end
 local function save_response(request_status, parsed_request)
   local buf = DB.get_current_buffer()
   local line = parsed_request.show_icon_line_number or 0
-  local id = buf .. ":" .. line
-  if type(parsed_request._kulala_block_name) == "string" and parsed_request._kulala_block_name ~= "" then
-    id = id .. ":" .. parsed_request._kulala_block_name
-  end
+  local id = request_response_id(buf, parsed_request)
   local body_from_snapshot = type(request_status._kulala_body_snapshot) == "string"
   local headers_from_snapshot = type(request_status._kulala_headers_snapshot) == "string"
 
@@ -260,24 +270,36 @@ local function save_response(request_status, parsed_request)
   end
 
   local method_upper = (parsed_request.method or ""):upper()
-  if method_upper == "WS" or method_upper == "WSS" then
+  if method_upper == "WS" or method_upper == "WSS" or method_upper == "WEBSOCKET" then
     local ws_response = require("kulala.cmd.websocket").response
     if ws_response and ws_response.id == id then
+      local existing = ws_response
       for i = #responses, 1, -1 do
         if responses[i].id == id then
-          local existing = responses[i]
-          existing.code = request_status.code or -1
-          existing.duration = request_status.duration or existing.duration
-          existing.errors = request_status.errors or existing.errors
-          existing.stats = request_status.stdout or existing.stats
-          existing.body_raw = FS.read_file(GLOBALS.BODY_FILE) or ""
-          existing.body = truncate_body(existing)
-          existing.json = Json.parse(existing.body) or {}
-          existing = set_request_stats(existing)
-          existing.status = existing.code == 0
-          return existing
+          existing = responses[i]
+          break
         end
       end
+      existing.code = request_status.code or -1
+      existing.duration = request_status.duration or existing.duration
+      existing.errors = request_status.errors or existing.errors
+      existing.stats = request_status.stdout or existing.stats
+      existing.body_raw = FS.read_file(GLOBALS.BODY_FILE) or ""
+      existing.body = truncate_body(existing)
+      existing.json = Json.parse(existing.body) or {}
+      existing = set_request_stats(existing)
+      existing.status = existing.code == 0
+      if existing == ws_response then
+        local in_list = false
+        for _, r in ipairs(responses) do
+          if r == ws_response then
+            in_list = true
+            break
+          end
+        end
+        if not in_list then table.insert(responses, ws_response) end
+      end
+      return existing
     end
   end
 
@@ -403,7 +425,12 @@ local function handle_response_impl(request_status, parsed_request, callback, ad
   end
 
   if invoke_ui_callback ~= false then
-    callback(success, request_status.duration, INLAY.icon_line_for_request(parsed_request))
+    local response_id = request_status._kulala_response_id
+    local method_upper = (parsed_request.method or ""):upper()
+    if not response_id and (method_upper == "WS" or method_upper == "WSS" or method_upper == "WEBSOCKET") then
+      response_id = request_response_id(DB.get_current_buffer() or 0, parsed_request)
+    end
+    callback(success, request_status.duration, INLAY.icon_line_for_request(parsed_request), response_id)
   end
 end
 
@@ -615,7 +642,7 @@ local function kulala_core_deliver_result(item, target, duration_wall, callback,
     local WEBSOCKET = require("kulala.cmd.websocket")
     FS.write_file(GLOBALS.HEADERS_FILE, "Content-Type: text/plain\n\n")
     local response = {
-      id = (DB.get_current_buffer() or 0) .. ":" .. (target.show_icon_line_number or 0),
+      id = request_response_id(DB.get_current_buffer() or 0, target),
       name = target.name or "",
       url = target._kulala_final_url or target._kulala_sent_url or target.url or "",
       method = target.method or "WS",

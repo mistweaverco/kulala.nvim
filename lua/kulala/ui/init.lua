@@ -65,6 +65,21 @@ local function set_current_response(response_pos)
   DB.global_update().current_response_pos = response_pos
 end
 
+---Keep the UI on an existing response (e.g. live WebSocket stream) instead of using stale `previous_response_pos`.
+---@param db table
+---@param response_id? string
+---@return boolean positioned when true
+local function set_current_response_by_id(db, response_id)
+  if not response_id then return false end
+  for i = #db.responses, 1, -1 do
+    if db.responses[i].id == response_id then
+      set_current_response(i)
+      return true
+    end
+  end
+  return false
+end
+
 M.close_kulala_buffer = function()
   local buf = get_kulala_buffer()
   if buf then vim.api.nvim_buf_delete(buf, { force = true }) end
@@ -496,7 +511,7 @@ M.open_all = function(_, line_nr)
   db.previous_response_pos = #db.responses
   INLAY.clear()
 
-  CMD.run_parser(nil, line_nr, function(success, duration, icon_linenr)
+  CMD.run_parser(nil, line_nr, function(success, duration, icon_linenr, response_id)
     if success then
       elapsed_ms = UI_utils.pretty_ms(duration)
       status = "done"
@@ -504,8 +519,10 @@ M.open_all = function(_, line_nr)
       status = success == nil and "loading" or "error"
     end
 
-    local first_new = math.max(1, (db.previous_response_pos or 0) + 1)
-    set_current_response(math.min(first_new, #db.responses))
+    if not set_current_response_by_id(db, response_id) then
+      local first_new = math.max(1, (db.previous_response_pos or 0) + 1)
+      set_current_response(math.min(first_new, #db.responses))
+    end
 
     INLAY.show(buf, status, icon_linenr, elapsed_ms)
     M.open_default_view()

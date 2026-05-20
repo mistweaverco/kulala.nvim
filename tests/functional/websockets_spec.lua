@@ -117,6 +117,46 @@ describe("websockets", function()
     assert.has_string(result, "=> Hello, world!")
   end)
 
+  it("stays on the websocket response when streaming updates", function()
+    local DB = require("kulala.db")
+    local buf = vim.api.nvim_get_current_buf()
+    local db = DB.global_update()
+
+    db.responses = {
+      ---@diagnostic disable-next-line: missing-fields
+      {
+        id = buf .. ":1",
+        status = true,
+        code = 0,
+        response_code = 200,
+        duration = 0,
+        time = 0,
+        url = "http://example.com",
+        method = "GET",
+        line = 1,
+        buf = buf,
+        buf_name = "test.http",
+        name = "Prior",
+        body = "prior",
+        headers = "",
+      },
+    }
+    db.current_response_pos = 1
+    db.previous_response_pos = 0
+
+    kulala.run()
+    wait_for_requests(1)
+
+    db.current_response_pos = 1
+
+    system.write_to("stdout", '{"type":"message","data":"Hello, world!"}\n')
+    wait_for_requests(2)
+
+    result = h.get_buf_lines(ui_buf):to_string()
+    assert.has_string(result, "Request: 2/2")
+    assert.has_string(result, "=> Hello, world!")
+  end)
+
   it("sends messages", function()
     kulala.run()
     wait_for_requests(1)

@@ -143,21 +143,12 @@ local function get_selection()
   return lines
 end
 
-local function update_response()
-  local ui_buf = require("kulala.ui").get_kulala_buffer()
-  local lines = ui_buf and vim.api.nvim_buf_get_lines(ui_buf, 4, -1, false) or {}
-
-  M.response.body = table.concat(lines, "\n")
-end
-
 function M.send(data)
   local conn = M.connection
   if not conn or conn:is_closing() then return false end
 
   data = data and data:gsub("\n$", "")
   data = data and { data } or get_selection()
-
-  update_response()
 
   vim.iter(data):each(function(line)
     conn:write(vim.json.encode { op = "send", data = line } .. "\n")
