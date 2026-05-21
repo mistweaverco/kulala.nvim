@@ -29,7 +29,7 @@ local function set_response_summary(buf)
   local assert_status = response.assert_status and "success" or (response.assert_status == false and "failed" or "-")
   local idx = UI.get_current_response_pos()
   local duration = UI_utils.pretty_ms(response.duration)
-  local cur_env = vim.g.kulala_selected_env or CONFIG.get().default_env
+  local cur_env = require("kulala.parser.env").get_current_env()
 
   local data = vim
     .iter({

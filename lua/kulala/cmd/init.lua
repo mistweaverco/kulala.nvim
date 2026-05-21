@@ -111,6 +111,7 @@ local REPLAY_RUNTIME_FIELDS = {
   "_kulala_script_console",
   "_kulala_limit_line",
   "_kulala_replay_run_opts",
+  "_kulala_batch_targets",
   "body_computed",
 }
 
@@ -718,9 +719,24 @@ local function kulala_core_collect_prompt_inputs(prompt)
   return out
 end
 
+---@param requests DocumentRequest[]
+---@return table[]|nil limit kulala-core run limit (name filters), or nil when empty
+local function kulala_core_batch_limit(requests)
+  local limit = {}
+  for _, req in ipairs(requests) do
+    local name = req._kulala_block_name
+    if type(name) == "string" and name ~= "" then table.insert(limit, { filter = "name", name = name }) end
+  end
+  if #limit == 0 then return nil end
+  return limit
+end
+
 ---@param parsed_request DocumentRequest
 ---@return DocumentRequest[]
 local function kulala_core_run_targets(parsed_request)
+  if type(parsed_request._kulala_batch_targets) == "table" and #parsed_request._kulala_batch_targets > 0 then
+    return parsed_request._kulala_batch_targets
+  end
   if parsed_request._kulala_run_expander and parsed_request.nested_requests and #parsed_request.nested_requests > 0 then
     return parsed_request.nested_requests
   end
@@ -836,9 +852,10 @@ end
 local function kulala_core_deliver_run_results(wrapper, parsed_request, duration_wall, callback)
   local data = wrapper.data or {}
   local targets = kulala_core_run_targets(parsed_request)
+  local multi_target = #targets > 1
   for i, item in ipairs(data) do
     local advance_queue = i == #data
-    local invoke_ui_callback = advance_queue
+    local invoke_ui_callback = multi_target or advance_queue
     local target = kulala_core_target_for_item(item, targets, i)
     kulala_core_deliver_result(item, target, duration_wall, callback, advance_queue, invoke_ui_callback)
   end
@@ -1057,17 +1074,39 @@ M.run_parser = function(requests, line_nr, callback, run_opts)
 
   local limit_line = (type(line_nr) == "number" and line_nr > 0) and line_nr or nil
 
-  for batch_index, request in ipairs(requests) do
-    if request._kulala_core and limit_line then request._kulala_limit_line = limit_line end
+  -- One kulala-core run keeps JetBrains execution-flow state (e.g. client.global.headers).
+  if #requests > 1 then
+    local anchor = requests[1]
+    if anchor._kulala_core and limit_line then anchor._kulala_limit_line = limit_line end
+    anchor._kulala_batch_targets = requests
 
-    INLAY.show(DB.current_buffer, "loading", INLAY.icon_line_for_request(request))
+    for _, request in ipairs(requests) do
+      INLAY.show(DB.current_buffer, "loading", INLAY.icon_line_for_request(request))
+    end
 
-    M.queue:add({ request = request, batch_index = batch_index, batch_size = #requests }, function()
-      if execute_before_request(request) then
+    local batch_run_opts = vim.tbl_extend("force", run_opts or {}, {})
+    local batch_limit = kulala_core_batch_limit(requests)
+    if batch_limit then batch_run_opts.limit = batch_limit end
+
+    M.queue:add({ request = anchor, batch_index = 1, batch_size = 1 }, function()
+      if execute_before_request(anchor) then
         initialize()
-        process_request(requests, request, callback, run_opts)
+        process_request(requests, anchor, callback, batch_run_opts)
       end
     end)
+  else
+    for batch_index, request in ipairs(requests) do
+      if request._kulala_core and limit_line then request._kulala_limit_line = limit_line end
+
+      INLAY.show(DB.current_buffer, "loading", INLAY.icon_line_for_request(request))
+
+      M.queue:add({ request = request, batch_index = batch_index, batch_size = #requests }, function()
+        if execute_before_request(request) then
+          initialize()
+          process_request(requests, request, callback, run_opts)
+        end
+      end)
+    end
   end
 
   M.queue:run_next()
