@@ -209,7 +209,6 @@ end
 local MARKDOWN_VIEWS = {
   verbose = true,
   headers = true,
-  body = true,
   headers_body = true,
   script_output = true,
   report = true,
@@ -217,7 +216,7 @@ local MARKDOWN_VIEWS = {
 
 local function show(contents, filetype, mode)
   -- Markdown views use plain `markdown` so TS/highlight plugins apply.
-  local buf_ft = MARKDOWN_VIEWS[mode] and "markdown" or (filetype and filetype .. ".kulala_ui" or "text.kulala_ui")
+  local buf_ft = MARKDOWN_VIEWS[mode] and "markdown" or filetype
   if MARKDOWN_VIEWS[mode] then contents = require("kulala.ui.markdown").normalize_headings(contents) end
   local buf = open_kulala_buffer(buf_ft)
 
@@ -249,6 +248,10 @@ local function content_config_from_kulala_core(r)
   return CONFIG.default_contenttype
 end
 
+---Format body content based on kulala-core hints or MIME type, preferring jq filter results when applicable.
+---@param view? string current view, used to determine if jq filter is applied
+---@return string formatted body,
+---@return string filetype for syntax highlighting
 local function format_body(view)
   local r = get_current_response()
   local headers = r.headers
@@ -260,7 +263,7 @@ local function format_body(view)
     body = FORMATTER.format(contenttype.ft, contenttype.formatter, body, { verbose = false })
   end
 
-  return body
+  return body, contenttype.ft
 end
 
 local function update_filter()
@@ -326,15 +329,16 @@ M.show_headers = function()
 end
 
 M.show_body = function()
-  local Markdown = require("kulala.ui.markdown")
-  show(Markdown.format_body_view(format_body()), "markdown", "body")
+  local body, ft = format_body()
+  show(body, ft, "body")
   if get_current_response().filter then M.toggle_filter() end
 end
 
 M.show_headers_body = function()
   local Markdown = require("kulala.ui.markdown")
   local r = get_current_response()
-  show(Markdown.format_headers_body_view(r, format_body()), "markdown", "headers_body")
+  local body, _ = format_body()
+  show(Markdown.format_headers_body_view(r, body), "markdown", "headers_body")
 end
 
 M.show_verbose = function()
