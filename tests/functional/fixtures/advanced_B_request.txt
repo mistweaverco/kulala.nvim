@@ -58,10 +58,6 @@
     }
   },
   http_client_env_shared = {
-    ["$default_headers"] = {
-      Accept = "application/json",
-      ["Content-Type"] = "application/json"
-    },
     DEFAULT_TIMEOUT = 1
   },
 }

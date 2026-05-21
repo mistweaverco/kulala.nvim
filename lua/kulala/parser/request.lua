@@ -254,13 +254,8 @@ local function set_variables(request)
 end
 
 local function set_headers(request, env)
-  local cur_env = vim.g.kulala_selected_env or CONFIG.get().default_env
-  local shared_headers = vim.tbl_get(DB.find_unique("http_client_env_shared") or {}, "$default_headers") or {}
-  local default_headers = vim.tbl_get(DB.find_unique("http_client_env") or {}, cur_env, "$default_headers") or {}
-
-  local headers = vim.tbl_extend("force", shared_headers, default_headers, request.headers)
-
-  vim.iter(headers):each(function(name, value)
+  -- Default HTTP headers come from kulala-core (`$kulalaShared` / `$kulalaDefaultHeaders` in http-client.env.json).
+  vim.iter(request.headers):each(function(name, value)
     name = PARSER_UTILS.get_header(request.headers, name) or name
     value = StringVariablesParser.parse(value, request.variables, env)
 

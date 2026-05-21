@@ -244,7 +244,7 @@ local function catalog_from_job(job)
 end
 
 ---@param cwd string|nil
----@return table|nil catalog `{ environments, $shared? }`
+---@return table|nil catalog `{ environments, $kulalaShared? }`
 ---@return string|nil err
 function M.list_environments(cwd)
   M.require_enabled()

@@ -125,33 +125,52 @@ Authorization: Bearer {{API_KEY}}
 }
 ```
 
-#### Default http headers
+#### `$kulalaShared` (shared variables and default headers)
 
-You can define default HTTP headers in the `http-client.env.json` file.
+Kulala uses a top-level `$kulalaShared` section in `http-client.env.json` for values that apply to **every** environment. This is a **Kulala-only** convention (not used by [JetBrains](https://www.jetbrains.com/help/idea/http-client-variables.html) `http-client.env.json` files).
 
-They can be put per environment or in `$shared` property to be shared by all environments. 
-The `$default_headers` will be merged with the headers from the HTTP requests.
-
-You can also define a special header `Host`, which will set the default host for all your requests.
+Put shared variables next to `$kulalaDefaultHeaders` under `$kulalaShared`, or under each environment block for overrides.
 
 ```json title="http-client.env.json"
 {
   "$schema": "https://getkulala.net/http-client.env.schema.json",
-  "$shared": {
-    "$default_headers": {
+  "$kulalaShared": {
+    "API_BASE": "https://httpbin.org",
+    "$kulalaDefaultHeaders": {
       "Content-Type": "application/json",
       "Accept": "application/json"
-    },
+    }
   },
   "dev": {
-    "API_URL": "https://httpbin.org/post?env=dev",
+    "API_URL": "{{API_BASE}}/post?env=dev",
     "API_KEY": ""
   }
 }
 ```
 
-Then, they're automatically added to the HTTP requests,
-unless you override them.
+Per-environment keys override `$kulalaShared` variables. VS Code REST Client still uses `$shared` inside `.vscode/settings.json` (`rest-client.environmentVariables`); that is separate from Kulala's `$kulalaShared`.
+
+#### Default http headers
+
+Define default HTTP headers with `$kulalaDefaultHeaders` (under `$kulalaShared` and/or per environment). They are merged into outgoing requests unless a request sets the same header explicitly.
+
+You can also define a special header `Host`, which sets the default host for relative URLs.
+
+```json title="http-client.env.json"
+{
+  "$kulalaShared": {
+    "$kulalaDefaultHeaders": {
+      "Content-Type": "application/json",
+      "Accept": "application/json"
+    }
+  },
+  "dev": {
+    "$kulalaDefaultHeaders": {
+      "X-Env": "dev"
+    }
+  }
+}
+```
 
 ```http title="examples.http"
 POST https://httpbin.org/post HTTP/1.1
