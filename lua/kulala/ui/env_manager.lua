@@ -13,8 +13,8 @@ local M = {}
 
 local template = {
   ["$schema"] = "https://raw.githubusercontent.com/mistweaverco/kulala.nvim/main/schemas/http-client.env.schema.json",
-  ["$shared"] = {
-    ["$default_headers"] = {},
+  ["$kulalaShared"] = {
+    ["$kulalaDefaultHeaders"] = {},
   },
   dev = {
     Security = { Auth = {} },
@@ -97,17 +97,24 @@ local function read_http_client_env_from_disk()
   local http_client_env = {}
   local http_client_env_shared = {}
 
+  local function merge_kulala_shared(dst, kulala_shared)
+    if type(kulala_shared) ~= "table" then return end
+    kulala_shared = vim.deepcopy(kulala_shared)
+    kulala_shared["$kulalaDefaultHeaders"] = nil
+    vim.tbl_deep_extend("force", dst, kulala_shared)
+  end
+
   vim.iter(Fs.find_files_in_parent_dirs("http-client.env.json") or {}):rev():each(function(file)
     local f = Fs.read_json(file) or {}
-    if f["$shared"] then http_client_env_shared = vim.tbl_deep_extend("force", http_client_env_shared, f["$shared"]) end
-    f["$shared"], f["$schema"] = nil, nil
+    merge_kulala_shared(http_client_env_shared, f["$kulalaShared"])
+    f["$kulalaShared"], f["$schema"] = nil, nil
     http_client_env = vim.tbl_deep_extend("force", http_client_env, f)
   end)
 
   vim.iter(Fs.find_files_in_parent_dirs("http-client.private.env.json") or {}):rev():each(function(file)
     local f = Fs.read_json(file) or {}
-    if f["$shared"] then http_client_env_shared = vim.tbl_deep_extend("force", http_client_env_shared, f["$shared"]) end
-    f["$shared"], f["$schema"] = nil, nil
+    merge_kulala_shared(http_client_env_shared, f["$kulalaShared"])
+    f["$kulalaShared"], f["$schema"] = nil, nil
     http_client_env = vim.tbl_deep_extend("force", http_client_env, f)
   end)
 
@@ -121,7 +128,11 @@ end
 ---@return table http_client_env_shared
 local function merge_catalogs(core_catalog, disk_env, disk_shared)
   local http_client_env = (core_catalog and core_catalog.environments) or {}
-  local http_client_env_shared = (core_catalog and core_catalog["$shared"]) or {}
+  local http_client_env_shared = {}
+  if core_catalog and type(core_catalog["$kulalaShared"]) == "table" then
+    http_client_env_shared = vim.deepcopy(core_catalog["$kulalaShared"])
+    http_client_env_shared["$kulalaDefaultHeaders"] = nil
+  end
 
   http_client_env = vim.tbl_deep_extend("force", vim.deepcopy(http_client_env), disk_env)
   http_client_env_shared = vim.tbl_deep_extend("force", vim.deepcopy(http_client_env_shared), disk_shared)
@@ -222,7 +233,7 @@ end
 local function get_env_names(http_client_env)
   local envs = {}
   for key, _ in pairs(http_client_env or {}) do
-    if key ~= "$schema" and key ~= "$shared" then table.insert(envs, key) end
+    if key ~= "$kulalaShared" then table.insert(envs, key) end
   end
   table.sort(envs)
   return envs
