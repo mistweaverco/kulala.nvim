@@ -235,6 +235,7 @@ end
 local function select_env(env)
   Logger.info("Selected environment: " .. env)
   vim.g.kulala_selected_env = env
+  DB.update().selected_env = env
 end
 
 local function set_buffer(buf, content)

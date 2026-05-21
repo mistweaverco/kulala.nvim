@@ -108,7 +108,16 @@ M.update_http_client_auth = function(config_id, data)
 end
 
 M.get_current_env = function()
-  return vim.g.kulala_selected_env or Config.get().default_env
+  local selected = vim.g.kulala_selected_env
+  if type(selected) == "string" and selected ~= "" then return selected end
+
+  local scoped = DB.find_unique("selected_env")
+  if type(scoped) == "string" and scoped ~= "" then return scoped end
+
+  local configured = Config.get().default_env
+  if type(configured) == "string" and configured ~= "" then return configured end
+
+  return "default"
 end
 
 M.get_env = function()

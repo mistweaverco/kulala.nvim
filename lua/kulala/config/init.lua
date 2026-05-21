@@ -46,7 +46,8 @@ end
 
 M.setup = function(config)
   M.user_config = config or {}
-  M.options = vim.tbl_deep_extend("force", M.defaults, M.user_config)
+  -- Copy defaults so repeated setup() calls do not accumulate into the shared defaults table.
+  M.options = vim.tbl_deep_extend("force", vim.deepcopy(M.defaults), M.user_config)
 
   set_legacy_options()
   Parser.set_kulala_parser()
