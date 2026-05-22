@@ -122,7 +122,7 @@ local function strip_replay_runtime_fields(request)
   end
 end
 
----Persist last runnable request for `require("kulala").replay()` (kulala-core path skips request.lua parse).
+---Persist last request for `require("kulala").replay()` (kulala-core path skips request.lua parse).
 ---@param request DocumentRequest|nil
 local function save_replay_snapshot(request)
   if type(request) ~= "table" then return end
@@ -762,7 +762,7 @@ end
 ---@param callback function
 ---@param advance_queue boolean
 local function kulala_core_deliver_result(item, target, duration_wall, callback, advance_queue, invoke_ui_callback)
-  if item.success == true then save_replay_snapshot(target) end
+  save_replay_snapshot(target)
 
   if item.success ~= true then
     local console = kulala_core_script_console(item)
