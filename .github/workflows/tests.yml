@@ -1,59 +1,148 @@
 ---
 name: Tests
-
 on:
-  pull_request:
-    paths:
-      - '**/*.lua'
-      - '**/*.ts'
-    branches:
-      - main
-      - develop
-    types: ["labeled", "opened", "synchronize", "reopened"]
-  push:
-    branches: 
-      - main
-      - develop
-
-  workflow_dispatch:
-
+  issue_comment:
+    types: [created]
 jobs:
   test-linux:
+    if: |
+      github.event.issue.pull_request != null &&
+      contains(github.event.comment.body, '/run-tests')
     name: Test Code on Linux
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/yarospace/kulala-nvim-linux-testrunner:latest
+      image: ghcr.io/mistweaverco/kulala-nvim-linux-testrunner:latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Check user permission
+        id: check_permission
+        uses: actions/github-script@v9.0.0
         with:
+          script: |
+            const { data: permission } =
+            await github.rest.repos.getCollaboratorPermissionLevel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                username: context.actor
+              });
+            const allowed = ['admin', 'write'];
+            if (!allowed.includes(permission.permission)) {
+              core.setFailed(`User is not authorized to
+                trigger this workflow.`);
+            }
+      - name: Get PR SHA
+        id: get_sha
+        uses: actions/github-script@v9.0.0
+        with:
+          result-encoding: string
+          script: |
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+            return pr.head.sha;
+      - name: Checkout PR Branch
+        uses: actions/checkout@v6.0.2
+        with:
+          ref: ${{ steps.get_sha.outputs.result }}
           submodules: recursive
-      - name: Restore cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            .tests
-          key: ${{ runner.os }}-tests
       - name: Run tests
         run: ./scripts/tests.sh run
   lint:
+    if: |
+      github.event.issue.pull_request != null &&
+      contains(github.event.comment.body, '/run-tests')
     name: Lint Code
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/yarospace/kulala-nvim-linux-testrunner:latest
+      image: ghcr.io/mistweaverco/kulala-nvim-linux-testrunner:latest
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Run linter
+      - name: Check user permission
+        id: check_permission
+        uses: actions/github-script@v9.0.0
+        with:
+          script: |
+            const { data: permission } =
+              await github.rest.repos.getCollaboratorPermissionLevel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                username: context.actor
+              });
+            const allowed = ['admin', 'write'];
+            if (!allowed.includes(permission.permission)) {
+              core.setFailed(`User is not authorized to
+                trigger this workflow.`);
+            }
+      - name: Get PR SHA
+        id: get_sha
+        uses: actions/github-script@v9.0.0
+        with:
+          result-encoding: string
+          script: |
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+            return pr.head.sha;
+      - name: Checkout PR Branch
+        uses: actions/checkout@v6.0.2
+        with:
+          ref: ${{ steps.get_sha.outputs.result }}
+          submodules: recursive
+      - name: Lint code
         run: ./scripts/lint.sh check-code
+
+      - name: Lint docs
+        run: ./scripts/lint.sh check-docs
+
   test-windows:
+    if: |
+      github.event.issue.pull_request != null &&
+      contains(github.event.comment.body, '/run-tests') &&
+      (github.event_name == 'labeled' &&
+      github.event.label.name == 'needs-windows-test' ||
+        github.event_name != 'labeled' &&
+        contains(github.event.pull_request.labels.*.name, 'needs-windows-test')
     name: Test Code on Windows
     runs-on: windows-latest
-    if: github.event_name == 'labeled' && github.event.label.name == 'needs-windows-test' || github.event_name != 'labeled' && contains(github.event.pull_request.labels.*.name, 'needs-windows-test')
     steps:
-      - uses: actions/checkout@v4
+      - name: Check user permission
+        id: check_permission
+        uses: actions/github-script@v9.0.0
+        with:
+          script: |
+            const { data: permission } =
+              await github.rest.repos.getCollaboratorPermissionLevel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                username: context.actor
+              });
+            const allowed = ['admin', 'write'];
+            if (!allowed.includes(permission.permission)) {
+              core.setFailed(`User is not authorized to
+                trigger this workflow.`);
+            }
+      - name: Get PR SHA
+        id: get_sha
+        uses: actions/github-script@v9.0.0
+        with:
+          result-encoding: string
+          script: |
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+            return pr.head.sha;
+      - name: Checkout PR Branch
+        uses: actions/checkout@v6.0.2
+        with:
+          ref: ${{ steps.get_sha.outputs.result }}
+          submodules: recursive
       - name: Restore cache
         id: cache-deps
-        uses: actions/cache@v4
+        uses: actions/cache@v5.0.4
         with:
           path: |
             .tests
@@ -75,11 +164,6 @@ jobs:
             ~\AppData\Roaming\LJ4W
             ~\AppData\Roaming\luarocks
           key: ${{ runner.os }}-tests
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
 
       - name: Run tests
         run: ./scripts/tests.ps1

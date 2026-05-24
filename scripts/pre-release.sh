@@ -9,8 +9,8 @@ set_version() {
 }
 
 do_gh_release() {
-  echo "Creating new release $GH_TAG"
-  gh release create --generate-notes "$GH_TAG"
+  echo "Creating new pre-release $GH_TAG"
+  gh release create --generate-notes "$GH_TAG" --latest=false
 }
 
 boot() {

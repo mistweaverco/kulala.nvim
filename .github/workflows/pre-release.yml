@@ -1,10 +1,11 @@
 ---
-name: Release
+name: Pre-Release
 
 on:
   push:
     tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+'
+      # matches tags like v1.2.3-nightly, v1.2.3-beta, v1.2.3-rc1, etc.
+      - 'v[0-9]+.[0-9]+.[0-9]+-*'
 jobs:
   create-release:
     name: Create Release
@@ -19,6 +20,6 @@ jobs:
           VERSION=${GITHUB_REF_NAME#v}
           echo "VERSION=$VERSION" >> $GITHUB_ENV
       - name: Create Release
-        run: ./scripts/release.sh
+        run: ./scripts/pre-release.sh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
