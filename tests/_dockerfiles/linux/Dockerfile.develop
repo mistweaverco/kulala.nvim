@@ -1,40 +1,48 @@
 FROM ubuntu:latest
 
-ARG DEBIAN_FRONTEND=noninteractive
-RUN ln -snf /usr/share/zoneinfo/$CONTAINER_TIMEZONE /etc/localtime && echo $CONTAINER_TIMEZONE > /etc/timezone
+# for xclip and neovim to work, see :h clipboard in neovim
+ENV DISPLAY=:0
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ="UTC"
+ENV NEOVIM_VERSION="0.12.2"
+ENV VALE_VERSION="3.11.2"
+ENV XDG_DATA_HOME=/root/.local/share
 
-RUN apt-get update
-RUN apt-get upgrade -y 
-RUN apt-get install -y curl git gcc lua5.1 luarocks unzip xclip pandoc
-RUN apt-get install -y python3-pip gcc g++ make cmake
+RUN apt-get update && apt-get install -y \
+  cmake \
+  curl \
+  g++ \
+  gcc \
+  gcc \
+  gh \
+  git \
+  jq \
+  libxml2-utils \
+  lua5.1 \
+  luarocks \
+  make \
+  nodejs \
+  npm \
+  pandoc \
+  python3-pip \
+  unzip \
+  xclip
 
-RUN mkdir -p _neovim && curl -sL https://github.com/neovim/neovim/releases/download/v0.11.0/nvim-linux-x86_64.tar.gz | tar -xz -C _neovim && mv _neovim/nvim-linux-x86_64 /usr/local/nvim && rm -rf _neovim
-RUN mkdir -p _stylua && curl -sL https://github.com/JohnnyMorganz/StyLua/releases/download/v2.0.2/stylua-linux-x86_64.zip | funzip > _stylua/stylua && chmod +x _stylua/stylua && mv _stylua/stylua /usr/local/bin/stylua && rm -rf _stylua
-RUN mkdir -p _vale && curl -sL https://github.com/errata-ai/vale/releases/download/v3.11.2/vale_3.11.2_Linux_64-bit.tar.gz | tar -xz -C _vale && mv _vale/vale /usr/local/bin/vale && rm -rf _vale
+# Install rustup
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+
+# Install stylua with features lua51, lua52, and luajit
+RUN cargo install stylua --features lua51 --features lua52 --features luajit
+
+# Install luacheck
+RUN cargo install luacheck
+
+RUN mkdir -p _neovim && curl -sL https://github.com/neovim/neovim/releases/download/v${NEOVIM_VERSION}}/nvim-linux-x86_64.tar.gz | tar -xz -C _neovim && mv _neovim/nvim-linux-x86_64 /usr/local/nvim && rm -rf _neovim
+RUN mkdir -p _vale && curl -sL https://github.com/errata-ai/vale/releases/download/v${VALE_VERSION}}/vale_${VALE_VERSION}}_Linux_64-bit.tar.gz | tar -xz -C _vale && mv _vale/vale /usr/local/bin/vale && rm -rf _vale
 
 RUN luarocks install busted
 
 RUN ln -s /usr/local/nvim/bin/nvim /usr/bin/nvim
-RUN ln -s /usr/local/bin/stylua /usr/bin/stylua
 RUN ln -s /usr/local/bin/vale /usr/bin/vale
 
-RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
-ENV NVM_DIR=/root/.nvm
-RUN . "$NVM_DIR/nvm.sh" && nvm install --lts
-
-RUN apt-get install -y gh
-RUN apt-get install -y jq
-RUN apt-get install -y libxml2-utils
-RUN . "$NVM_DIR/nvm.sh" && npm install -g prettier
-
-ENV XDG_DATA_HOME=/root/.local/share
-RUN git clone https://github.com/nvim-treesitter/nvim-treesitter.git $XDG_DATA_HOME/nvim/nvim-treesitter
-RUN git clone --recurse-submodules https://github.com/YaroSpace/kulala.nvim /app/kulala.nvim
 WORKDIR /app/kulala.nvim
-
-RUN git checkout develop
-RUN . "$NVM_DIR/nvm.sh" && nvim -l tests/minit.lua tests --filter tests # to install JS dependencies
-
-
-# for xclip and neovim to work, see :h clipboard in neovim
-ENV DISPLAY=:0
