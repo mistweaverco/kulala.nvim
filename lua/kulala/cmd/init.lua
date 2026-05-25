@@ -764,9 +764,33 @@ end
 local function kulala_core_deliver_result(item, target, duration_wall, callback, advance_queue, invoke_ui_callback)
   save_replay_snapshot(target)
 
+  if item.success == true and item.skipped == true then
+    if advance_queue ~= false then M.queue:run_next() end
+    if invoke_ui_callback ~= false then
+      callback(true, duration_wall, INLAY.icon_line_for_request(target), nil)
+    end
+    return
+  end
+
   if item.success ~= true then
     local console = kulala_core_script_console(item)
     target._kulala_script_console = console
+    if item.httpCompleted == true and type(item.status) == "number" then
+      kulala_core_apply_sent_request(item, target)
+      write_kulala_core_response_files(item)
+      local duration_ns = math.floor((item.timings and item.timings.total or 0) * 1e6)
+      handle_response_impl({
+        code = 1,
+        errors = item.error or "response handler script failed",
+        stdout = kulala_core_stats_stdout(item),
+        duration = duration_ns,
+        _kulala_body_type = type(item.body) == "table" and item.body.type or nil,
+        _kulala_body_snapshot = kulala_core_body_text(item.body),
+        _kulala_headers_snapshot = kulala_core_headers_text(item.headers),
+        _kulala_script_console = console,
+      }, target, callback, advance_queue, invoke_ui_callback)
+      return
+    end
     handle_response_impl({
       code = 1,
       errors = item.error or "request failed",
