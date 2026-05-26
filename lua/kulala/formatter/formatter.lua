@@ -265,7 +265,7 @@ format_rules = {
     insert_formatted(#section.commands > 0, table.concat(section.commands, "\n"), "command")
     insert_formatted(#section.metadata > 0, table.concat(section.metadata, "\n"), "metadata")
 
-    -- force parsing request child node, when there is no request node, like in Shared section
+    -- force parsing request child node, when there is no request node, like in KULALA_SHARED section
     if #section.request.formatted == 0 then format_rules["request"](node) end
     insert_formatted(#section.request.formatted > 0, section.request.formatted, "request")
 

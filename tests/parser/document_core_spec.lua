@@ -31,7 +31,7 @@ describe("document_core", function()
 
   it("skips shared-only blocks without url", function()
     local content = table.concat({
-      "### Shared",
+      "### KULALA_SHARED",
       "@token = secret",
       "",
       "### Request",
@@ -43,5 +43,37 @@ describe("document_core", function()
 
     assert.are.same(1, #requests)
     assert.are.same("secret", requests[1].variables.token)
+  end)
+
+  it("get_request_at does not enqueue shared block for kulala-core runs", function()
+    local Document = require("kulala.parser.document")
+    local content = table.concat({
+      "### KULALA_SHARED",
+      "",
+      "< {%",
+      '  request.variables.set("token", "secret")',
+      "%}",
+      "",
+      "### FOO1",
+      "",
+      "GET https://example.com/get HTTP/1.1",
+    }, "\n")
+
+    local path = vim.fn.tempname() .. ".http"
+    vim.fn.writefile(vim.split(content, "\n", { plain = true }), path)
+    local buf = vim.fn.bufadd(path)
+    vim.fn.bufload(buf)
+    vim.api.nvim_set_current_buf(buf)
+
+    local doc = Bridge.parse_document(content, path, vim.fs.dirname(path))
+    local requests = DocCore.to_document_requests(doc, path)
+    local at = Document.get_request_at(requests, 9)
+
+    assert.are.same(1, #at)
+    assert.is_true(at[1]._kulala_core)
+    assert.are.same("FOO1", at[1]._kulala_block_name)
+
+    vim.api.nvim_buf_delete(buf, { force = true })
+    os.remove(path)
   end)
 end)

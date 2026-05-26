@@ -83,7 +83,7 @@ local default_request = {
 
 local function process_grpc_flags(request, flag, value)
   if flag:match("global") then
-    return Logger.warn("The `grpc-global-` flags are deprecated.  Please use `Shared` blocks.")
+    return Logger.warn("The `grpc-global-` flags are deprecated.  Please use `KULALA_SHARED` blocks.")
   end
 
   value = flag:match("import%-path") and FS.get_file_path(value) or value
@@ -100,7 +100,7 @@ end
 
 local function process_curl_flags(request, flag, value)
   if flag:match("global") then
-    return Logger.warn("The `curl-global-` flags are deprecated.  Please use `Shared` blocks.")
+    return Logger.warn("The `curl-global-` flags are deprecated.  Please use `KULALA_SHARED` blocks.")
   end
 
   request.curl.flags[flag] = value

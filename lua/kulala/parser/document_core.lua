@@ -3,12 +3,6 @@ local Document = require("kulala.parser.document")
 
 local M = {}
 
----@param method string|nil
----@return boolean
-local function method_supported_by_core(method)
-  return type(method) == "string" and method ~= ""
-end
-
 ---@param _doc table KulalaDocument JSON
 ---@return string|nil err first unsupported protocol message
 function M.unsupported_protocol_error(_doc)
@@ -167,7 +161,7 @@ function M.to_document_requests(doc, path)
     request.scripts = scripts_from_core(block.scripts, path)
     request.redirect_response_body_to_files = redirects_from_request(req)
     request.environment = {}
-    request._kulala_core = method_supported_by_core(method)
+    request._kulala_core = true
     request._kulala_unsupported_protocol = false
     request._kulala_block_name = block.name
     request.cmd = { Bridge.executable_path() or "kulala-core" }
@@ -175,13 +169,13 @@ function M.to_document_requests(doc, path)
   end
 
   for _, block in ipairs(doc.blocks or {}) do
-    if block.name == "Shared" or block.name == "Shared each" then
+    if Document.is_shared_block_name(block.name) then
       if block.preambleVariables then
         for k, v in pairs(block.preambleVariables) do
           shared.variables[k] = v
         end
       end
-      shared.name = block.name or "Shared"
+      shared.name = block.name or "KULALA_SHARED"
       shared.scripts = scripts_from_core(block.scripts, path)
       shared.start_line = (block.position and block.position.start or 1) + off
       shared.end_line = block_end_line(block) + off

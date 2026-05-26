@@ -22,7 +22,7 @@ GRPC flags address command service.method
 For example:
 
 ```http
-### Shared
+### KULALA_SHARED
 
 # @grpc-import-path ../protos 
 # @grpc-proto helloworld.proto
@@ -57,7 +57,7 @@ GRPC helloworld.Greeter/SayHello
 
 ### Flags
 
-Flags can be set through metadata either locally per request or globally per buffer, if included in the `Shared` block.
+Flags can be set through metadata either locally per request or globally per buffer, if included in the `KULALA_SHARED` block.
 
 ### Variables
 
