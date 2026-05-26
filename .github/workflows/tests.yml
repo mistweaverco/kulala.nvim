@@ -103,7 +103,7 @@ jobs:
       (github.event_name == 'labeled' &&
       github.event.label.name == 'needs-windows-test' ||
         github.event_name != 'labeled' &&
-        contains(github.event.pull_request.labels.*.name, 'needs-windows-test')
+        contains(github.event.pull_request.labels.*.name, 'needs-windows-test'))
     name: Test Code on Windows
     runs-on: windows-latest
     steps:
