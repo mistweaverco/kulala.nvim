@@ -96,6 +96,28 @@ function M.new_empty_document_request()
   return vim.deepcopy(default_document_request)
 end
 
+---@param name string|nil
+---@return boolean
+function M.is_shared_block_name(name)
+  return name == "KULALA_SHARED" or name == "KULALA_SHARED_EACH"
+end
+
+---@param name string|nil
+---@return boolean
+function M.is_shared_each_block_name(name)
+  return name == "KULALA_SHARED_EACH"
+end
+
+---kulala-core runs shared scripts via `sharedBlocks`; do not enqueue them as separate requests.
+---@param requests DocumentRequest[]
+---@return boolean
+local function kulala_core_handles_shared_blocks(requests)
+  for _, req in ipairs(requests) do
+    if req._kulala_core == true then return true end
+  end
+  return false
+end
+
 local function is_runnable(request)
   local pre_scripts = request.scripts.pre_request
   local post_scripts = request.scripts.post_request
@@ -296,8 +318,12 @@ local function expand_nested_requests(requests, lnum)
   local expanded = {}
   local shared = requests[1].shared
 
-  if not requests[1].name:match("^Shared") and is_runnable(shared) then
-    if shared.name == "Shared each" then
+  if
+    not M.is_shared_block_name(requests[1].name)
+    and is_runnable(shared)
+    and not kulala_core_handles_shared_blocks(requests)
+  then
+    if M.is_shared_each_block_name(shared.name) then
       local requests_ = vim.deepcopy(requests)
       requests = {}
 
@@ -363,7 +389,13 @@ M.get_request_at = function(requests, linenr)
     if not request then return {} end
 
     local shared = request.shared
-    if not request.name:match("^Shared") and is_runnable(shared) then table.insert(requests, 1, shared) end
+    if
+      not M.is_shared_block_name(request.name)
+      and is_runnable(shared)
+      and not kulala_core_handles_shared_blocks(requests)
+    then
+      table.insert(requests, 1, shared)
+    end
 
     request = vim.iter(requests):find(function(req)
       return linenr >= req.start_line and linenr <= req.end_line

@@ -1,6 +1,6 @@
 # Custom Curl Flags
 
-- You can customize the curl command used to make requests in Kulala, on a per-request basis or globally for all requests in a buffer, if included in the `Shared` block.
+- You can customize the curl command used to make requests in Kulala, on a per-request basis or globally for all requests in a buffer, if included in the `KULALA_SHARED` block.
 
 ## Usage
 
@@ -17,7 +17,7 @@ Host: example.com
 
 :::info
 
-If you need to apply curl flags to OAuth requests, you have to put it into `Shared` block.
+If you need to apply curl flags to OAuth requests, you have to put it into `KULALA_SHARED` block.
 
 :::
 

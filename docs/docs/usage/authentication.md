@@ -335,7 +335,7 @@ For example:
 :::info
 
 If you need to set custom curl flags for authentication requests, e.g., `--insecure` to skip secure connection verification - you can do this
-with `# @curl-..` flags in your .http file `Shared` block or by setting `additional_curl_options` in Kulala's config.
+with `# @curl-..` flags in your .http file `KULALA_SHARED` block or by setting `additional_curl_options` in Kulala's config.
 
 :::
 

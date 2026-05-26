@@ -179,7 +179,7 @@ describe("format", function()
       h.delete_all_bufs()
       buf = h.create_buf(
         ([[
-        ### Shared
+        ### KULALA_SHARED
 
         @ENV_PROJECT = project_name
         # @curl-connect-timeout 200
@@ -201,7 +201,7 @@ describe("format", function()
 
       assert.is_same(
         ([[
-          ### Shared
+          ### KULALA_SHARED
 
           @ENV_PROJECT = project_name
 

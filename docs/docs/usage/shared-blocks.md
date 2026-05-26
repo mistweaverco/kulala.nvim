@@ -2,19 +2,19 @@
 
 Shared blocks can be used to share variables, metadata, scripts and requests between multiple requests. 
 
-To declare a shared block, use the `### Shared` or `### Shared each` request name for the `first` request in the document.
+To declare a shared block, use the `### KULALA_SHARED` or `### KULALA_SHARED_EACH` request name for the `first` request in the document.
 
 Shared variables and metadata will apply to all requests that follow the shared block.  
 Variables and metadata declared in a request will shadow shared variables and metadata.
 
 Scripts and requests declared in the shared block and called with `run` command will be executed before the request you run.
 
-## `### Shared` block
+## `### KULALA_SHARED` block
 
 -  When executing `run request`, the shared scripts and requests will be executed before the request you run.
 -  When executing `run all requests`, the shared scripts and requests will be executed `once` before all requests.
 
-## `### Shared each` block
+## `### KULALA_SHARED_EACH` block
 
 -  When executing `run request`, the shared scripts and requests will be executed before the request you run.
 -  When executing `run all requests`, the shared scripts and requests will be executed before `each` request.
@@ -28,7 +28,7 @@ You can change the scope to `variables_scope = "request"` in the options, which 
 and shared variables will not be overridden by request variables.
 
 ```http
-### Shared
+### KULALA_SHARED
 
 @shared_var_1 = shared_value_1
 @shared_var_2 = shared_value_2
@@ -80,7 +80,7 @@ Content-Type: application/json
 If you want to also share headers or post request scripts, but not the actual request, use `NOP` as a url placeholder.
 
 ```http
-### Shared
+### KULALA_SHARED
 
 @shared_var_1 = shared_value_1
 @shared_var_2 = shared_value_2

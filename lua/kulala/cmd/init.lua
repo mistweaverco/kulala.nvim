@@ -583,7 +583,7 @@ end
 
 local handle_response = vim.schedule_wrap(handle_response_impl)
 
-local function parse_request(_requests, request)
+local function parse_request(request)
   if not request._kulala_core then
     Logger.error("Request is not configured for kulala-core", 1)
     return "skipped"
@@ -766,9 +766,7 @@ local function kulala_core_deliver_result(item, target, duration_wall, callback,
 
   if item.success == true and item.skipped == true then
     if advance_queue ~= false then M.queue:run_next() end
-    if invoke_ui_callback ~= false then
-      callback(true, duration_wall, INLAY.icon_line_for_request(target), nil)
-    end
+    if invoke_ui_callback ~= false then callback(true, duration_wall, INLAY.icon_line_for_request(target), nil) end
     return
   end
 
@@ -1041,7 +1039,7 @@ end
 function process_request(requests, request, callback, run_opts)
   local config = CONFIG.get()
 
-  local parsed_request = parse_request(requests, request)
+  local parsed_request = parse_request(request)
 
   if parsed_request == "empty" or parsed_request == "skipped" then return M.queue:run_next() end
   if not parsed_request then
