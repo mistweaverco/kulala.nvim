@@ -34,17 +34,19 @@ end
 
 local function setup_tree_sitter()
   local ext = vim.fn.has("win32") == 1 and "dll" or vim.fn.has("macunix") == 1 and "dylib" or "so"
-  vim.uv.spawn("tree-sitter", {
-    args = { "build", "-o", vim.fs.joinpath(parsers_dir, parser_name .. "." .. ext) },
-    cwd = parser_path,
-  }, function(code, _)
-    if code ~= 0 then
-      print("Failed to build tree-sitter parser")
-      return
-    end
-  end)
+  Fs.ensure_dir_exists(parsers_dir)
   Fs.ensure_dir_exists(queries_dir)
   Fs.copy_dir_contents(vim.fs.joinpath(parser_path, "queries", parser_name), vim.fs.joinpath(queries_dir, parser_name))
+  local output_path = vim.fs.joinpath(parsers_dir, parser_name .. "." .. ext)
+  vim.system({ "tree-sitter", "build", "-o", output_path }, {
+    cwd = parser_path,
+  }, function(obj)
+    if obj.code ~= 0 then
+      vim.schedule(function()
+        print("Failed to build tree-sitter parser: " .. (obj.stderr or ""))
+      end)
+    end
+  end)
 end
 
 local function has_kulala_parser()
