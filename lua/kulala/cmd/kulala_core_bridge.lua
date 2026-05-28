@@ -257,12 +257,7 @@ end
 ---@param cwd string|nil
 ---@param on_done fun(catalog: table|nil, err: string|nil)
 function M.list_environments_async(cwd, on_done)
-  if not M.enabled() then
-    vim.schedule(function()
-      on_done(nil, "kulala-core not found")
-    end)
-    return
-  end
+  M.require_enabled()
   cwd = cwd or vim.loop.cwd()
   local payload = { action = "environments", cwd = cwd }
   M.invoke_async(payload, cwd, function(job)
@@ -379,6 +374,20 @@ local function decode_action_response(stdout)
   return nil
 end
 
+---@param job vim.SystemCompleted
+---@return table|nil
+---@return string|nil
+local function decode_job_stdout(job)
+  local res = decode_action_response(job.stdout)
+  if res then return res, nil end
+  if job.code ~= 0 then
+    local err = vim.trim(job.stderr or "")
+    if err == "" then err = "kulala-core subprocess failed (exit " .. tostring(job.code) .. ")" end
+    return nil, err
+  end
+  return nil, "invalid kulala-core output"
+end
+
 ---@param key_or_keys string|string[]|nil nil clears all global script variables
 ---@return boolean ok
 ---@return string|nil err
@@ -485,10 +494,22 @@ local function cursor_request_payload(bufnr)
 end
 
 ---@param bufnr? integer
+---@return table payload
+---@return string|nil cwd
+local function buffer_payload(bufnr)
+  bufnr = bufnr or vim.api.nvim_get_current_buf()
+  local content = table.concat(vim.api.nvim_buf_get_lines(bufnr, 0, -1, false), "\n")
+  local filepath, cwd = M.resolve_document_paths(bufnr, nil)
+  local payload = { content = content }
+  if filepath then payload.filepath = filepath end
+  return payload, cwd
+end
+
+---@param bufnr? integer
 ---@return string[]|nil lines
 ---@return string|nil err
 function M.inspect_request_at_cursor(bufnr)
-  if not M.enabled() then return nil, "kulala-core not found" end
+  M.require_enabled()
   local payload, cwd = cursor_request_payload(bufnr)
   payload.action = "inspect_request"
   local job = M.invoke(payload, cwd)
@@ -499,6 +520,10 @@ function M.inspect_request_at_cursor(bufnr)
   if job.code ~= 0 then
     return nil, vim.trim(job.stderr or "") ~= "" and vim.trim(job.stderr) or "kulala-core inspect_request failed"
   end
+  local out = vim.trim(job.stdout or "")
+  local err = vim.trim(job.stderr or "")
+  local detail = out ~= "" and out:sub(1, 200) or err:sub(1, 200)
+  if detail ~= "" then return nil, "invalid kulala-core inspect_request output: " .. detail end
   return nil, "invalid kulala-core inspect_request output"
 end
 
@@ -507,7 +532,7 @@ end
 ---@return string|nil curl
 ---@return string|nil err
 function M.to_curl_at_cursor(bufnr, user_agent)
-  if not M.enabled() then return nil, "kulala-core not found" end
+  M.require_enabled()
   local payload, cwd = cursor_request_payload(bufnr)
   payload.action = "to_curl"
   if user_agent then payload.userAgent = user_agent end
@@ -522,11 +547,149 @@ function M.to_curl_at_cursor(bufnr, user_agent)
   return nil, "invalid kulala-core to_curl output"
 end
 
+---@param bufnr? integer
+---@return table|nil completion_list { isIncomplete, items }
+---@return string|nil err
+function M.lsp_completion(bufnr)
+  M.require_enabled()
+  local payload, cwd = cursor_request_payload(bufnr)
+  payload.action = "lsp_completion"
+  local job = M.invoke(payload, cwd)
+  local res = decode_action_response(job.stdout)
+  if res and type(res.items) == "table" then return res, nil end
+  if res and res.error then return nil, res.error end
+  if job.code ~= 0 then
+    return nil, vim.trim(job.stderr or "") ~= "" and vim.trim(job.stderr) or "kulala-core lsp_completion failed"
+  end
+  return nil, "invalid kulala-core lsp_completion output"
+end
+
+---@param bufnr? integer
+---@param on_done fun(res: table|nil, err: string|nil)
+function M.lsp_completion_async(bufnr, on_done)
+  M.require_enabled()
+  local payload, cwd = cursor_request_payload(bufnr)
+  payload.action = "lsp_completion"
+  M.invoke_async(payload, cwd, function(job)
+    local res, err = decode_job_stdout(job)
+    if res and type(res.items) ~= "table" then
+      res = nil
+      err = "invalid kulala-core lsp_completion output"
+    end
+    vim.schedule(function()
+      on_done(res, err)
+    end)
+  end)
+end
+
+---@param bufnr? integer
+---@return table|nil hover { contents = ... }
+---@return string|nil err
+function M.lsp_hover(bufnr)
+  M.require_enabled()
+  local payload, cwd = cursor_request_payload(bufnr)
+  payload.action = "lsp_hover"
+  local job = M.invoke(payload, cwd)
+  local res = decode_action_response(job.stdout)
+  if res and type(res.contents) == "table" then return res, nil end
+  if res and res.error then return nil, res.error end
+  if job.code ~= 0 then
+    return nil, vim.trim(job.stderr or "") ~= "" and vim.trim(job.stderr) or "kulala-core lsp_hover failed"
+  end
+  return nil, "invalid kulala-core lsp_hover output"
+end
+
+---@param bufnr? integer
+---@param on_done fun(res: table|nil, err: string|nil)
+function M.lsp_hover_async(bufnr, on_done)
+  M.require_enabled()
+  local payload, cwd = cursor_request_payload(bufnr)
+  payload.action = "lsp_hover"
+  M.invoke_async(payload, cwd, function(job)
+    local res, err = decode_job_stdout(job)
+    if res and type(res.contents) ~= "table" then
+      res = nil
+      err = "invalid kulala-core lsp_hover output"
+    end
+    vim.schedule(function()
+      on_done(res, err)
+    end)
+  end)
+end
+
+---@param bufnr? integer
+---@return table[]|nil symbols DocumentSymbol[]
+---@return string|nil err
+function M.lsp_symbols(bufnr)
+  M.require_enabled()
+  local payload, cwd = buffer_payload(bufnr)
+  payload.action = "lsp_symbols"
+  local job = M.invoke(payload, cwd)
+  local res = decode_action_response(job.stdout)
+  if type(res) == "table" then return res, nil end
+  if job.code ~= 0 then
+    return nil, vim.trim(job.stderr or "") ~= "" and vim.trim(job.stderr) or "kulala-core lsp_symbols failed"
+  end
+  return nil, "invalid kulala-core lsp_symbols output"
+end
+
+---@param bufnr? integer
+---@param on_done fun(res: table|nil, err: string|nil)
+function M.lsp_symbols_async(bufnr, on_done)
+  M.require_enabled()
+  local payload, cwd = buffer_payload(bufnr)
+  payload.action = "lsp_symbols"
+  M.invoke_async(payload, cwd, function(job)
+    local res, err = decode_job_stdout(job)
+    if type(res) ~= "table" then
+      res = nil
+      err = err or "invalid kulala-core lsp_symbols output"
+    end
+    vim.schedule(function()
+      on_done(res, err)
+    end)
+  end)
+end
+
+---@param bufnr? integer
+---@return table[]|nil diags Diagnostic[]
+---@return string|nil err
+function M.lsp_diagnostics(bufnr)
+  M.require_enabled()
+  local payload, cwd = buffer_payload(bufnr)
+  payload.action = "lsp_diagnostics"
+  local job = M.invoke(payload, cwd)
+  local res = decode_action_response(job.stdout)
+  if type(res) == "table" then return res, nil end
+  if job.code ~= 0 then
+    return nil, vim.trim(job.stderr or "") ~= "" and vim.trim(job.stderr) or "kulala-core lsp_diagnostics failed"
+  end
+  return nil, "invalid kulala-core lsp_diagnostics output"
+end
+
+---@param bufnr? integer
+---@param on_done fun(res: table|nil, err: string|nil)
+function M.lsp_diagnostics_async(bufnr, on_done)
+  M.require_enabled()
+  local payload, cwd = buffer_payload(bufnr)
+  payload.action = "lsp_diagnostics"
+  M.invoke_async(payload, cwd, function(job)
+    local res, err = decode_job_stdout(job)
+    if type(res) ~= "table" then
+      res = nil
+      err = err or "invalid kulala-core lsp_diagnostics output"
+    end
+    vim.schedule(function()
+      on_done(res, err)
+    end)
+  end)
+end
+
 ---@param curl string
 ---@return string[]|nil lines
 ---@return string|nil err
 function M.from_curl(curl)
-  if not M.enabled() then return nil, "kulala-core not found" end
+  M.require_enabled()
   local job = M.invoke({ action = "from_curl", curl = curl }, nil)
   local res = decode_action_response(job.stdout)
   if res and res.ok == true and type(res.lines) == "table" then return res.lines, nil end

@@ -1,77 +1,68 @@
 local M = {}
 
-local ts = vim.treesitter
+local Bridge = require("kulala.cmd.kulala_core_bridge")
 
 local function kulala_diag_ns()
   return vim.api.nvim_create_namespace("kulala_diagnostics")
 end
 
-local function get_diagnostics(bufnr, parser)
-  local diagnostics = {}
-  local ok
+local pending = {} ---@type table<number, boolean>
 
-  ok, parser = pcall(function()
-    return parser or ts.get_parser(bufnr, "kulala_http")
-  end)
-  if not ok or not parser then return diagnostics end
+local function apply_diagnostics(bufnr, core_diags)
+  local severity_map = {
+    [1] = vim.diagnostic.ERROR,
+    [2] = vim.diagnostic.WARN,
+    [3] = vim.diagnostic.INFO,
+    [4] = vim.diagnostic.HINT,
+  }
 
-  local tree = parser:parse()[1]
-  local root = tree:root()
-
-  local function find_errors(node, parent_type)
-    if not node then return end
-
-    local node_type = node:type()
-
-    if node_type == "ERROR" then
-      local lnum, col, end_lnum, end_col = node:range()
-
-      table.insert(diagnostics, {
-        bufnr = bufnr,
-        lnum = lnum,
-        end_lnum = end_lnum,
-        col = col,
-        end_col = end_col,
-        severity = vim.diagnostic.ERROR,
-        source = "kulala",
-        message = "Parsing error" .. (parent_type and " in " .. parent_type or ""),
-        type = "treesitter",
-      })
-    end
-
-    for child in node:iter_children() do
-      find_errors(child, node_type)
-    end
+  local diags = {}
+  for _, d in ipairs(core_diags or {}) do
+    local r = d.range or {}
+    local s = r.start or {}
+    local e = r["end"] or {}
+    table.insert(diags, {
+      bufnr = bufnr,
+      lnum = s.line or 0,
+      col = s.character or 0,
+      end_lnum = e.line or (s.line or 0),
+      end_col = e.character or (s.character or 0),
+      severity = severity_map[d.severity] or vim.diagnostic.ERROR,
+      source = d.source or "kulala-core",
+      message = d.message or "kulala-core diagnostic",
+      type = "core",
+    })
   end
 
-  find_errors(root)
-  return diagnostics
-end
-
-local function update_diagnostics(bufnr)
-  local ok, parser = pcall(ts.get_parser, bufnr, "kulala_http")
-  if not ok then parser = nil end
-
-  local existing_diags = vim.diagnostic.get(bufnr) or {}
-  local parser_diags = vim
-    .iter(existing_diags)
-    :filter(function(diag)
-      return diag.type == "parser"
-    end)
-    :totable()
-
-  local diags = vim.list_extend(get_diagnostics(bufnr, parser), parser_diags)
   vim.diagnostic.set(kulala_diag_ns(), bufnr, diags, {})
 end
 
+local function update_diagnostics_async(bufnr)
+  if pending[bufnr] then return end
+  pending[bufnr] = true
+
+  -- debounce a bit to avoid spawning a subprocess on every keystroke
+  vim.defer_fn(function()
+    Bridge.lsp_diagnostics_async(bufnr, function(core_diags, _err)
+      pending[bufnr] = false
+      if not vim.api.nvim_buf_is_valid(bufnr) then return end
+      if type(core_diags) ~= "table" then
+        vim.diagnostic.set(kulala_diag_ns(), bufnr, {}, {})
+        return
+      end
+      apply_diagnostics(bufnr, core_diags)
+    end)
+  end, 75)
+end
+
 function M.setup(bufnr)
-  update_diagnostics(bufnr)
+  update_diagnostics_async(bufnr)
 
   vim.api.nvim_create_autocmd({ "TextChanged", "TextChangedI" }, {
     group = vim.api.nvim_create_augroup("KulalaDiagnostics", { clear = true }),
     buffer = bufnr,
     callback = function()
-      update_diagnostics(bufnr)
+      update_diagnostics_async(bufnr)
     end,
   })
 end
