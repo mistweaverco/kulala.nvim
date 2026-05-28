@@ -1,7 +1,6 @@
 local AsciiUtils = require("kulala.utils.ascii")
 local CMD = require("kulala.cmd")
 local CONFIG = require("kulala.config")
-local CURL_PARSER = require("kulala.parser.curl")
 local DB = require("kulala.db")
 local DOC_PARSER = require("kulala.parser.document")
 local Ext_processing = require("kulala.external_processing")
@@ -11,7 +10,6 @@ local Float = require("kulala.ui.float")
 local GLOBALS = require("kulala.globals")
 local INLAY = require("kulala.inlay")
 local INT_PROCESSING = require("kulala.internal_processing")
-local Inspect = require("kulala.parser.inspect")
 local KEYMAPS = require("kulala.config.keymaps")
 local Logger = require("kulala.logger")
 local PARSER = require("kulala.parser.request")
@@ -660,42 +658,17 @@ end
 M.from_curl = function()
   local clipboard = vim.fn.getreg("+")
   local Bridge = require("kulala.cmd.kulala_core_bridge")
-
-  if Bridge.enabled() then
-    local lines, err = Bridge.from_curl(clipboard)
-    if lines then
-      vim.api.nvim_put(lines, "l", false, false)
-      return
-    end
-    if err then Logger.warn(err .. " — falling back to Lua curl parser") end
-  end
-
-  local spec, curl = CURL_PARSER.parse(clipboard)
-
-  if not spec then
-    Logger.error("Failed to parse curl command")
-    return
-  end
-  REPORT.print_http_spec(spec, curl)
+  local lines, err = Bridge.from_curl(clipboard)
+  if not lines then return Logger.error(err or "kulala-core from_curl failed") end
+  vim.api.nvim_put(lines, "l", false, false)
 end
 
 M.inspect = function()
   local Bridge = require("kulala.cmd.kulala_core_bridge")
-  local content
-
-  if Bridge.enabled() then
-    local lines, err = Bridge.inspect_request_at_cursor()
-    if lines then
-      content = lines
-    else
-      if err then
-        if Bridge.is_preview_unsupported_err(err) then return Logger.warn(err) end
-        Logger.warn(err .. " — falling back to buffer parse")
-      end
-      content = Inspect.get_contents()
-    end
-  else
-    content = Inspect.get_contents()
+  local content, err = Bridge.inspect_request_at_cursor()
+  if not content then
+    if err and Bridge.is_preview_unsupported_err(err) then return Logger.warn(err) end
+    return Logger.error(err or "kulala-core inspect_request failed")
   end
 
   if not content or #content == 0 then return end

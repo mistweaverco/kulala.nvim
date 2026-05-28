@@ -520,7 +520,7 @@ local function process_response(request_status, parsed_request, callback)
         Logger.error("Cannot replay: missing HTTP file content for " .. (parsed_request.file or "unknown"))
         return M.queue:run_next()
       end
-      process_request(nil, parsed_request, callback, run_opts)
+      process_request(parsed_request, callback, run_opts)
     end, 1)
   end
 
@@ -1033,10 +1033,10 @@ process_request_kulala_core = function(parsed_request, callback, retry_depth, ru
 end
 
 ---Executes DocumentRequest
----@param requests DocumentRequest[]
 ---@param request DocumentRequest
 ---@param callback function
-function process_request(requests, request, callback, run_opts)
+---@param run_opts? KulalaCoreRunOpts
+function process_request(request, callback, run_opts)
   local config = CONFIG.get()
 
   local parsed_request = parse_request(request)
@@ -1113,7 +1113,7 @@ M.run_parser = function(requests, line_nr, callback, run_opts)
     M.queue:add({ request = anchor, batch_index = 1, batch_size = 1 }, function()
       if execute_before_request(anchor) then
         initialize()
-        process_request(requests, anchor, callback, batch_run_opts)
+        process_request(anchor, callback, batch_run_opts)
       end
     end)
   else
@@ -1125,7 +1125,7 @@ M.run_parser = function(requests, line_nr, callback, run_opts)
       M.queue:add({ request = request, batch_index = batch_index, batch_size = #requests }, function()
         if execute_before_request(request) then
           initialize()
-          process_request(requests, request, callback, run_opts)
+          process_request(request, callback, run_opts)
         end
       end)
     end
