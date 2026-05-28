@@ -218,11 +218,21 @@ M.dir_exists = function(dir)
   return vim.fn.isdirectory(dir) == 1
 end
 
+-- INFO:
+-- We're using robocopy for Windows,
+-- since it should work on all modern Windows versions (7, 8, 8.1, 10, and 11)
+-- and is optimized for copying directories with many files and subdirectories.
+-- What do the flags do?
+-- /E copies all subdirectories (including empty ones)
+-- /R:0 and /W:0 skip retries for locked files so Neovim doesn't hang
+-- We're not passing /MIR or /PURGE to avoid accidentally deleting files in
+-- the destination that don't exist in the source
+
 M.copy_dir = function(source, destination)
   if M.os == "unix" or M.os == "mac" then
     vim.system({ "cp", "-r", source .. M.ps .. ".", destination }):wait()
   elseif M.os == "windows" then
-    vim.system({ "xcopy", "/H", "/E", "/I", source .. M.ps .. "*", destination }):wait()
+    vim.system({ "robocopy", source, destination, "/E", "/R:0", "/W:0" }):wait()
   end
 end
 
@@ -230,7 +240,7 @@ M.copy_dir_contents = function(source, destination)
   if M.os == "unix" or M.os == "mac" then
     vim.system({ "cp", "-r", source .. M.ps .. ".", destination }):wait()
   elseif M.os == "windows" then
-    vim.system({ "xcopy", "/H", "/E", "/I", source .. M.ps .. "*", destination }):wait()
+    vim.system({ "robocopy", source, destination, "/E", "/R:0", "/W:0" }):wait()
   end
 end
 
