@@ -105,8 +105,9 @@ local open_kulala_buffer = function(filetype)
     set_maps_autocommands(buf)
 
     local bo = vim.tbl_extend("keep", config.ui.win_opts.bo or {}, {
-      filetype = filetype,
+      filetype = "kulala_ui",
       buftype = "nofile",
+      syntax = filetype,
     })
 
     vim.iter(bo):each(function(key, value)
@@ -126,7 +127,10 @@ end
 local function set_buffer_contents(buf, contents, filetype)
   local lines = vim.split(contents, "\n")
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
-  vim.bo[buf].filetype = filetype
+  vim.bo[buf].filetype = "kulala_ui"
+  vim.bo[buf].syntax = filetype
+  -- wrap in pcall to avoid errors when treesitter doesn't support the filetype
+  pcall(vim.treesitter.start, 0, filetype)
 end
 
 local function open_kulala_window(buf)
