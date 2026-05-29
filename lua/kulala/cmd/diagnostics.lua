@@ -7,6 +7,7 @@ local function kulala_diag_ns()
 end
 
 local pending = {} ---@type table<number, boolean>
+local augroup = vim.api.nvim_create_augroup("KulalaDiagnostics", { clear = false })
 
 local function apply_diagnostics(bufnr, core_diags)
   local severity_map = {
@@ -38,11 +39,16 @@ local function apply_diagnostics(bufnr, core_diags)
 end
 
 local function update_diagnostics_async(bufnr)
+  if not vim.api.nvim_buf_is_valid(bufnr) then return end
   if pending[bufnr] then return end
   pending[bufnr] = true
 
   -- debounce a bit to avoid spawning a subprocess on every keystroke
   vim.defer_fn(function()
+    if not vim.api.nvim_buf_is_valid(bufnr) then
+      pending[bufnr] = false
+      return
+    end
     Bridge.lsp_diagnostics_async(bufnr, function(core_diags, _err)
       pending[bufnr] = false
       if not vim.api.nvim_buf_is_valid(bufnr) then return end
@@ -59,10 +65,18 @@ function M.setup(bufnr)
   update_diagnostics_async(bufnr)
 
   vim.api.nvim_create_autocmd({ "TextChanged", "TextChangedI" }, {
-    group = vim.api.nvim_create_augroup("KulalaDiagnostics", { clear = true }),
+    group = augroup,
     buffer = bufnr,
     callback = function()
       update_diagnostics_async(bufnr)
+    end,
+  })
+
+  vim.api.nvim_create_autocmd("BufUnload", {
+    group = augroup,
+    buffer = bufnr,
+    callback = function()
+      pending[bufnr] = false
     end,
   })
 end

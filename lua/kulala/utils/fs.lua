@@ -88,6 +88,26 @@ M.is_non_http_file = function()
   end)
 end
 
+---Check if the current buffer file name ends with
+---.http.js or .http.ts or .http.lua
+---@param ft string filetype
+---@return boolean
+M.is_http_script_file = function(ft)
+  local script_filetypes = { "javascript", "typescript", "lua" }
+  if not vim.tbl_contains(script_filetypes, ft) then return false end
+  local path = M.get_current_buffer_path()
+  local extensions = { "js", "ts", "lua" }
+  local ext = vim.fn.fnamemodify(path, ":e")
+  local base = vim.fn.fnamemodify(path, ":t:r")
+  local enforce_external_script_naming_convention =
+    require("kulala.config").get().lsp.enforce_external_script_naming_convention
+  if not enforce_external_script_naming_convention then return true end
+  for _, e in ipairs(extensions) do
+    if ext == e and base:match("%.http$") then return true end
+  end
+  return false
+end
+
 -- find nearest file in parent directories, starting from the current buffer file path
 --- @param filename string|function
 --- @return string|nil

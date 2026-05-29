@@ -4,6 +4,7 @@ local Diagnostics = require("kulala.cmd.diagnostics")
 local Export = require("kulala.cmd.export")
 local Fmt = require("kulala.formatter.fmt")
 local Formatter = require("kulala.formatter.formatter")
+local Fs = require("kulala.utils.fs")
 local Globals = require("kulala.globals")
 local Kulala = require("kulala")
 local Logger = require("kulala.logger")
@@ -170,8 +171,11 @@ local function initialize(params)
   local ft = params.rootPath:sub(2)
   local capabilities
 
-  if ft == "javascript" then
-    capabilities = { completionProvider = { triggerCharacters = trigger_chars } }
+  if Fs.is_http_script_file(ft) then
+    capabilities = {
+      completionProvider = { triggerCharacters = trigger_chars },
+      hoverProvider = true,
+    }
   elseif ft ~= "http" and ft ~= "rest" then
     capabilities = { codeActionProvider = true }
   else
@@ -233,10 +237,12 @@ local function new_server()
         set_current_buf(params)
         if method == "textDocument/completion" then
           local buf = vim.uri_to_bufnr(params.textDocument.uri)
-          Bridge.lsp_completion_async(buf, function(res, err)
+          Bridge.lsp_completion_async(buf, params, function(res, err)
             if not res then
               Logger.debug("kulala-core lsp_completion failed: " .. tostring(err))
               res = { isIncomplete = false, items = {} }
+            elseif type(res.items) == "table" and params.position then
+              Bridge.apply_completion_text_edits(res.items, buf, params.position)
             end
             handler(nil, res)
           end)
