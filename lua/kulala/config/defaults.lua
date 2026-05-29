@@ -193,11 +193,28 @@ local M = {
   },
 
   lsp = {
-    -- enable/disable built-in LSP server
+    ---enable/disable built-in LSP server
+    ---@type boolean
     enable = true,
 
-    -- filetypes to attach Kulala LSP to
-    filetypes = { "http", "rest", "json", "yaml", "bruno" },
+    ---filetypes to attach Kulala LSP to
+    ---@type string[]
+    filetypes = {
+      "http",
+      "rest",
+      "json",
+      "yaml",
+      "bruno",
+      "javascript",
+      "typescript",
+      "lua",
+    },
+
+    ---Only scripts ending in *.http.js, *.http.ts and *.http.lua will be treated as HTTP scripts and
+    ---have LSP capabilities, unless `enforce_external_script_naming_convention` is set to false.
+    ---This allows users to have non-HTTP scripts with the same filetypes without LSP interference.
+    ---@type boolean
+    enforce_external_script_naming_convention = true,
 
     --enable/disable/customize  LSP keymaps
     ---@type boolean|table

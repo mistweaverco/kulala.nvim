@@ -477,32 +477,118 @@ end
 ---@param cwd string|nil
 ---@return vim.SystemObj|nil
 ---@param bufnr? integer
----@return table payload
+---@return boolean
+local function valid_bufnr(bufnr)
+  return type(bufnr) == "number" and bufnr > 0 and vim.api.nvim_buf_is_valid(bufnr)
+end
+
+---@param line string
+---@param end_col0 integer 0-based index after the last typed character
+---@return integer start_col0 0-based start of the completion prefix
+---@return integer prefix_len
+local function completion_prefix_range(line, end_col0)
+  end_col0 = math.max(0, math.min(end_col0, #line))
+  local before = end_col0 > 0 and line:sub(1, end_col0) or ""
+  -- Include `$` (not a Vim keyword char); avoid matching only `kul` after `$`.
+  local prefix = before:match("([%w$%.]+)$") or ""
+  return end_col0 - #prefix, #prefix
+end
+
+---Neovim/cmp strip a shared prefix from `insertText` but treat `$` as non-keyword, breaking `$kulala.*`.
+---@param items table[]
+---@param bufnr integer
+---@param position table LSP position (`line`/`character`, 0-based)
+function M.apply_completion_text_edits(items, bufnr, position)
+  if type(items) ~= "table" or type(position) ~= "table" then return end
+  local line0 = position.line
+  if type(line0) ~= "number" then return end
+
+  local line = vim.api.nvim_buf_get_lines(bufnr, line0, line0 + 1, false)[1] or ""
+
+  -- Vim cursor col is 1-based on the current character; include it in the replaced range.
+  -- (`col - 1` wrongly drops the last typed character, e.g. `u` in `$ku`.)
+  local end_col0 = position.character + 1
+  local wins = vim.fn.win_findbuf(bufnr)
+  if wins[1] then
+    local cursor = vim.api.nvim_win_get_cursor(wins[1])
+    if cursor[1] - 1 == line0 then end_col0 = math.min(cursor[2], #line) end
+  end
+  if type(end_col0) ~= "number" then return end
+
+  local start_col0 = completion_prefix_range(line, end_col0)
+
+  local plain_text = vim.lsp.protocol.InsertTextFormat.PlainText
+
+  for _, item in ipairs(items) do
+    local new_text = item.insertText or item.label
+    if not new_text then goto continue end
+
+    -- blink.cmp + vim.snippet.expand strip a prefix that excludes `$` (e.g. `$kul` → `.prompt`).
+    if type(item.label) == "string" and item.label:match("^%$kulala") then item.insertTextFormat = plain_text end
+
+    item.textEdit = {
+      range = {
+        start = { line = line0, character = start_col0 },
+        ["end"] = { line = line0, character = end_col0 },
+      },
+      newText = new_text,
+    }
+    item.insertText = nil
+    ::continue::
+  end
+end
+
+---@param bufnr? integer
+---@param lsp_position? table|nil LSP position (`line`/`character`, 0-based)
+---@return table|nil payload
 ---@return string|nil cwd
-local function cursor_request_payload(bufnr)
+local function cursor_request_payload(bufnr, lsp_position)
   bufnr = bufnr or vim.api.nvim_get_current_buf()
+  if not valid_bufnr(bufnr) then return nil, nil end
   local content = table.concat(vim.api.nvim_buf_get_lines(bufnr, 0, -1, false), "\n")
   local filepath, cwd = M.resolve_document_paths(bufnr, nil)
+  local line1, col1
+  if lsp_position and type(lsp_position.line) == "number" and type(lsp_position.character) == "number" then
+    line1 = lsp_position.line + 1
+    col1 = lsp_position.character + 1
+    local wins = vim.fn.win_findbuf(bufnr)
+    if wins[1] then
+      local cursor = vim.api.nvim_win_get_cursor(wins[1])
+      if cursor[1] == line1 then col1 = math.max(col1, cursor[2]) end
+    end
+  else
+    line1 = vim.fn.line(".")
+    col1 = math.max(1, vim.fn.col("."))
+  end
   local payload = {
     content = content,
-    line = vim.fn.line("."),
-    column = math.max(1, vim.fn.col(".")),
+    line = line1,
+    column = col1,
     env = require("kulala.parser.env").get_current_env() or "default",
+    filetype = vim.api.nvim_get_option_value("filetype", { buf = bufnr }),
   }
   if filepath then payload.filepath = filepath end
   return payload, cwd
 end
 
 ---@param bufnr? integer
----@return table payload
+---@return table|nil payload
 ---@return string|nil cwd
 local function buffer_payload(bufnr)
   bufnr = bufnr or vim.api.nvim_get_current_buf()
+  if not valid_bufnr(bufnr) then return nil, nil end
   local content = table.concat(vim.api.nvim_buf_get_lines(bufnr, 0, -1, false), "\n")
   local filepath, cwd = M.resolve_document_paths(bufnr, nil)
   local payload = { content = content }
   if filepath then payload.filepath = filepath end
   return payload, cwd
+end
+
+---@param on_done fun(res: table|nil, err: string|nil)
+local function invalid_buffer_async(on_done)
+  vim.schedule(function()
+    on_done(nil, "invalid buffer")
+  end)
 end
 
 ---@param bufnr? integer
@@ -511,6 +597,7 @@ end
 function M.inspect_request_at_cursor(bufnr)
   M.require_enabled()
   local payload, cwd = cursor_request_payload(bufnr)
+  if not payload then return nil, "invalid buffer" end
   payload.action = "inspect_request"
   local job = M.invoke(payload, cwd)
   local res = decode_action_response(job.stdout)
@@ -534,6 +621,7 @@ end
 function M.to_curl_at_cursor(bufnr, user_agent)
   M.require_enabled()
   local payload, cwd = cursor_request_payload(bufnr)
+  if not payload then return nil, "invalid buffer" end
   payload.action = "to_curl"
   if user_agent then payload.userAgent = user_agent end
   local job = M.invoke(payload, cwd)
@@ -553,6 +641,7 @@ end
 function M.lsp_completion(bufnr)
   M.require_enabled()
   local payload, cwd = cursor_request_payload(bufnr)
+  if not payload then return nil, "invalid buffer" end
   payload.action = "lsp_completion"
   local job = M.invoke(payload, cwd)
   local res = decode_action_response(job.stdout)
@@ -565,10 +654,13 @@ function M.lsp_completion(bufnr)
 end
 
 ---@param bufnr? integer
+---@param lsp_params? table|nil `textDocument/completion` params (uses `position` when set)
 ---@param on_done fun(res: table|nil, err: string|nil)
-function M.lsp_completion_async(bufnr, on_done)
+function M.lsp_completion_async(bufnr, lsp_params, on_done)
   M.require_enabled()
-  local payload, cwd = cursor_request_payload(bufnr)
+  local position = type(lsp_params) == "table" and lsp_params.position or nil
+  local payload, cwd = cursor_request_payload(bufnr, position)
+  if not payload then return invalid_buffer_async(on_done) end
   payload.action = "lsp_completion"
   M.invoke_async(payload, cwd, function(job)
     local res, err = decode_job_stdout(job)
@@ -588,6 +680,7 @@ end
 function M.lsp_hover(bufnr)
   M.require_enabled()
   local payload, cwd = cursor_request_payload(bufnr)
+  if not payload then return nil, "invalid buffer" end
   payload.action = "lsp_hover"
   local job = M.invoke(payload, cwd)
   local res = decode_action_response(job.stdout)
@@ -604,6 +697,7 @@ end
 function M.lsp_hover_async(bufnr, on_done)
   M.require_enabled()
   local payload, cwd = cursor_request_payload(bufnr)
+  if not payload then return invalid_buffer_async(on_done) end
   payload.action = "lsp_hover"
   M.invoke_async(payload, cwd, function(job)
     local res, err = decode_job_stdout(job)
@@ -623,6 +717,7 @@ end
 function M.lsp_symbols(bufnr)
   M.require_enabled()
   local payload, cwd = buffer_payload(bufnr)
+  if not payload then return nil, "invalid buffer" end
   payload.action = "lsp_symbols"
   local job = M.invoke(payload, cwd)
   local res = decode_action_response(job.stdout)
@@ -638,6 +733,7 @@ end
 function M.lsp_symbols_async(bufnr, on_done)
   M.require_enabled()
   local payload, cwd = buffer_payload(bufnr)
+  if not payload then return invalid_buffer_async(on_done) end
   payload.action = "lsp_symbols"
   M.invoke_async(payload, cwd, function(job)
     local res, err = decode_job_stdout(job)
@@ -657,6 +753,7 @@ end
 function M.lsp_diagnostics(bufnr)
   M.require_enabled()
   local payload, cwd = buffer_payload(bufnr)
+  if not payload then return nil, "invalid buffer" end
   payload.action = "lsp_diagnostics"
   local job = M.invoke(payload, cwd)
   local res = decode_action_response(job.stdout)
@@ -672,6 +769,7 @@ end
 function M.lsp_diagnostics_async(bufnr, on_done)
   M.require_enabled()
   local payload, cwd = buffer_payload(bufnr)
+  if not payload then return invalid_buffer_async(on_done) end
   payload.action = "lsp_diagnostics"
   M.invoke_async(payload, cwd, function(job)
     local res, err = decode_job_stdout(job)
