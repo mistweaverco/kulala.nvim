@@ -130,7 +130,7 @@ local function set_buffer_contents(buf, contents, filetype)
   vim.bo[buf].filetype = "kulala_ui"
   vim.bo[buf].syntax = filetype
   -- wrap in pcall to avoid errors when treesitter doesn't support the filetype
-  pcall(vim.treesitter.start, 0, filetype)
+  pcall(vim.treesitter.start, buf, filetype)
 end
 
 local function open_kulala_window(buf)
