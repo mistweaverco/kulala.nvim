@@ -30,7 +30,7 @@ end
 
 ---Path separator
 ---@type "\\" | "/"
-M.ps = M.get_path_separator()
+M.ps = M.os == "windows" and "\\" or "/"
 
 M.normalize_path = function(path)
   path = vim.fs.normalize(path)
@@ -43,11 +43,10 @@ end
 ---Join paths -- similar to os.path.join in python
 M.join_paths = function(...)
   local parts = { ... }
+  local replace_ps = M.os == "windows" and "/" or "\\"
 
-  if M.os == "windows" then
-    for i, part in ipairs(parts) do
-      parts[i] = part:gsub("/", "\\")
-    end
+  for i, part in ipairs(parts) do
+    parts[i] = part:gsub(replace_ps, M.ps)
   end
 
   return table.concat(parts, M.ps)

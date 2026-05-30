@@ -19,6 +19,7 @@ fi
   echo "export XDG_DATA_HOME=\"$TMP_DIR/data\""
   echo "export XDG_STATE_HOME=\"$TMP_DIR/state\""
   echo "export XDG_CACHE_HOME=\"$TMP_DIR/cache\""
+  echo "export XDG_CONFIG_HOME=\"$TMP_DIR/config\""
   echo "export NVIM_REPRO_TMP_DIR=\"$TMP_DIR\""
   echo "export PLUGINS=\"$PLUGINS\""
   echo "nvim -u \"$TMP_DIR/minit.lua\" \"\$@\""
@@ -30,9 +31,27 @@ cp minit.lua "$TMP_DIR/"
 
 "$TMP_DIR/minit.sh" "$@"
 
+if [ ! -t 0 ]; then
+  echo "Non-interactive terminal detected. Cleaning up temporary directory..."
+  rm -rf "$TMP_DIR"
+  echo "Done."
+  exit 0
+fi
 echo "Neovim isolation"
 echo "----------------"
 echo
+echo "The isolation environment is located at: $TMP_DIR"
+echo
+
+echo -n "Do you want to keep the isolation environment for future use? (y/n): "
+read -n 1 -r KEEP_ENV
+echo
+if [[ "$KEEP_ENV" != "y" && "$KEEP_ENV" != "Y" ]]; then
+  echo "Cleaning up temporary directory..."
+  rm -rf "$TMP_DIR"
+  echo "Done."
+  exit 0
+fi
 echo "To reuse the same isolation environment, run:"
 echo "$TMP_DIR/minit.sh"
 echo

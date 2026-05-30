@@ -1,5 +1,7 @@
+local Api = require("kulala.api")
 local Globals = require("kulala.globals")
 local Logger = require("kulala.logger")
+local Parser = require("kulala.config.parser")
 local M = {}
 
 local function platform()
@@ -602,6 +604,7 @@ M.ensure_installed = function(callback)
 
   -- Check if binary exists and version matches
   if binary_exists() and version_matches() then
+    if Parser.is_up_to_date() then Api.trigger("ready") end
     if callback then callback() end
     return
   end
@@ -619,6 +622,7 @@ M.ensure_installed = function(callback)
   M.install(required_version_tag, function()
     -- Verify the binary was successfully installed before calling the callback
     if binary_exists() and version_matches() then
+      if Parser.is_up_to_date() then Api.trigger("ready") end
       if callback then callback() end
     else
       Logger.error("Backend installation failed or binary is not accessible")

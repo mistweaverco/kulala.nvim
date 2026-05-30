@@ -1,4 +1,5 @@
 local Json = require("kulala.utils.json")
+local Logger = require("kulala.logger")
 
 describe("kulala.utils.json", function()
   it("parses valid json", function()
@@ -8,6 +9,7 @@ describe("kulala.utils.json", function()
   end)
 
   it("returns error on invalid json when verbose", function()
+    Logger.error = function() end -- Suppress error logs during test
     local value, err = Json.parse("{bad", { verbose = true })
     assert.is_nil(value)
     assert.is_string(err)
