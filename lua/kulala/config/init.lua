@@ -1,3 +1,4 @@
+local Backend = require("kulala.backend")
 local Parser = require("kulala.config.parser")
 local defaults = require("kulala.config.defaults")
 local keymaps = require("kulala.config.keymaps")
@@ -32,7 +33,9 @@ local set_autocomands = function()
     group = vim.api.nvim_create_augroup("Kulala filetype setup", { clear = true }),
     pattern = M.options.lsp.filetypes,
     callback = function(ev)
-      if M.options.lsp.enable then require("kulala.cmd.lsp").start(ev.buf, ev.match) end
+      if Parser.is_up_to_date() and Backend.is_up_to_date() and M.options.lsp.enable then
+        require("kulala.cmd.lsp").start(ev.buf, ev.match)
+      end
     end,
   })
 end
@@ -50,7 +53,7 @@ M.setup = function(config)
   M.options = vim.tbl_deep_extend("force", vim.deepcopy(M.defaults), M.user_config)
 
   set_legacy_options()
-  Parser.set_kulala_parser()
+  Parser.setup()
   set_syntax_hl()
   set_autocomands()
 
