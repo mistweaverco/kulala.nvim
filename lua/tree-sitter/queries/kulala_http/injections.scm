@@ -12,15 +12,24 @@
 ((graphql_data) @injection.content
   (#set! injection.language "graphql"))
 
-((_
-  (script) @injection.content
-  (#match? @injection.content "-- lua")
-  (#offset! @injection.content 0 2 0 -2))
+; Inline script: `{% lang=lua` on the opening line
+((script
+  (script_body) @injection.content) @_script
+  (#match? @_script "lang=lua")
+  (#set! injection.include-children)
   (#set! injection.language "lua"))
 
-; Script (default to javascript)
-((_
-  (script) @injection.content
-  (#not-match? @injection.content "-- lua")
-  (#offset! @injection.content 0 2 0 -2))
+; Inline script: `{% lang=ts` on the opening line
+((script
+  (script_body) @injection.content) @_script
+  (#match? @_script "lang=ts")
+  (#set! injection.include-children)
+  (#set! injection.language "typescript"))
+
+; Inline script (default: JavaScript)
+((script
+  (script_body) @injection.content) @_script
+  (#not-match? @_script "lang=lua")
+  (#not-match? @_script "lang=ts")
+  (#set! injection.include-children)
   (#set! injection.language "javascript"))

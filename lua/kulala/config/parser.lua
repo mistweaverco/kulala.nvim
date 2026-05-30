@@ -30,6 +30,14 @@ local function ensure_site_rtp()
   vim.opt.rtp:append(site_dir)
 end
 
+local function sync_queries()
+  Fs.ensure_dir_exists(queries_dir)
+  Fs.copy_dir_contents(
+    vim.fs.joinpath(parser_source_path, "queries", parser_name),
+    query_target_dir
+  )
+end
+
 local function load_parser()
   if not Fs.file_exists(parser_target_path) then return false end
   return vim.treesitter.language.add(parser_name) == true
@@ -39,6 +47,10 @@ M.register_parser = function()
   if parser_registered then return end
   if not load_parser() then return end
   parser_registered = true
+  -- queries/kulala_http/*.scm live under lua/tree-sitter/queries/
+  vim.opt.rtp:prepend(parser_source_path)
+  ensure_site_rtp()
+  sync_queries()
   vim.treesitter.language.register(parser_name, filetypes)
   vim.api.nvim_create_autocmd("FileType", {
     group = vim.api.nvim_create_augroup("KulalaTreesitter", { clear = true }),
@@ -56,11 +68,7 @@ end
 
 local function setup_tree_sitter()
   Fs.ensure_dir_exists(parsers_dir)
-  Fs.ensure_dir_exists(queries_dir)
-  Fs.copy_dir_contents(
-    vim.fs.joinpath(parser_source_path, "queries", parser_name),
-    vim.fs.joinpath(queries_dir, parser_name)
-  )
+  sync_queries()
   local output_path = vim.fs.joinpath(parsers_dir, parser_name .. "." .. target_parser_ext)
   vim.system({ "tree-sitter", "build", "-o", output_path }, {
     cwd = parser_source_path,
