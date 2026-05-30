@@ -588,6 +588,10 @@ M.install = function(version, callback)
   end)
 end
 
+M.is_up_to_date = function()
+  return binary_exists() and version_matches()
+end
+
 ---Ensure the backend binary is installed and up-to-date
 ---If development mode is enabled, skip the check (assumes running from source)
 ---If binary is not found or version doesn't match, download the required version
