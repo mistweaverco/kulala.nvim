@@ -509,7 +509,7 @@ end
 
 M.acquire_password_token = function(config_id)
   local config = get_auth_config(config_id)
-  local required_params = { "Client ID", "Client Secret", "Token URL", "Username", "Password" }
+  local required_params = { "Client ID", "Token URL", "Username", "Password" }
   if not validate_auth_params(config_id, required_params) then return end
 
   local headers = get_custom_headers(config_id)
