@@ -7,22 +7,13 @@ if ! command -v nvim &> /dev/null; then
   exit 1
 fi
 
-run() {
-  nvim --version
-  if [[ -n $1 ]]; then
-    nvim -l tests/minit.lua tests --filter "$1"
-  else
-    nvim -l tests/minit.lua tests --shuffle-tests -o utfTerminal -Xoutput --color -v
-  fi
-}
-
 case "${1:-run}" in
   "run")
     shift
-    run "$*"
+    ./minit_test.sh "$@"
     ;;
   *)
-    echo "Usage: $0 [run] [filter]"
+    echo "Usage: $0 [run]"
     exit 1
     ;;
 esac

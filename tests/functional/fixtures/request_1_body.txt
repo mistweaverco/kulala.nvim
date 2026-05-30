@@ -1,5 +1,0 @@
-<h1>Homepage</h1>
-    <ul>
-        <li><a href="/echo">Echo request</a></li>
-        <li><a href="/greeting">Greeting</a></li>
-    </ul>

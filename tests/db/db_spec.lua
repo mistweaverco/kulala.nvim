@@ -7,24 +7,24 @@ describe("db scoped", function()
 
     DB.current_buffer = buf1
     DB.update().key1 = "value1"
-    assert.equal(DB.find_unique("key1"), "value1")
+    assert.are.equal("value1", DB.find_unique("key1"))
 
     vim.cmd("new")
     local buf2 = vim.api.nvim_get_current_buf()
 
     DB.current_buffer = buf2
     DB.update().key2 = "value2"
-    assert.equal(DB.find_unique("key1"), nil)
-    assert.equal(DB.find_unique("key2"), "value2")
+    assert.is_nil(DB.find_unique("key1"))
+    assert.are.equal("value2", DB.find_unique("key2"))
 
     vim.api.nvim_set_current_buf(buf1)
     DB.current_buffer = buf1
-    assert.equal(DB.find_unique("key1"), "value1")
-    assert.equal(DB.find_unique("key2"), nil)
+    assert.are.equal("value1", DB.find_unique("key1"))
+    assert.is_nil(DB.find_unique("key2"))
 
     vim.api.nvim_set_current_buf(buf2)
     DB.current_buffer = buf2
-    assert.equal(DB.find_unique("key1"), nil)
-    assert.equal(DB.find_unique("key2"), "value2")
+    assert.is_nil(DB.find_unique("key1"))
+    assert.are.equal("value2", DB.find_unique("key2"))
   end)
 end)

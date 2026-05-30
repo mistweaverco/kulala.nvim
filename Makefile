@@ -1,35 +1,4 @@
-test = nvim -l tests/minit.lua tests --shuffle-tests -o utfTerminal -Xoutput --color -v
-
-tag ?= wip
-watch = '*.lua'
-# watch = '*.lua' -o -name "*.js" -o -name "*.http" -name "*.txt"
-git_ls = git ls-files -cdmo --exclude-standard
-
-version:
-	./scripts/set-version.sh $(VERSION)
-tag:
-	./scripts/tag.sh
-release:
-	./scripts/tag.sh
-docker-build:
-	if [ "$(OS)" != "linux" ] && [ "$(OS)" != "windows" ]; then (echo "OS must be either linux or windows"; exit 1); fi
-	docker build -t push.docker.build/mwco/kulala-nvim-$(OS)-testrunner:latest tests/_dockerfiles/$(OS)
-docker-push:
-	if [ "$(OS)" != "linux" ] && [ "$(OS)" != "windows" ]; then (echo "OS must be either linux or windows"; exit 1); fi
-	docker push push.docker.build/mwco/kulala-nvim-$(OS)-testrunner:latest
+test = ./minit_test.sh
 
 vimdocs:
 	./scripts/vimdocs.sh
-
-test:
-	$(test)
-
-test_ci: 
-	# docker build -t kulala-nvim-linux-testrunner:local tests/_dockerfiles/linux
-	docker run --rm -v .:/workspace -w /workspace ghcr.io/yarospace/kulala-nvim-linux-testrunner:latest ./scripts/tests.sh run
-
-watch:
-	@while sleep 0.1; do find . -name $(watch) | entr -d -c $(test); done
-
-watch_tag:
-	@while sleep 0.1; do $(git_ls) | entr -d -c $(test) --tags=$(tag); done

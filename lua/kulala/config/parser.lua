@@ -1,3 +1,4 @@
+local Api = require("kulala.api")
 local Fs = require("kulala.utils.fs")
 
 local M = {}
@@ -32,10 +33,7 @@ end
 
 local function sync_queries()
   Fs.ensure_dir_exists(queries_dir)
-  Fs.copy_dir_contents(
-    vim.fs.joinpath(parser_source_path, "queries", parser_name),
-    query_target_dir
-  )
+  Fs.copy_dir_contents(vim.fs.joinpath(parser_source_path, "queries", parser_name), query_target_dir)
 end
 
 local function load_parser()
@@ -52,6 +50,8 @@ M.register_parser = function()
   ensure_site_rtp()
   sync_queries()
   vim.treesitter.language.register(parser_name, filetypes)
+  local backend = require("kulala.backend")
+  if not Api.has_triggered_ready() and backend.is_up_to_date() then Api.trigger("ready") end
   vim.api.nvim_create_autocmd("FileType", {
     group = vim.api.nvim_create_augroup("KulalaTreesitter", { clear = true }),
     callback = function(args)
