@@ -43,7 +43,6 @@ M.register_parser = function()
   vim.api.nvim_create_autocmd("FileType", {
     group = vim.api.nvim_create_augroup("KulalaTreesitter", { clear = true }),
     callback = function(args)
-      print("Starting kulala_http parser for buffer " .. args.buf)
       if M.is_up_to_date() and vim.list_contains(filetypes, args.match) then
         if load_parser() then vim.treesitter.start(args.buf, parser_name) end
       end
