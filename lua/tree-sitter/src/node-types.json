@@ -795,6 +795,37 @@
   {
     "type": "script",
     "named": true,
+    "fields": {
+      "body": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "script_body",
+            "named": true
+          }
+        ]
+      },
+      "lang": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "script_lang",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "script_body",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "script_lang",
+    "named": true,
     "fields": {}
   },
   {
