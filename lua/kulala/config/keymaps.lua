@@ -151,6 +151,20 @@ M.default_global_keymaps = {
 
 -- Keymaps for Kulala window only
 M.default_kulala_keymaps = {
+  ["Previous tab"] = {
+    "<c-h>",
+    function()
+      require("kulala.ui").show_previous_tab()
+    end,
+    mode = { "n" },
+  },
+  ["Next tab"] = {
+    "<c-l>",
+    function()
+      require("kulala.ui").show_next_tab()
+    end,
+    mode = { "n" },
+  },
   ["Show headers"] = {
     "H",
     function()
