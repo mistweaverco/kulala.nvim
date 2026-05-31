@@ -3,7 +3,7 @@
 set -eo pipefail
 
 sudo apt-get update
-sudo apt-get install -y curl liblua5.3-dev lua5.3 luarocks
+sudo apt-get install -y curl liblua5.3-dev lua5.3 luarocks neovim
 
 sudo luarocks install luacheck
 

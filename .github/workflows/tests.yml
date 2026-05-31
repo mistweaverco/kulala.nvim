@@ -94,8 +94,6 @@ jobs:
     needs: resolve
     name: Lint Code
     runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/mistweaverco/kulala-nvim-linux-testrunner:latest
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.2
