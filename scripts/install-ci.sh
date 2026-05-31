@@ -2,9 +2,12 @@
 
 set -eo pipefail
 
-sudo apt update && \
-  sudo apt install lua5.3 luarocks curl -y
-
+sudo apt-get update && \
+  sudo apt-get install -y \
+    curl \
+    liblua5.3-dev \
+    lua5.3 \
+    luarocks
 
 sudo luarocks install luacheck
 
