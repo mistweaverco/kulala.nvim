@@ -511,6 +511,9 @@ end
 ---Check if the installed version matches the required version
 ---@return boolean matches True if versions match, false otherwise
 local function version_matches()
+  local config = require("kulala.config").get()
+  if config.kulala_core.path and config.kulala_core.path ~= "" then return true end
+
   local installed = M.get_installed_version()
   if not installed then return false end
   local required = get_required_version()
@@ -604,7 +607,6 @@ M.ensure_installed = function(callback)
 
   -- Check if binary exists and version matches
   if binary_exists() and version_matches() then
-    if Parser.is_up_to_date() then Api.trigger("ready") end
     if callback then callback() end
     return
   end
