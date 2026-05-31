@@ -18,11 +18,17 @@ if [[ -n "$ADDITIONAL_USER_SCRIPT" ]]; then
   ADDITIONAL_USER_SCRIPT="$TMP_DIR/$(basename "$ADDITIONAL_USER_SCRIPT")"
   {
     echo "#!/usr/bin/env bash"
+    echo
+    echo "set -eo pipefail"
+    echo
     echo "nvim -u \"$TMP_DIR/minit.lua\"" "-c 'source $ADDITIONAL_USER_SCRIPT'"
   } > "$TMP_DIR/minit.sh"
 else
   {
     echo "#!/usr/bin/env bash"
+    echo
+    echo "set -eo pipefail"
+    echo
     echo "nvim -u \"$TMP_DIR/minit.lua\""
   } > "$TMP_DIR/minit.sh"
 fi

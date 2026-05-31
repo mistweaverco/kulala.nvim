@@ -17,6 +17,9 @@ trap cleanup EXIT
 
 {
   echo "#!/usr/bin/env bash"
+  echo
+  echo "set -eo pipefail"
+  echo
   echo "nvim --headless -i NONE --noplugin -u \"$TMP_DIR/minitest.lua\""
 } > "$TMP_DIR/minitest.sh"
 
