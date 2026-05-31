@@ -81,6 +81,10 @@ jobs:
         with:
           ref: ${{ needs.resolve.outputs.ref }}
           submodules: recursive
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
       - name: Install dependencies
         run: ./scripts/install-ci.sh
       - name: Run tests
@@ -98,6 +102,10 @@ jobs:
         with:
           ref: ${{ needs.resolve.outputs.ref }}
           submodules: recursive
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
       - name: Install dependencies
         run: ./scripts/install-ci.sh
       - name: Lint code
@@ -116,6 +124,10 @@ jobs:
         with:
           ref: ${{ needs.resolve.outputs.ref }}
           submodules: recursive
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
       - name: Restore cache
         id: cache-deps
         uses: actions/cache@v5.0.4
