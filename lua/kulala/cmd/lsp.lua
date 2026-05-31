@@ -57,6 +57,14 @@ local function code_actions_http()
       fn = Kulala.download_graphql_schema,
     },
     {
+      group = "GraphQL",
+      title = "Clear GraphQL schema cache",
+      command = "clear_graphql_schema_cache",
+      fn = function()
+        Kulala.clear_graphql_schema_cache()
+      end,
+    },
+    {
       group = "Environment",
       title = "Clear globals",
       command = "clear_globals",

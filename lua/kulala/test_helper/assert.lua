@@ -90,16 +90,12 @@ end
 
 function M.matches(pattern, value)
   if type(value) ~= "string" then fail(string.format("expected string subject, got %s", type(value))) end
-  if not value:match(pattern) then
-    fail(string.format('pattern "%s" did not match value:\n%s', pattern, value))
-  end
+  if not value:match(pattern) then fail(string.format('pattern "%s" did not match value:\n%s', pattern, value)) end
 end
 
 function M.not_matches(pattern, value)
   if type(value) ~= "string" then fail(string.format("expected string subject, got %s", type(value))) end
-  if value:match(pattern) then
-    fail(string.format('pattern "%s" unexpectedly matched value:\n%s', pattern, value))
-  end
+  if value:match(pattern) then fail(string.format('pattern "%s" unexpectedly matched value:\n%s', pattern, value)) end
 end
 
 local get_key_paths
@@ -130,7 +126,14 @@ function M.has_string(value, pattern)
   pattern = pattern:clean()
 
   if not value:find(pattern, 1, true) then
-    fail(string.format('\n\n**Expected "%s"\n\n**to have string "%s"\n\n%s', value, pattern, compare_strings(value, pattern)))
+    fail(
+      string.format(
+        '\n\n**Expected "%s"\n\n**to have string "%s"\n\n%s',
+        value,
+        pattern,
+        compare_strings(value, pattern)
+      )
+    )
   end
 end
 
@@ -146,8 +149,8 @@ function M.has_properties(object, properties)
   local key_paths = get_key_paths(properties) or {}
 
   for _, path in ipairs(key_paths) do
-    local o_value = vim.tbl_get(object, table.unpack(path))
-    local prop_value = vim.tbl_get(properties, table.unpack(path))
+    local o_value = vim.tbl_get(object, vim.unpack(path))
+    local prop_value = vim.tbl_get(properties, vim.unpack(path))
 
     if o_value ~= prop_value then
       result = false
@@ -157,23 +160,21 @@ function M.has_properties(object, properties)
       table.remove(parent_path)
       parent_path = #parent_path == 0 and path or parent_path
 
-      missing_o[parent_path] = vim.tbl_get(object, table.unpack(parent_path))
+      missing_o[parent_path] = vim.tbl_get(object, vim.unpack(parent_path))
     end
   end
 
   missing_o = vim.tbl_count(missing_o) == 0 and object or missing_o
 
   if not result then
-    fail(string.format(
-      '\n\n**Expected "%s"\n\n**to have properties "%s"',
-      vim.inspect(missing_o),
-      vim.inspect(missing_p)
-    ))
+    fail(
+      string.format('\n\n**Expected "%s"\n\n**to have properties "%s"', vim.inspect(missing_o), vim.inspect(missing_p))
+    )
   end
 end
 
 ---Minimal snapshot helper for tests that mutate module tables (e.g. Fs.os).
-function M:snapshot()
+function M.snapshot()
   local saved = {}
   return {
     revert = function()
