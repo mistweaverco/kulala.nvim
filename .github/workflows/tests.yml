@@ -1,144 +1,120 @@
 ---
 name: Tests
+
 on:
-  issue_comment:
-    types: [created]
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      pull_request_number:
+        description: >-
+          PR number to test (use for fork PRs).
+          Leave empty to test the branch selected above.
+        required: false
+        type: string
+      run_windows:
+        description: Run Windows tests
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: tests-${{ inputs.pull_request_number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  test-linux:
-    if: |
-      github.event.issue.pull_request != null &&
-      contains(github.event.comment.body, '/run-tests')
-    name: Test Code on Linux
+  resolve:
+    name: Resolve target
     runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/mistweaverco/kulala-nvim-linux-testrunner:latest
+    outputs:
+      ref: ${{ steps.resolve.outputs.ref }}
     steps:
       - name: Check user permission
-        id: check_permission
+        if: github.event_name == 'workflow_dispatch'
         uses: actions/github-script@v9.0.0
         with:
           script: |
             const { data: permission } =
-            await github.rest.repos.getCollaboratorPermissionLevel({
+              await github.rest.repos.getCollaboratorPermissionLevel({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 username: context.actor
               });
             const allowed = ['admin', 'write'];
             if (!allowed.includes(permission.permission)) {
-              core.setFailed(`User is not authorized to
-                trigger this workflow.`);
+              core.setFailed(
+                'Only collaborators with write access can run this workflow.'
+              );
             }
-      - name: Get PR SHA
-        id: get_sha
+
+      - name: Resolve checkout ref
+        id: resolve
         uses: actions/github-script@v9.0.0
         with:
-          result-encoding: string
           script: |
-            const { data: pr } = await github.rest.pulls.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: context.issue.number
-            });
-            return pr.head.sha;
-      - name: Checkout PR Branch
+            let ref;
+            if (context.eventName === 'push') {
+              ref = context.sha;
+            } else {
+              const prNumber = '${{ inputs.pull_request_number }}'.trim();
+              if (prNumber) {
+                const { data: pr } = await github.rest.pulls.get({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: Number(prNumber)
+                });
+                ref = pr.head.sha;
+              } else {
+                ref = context.ref.replace('refs/', '');
+              }
+            }
+            core.setOutput('ref', ref);
+
+  test-linux:
+    needs: resolve
+    name: Test Code on Linux
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
         uses: actions/checkout@v6.0.2
         with:
-          ref: ${{ steps.get_sha.outputs.result }}
+          ref: ${{ needs.resolve.outputs.ref }}
           submodules: recursive
+      - name: Install dependencies
+        run: ./scripts/install-ci.sh
       - name: Run tests
-        run: ./scripts/tests.sh run
+        run: ./minitest.sh
+
   lint:
-    if: |
-      github.event.issue.pull_request != null &&
-      contains(github.event.comment.body, '/run-tests')
+    needs: resolve
     name: Lint Code
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/mistweaverco/kulala-nvim-linux-testrunner:latest
     steps:
-      - name: Check user permission
-        id: check_permission
-        uses: actions/github-script@v9.0.0
-        with:
-          script: |
-            const { data: permission } =
-              await github.rest.repos.getCollaboratorPermissionLevel({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                username: context.actor
-              });
-            const allowed = ['admin', 'write'];
-            if (!allowed.includes(permission.permission)) {
-              core.setFailed(`User is not authorized to
-                trigger this workflow.`);
-            }
-      - name: Get PR SHA
-        id: get_sha
-        uses: actions/github-script@v9.0.0
-        with:
-          result-encoding: string
-          script: |
-            const { data: pr } = await github.rest.pulls.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: context.issue.number
-            });
-            return pr.head.sha;
-      - name: Checkout PR Branch
+      - name: Checkout
         uses: actions/checkout@v6.0.2
         with:
-          ref: ${{ steps.get_sha.outputs.result }}
+          ref: ${{ needs.resolve.outputs.ref }}
           submodules: recursive
+      - name: Install dependencies
+        run: ./scripts/install-ci.sh
       - name: Lint code
-        run: ./scripts/lint.sh check-code
-
+        run: ./scripts/lint.sh code
       - name: Lint docs
-        run: ./scripts/lint.sh check-docs
+        run: ./scripts/lint.sh docs
 
   test-windows:
-    if: |
-      github.event.issue.pull_request != null &&
-      contains(github.event.comment.body, '/run-tests') &&
-      (github.event_name == 'labeled' &&
-      github.event.label.name == 'needs-windows-test' ||
-        github.event_name != 'labeled' &&
-        contains(github.event.pull_request.labels.*.name, 'needs-windows-test'))
+    needs: resolve
+    if: github.event_name == 'workflow_dispatch' && inputs.run_windows
     name: Test Code on Windows
     runs-on: windows-latest
     steps:
-      - name: Check user permission
-        id: check_permission
-        uses: actions/github-script@v9.0.0
-        with:
-          script: |
-            const { data: permission } =
-              await github.rest.repos.getCollaboratorPermissionLevel({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                username: context.actor
-              });
-            const allowed = ['admin', 'write'];
-            if (!allowed.includes(permission.permission)) {
-              core.setFailed(`User is not authorized to
-                trigger this workflow.`);
-            }
-      - name: Get PR SHA
-        id: get_sha
-        uses: actions/github-script@v9.0.0
-        with:
-          result-encoding: string
-          script: |
-            const { data: pr } = await github.rest.pulls.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: context.issue.number
-            });
-            return pr.head.sha;
-      - name: Checkout PR Branch
+      - name: Checkout
         uses: actions/checkout@v6.0.2
         with:
-          ref: ${{ steps.get_sha.outputs.result }}
+          ref: ${{ needs.resolve.outputs.ref }}
           submodules: recursive
       - name: Restore cache
         id: cache-deps
@@ -154,7 +130,7 @@ jobs:
         if: steps.cache-deps.outputs.cache-hit == 'true'
         run: echo "GH_CACHE_HIT=true" >> $Env:GITHUB_ENV
       - name: Install dependencies
-        run: ./scripts/install-ci-test-requirements.ps1
+        run: ./scripts/install-ci.ps1
       - name: Save cache
         uses: actions/cache/save@v4
         with:
@@ -164,6 +140,6 @@ jobs:
             ~\AppData\Roaming\LJ4W
             ~\AppData\Roaming\luarocks
           key: ${{ runner.os }}-tests
-
       - name: Run tests
-        run: ./scripts/tests.ps1
+        shell: bash
+        run: ./minitest.sh

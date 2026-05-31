@@ -3,8 +3,7 @@
 Briefly describe what this PR does
 
 > [!NOTE]
-> Please open your PR against `develop` branch.  It will be merged into develop and in ~5-7 days merged into main 
-> as part of `Weekly updates PR`.
+> Please open your PR against the `main` branch.
 
 ## Type of Change
 
@@ -17,13 +16,10 @@ Briefly describe what this PR does
 ## Checklist
 
 - [ ] I have read the [CONTRIBUTING.md](../CONTRIBUTING.md) guidelines
-- [ ] Code follows the project style (run `./scripts/lint.sh check-code`)
-- [ ] Tests pass locally (`make test`)
+- [ ] Code follows the project style (run `./scripts/lint.sh code`)
+- [ ] Tests pass locally (`./minitest.sh`)
 - [ ] Documentation is updated (if applicable)
-- [ ] Docs follow the style guide (run `./scripts/lint.sh check-docs`)
-
-> [!NOTE]
-> Neovim help files will be generated automatically from `.md` documentation, so no need to edit `.txt` files manually.
+- [ ] Docs follow the style guide (run `./scripts/lint.sh docs`)
 
 ### If this PR includes tree-sitter grammar changes:
 
