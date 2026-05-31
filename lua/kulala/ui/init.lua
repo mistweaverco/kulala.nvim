@@ -164,7 +164,15 @@ local function open_kulala_window(buf)
       style = "minimal",
     }
   else
-    win_config = { split = config.split_direction == "vertical" and "right" or "below", win = request_win }
+    -- INFO:
+    -- Legacy options support for split direction
+    -- as "vertical" and "horizontal" were previously usued to
+    -- indicate split direction.
+    -- We map them to the new "split" option values for backward compatibility
+    local split = config.split_direction == "vertical" and "right"
+      or config.split_direction == "horizontal" and "below"
+      or config.split_direction
+    win_config = { split = split, win = request_win }
   end
 
   win_config = vim.tbl_extend("force", win_config, win_opts)
@@ -371,6 +379,43 @@ M.show_report = function()
   show(REPORT.generate_requests_report(), "markdown", "report")
 end
 
+---Get the panes configured for the winbar and the index of the currently active pane based on the default view.
+---@return table panes A list of pane names, current_index number index of the currently active pane
+---@return number current_index of the currently active pane
+local get_winbar_panes_and_current_index = function()
+  local config = CONFIG.get()
+  local panes = config.ui.default_winbar_panes
+  local current_view = config.default_view
+  local current_index
+  for idx, pane in ipairs(panes) do
+    if pane == current_view then current_index = idx end
+  end
+
+  return panes, current_index
+end
+
+M.show_previous_tab = function()
+  local panes, current_index = get_winbar_panes_and_current_index()
+  local previous_index = current_index > 1 and (current_index - 1) or #panes
+  local previous_view = panes[previous_index]
+
+  if previous_view then
+    M["show_" .. previous_view]()
+    CONFIG.options.default_view = previous_view
+  end
+end
+
+M.show_next_tab = function()
+  local panes, current_index = get_winbar_panes_and_current_index()
+  local next_index = #panes > current_index and (current_index + 1) or 1
+  local next_view = panes[next_index]
+
+  if next_view then
+    M["show_" .. next_view]()
+    CONFIG.options.default_view = next_view
+  end
+end
+
 M.show_next = function()
   local responses = DB.global_update().responses
   local current_pos = get_current_response_pos()
@@ -499,7 +544,7 @@ M.open_default_view = function()
     if open_view then open_view(get_current_response()) end
   end, debug.traceback)
 
-  if not status then Logger.error("Errors displaying response: " .. (errors or ""), 1, { report = true }) end
+  if not status then Logger.error("Errors displaying response: " .. (errors or ""), 1) end
 end
 
 M.open = function()

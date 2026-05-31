@@ -50,6 +50,7 @@ M.register_parser = function()
   ensure_site_rtp()
   sync_queries()
   vim.treesitter.language.register(parser_name, filetypes)
+  vim.treesitter.language.register("markdown", "kulala_ui")
   local backend = require("kulala.backend")
   if not Api.has_triggered_ready() and backend.is_up_to_date() then Api.trigger("ready") end
   vim.api.nvim_create_autocmd("FileType", {
