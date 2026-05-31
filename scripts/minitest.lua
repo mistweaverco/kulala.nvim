@@ -6,9 +6,7 @@ local tests_dir = vim.fn.getcwd() .. "/tests"
 local function find_test_files()
   local files = vim.fn.globpath(tests_dir, "**/*_spec.lua", true, true)
   for _, file in ipairs(vim.fn.globpath(tests_dir, "**/test_*.lua", true, true)) do
-    if not file:find("/test_helper/") then
-      table.insert(files, file)
-    end
+    if not file:find("/test_helper/") then table.insert(files, file) end
   end
   return files
 end

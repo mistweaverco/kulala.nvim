@@ -7,10 +7,26 @@ PLUGINS=${PLUGINS:-"file://$CURRENT_DIR;$PLUGIN_NAME"}
 CURRENT_DATESTR=$(date +"%Y-%m-%d-%H-%M-%S")
 TMP_DIR=$(mktemp -t -d "tmp.nvim-isolation-${CURRENT_DATESTR}-XXXXXXXX")
 
-{
-  echo "#!/usr/bin/env bash"
-  echo "nvim -u \"$TMP_DIR/minit.lua\""
-} > "$TMP_DIR/minit.sh"
+ADDITIONAL_USER_SCRIPT="$1"
+
+if [[ -n "$ADDITIONAL_USER_SCRIPT" ]]; then
+  if [[ ! -f "$ADDITIONAL_USER_SCRIPT" ]]; then
+    echo "Error: Additional user script '$ADDITIONAL_USER_SCRIPT' not found."
+    exit 1
+  fi
+  cp "$ADDITIONAL_USER_SCRIPT" "$TMP_DIR/"
+  ADDITIONAL_USER_SCRIPT="$TMP_DIR/$(basename "$ADDITIONAL_USER_SCRIPT")"
+  {
+    echo "#!/usr/bin/env bash"
+    echo "nvim -u \"$TMP_DIR/minit.lua\"" "-c 'source $ADDITIONAL_USER_SCRIPT'"
+  } > "$TMP_DIR/minit.sh"
+else
+  {
+    echo "#!/usr/bin/env bash"
+    echo "nvim -u \"$TMP_DIR/minit.lua\""
+  } > "$TMP_DIR/minit.sh"
+fi
+
 
 chmod +x "$TMP_DIR/minit.sh"
 
