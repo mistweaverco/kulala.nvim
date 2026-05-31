@@ -16,5 +16,6 @@ echo "/opt/nvim-linux-x86_64/bin" >> "$GITHUB_PATH"
 sudo luarocks install luacheck
 
 sudo npm install -g @johnnymorganz/stylua-bin
+sudo npm install -g tree-sitter-cli
 
 sudo snap install vale
