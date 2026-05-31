@@ -4,8 +4,8 @@ set -eo pipefail
 
 sudo apt update && \
   sudo apt install -y \
-    curl
-    luacheck
-    neovim
-    stylua
+    curl \
+    luacheck \
+    neovim \
+    stylua \
     vale
