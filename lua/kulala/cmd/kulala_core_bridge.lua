@@ -584,6 +584,45 @@ local function buffer_payload(bufnr)
   return payload, cwd
 end
 
+---@param host string|nil When omitted, clears all cached GraphQL schemas.
+---@return boolean ok
+---@return string|nil err
+---@return table|nil result { cleared, hosts? }
+function M.clear_graphql_schema(host)
+  M.require_enabled()
+  local payload = { action = "clear_graphql_schema" }
+  if type(host) == "string" and host ~= "" then payload.host = host end
+  local job = M.invoke(payload, nil)
+  local res = decode_action_response(job.stdout)
+  if res and res.success == true then return true, nil, res end
+  if res and res.error then return false, res.error, nil end
+  if job.code ~= 0 then
+    return false,
+      vim.trim(job.stderr or "") ~= "" and vim.trim(job.stderr) or "kulala-core clear_graphql_schema failed",
+      nil
+  end
+  return false, "invalid kulala-core clear_graphql_schema output", nil
+end
+
+---Fetch and cache GraphQL introspection for the request at cursor.
+---@param bufnr? integer
+---@return table|nil result { ok, host?, fromCache?, error? }
+---@return string|nil err
+function M.graphql_introspect(bufnr)
+  M.require_enabled()
+  local payload, cwd = cursor_request_payload(bufnr)
+  if not payload then return nil, "invalid buffer" end
+  payload.action = "graphql_introspect"
+  local job = M.invoke(payload, cwd)
+  local res = decode_action_response(job.stdout)
+  if res and res.ok == true and type(res.host) == "string" then return res, nil end
+  if res and res.error then return res, res.error end
+  if job.code ~= 0 then
+    return nil, vim.trim(job.stderr or "") ~= "" and vim.trim(job.stderr) or "kulala-core graphql_introspect failed"
+  end
+  return nil, "invalid kulala-core graphql_introspect output"
+end
+
 ---@param on_done fun(res: table|nil, err: string|nil)
 local function invalid_buffer_async(on_done)
   vim.schedule(function()

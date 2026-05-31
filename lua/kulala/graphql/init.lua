@@ -1,47 +1,72 @@
 local DOCUMENT = require("kulala.parser.document")
-local Fs = require("kulala.utils.fs")
 local KULALA_CORE = require("kulala.cmd.kulala_core_bridge")
 local Logger = require("kulala.logger")
 local Parserutils = require("kulala.parser.utils")
-local Stringutils = require("kulala.utils.string")
 
 local M = {}
 
-M.download_schema = function()
+---@param url string
+---@return string|nil host Cache key matching kulala-core `graphqlSchemaHostFromUrl`.
+local function graphql_schema_host_from_url(url)
+  if type(url) ~= "string" or url == "" then return nil end
+  local authority = url:match("^https?://([^/%?#]+)")
+  if not authority then return nil end
+  local host, port = authority:match("^([^:]+):?(.*)$")
+  if not host or host == "" then return nil end
+  host = host:lower()
+  if port == nil or port == "" then return host end
+  local n = tonumber(port)
+  if n == 443 or n == 80 then return host end
+  return host .. ":" .. port
+end
+
+---@return string|nil host
+local function graphql_host_at_cursor()
   local requests = DOCUMENT.get_document()
-  if not requests or #requests == 0 then return Logger.error("No request found") end
-  local req = requests[1]
+  if not requests then return nil end
+  local line = Parserutils.get_current_line_number()
+  local at = DOCUMENT.get_request_at(requests, line)
+  local req = at and at[1]
+  if not req or (req.method or ""):upper() ~= "GRAPHQL" then return nil end
+  return graphql_schema_host_from_url(req.url)
+end
 
-  if not Parserutils.contains_header(req.headers, "x-request-type", "GraphQL") then
-    return Logger.warn("Not a GraphQL request")
+M.download_schema = function()
+  if not KULALA_CORE.enabled() then return Logger.error("kulala-core is required for GraphQL schema download") end
+
+  local result, err = KULALA_CORE.graphql_introspect()
+  if not result then return Logger.error(err or "Failed to download GraphQL schema") end
+  if result.ok ~= true then return Logger.error(result.error or err or "Failed to download GraphQL schema") end
+
+  local host = result.host or "unknown"
+  if result.fromCache then
+    Logger.info("GraphQL schema already cached for " .. host)
+  else
+    Logger.info("GraphQL schema downloaded and cached for " .. host)
+  end
+end
+
+---Clear cached GraphQL introspection schema(s).
+---@param host string|nil Host cache key; when omitted uses host at cursor, else clears all.
+M.clear_schema_cache = function(host)
+  if not KULALA_CORE.enabled() then return Logger.error("kulala-core is required to clear GraphQL schema cache") end
+
+  if not host or host == "" then host = graphql_host_at_cursor() end
+
+  local ok, err, res = KULALA_CORE.clear_graphql_schema(host)
+  if not ok then return Logger.error(err or "Failed to clear GraphQL schema cache") end
+
+  local cleared = (res and res.cleared) or 0
+  if cleared == 0 then
+    local label = host or "any host"
+    return Logger.info("No cached GraphQL schema for " .. label)
   end
 
-  local headers = vim.deepcopy(req.headers or {})
-  if not Parserutils.contains_header(headers, "content-type", "application/json") then
-    headers["Content-Type"] = "application/json"
+  if host then
+    Logger.info("Cleared GraphQL schema cache for " .. host)
+  else
+    Logger.info("Cleared all GraphQL schema caches (" .. tostring(cleared) .. ")")
   end
-
-  local filename = req.url:gsub("https?://", ""):match("([^/]+)")
-  filename = Fs.get_current_buffer_dir() .. "/" .. filename .. ".graphql-schema.json"
-
-  local fp = Fs.get_plugin_path { "graphql", "introspection.graphql" }
-  local gqlq = Stringutils.remove_extra_space(Stringutils.remove_newline(Fs.read_file(fp)))
-  local body = vim.json.encode { query = gqlq }
-
-  local _, core_cwd = KULALA_CORE.resolve_document_paths(0, req.file)
-
-  local result, err = KULALA_CORE.http_request({
-    url = req.url,
-    method = "POST",
-    headers = headers,
-    body = body,
-    timeoutSec = 120,
-  }, core_cwd)
-
-  if err then return Logger.error("Failed to download GraphQL schema: " .. err) end
-
-  Fs.write_file(filename, result.body or "")
-  Logger.info("Schema downloaded to " .. filename)
 end
 
 return M

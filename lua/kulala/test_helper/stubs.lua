@@ -13,6 +13,12 @@ local Notify = { messages = {} }
 local Fs = { paths_mappings = {} }
 local Dynamic_vars = {}
 
+---@diagnostic disable: duplicate-set-field
+
+-- Disable check for read-only fields as we
+-- need to override them for stubbing.
+-- luacheck: ignore 122
+
 setmetatable(Jobstart, {
   __call = function(_, ...)
     return Jobstart.run(...)
@@ -66,6 +72,7 @@ end
 
 Notify.stub = function()
   Notify._notify = Notify._notify or vim.notify
+  ---
   vim.notify = Notify
   return Notify
 end
@@ -129,7 +136,7 @@ Output.stub = function()
 end
 
 Output.run = function(f, ...)
-  _ = Output._spy and Output[f](...)
+  local _ = Output._spy and Output[f](...)
   for _, c in ipairs { ... } do
     _ = not c:match("^\n+$") and table.insert(Output.log, c)
   end
@@ -202,6 +209,7 @@ function Curl.request(job)
   local cmd = job.args.cmd
   local url = vim.split(cmd[#cmd], "?")[1]
   local mappings = vim.tbl_deep_extend("force", Curl.url_mappings["*"] or {}, Curl.url_mappings[url] or {})
+  local _
 
   if not mappings then return end
 
@@ -411,9 +419,9 @@ function KulalaCore.handle(system)
       if spec.cookie and spec.cookie ~= "" then table.insert(lines, "Cookie: " .. spec.cookie) end
       if spec.body and #spec.body > 0 then
         table.insert(lines, "")
-        for i, part in ipairs(spec.body) do
-          table.insert(lines, i < #spec.body and (part .. "&") or part)
-        end
+        vim.iter(vim.split(spec.body, "\n")):each(function(l)
+          table.insert(lines, l)
+        end)
       end
       system.code = 0
       system.stdout = vim.json.encode { ok = true, lines = lines }
@@ -545,7 +553,7 @@ function Jobstart.run(cmd, opts)
   local job_id = "job_id_" .. tostring(math.random(10000))
   Jobstart.jobs[job_id] = true
 
-  _ = Jobstart.opts.on_call and Jobstart.opts.on_call(Jobstart)
+  local _ = Jobstart.opts.on_call and Jobstart.opts.on_call(Jobstart)
 
   _ = opts.on_stdout and opts.on_stdout(_, h.to_table(Jobstart.opts.on_stdout), _)
   _ = opts.on_stderr and opts.on_stderr(_, h.to_table(Jobstart.opts.on_stderr))
@@ -594,6 +602,7 @@ function System.run(cmd, opts, on_exit)
 
   local job_id = "job_id_" .. tostring(math.random(10000))
   System.jobs[job_id] = true
+  local _
 
   _ = System.opts.on_call and System.opts.on_call(System)
 

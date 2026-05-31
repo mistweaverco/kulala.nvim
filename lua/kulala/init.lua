@@ -98,6 +98,10 @@ M.download_graphql_schema = function()
   Graphql.download_schema()
 end
 
+M.clear_graphql_schema_cache = function(host)
+  Graphql.clear_schema_cache(host)
+end
+
 M.scratchpad = function()
   UI:scratchpad()
 end

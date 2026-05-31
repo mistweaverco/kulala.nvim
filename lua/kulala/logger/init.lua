@@ -30,7 +30,9 @@ M.log = function(message, level, opts)
   if vim.fn.has("gui_running") == 0 then
     return vim.print(message)
   elseif vim.in_fast_event() then
-    notify = vim.schedule_wrap(vim.notify)
+    local vim_notify = vim.notify
+    ---@cast vim_notify fun(msg: string, level: integer, opts: table): integer
+    notify = vim.schedule_wrap(vim_notify)
   end
 
   notify(message, level, opts)
@@ -50,10 +52,8 @@ end
 
 ---@param message string
 ---@param lines_no number|nil -- no of error lines to show
----@param opts { report?: boolean }|nil -- `report` generates a bug report
-M.error = function(message, lines_no, opts)
+M.error = function(message, lines_no)
   if is_headless then return end
-  opts = opts or {}
 
   local debug = debug_level()
   if debug == 0 then return end
@@ -63,9 +63,6 @@ M.error = function(message, lines_no, opts)
 
   local short_message = table.concat(lines, "\n", 1, lines_no)
   M.log(short_message, log_levels.ERROR)
-
-  -- Disable until the lsp is fixed
-  -- if require("kulala.config").options.generate_bug_report or opts.report then generate_bug_report(message) end
 end
 
 M.debug = function(message, opts)
