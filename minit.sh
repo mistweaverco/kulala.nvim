@@ -1,35 +1,33 @@
 #!/usr/bin/env bash
 
-if [ -z "$PLUGINS" ] && [ -z "$USE_DIR" ]; then
-  echo "PLUGINS environment variable required. Example:"
-  echo "PLUGINS='https://github.com/mistweaverco/kulala.nvim;kulala' $0"
-  echo ".. separate multiple plugins with a space, and use the format 'repo_url;plugin_name' for each plugin."
-  exit 1;
-fi
+PLUGIN_NAME=${PLUGIN_NAME:-"kulala"}
+CURRENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PLUGINS=${PLUGINS:-"file://$CURRENT_DIR;$PLUGIN_NAME"}
 
-TMP_DIR="$USE_DIR"
-if [ -z "$TMP_DIR" ]; then
-  CURRENT_DATESTR=$(date +"%Y-%m-%d-%H-%M-%S")
-  TMP_DIR=$(mktemp -t -d "tmp.nvim-isolation-${CURRENT_DATESTR}-XXXXXXXX")
-fi
+CURRENT_DATESTR=$(date +"%Y-%m-%d-%H-%M-%S")
+TMP_DIR=$(mktemp -t -d "tmp.nvim-isolation-${CURRENT_DATESTR}-XXXXXXXX")
 
 {
   echo "#!/usr/bin/env bash"
-  echo
-  echo "export XDG_DATA_HOME=\"$TMP_DIR/data\""
-  echo "export XDG_STATE_HOME=\"$TMP_DIR/state\""
-  echo "export XDG_CACHE_HOME=\"$TMP_DIR/cache\""
-  echo "export XDG_CONFIG_HOME=\"$TMP_DIR/config\""
-  echo "export NVIM_REPRO_TMP_DIR=\"$TMP_DIR\""
-  echo "export PLUGINS=\"$PLUGINS\""
-  echo "nvim -u \"$TMP_DIR/minit.lua\" \"\$@\""
+  echo "nvim -u \"$TMP_DIR/minit.lua\""
 } > "$TMP_DIR/minit.sh"
 
 chmod +x "$TMP_DIR/minit.sh"
 
-cp minit.lua "$TMP_DIR/"
+{
+  echo "local vim = vim or {}"
+  echo "vim.env = vim.env or {}"
+  echo "vim.env.XDG_DATA_HOME = '$TMP_DIR/data'"
+  echo "vim.env.XDG_STATE_HOME = '$TMP_DIR/state'"
+  echo "vim.env.XDG_CACHE_HOME = '$TMP_DIR/cache'"
+  echo "vim.env.XDG_CONFIG_HOME = '$TMP_DIR/config'"
+  echo "vim.env.NVIM_REPRO_TMP_DIR = '$TMP_DIR'"
+  echo "vim.env.PLUGINS = '$PLUGINS'"
+  echo
+} > "$TMP_DIR/minit.lua"
+cat minit.lua >> "$TMP_DIR/minit.lua"
 
-"$TMP_DIR/minit.sh" "$@"
+"$TMP_DIR/minit.sh"
 
 if [ ! -t 0 ]; then
   echo "Non-interactive terminal detected. Cleaning up temporary directory..."
