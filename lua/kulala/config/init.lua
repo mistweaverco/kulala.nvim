@@ -33,9 +33,14 @@ local set_autocomands = function()
     group = vim.api.nvim_create_augroup("Kulala filetype setup", { clear = true }),
     pattern = M.options.lsp.filetypes,
     callback = function(ev)
-      if Parser.is_up_to_date() and Backend.is_up_to_date() and M.options.lsp.enable then
-        require("kulala.cmd.lsp").start(ev.buf, ev.match)
-      end
+      if not (Parser.is_up_to_date() and Backend.is_up_to_date() and M.options.lsp.enable) then return end
+
+      local ft = ev.match
+      local Fs = require("kulala.utils.fs")
+      local script_fts = { javascript = true, typescript = true, lua = true }
+      if script_fts[ft] and not Fs.is_http_script_file(ft, ev.buf) then return end
+
+      require("kulala.cmd.lsp").start(ev.buf, ft)
     end,
   })
 end
