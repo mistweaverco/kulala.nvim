@@ -102,8 +102,12 @@ local function code_actions_http()
   }
 end
 
+local IMPORT_FT = { json = true, yaml = true, bruno = true }
+
 local function code_actions()
-  return (state.current_ft == "http" or state.current_ft == "rest") and code_actions_http() or code_actions_fmt()
+  if state.current_ft == "http" or state.current_ft == "rest" then return code_actions_http() end
+  if IMPORT_FT[state.current_ft] then return code_actions_fmt() end
+  return {}
 end
 
 local function get_symbols()
@@ -175,52 +179,58 @@ local function folding()
   return ranges
 end
 
-local function initialize(params)
-  local ft = params.rootPath:sub(2)
-  local capabilities
+local function initialize(attached_buf)
+  return function(params)
+    local ft = params.rootPath:sub(2)
+    local capabilities
 
-  if Fs.is_http_script_file(ft) then
-    capabilities = {
-      completionProvider = { triggerCharacters = trigger_chars },
-      hoverProvider = true,
-    }
-  elseif ft ~= "http" and ft ~= "rest" then
-    capabilities = { codeActionProvider = true }
-  else
-    capabilities = {
-      codeActionProvider = true,
-      documentSymbolProvider = true,
-      hoverProvider = true,
-      completionProvider = { triggerCharacters = trigger_chars },
-      documentFormattingProvider = true,
-      documentRangeFormattingProvider = true,
-      foldingRangeProvider = {
-        dynamicRegistration = false,
-        lineFoldingOnly = true,
-      },
+    if Fs.is_http_script_file(ft, attached_buf) then
+      capabilities = {
+        completionProvider = { triggerCharacters = trigger_chars },
+        hoverProvider = true,
+      }
+    elseif IMPORT_FT[ft] then
+      capabilities = { codeActionProvider = true }
+    elseif ft == "http" or ft == "rest" then
+      capabilities = {
+        codeActionProvider = true,
+        documentSymbolProvider = true,
+        hoverProvider = true,
+        completionProvider = { triggerCharacters = trigger_chars },
+        documentFormattingProvider = true,
+        documentRangeFormattingProvider = true,
+        foldingRangeProvider = {
+          dynamicRegistration = false,
+          lineFoldingOnly = true,
+        },
+      }
+    else
+      capabilities = {}
+    end
+
+    return {
+      serverInfo = { name = "Kulala LSP", version = Globals.VERSION },
+      capabilities = capabilities,
     }
   end
-
-  return {
-    serverInfo = { name = "Kulala LSP", version = Globals.VERSION },
-    capabilities = capabilities,
-  }
 end
 
-local handlers = {
-  ["initialize"] = initialize,
-  ["textDocument/completion"] = function()
-    -- handled asynchronously in srv.request
-    return { isIncomplete = false, items = {} }
-  end,
-  ["textDocument/documentSymbol"] = get_symbols,
-  ["textDocument/hover"] = get_hover,
-  ["textDocument/codeAction"] = code_actions,
-  ["textDocument/formatting"] = format,
-  ["textDocument/rangeFormatting"] = format,
-  ["textDocument/foldingRange"] = folding,
-  ["shutdown"] = function() end,
-}
+local function handlers_for(attached_buf)
+  return {
+    ["initialize"] = initialize(attached_buf),
+    ["textDocument/completion"] = function()
+      -- handled asynchronously in srv.request
+      return { isIncomplete = false, items = {} }
+    end,
+    ["textDocument/documentSymbol"] = get_symbols,
+    ["textDocument/hover"] = get_hover,
+    ["textDocument/codeAction"] = code_actions,
+    ["textDocument/formatting"] = format,
+    ["textDocument/rangeFormatting"] = format,
+    ["textDocument/foldingRange"] = folding,
+    ["shutdown"] = function() end,
+  }
+end
 
 local function set_current_buf(params)
   if not (params and params.textDocument and params.textDocument.uri) then return end
@@ -235,7 +245,9 @@ local function set_current_buf(params)
   state.current_line = vim.api.nvim_win_get_cursor(win)[1]
 end
 
-local function new_server()
+local function new_server(attached_buf)
+  local handlers = handlers_for(attached_buf)
+
   local function server(dispatchers)
     local closing = false
     local srv = {}
@@ -312,7 +324,7 @@ M.start = function(buf, ft)
 end
 
 function M.start_lsp(buf, ft)
-  local server = new_server()
+  local server = new_server(buf)
 
   local dispatchers = {
     on_exit = function(code, signal)
