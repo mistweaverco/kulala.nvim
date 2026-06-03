@@ -250,9 +250,26 @@ local function new_server(attached_buf)
 
   local function server(dispatchers)
     local closing = false
+    local request_seq = 0
     local srv = {}
 
-    function srv.request(method, params, handler)
+    function srv.request(method, params, handler, notify_reply_callback)
+      request_seq = request_seq + 1
+      local request_id = request_seq
+
+      -- documentSymbol/hover/completion reply asynchronously (via kulala-core), after this
+      -- function returns. Request-tracking consumers (e.g. snacks/aerial symbol pickers)
+      -- need a request_id to correlate that late reply with the pending request, so
+      -- allocate one and signal completion through notify_reply_callback.
+      local responded = false
+      local orig_handler = handler
+      handler = function(err, result)
+        if responded then return end -- the error path below may also respond
+        responded = true
+        orig_handler(err, result)
+        if notify_reply_callback then notify_reply_callback(request_id) end
+      end
+
       local status, error = xpcall(function()
         set_current_buf(params)
         if method == "textDocument/completion" then
@@ -296,9 +313,10 @@ local function new_server(attached_buf)
 
       if not status then
         require("kulala.logger").error("Errors in Kulala LSP:\n" .. (error or ""), 2, { report = true })
+        handler(error, nil) -- complete the request so the consumer isn't left waiting
       end
 
-      return true
+      return true, request_id
     end
 
     function srv.notify(method, _)
