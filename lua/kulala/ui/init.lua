@@ -4,7 +4,6 @@ local CONFIG = require("kulala.config")
 local DB = require("kulala.db")
 local DOC_PARSER = require("kulala.parser.document")
 local Ext_processing = require("kulala.external_processing")
-local FORMATTER = require("kulala.formatter")
 local FS = require("kulala.utils.fs")
 local Float = require("kulala.ui.float")
 local GLOBALS = require("kulala.globals")
@@ -261,22 +260,15 @@ local function content_config_from_kulala_core(r)
   return nil
 end
 
----Format body content based on kulala-core hints or MIME type, preferring jq filter results when applicable.
+---Resolve body text and syntax filetype (formatting is done in kulala-core).
 ---@param view? string current view, used to determine if jq filter is applied
----@return string formatted body,
+---@return string body,
 ---@return string filetype for syntax highlighting
 local function format_body(view)
   local r = get_current_response()
-  local headers = r.headers
-  local body = r.body
-
-  local contenttype = content_config_from_kulala_core(r) or INT_PROCESSING.get_config_contenttype(headers, view)
-
-  if body and contenttype.formatter then
-    body = FORMATTER.format(contenttype.ft, contenttype.formatter, body, { verbose = false })
-  end
-
-  return body, contenttype.ft
+  local contenttype = content_config_from_kulala_core(r)
+    or INT_PROCESSING.get_config_contenttype(r.headers, view)
+  return r.body, contenttype.ft
 end
 
 local function update_filter()

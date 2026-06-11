@@ -441,8 +441,19 @@ end
 ---@param cwd string|nil
 ---@return table|nil result { status, headers, body, url }
 ---@return string|nil err
+local function response_body_text(body)
+  if type(body) == "table" and body.type == "json" then
+    if type(body.formatted) == "string" then return body.formatted end
+    return vim.json.encode(body.content) or ""
+  end
+  if type(body) == "table" and body.type == "text" then return body.content or "" end
+  if type(body) == "string" then return body end
+  return ""
+end
+
 function M.http_request(opts, cwd)
   M.require_enabled()
+  local response_format = CONFIG.get().response_format or {}
   local payload = vim.tbl_extend("force", {
     action = "http_request",
     url = opts.url,
@@ -452,6 +463,11 @@ function M.http_request(opts, cwd)
     insecure = opts.insecure,
     timeoutSec = opts.timeoutSec,
     connectionTimeoutSec = opts.connectionTimeoutSec,
+    responseFormat = {
+      indent = response_format.indent,
+      expand_tabs = response_format.expand_tabs,
+      sort_keys = response_format.sort_keys,
+    },
   }, {})
   local job = M.invoke(payload, cwd)
   local res = decode_action_response(job.stdout)
@@ -459,7 +475,7 @@ function M.http_request(opts, cwd)
     return {
       status = res.status,
       headers = res.headers or {},
-      body = res.body or "",
+      body = response_body_text(res.body),
       url = res.url or opts.url,
     },
       nil

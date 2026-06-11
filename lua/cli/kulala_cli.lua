@@ -13,7 +13,6 @@ local Cmd
 local Db
 local Parser
 local Export
-local Fmt
 local Colors
 local Ui
 local UI_utils
@@ -30,7 +29,6 @@ local setup = function()
   Db = require("kulala.db")
   Parser = require("kulala.parser.document")
   Export = require("kulala.cmd.export")
-  Fmt = require("kulala.formatter.fmt")
   Colors = require("cli.colors")
   Ui = require("kulala.ui")
   UI_utils = require("kulala.ui.utils")
@@ -100,20 +98,13 @@ local function get_args()
 
   parser:require_command(false)
   parser:command("export"):summary("Export HTTP file or folder to Postman collection")
-  parser:command("import"):summary("Import HTTP files from Postman/OpenAPI/Bruno")
-
-  parser:option("-f --from", "Import from"):choices {
-    "postman",
-    "openapi",
-    "bruno",
-  }
 
   args = parser:parse(_G.arg)
 
   args.name = args.name or {}
   args.line = args.line or {}
 
-  if vim.tbl_contains({ "import", "export" }, args.input[1]) then args.command = table.remove(args.input, 1) end
+  if args.input[1] == "export" then args.command = table.remove(args.input, 1) end
 
   _G.arg = args
 end
@@ -251,7 +242,6 @@ local function run_command()
   if #args.input == 0 then return Logger.error("No input file specified") end
 
   if args.command == "export" then Export.export_requests(args.input[1]) end
-  if args.command == "import" then Fmt.convert(args.from, args.input[1]) end
 
   return true
 end

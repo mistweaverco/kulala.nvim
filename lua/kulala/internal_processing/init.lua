@@ -4,7 +4,6 @@ local FS = require("kulala.utils.fs")
 local GLOBALS = require("kulala.globals")
 local Json = require("kulala.utils.json")
 local Logger = require("kulala.logger")
-local Shell = require("kulala.cmd.shell_utils")
 
 local M = {}
 
@@ -150,20 +149,6 @@ M.env_header_key = function(cmd)
   DB.update().env[variable_name] = value
 end
 
-local function format_json_response(fp)
-  local formatter = CONFIG.get().contenttypes["application/json"].formatter
-  if not formatter then return end
-
-  local cmd = { "sh", "-c", table.concat(formatter, " ") .. " '" .. GLOBALS.BODY_FILE .. "' " .. " > '" .. fp .. "'" }
-
-  Shell.run(cmd, {
-    err_msg = "Failed to format json while redirecting to " .. fp,
-    abort_on_stderr = true,
-  }, function()
-    Logger.info("Formatted JSON response in: " .. fp)
-  end)
-end
-
 M.redirect_response_body_to_file = function(data)
   if not FS.file_exists(GLOBALS.BODY_FILE) then return end
 
@@ -176,7 +161,6 @@ M.redirect_response_body_to_file = function(data)
       FS.copy_file(GLOBALS.BODY_FILE, fp)
     end
 
-    if vim.fn.fnamemodify(fp, ":e") == "json" and CONFIG.get().format_json_on_redirect then format_json_response(fp) end
   end
 end
 

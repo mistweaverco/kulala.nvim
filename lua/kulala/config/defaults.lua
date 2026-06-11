@@ -30,39 +30,40 @@ local M = {
   -- enable reading vscode rest client environment variables
   vscode_rest_client_environmentvars = false,
 
-  -- default formatters/pathresolver for different content types
+  -- Response body pretty-printing is handled by kulala-core (see `response_format`).
+  response_format = {
+    indent = 2,
+    expand_tabs = true,
+    sort_keys = false,
+  },
+
+  -- Filetypes and path resolvers for response syntax highlighting / JSONPath.
   contenttypes = {
     ["application/json"] = {
       ft = "json",
-      formatter = vim.fn.executable("jq") == 1 and { "jq", "." },
       pathresolver = function(...)
         return require("kulala.parser.jsonpath").parse(...)
       end,
     },
     ["application/graphql"] = {
       ft = "graphql",
-      formatter = vim.fn.executable("prettier") == 1 and { "prettier", "--stdin-filepath", "file.graphql" },
       pathresolver = nil,
     },
     ["application/javascript"] = {
       ft = "javascript",
-      formatter = vim.fn.executable("prettier") == 1 and { "prettier", "--stdin-filepath", "file.js" },
       pathresolver = nil,
     },
     ["application/lua"] = {
       ft = "lua",
-      formatter = vim.fn.executable("stylua") == 1 and { "stylua", "-" },
       pathresolver = nil,
     },
     ["application/graphql-response+json"] = "application/json",
     ["application/xml"] = {
       ft = "xml",
-      formatter = vim.fn.executable("xmllint") == 1 and { "xmllint", "--format", "-" },
       pathresolver = vim.fn.executable("xmllint") == 1 and { "xmllint", "--xpath", "{{path}}", "-" },
     },
     ["text/html"] = {
       ft = "html",
-      formatter = vim.fn.executable("prettier") == 1 and { "prettier", "--stdin-filepath", "file.html" },
       pathresolver = nil,
     },
   },
@@ -156,7 +157,7 @@ local M = {
       "@MY_TOKEN_NAME=my_token_value",
       "",
       "# @name scratchpad",
-      "POST https://httpbin.org/post HTTP/1.1",
+      "POST https://echo.kulala.app/post HTTP/1.1",
       "accept: application/json",
       "content-type: application/json",
       "",
@@ -202,9 +203,6 @@ local M = {
     filetypes = {
       "http",
       "rest",
-      "json",
-      "yaml",
-      "bruno",
       "javascript",
       "typescript",
       "lua",
@@ -219,19 +217,6 @@ local M = {
     --enable/disable/customize  LSP keymaps
     ---@type boolean|table
     keymaps = false, -- disabled by default, as Kulala relies on default Neovim LSP keymaps
-
-    -- enable/disable/customize HTTP formatter
-    formatter = {
-      split_params = 4, -- split query/form parameters onto multiple lines if number of params exceeds this value
-      sort = { -- enable/disable alphabetical sorting in request body
-        metadata = true,
-        variables = true,
-        commands = false,
-        json = true,
-      },
-      quote_json_variables = true, -- add quotes around {{variable}} in JSON bodies
-      indent = 2, -- base indentation for scripts
-    },
 
     on_attach = nil, -- function called when Kulala LSP attaches to the buffer
   },

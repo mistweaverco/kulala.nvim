@@ -26,7 +26,7 @@ To overwrite the file, use the `>>!` operator.
 title="do-not-overwrite.http"
 
 >http
-    POST https://httpbin.org/post HTTP/1.1
+    POST https://echo.kulala.app/post HTTP/1.1
     Accept: application/json
     Content-Type: application/json
     
@@ -45,7 +45,7 @@ To overwrite the file, use the `>>!` operator.
 title="overwrite.http"
 
 >http
-    POST https://httpbin.org/post HTTP/1.1
+    POST https://echo.kulala.app/post HTTP/1.1
     Accept: application/json
     Content-Type: application/json
     

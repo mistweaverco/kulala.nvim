@@ -186,10 +186,16 @@ local function build_kulala_core_run_payload(parsed_request, run_opts)
     }
   end
 
+  local response_format = CONFIG.get().response_format or {}
   local run_payload = {
     content = content,
     env = ENV_PARSER.get_current_env() or "default",
     limit = limit,
+    responseFormat = {
+      indent = response_format.indent,
+      expand_tabs = response_format.expand_tabs,
+      sort_keys = response_format.sort_keys,
+    },
   }
   local filepath = run_opts.filepath or http_filepath
   if filepath then run_payload.filepath = filepath end
@@ -609,10 +615,12 @@ end
 
 local function kulala_core_body_text(body)
   if type(body) == "table" and body.type == "json" then
+    if type(body.formatted) == "string" then return body.formatted end
     local encoded = vim.json.encode(body.content)
     return encoded or vim.inspect(body.content)
   end
   if type(body) == "table" and body.type == "text" then return body.content or "" end
+  if type(body) == "string" then return body end
   return ""
 end
 

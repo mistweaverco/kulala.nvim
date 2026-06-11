@@ -9,7 +9,6 @@ M.defaults = defaults
 
 M.default_contenttype = {
   ft = "text",
-  formatter = nil,
   pathresolver = nil,
 }
 

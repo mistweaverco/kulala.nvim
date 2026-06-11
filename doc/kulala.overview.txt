@@ -136,7 +136,7 @@ title="./pre-request-example.http"
       request.variables.set('PASSWORD', crypto.randomBytes(16).toString('hex'));
     %}
     < ./pre-request.js
-    POST https://httpbin.org/post HTTP/1.1
+    POST https://echo.kulala.app/post HTTP/1.1
     Accept: application/json
     Content-Type: application/json
     Authorization: Bearer Foo:bar
@@ -159,7 +159,7 @@ title="./pre-request-example.http"
     ###
     
     ### REQUEST_TWO
-    POST https://httpbin.org/post HTTP/1.1
+    POST https://echo.kulala.app/post HTTP/1.1
     accept: application/json
     content-type: application/json
     
@@ -200,7 +200,7 @@ title="./post-request-example.http"
 
 >http
     ### REQUEST_ONE_
-    POST https://httpbin.org/post HTTP/1.1
+    POST https://echo.kulala.app/post HTTP/1.1
     Accept: application/json
     Content-Type: application/json
     Authorization: Bearer Foo:bar
@@ -225,7 +225,7 @@ title="./post-request-example.http"
     ###
     
     ### REQUEST_TWO_2_
-    POST https://httpbin.org/post HTTP/1.1
+    POST https://echo.kulala.app/post HTTP/1.1
     Accept: application/json
     Content-Type: application/json
     
@@ -238,7 +238,7 @@ title="./post-request-example.http"
     ###
     
     ### REQUEST_THREE
-    POST https://httpbin.org/post HTTP/1.1
+    POST https://echo.kulala.app/post HTTP/1.1
     Accept: application/json
     Content-Type: application/json
     
@@ -271,7 +271,7 @@ title="./pre-request-example.http"
       console.log(PASSWORD)
     %}
     < ./pre-request.js
-    POST https://httpbin.org/post HTTP/1.1
+    POST https://echo.kulala.app/post HTTP/1.1
     Accept: application/json
     Content-Type: application/json
     Authorization: Bearer Foo:bar
