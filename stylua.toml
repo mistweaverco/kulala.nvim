@@ -6,6 +6,8 @@ indent_width = 2
 quote_style = "AutoPreferDouble"
 call_parentheses = "NoSingleTable"
 collapse_simple_statement = "ConditionalOnly"
+space_after_function_names = "Never"
+block_newline_gaps = "Never"
 
 [sort_requires]
 enabled = true

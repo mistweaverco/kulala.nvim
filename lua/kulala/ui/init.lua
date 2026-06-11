@@ -8,7 +8,6 @@ local FS = require("kulala.utils.fs")
 local Float = require("kulala.ui.float")
 local GLOBALS = require("kulala.globals")
 local INLAY = require("kulala.inlay")
-local INT_PROCESSING = require("kulala.internal_processing")
 local KEYMAPS = require("kulala.config.keymaps")
 local Logger = require("kulala.logger")
 local PARSER = require("kulala.parser.request")
@@ -244,30 +243,26 @@ local function show(contents, filetype, mode)
   show_progress()
 end
 
----Prefer kulala-core `body.type` for JSON; otherwise resolve via `mediaType` or response headers.
+---Prefer kulala-core `body.type` for JSON; otherwise resolve via `mediaType` or
+---response headers.
 ---@param r Response
----@return table|nil config or nil to fall back to headers
-local function content_config_from_kulala_core(r)
-  if not r._kulala_core or not r._kulala_body_type then return nil end
-  if r._kulala_body_type == "json" then
-    local json = CONFIG.get().contenttypes["application/json"]
-    if type(json) == "string" then return CONFIG.get().contenttypes[json] end
-    return json
-  end
+---@return string ft type to determine syntax highlighting
+local function get_ft_from_kulala_core(r)
+  if not r._kulala_core or not r._kulala_body_type then return "text" end
+  if r._kulala_body_type == "json" then return "json" end
   if type(r._kulala_media_type) == "string" and r._kulala_media_type ~= "" then
-    return INT_PROCESSING.get_config_contenttype { ["content-type"] = r._kulala_media_type }
+    if r._kulala_media_type:find("json") then return "json" end
+    if r._kulala_media_type:find("xml") then return "xml" end
   end
-  return nil
+  return "text"
 end
 
 ---Resolve body text and syntax filetype (formatting is done in kulala-core).
----@param view? string current view, used to determine if jq filter is applied
----@return string body,
+---@return string body text to display
 ---@return string filetype for syntax highlighting
-local function format_body(view)
+local function format_body()
   local r = get_current_response()
-  local contenttype = content_config_from_kulala_core(r) or INT_PROCESSING.get_config_contenttype(r.headers, view)
-  return r.body, contenttype.ft
+  return r.body, get_ft_from_kulala_core(r)
 end
 
 local function update_filter()

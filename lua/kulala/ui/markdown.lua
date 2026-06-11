@@ -1,6 +1,5 @@
 ---Shared markdown formatting for Kulala UI views.
-local CONFIG = require("kulala.config")
-local INT_PROCESSING = require("kulala.internal_processing")
+local Config = require("kulala.config")
 local Json = require("kulala.utils.json")
 
 local M = {}
@@ -189,60 +188,40 @@ end
 function M.pretty_maybe_json(s)
   if not s or s == "" then return s end
   local t = Json.parse(s, { verbose = false })
-  if t ~= nil then return vim.json.encode(t, { indent = 2 }) or s end
+  local response_format = Config.get().response_format
+  local config_indent = response_format.indent
+  local config_sort_keys = response_format.sort_keys
+  local expand_tabs = response_format.expand_tabs
+  local indent_chars = expand_tabs and "\t" or string.rep(" ", math.max(1, config_indent))
+  if t ~= nil then return vim.json.encode(t, { indent = indent_chars, sort_keys = config_sort_keys }) end
   return s
 end
 
 ---@param lang string
 ---@param body string
+---@param prettify boolean|nil whether to attempt pretty-printing (e.g. for JSON)
 ---@return string
-function M.fenced(lang, body)
+function M.fenced(lang, body, prettify)
   body = body or ""
   if body == "" then return "_Empty_\n" end
   local fence = "```"
   while body:find(fence, 1, true) do
     fence = fence .. "`"
   end
+  if prettify and lang == "json" then body = M.pretty_maybe_json(body) end
   return fence .. lang .. "\n" .. body .. "\n" .. fence .. "\n"
 end
 
 ---Resolve content-type config from kulala-core hints and response headers (not the verbose-view override).
----@param headers string|table|nil
 ---@param media_type string|nil kulala-core `body.mediaType`
----@param kulala_body_type string|nil `"json"` | `"text"`
----@return table
-function M.body_contenttype_config(headers, media_type, kulala_body_type)
-  if kulala_body_type == "json" then
-    local json = CONFIG.get().contenttypes["application/json"]
-    if type(json) == "string" then json = CONFIG.get().contenttypes[json] end
-    return json or CONFIG.default_contenttype
-  end
+---@param kulala_body_type string|nil `"json"` | `"text"` | `"xml"`
+---@return string content type for fence language (e.g. "json", "text")
+function M.get_body_ft(media_type, kulala_body_type)
+  if kulala_body_type == "json" then return "json" end
   if type(media_type) == "string" and media_type ~= "" then
-    return INT_PROCESSING.get_config_contenttype { ["content-type"] = media_type }
+    if media_type:find("xml", 1, true) then return "xml" end
   end
-  return INT_PROCESSING.get_config_contenttype(headers)
-end
-
----@param body string
----@param config table|nil contenttypes entry (`ft`, …)
----@return string body
----@return string ft
-function M.body_fence_lang_for_config(body, config)
-  local trimmed = M.trim(body)
-  if trimmed == "" then return "", "text" end
-  local ft = config and config.ft or "text"
-  if ft == "json" then return M.pretty_maybe_json(trimmed), "json" end
-  if ft == "text" and Json.parse(trimmed, { verbose = false }) ~= nil then
-    return M.pretty_maybe_json(trimmed), "json"
-  end
-  return body, ft
-end
-
----@param body string
----@return string body
----@return string ft
-function M.body_fence_lang(body)
-  return M.body_fence_lang_for_config(body, nil)
+  return "text"
 end
 
 ---Markdown fence language for a stored response body (uses Content-Type / kulala-core hints).
@@ -250,10 +229,10 @@ end
 ---@param body? string
 ---@return string body
 ---@return string ft
-function M.response_body_fence_lang(r, body)
+function M.get_body_and_guess_ft(r, body)
   body = body or r.body or ""
-  local config = M.body_contenttype_config(M.response_headers_source(r), r._kulala_media_type, r._kulala_body_type)
-  return M.body_fence_lang_for_config(body, config)
+  local content_type = M.get_body_ft(r._kulala_media_type, r._kulala_body_type)
+  return body, content_type
 end
 
 ---@param parts string[]
@@ -429,9 +408,9 @@ function M.format_body_view(body, r)
   if body:match("^No response body %(check Verbose output%)") then return "### Response body\n_No response body_\n" end
   local content, lang
   if r then
-    content, lang = M.response_body_fence_lang(r, body)
+    content, lang = M.get_body_and_guess_ft(r, body)
   else
-    content = M.body_fence_lang(body)
+    content = body
   end
   return ("### Response body\n%s"):format(M.fenced(lang, content))
 end

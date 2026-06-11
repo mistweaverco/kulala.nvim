@@ -1,3 +1,6 @@
+require("kulala.types")
+
+---@type KulalaDefaultConfig
 local M = {
   kulala_core = {
     -- Optional path to the kulala-core executable
@@ -35,37 +38,6 @@ local M = {
     indent = 2,
     expand_tabs = true,
     sort_keys = false,
-  },
-
-  -- Filetypes and path resolvers for response syntax highlighting / JSONPath.
-  contenttypes = {
-    ["application/json"] = {
-      ft = "json",
-      pathresolver = function(...)
-        return require("kulala.parser.jsonpath").parse(...)
-      end,
-    },
-    ["application/graphql"] = {
-      ft = "graphql",
-      pathresolver = nil,
-    },
-    ["application/javascript"] = {
-      ft = "javascript",
-      pathresolver = nil,
-    },
-    ["application/lua"] = {
-      ft = "lua",
-      pathresolver = nil,
-    },
-    ["application/graphql-response+json"] = "application/json",
-    ["application/xml"] = {
-      ft = "xml",
-      pathresolver = vim.fn.executable("xmllint") == 1 and { "xmllint", "--xpath", "{{path}}", "-" },
-    },
-    ["text/html"] = {
-      ft = "html",
-      pathresolver = nil,
-    },
   },
 
   ui = {
