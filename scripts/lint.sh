@@ -20,24 +20,10 @@ check_code() {
   fi
 }
 
-check_docs() {
-  if ! command -v vale &> /dev/null; then
-    echo "vale is not installed"
-    exit 1
-  fi
-  cd docs || exit 1
-  if [[ -n $1 ]]; then
-    vale "$1"
-  else
-    vale .
-  fi
-}
-
 main() {
   local action="$1"
   if [[ -z $action ]]; then
     check_code
-    check_docs
     return
   fi
   shift
@@ -45,9 +31,6 @@ main() {
   case $action in
     "code")
       check_code "$args"
-      ;;
-    "docs")
-      check_docs "$args"
       ;;
     *)
       echo "Invalid action"

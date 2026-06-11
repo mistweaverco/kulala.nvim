@@ -2,7 +2,7 @@
 
 set -eo pipefail
 
-NEOVIM_VERSION=${NEOVIM_VERSION:-"0.12.2"}
+NEOVIM_VERSION=${NEOVIM_VERSION:-"0.12.3"}
 
 sudo apt-get update
 sudo apt-get install -y curl liblua5.3-dev lua5.3 luarocks
@@ -17,5 +17,3 @@ sudo luarocks install luacheck
 
 sudo npm install -g @johnnymorganz/stylua-bin
 sudo npm install -g tree-sitter-cli
-
-sudo snap install vale

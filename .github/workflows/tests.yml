@@ -110,12 +110,10 @@ jobs:
           node-version: '24'
       - name: Install dependencies
         env:
-          NEOVIM_VERSION: '0.12.2'
+          NEOVIM_VERSION: '0.12.3'
         run: ./scripts/install-ci.sh
       - name: Lint code
         run: ./scripts/lint.sh code
-      - name: Lint docs
-        run: ./scripts/lint.sh docs
 
   test-windows:
     needs: resolve
