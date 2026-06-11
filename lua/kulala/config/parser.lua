@@ -11,7 +11,7 @@ local target_parser_ext = vim.fn.has("win32") == 1 and "dll" or vim.fn.has("macu
 local parser_target_path = vim.fs.joinpath(parsers_dir, parser_name .. "." .. target_parser_ext)
 local query_target_dir = vim.fs.joinpath(queries_dir, parser_name)
 local site_dir = vim.fs.joinpath(vim.fn.stdpath("data"), "site")
-local parser_source_path = Fs.get_plugin_path { "..", "tree-sitter" }
+local parser_source_path = Fs.get_plugin_path { "..", "..", "tree-sitter-kulala-http" }
 local parser_registered = false
 
 local function get_parser_ver()
@@ -45,7 +45,7 @@ M.register_parser = function()
   if parser_registered then return end
   if not load_parser() then return end
   parser_registered = true
-  -- queries/kulala_http/*.scm live under lua/tree-sitter/queries/
+  -- kulala_http/*.scm live under tree-sitter-kulala-http/queries/
   vim.opt.rtp:prepend(parser_source_path)
   ensure_site_rtp()
   sync_queries()
