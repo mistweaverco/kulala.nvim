@@ -266,8 +266,7 @@ end
 ---@return string filetype for syntax highlighting
 local function format_body(view)
   local r = get_current_response()
-  local contenttype = content_config_from_kulala_core(r)
-    or INT_PROCESSING.get_config_contenttype(r.headers, view)
+  local contenttype = content_config_from_kulala_core(r) or INT_PROCESSING.get_config_contenttype(r.headers, view)
   return r.body, contenttype.ft
 end
 

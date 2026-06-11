@@ -160,7 +160,6 @@ M.redirect_response_body_to_file = function(data)
     else
       FS.copy_file(GLOBALS.BODY_FILE, fp)
     end
-
   end
 end
 
