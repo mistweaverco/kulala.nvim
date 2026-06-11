@@ -58,10 +58,6 @@ Scratchpad: for making requests
 
 100% Compatibility with IntelliJ HTTP Client
 
-# •
-
-Together with our standalone products [Kulala Language Server](https://github.com/mistweaverco/kulala-ls) and [Kulala Formatter](https://github.com/mistweaverco/kulala-fmt), we aim to provide the best REST Client experience on the web without leaving your favourite editor!
-
 # ••
 
 Kulala team loves feature requests and feedback, so if you have any ideas or suggestions, please let us know!  
@@ -343,12 +339,5 @@ check out [curl.nvim](https://github.com/oysandvik94/curl.nvim)
 Different to this project,
 but also a great option if you just want to make quick
 HTTP requests from within Neovim.
-
-### echo.kulala.app
-
-For providing a great service for testing HTTP requests and
-making it in all the kulala examples.
-
-Thanks for making it easy to test and develop this plugin.
 
 [restnvim-unarchived-post]: https://github.com/rest-nvim/rest.nvim/issues/398#issue-2442747909
