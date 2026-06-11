@@ -188,12 +188,8 @@ end
 ---@return string
 function M.pretty_maybe_json(s)
   if not s or s == "" then return s end
-  if vim.fn.executable("jq") == 1 then
-    local job = vim.system({ "jq", "-M", "." }, { stdin = s, text = true }):wait()
-    if job.code == 0 and job.stdout and M.trim(job.stdout) ~= "" then return M.trim(job.stdout) end
-  end
   local t = Json.parse(s, { verbose = false })
-  if t ~= nil then return vim.inspect(t) end
+  if t ~= nil then return vim.json.encode(t, { indent = 2 }) or s end
   return s
 end
 

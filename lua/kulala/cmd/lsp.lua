@@ -2,8 +2,6 @@ local Bridge = require("kulala.cmd.kulala_core_bridge")
 local Config = require("kulala.config")
 local Diagnostics = require("kulala.cmd.diagnostics")
 local Export = require("kulala.cmd.export")
-local Fmt = require("kulala.formatter.fmt")
-local Formatter = require("kulala.formatter.formatter")
 local Fs = require("kulala.utils.fs")
 local Globals = require("kulala.globals")
 local Kulala = require("kulala")
@@ -19,10 +17,6 @@ local state = {
   current_line = 0, -- 1-based line number
   current_ft = nil,
 }
-
-local function code_actions_fmt()
-  return { { group = "Formatting", title = "Convert to HTTP", command = "convert_http", fn = Fmt.convert } }
-end
 
 local function code_actions_http()
   return {
@@ -102,11 +96,8 @@ local function code_actions_http()
   }
 end
 
-local IMPORT_FT = { json = true, yaml = true, bruno = true }
-
 local function code_actions()
   if state.current_ft == "http" or state.current_ft == "rest" then return code_actions_http() end
-  if IMPORT_FT[state.current_ft] then return code_actions_fmt() end
   return {}
 end
 
@@ -118,13 +109,6 @@ end
 local function get_hover(_)
   -- handled asynchronously in srv.request
   return { contents = { language = "plaintext", value = "" } }
-end
-
-local function format(params)
-  if not Config.options.lsp.formatter then return end
-
-  local formatted_lines = Formatter.format(state.current_buffer, params)
-  return formatted_lines or {}
 end
 
 M.foldtext = function()
@@ -189,16 +173,12 @@ local function initialize(attached_buf)
         completionProvider = { triggerCharacters = trigger_chars },
         hoverProvider = true,
       }
-    elseif IMPORT_FT[ft] then
-      capabilities = { codeActionProvider = true }
     elseif ft == "http" or ft == "rest" then
       capabilities = {
         codeActionProvider = true,
         documentSymbolProvider = true,
         hoverProvider = true,
         completionProvider = { triggerCharacters = trigger_chars },
-        documentFormattingProvider = true,
-        documentRangeFormattingProvider = true,
         foldingRangeProvider = {
           dynamicRegistration = false,
           lineFoldingOnly = true,
@@ -225,8 +205,6 @@ local function handlers_for(attached_buf)
     ["textDocument/documentSymbol"] = get_symbols,
     ["textDocument/hover"] = get_hover,
     ["textDocument/codeAction"] = code_actions,
-    ["textDocument/formatting"] = format,
-    ["textDocument/rangeFormatting"] = format,
     ["textDocument/foldingRange"] = folding,
     ["shutdown"] = function() end,
   }
@@ -350,7 +328,7 @@ function M.start_lsp(buf, ft)
     end,
   }
 
-  local actions = vim.list_extend(code_actions_http(), code_actions_fmt())
+  local actions = code_actions_http()
 
   local client_id = vim.lsp.start({
     name = "kulala",

@@ -37,19 +37,8 @@ M.check = function(health)
     )
   end
 
-  Health.start("Formatters:")
-
-  for format_type, cfg in pairs(config.contenttypes) do
-    local formatter = type(cfg) == "string" and config.contenttypes[cfg] or cfg
-    formatter = formatter and formatter.formatter
-
-    if not formatter then
-      Health.warn(("{%s} formatter not found"):format(format_type))
-    else
-      formatter = type(formatter) == "function" and { debug.getinfo(formatter, "S").source } or formatter
-      Health.ok(("{%s} formatter: %s"):format(format_type, table.concat(formatter, " ")))
-    end
-  end
+  Health.start("Response formatting:")
+  Health.ok("Response bodies are formatted by kulala-core (see `response_format` in setup)")
 end
 
 return M

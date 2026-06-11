@@ -2,7 +2,6 @@ local Augroups = require("kulala.augroups")
 local Backend = require("kulala.backend")
 local CONFIG = require("kulala.config")
 local Export = require("kulala.cmd.export")
-local Fmt = require("kulala.formatter.fmt")
 local Fs = require("kulala.utils.fs")
 local GLOBALS = require("kulala.globals")
 local Graphql = require("kulala.graphql")
@@ -124,12 +123,6 @@ end
 ---Useful when you want to clear all cached files
 M.clear_cached_files = function()
   Fs.delete_cached_files()
-end
-
----Import file to Kulala
----@param from string|nil -- "postman"|"openapi"|"bruno"|nil (postman by default)
-M.import = function(from)
-  Fmt.convert(from)
 end
 
 --- Exports current buffer|file|folder to Postman collection

@@ -57,7 +57,7 @@ suite and individual test cases within it.
 
 >http
     @OCCUPATION = Developer
-    POST https://httpbin.org/post?key1=value1 HTTP/1.1
+    POST https://echo.kulala.app/post?key1=value1 HTTP/1.1
     accept: application/json
     content-type: application/json
     

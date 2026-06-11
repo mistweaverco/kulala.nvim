@@ -254,7 +254,7 @@ CONDITIONAL REQUESTS
     %}
     
     @URL = "500"
-    GET https://httpbin.org/status/{{URL}}
+    GET https://echo.kulala.app/status/{{URL}}
     
     > {%
       console.log(response.responseCode)
@@ -272,7 +272,7 @@ ITERATING OVER RESULTS AND MAKING REQUESTS FOR EACH ITEM
 >http
     ### Request_one
     
-    POST https://httpbin.org/post HTTP/1.1
+    POST https://echo.kulala.app/post HTTP/1.1
     Accept: application/json
     Content-Type: application/json
     
@@ -303,7 +303,7 @@ ITERATING OVER RESULTS AND MAKING REQUESTS FOR EACH ITEM
     
       client.log(item);
     
-      const url = "https://httpbin.org/get";
+      const url = "https://echo.kulala.app/get";
       request.variables.set("url", url + "?" + item.desc); // update url variable, cannot access request.url_raw like in lua
     %}
     

@@ -398,7 +398,10 @@ M.write_json = function(filename, data, format_opts)
   local content = vim.json.encode(data)
   if not content then return end
 
-  content = format_opts and require("kulala.formatter").json(content, format_opts) or content
+  if format_opts then
+    local indent = format_opts.indent or 2
+    content = vim.json.encode(data, { indent = indent }) or content
+  end
 
   return M.write_file(filename, content)
 end
