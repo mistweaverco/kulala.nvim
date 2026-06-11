@@ -1,22 +1,19 @@
 ---Markdown verbose view (curl `-v`-style detail, structured for readability).
+local Json = require("kulala.utils.json")
 local Markdown = require("kulala.ui.markdown")
 
 local M = {}
 
 ---@param body table|nil
----@param hop_headers table|nil
 ---@return string, string
-local function format_hop_body(body, hop_headers)
+local function format_hop_body(body)
   if type(body) ~= "table" then return "", "text" end
   if body.type == "json" and body.content ~= nil then
     local ok, s = pcall(vim.json.encode, body.content)
     if ok and s then return Markdown.pretty_maybe_json(s), "json" end
     return vim.inspect(body.content), "text"
   end
-  if body.type == "text" and body.content then
-    local config = Markdown.body_contenttype_config(hop_headers, body.mediaType, nil)
-    return Markdown.body_fence_lang_for_config(tostring(body.content), config)
-  end
+  if body.type == "text" and body.content then return Markdown.fenced("text", body.content), "text" end
   return "", "text"
 end
 
@@ -44,7 +41,7 @@ local function format_hop(hop, index, title)
     table.insert(parts, Markdown.format_headers_table(hop.headers))
   end
 
-  local body, lang = format_hop_body(hop.body, hop.headers)
+  local body, lang = format_hop_body(hop.body)
   if body ~= "" then
     table.insert(parts, "### Response body\n")
     table.insert(parts, Markdown.fenced(lang, body))
@@ -94,9 +91,10 @@ function M.format(r)
 
   local req_body = r.request and r.request.body
   if type(req_body) == "string" and Markdown.trim(req_body) ~= "" then
-    local content, lang = Markdown.body_fence_lang(req_body)
     table.insert(parts, "### Request body\n")
-    table.insert(parts, Markdown.fenced(lang, content))
+    local is_json = Json.parse(req_body, { verbose = false })
+    local ft = is_json and "json" or "text"
+    table.insert(parts, Markdown.fenced(ft, req_body, ft == "json"))
   end
 
   local chain = r._kulala_redirect_chain
@@ -121,7 +119,7 @@ function M.format(r)
     table.insert(parts, "### Response body\n")
     table.insert(parts, "_No response body_\n")
   else
-    local content, lang = Markdown.response_body_fence_lang(r, body)
+    local content, lang = Markdown.get_body_and_guess_ft(r, body)
     table.insert(parts, "### Response body\n")
     table.insert(parts, Markdown.fenced(lang, content))
   end
@@ -159,7 +157,7 @@ function M.format_legacy(r)
 
   local body = r.body or ""
   if Markdown.trim(body) ~= "" and not body:match("^No response body") then
-    local content, lang = Markdown.response_body_fence_lang(r, body)
+    local content, lang = Markdown.get_body_and_guess_ft(r, body)
     table.insert(parts, "## Response body\n")
     table.insert(parts, Markdown.fenced(lang, content))
   end

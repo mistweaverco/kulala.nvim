@@ -5,7 +5,6 @@
 # kulala.nvim
 
 [![Made with love](assets/badge-made-with-love.svg)](https://github.com/mistweaverco/kulala.nvim/graphs/contributors)
-[![GitHub release (latest by date)](https://img.shields.io/github/v/release/mistweaverco/kulala.nvim?style=for-the-badge)](https://github.com/mistweaverco/kulala.nvim/releases/latest)
 [![Discord](assets/badge-discord.svg)](https://mistweaverco.com/discord)
 
 [![Main status](https://img.shields.io/github/actions/workflow/status/mistweaverco/kulala.nvim/tests.yml?label=main&branch=main&style=for-the-badge)](https://github.com/mistweaverco/kulala.nvim/actions/workflows/tests.yml)
@@ -340,4 +339,8 @@ Different to this project,
 but also a great option if you just want to make quick
 HTTP requests from within Neovim.
 
+
+
 [restnvim-unarchived-post]: https://github.com/rest-nvim/rest.nvim/issues/398#issue-2442747909
+[badge-discord]: https://mistweaverco.com/assets/badges/discord.svg
+[badge-made-with-love]: https://mistweaverco.com/assets/badges/discord.svg

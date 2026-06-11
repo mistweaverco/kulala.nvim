@@ -1,6 +1,20 @@
 {
-  "$schema": "https://raw.githubusercontent.com/LuaLS/vscode-lua/master/setting/schema.json",
-  "Lua.runtime.version": "LuaJIT",
-  "Lua.workspace.checkThirdParty": false,
-  "Lua.workspace.library": ["$VIMRUNTIME", "${3rd}/luv/library"]
+  "$schema": "https://raw.githubusercontent.com/sumneko/vscode-lua/master/setting/schema.json",
+  "runtime.version": "LuaJIT",
+  "diagnostics.globals": [
+    "vim",
+    "std",
+    "read_globals",
+    "stds",
+    "globals"
+  ],
+  "runtime.settings.path": [
+    "?.lua",
+    "?/init.lua"
+  ],
+  "workspace.checkThirdParty": false,
+  "workspace.library": [
+    "$VIMRUNTIME",
+    "${3rd}/luv/library"
+  ]
 }
