@@ -487,6 +487,7 @@ local function save_response(request_status, parsed_request)
     _kulala_redirect_chain = parsed_request._kulala_redirect_chain,
     _kulala_verbose_trace = parsed_request._kulala_verbose_trace,
     _kulala_body_type = request_status._kulala_body_type,
+    _kulala_media_type = request_status._kulala_media_type,
   }
 
   parsed_request._kulala_redirect_chain = nil
@@ -783,6 +784,7 @@ local function kulala_core_deliver_result(item, target, duration_wall, callback,
         stdout = kulala_core_stats_stdout(item),
         duration = duration_ns,
         _kulala_body_type = type(item.body) == "table" and item.body.type or nil,
+        _kulala_media_type = type(item.body) == "table" and item.body.mediaType or nil,
         _kulala_body_snapshot = kulala_core_body_text(item.body),
         _kulala_headers_snapshot = kulala_core_headers_text(item.headers),
         _kulala_script_console = console,
@@ -861,6 +863,7 @@ local function kulala_core_deliver_result(item, target, duration_wall, callback,
     errors = "",
     duration = duration_ns,
     _kulala_body_type = type(item.body) == "table" and item.body.type or nil,
+    _kulala_media_type = type(item.body) == "table" and item.body.mediaType or nil,
     _kulala_body_snapshot = kulala_core_body_text(item.body),
     _kulala_headers_snapshot = kulala_core_headers_text(item.headers),
     _kulala_script_console = console,
