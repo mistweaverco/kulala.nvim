@@ -1,0 +1,3 @@
+[submodule "tree-sitter-kulala-http"]
+	path = tree-sitter-kulala-http
+	url = https://github.com/mistweaverco/tree-sitter-kulala-http
