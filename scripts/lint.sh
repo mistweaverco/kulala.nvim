@@ -7,6 +7,10 @@ check_code() {
     echo "stylua is not installed"
     exit 1
   fi
+  if ! command -v luacheck &> /dev/null; then
+    echo "luacheck is not installed"
+    exit 1
+  fi
   if [[ -n $1 ]]; then
     stylua --check "$1"
     luacheck --formatter plain "$1"

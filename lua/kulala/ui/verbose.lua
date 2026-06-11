@@ -4,15 +4,19 @@ local Markdown = require("kulala.ui.markdown")
 local M = {}
 
 ---@param body table|nil
+---@param hop_headers table|nil
 ---@return string, string
-local function format_hop_body(body)
+local function format_hop_body(body, hop_headers)
   if type(body) ~= "table" then return "", "text" end
   if body.type == "json" and body.content ~= nil then
     local ok, s = pcall(vim.json.encode, body.content)
     if ok and s then return Markdown.pretty_maybe_json(s), "json" end
     return vim.inspect(body.content), "text"
   end
-  if body.type == "text" and body.content then return Markdown.body_fence_lang(tostring(body.content)) end
+  if body.type == "text" and body.content then
+    local config = Markdown.body_contenttype_config(hop_headers, body.mediaType, nil)
+    return Markdown.body_fence_lang_for_config(tostring(body.content), config)
+  end
   return "", "text"
 end
 
@@ -40,7 +44,7 @@ local function format_hop(hop, index, title)
     table.insert(parts, Markdown.format_headers_table(hop.headers))
   end
 
-  local body, lang = format_hop_body(hop.body)
+  local body, lang = format_hop_body(hop.body, hop.headers)
   if body ~= "" then
     table.insert(parts, "### Response body\n")
     table.insert(parts, Markdown.fenced(lang, body))
@@ -117,7 +121,7 @@ function M.format(r)
     table.insert(parts, "### Response body\n")
     table.insert(parts, "_No response body_\n")
   else
-    local content, lang = Markdown.body_fence_lang(body)
+    local content, lang = Markdown.response_body_fence_lang(r, body)
     table.insert(parts, "### Response body\n")
     table.insert(parts, Markdown.fenced(lang, content))
   end
@@ -155,7 +159,7 @@ function M.format_legacy(r)
 
   local body = r.body or ""
   if Markdown.trim(body) ~= "" and not body:match("^No response body") then
-    local content, lang = Markdown.body_fence_lang(body)
+    local content, lang = Markdown.response_body_fence_lang(r, body)
     table.insert(parts, "## Response body\n")
     table.insert(parts, Markdown.fenced(lang, content))
   end
