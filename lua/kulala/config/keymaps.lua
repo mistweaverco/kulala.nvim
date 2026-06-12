@@ -233,7 +233,7 @@ M.default_kulala_keymaps = {
       require("kulala.ui").keymap_enter()
     end,
     mode = { "n", "v" },
-    desc = "also: Update filter and Send WS message for WS connections",
+    desc = "Jump to request",
     prefix = false,
   },
   ["Clear responses history"] = {
@@ -245,9 +245,10 @@ M.default_kulala_keymaps = {
   ["Send WS message"] = {
     "<S-CR>",
     function()
-      require("kulala.cmd.websocket").send()
+      require("kulala.ui.ws_input").on_send_keymap()
     end,
-    mode = { "n", "v" },
+    mode = { "n", "v", "i" },
+    desc = "Open WS message input (body view) / send from input overlay",
     prefix = false,
   },
   ["Interrupt requests"] = {
@@ -345,7 +346,13 @@ local function collect_global_keymaps()
 end
 
 local function set_keymap(map, buf)
-  vim.keymap.set(map.mode or "n", map[1], map[2], { buffer = buf, desc = map.desc, silent = true, nowait = true })
+  vim.keymap.set(map.mode or "n", map[1], map[2], {
+    buffer = buf,
+    desc = map.desc,
+    silent = true,
+    nowait = true,
+    noremap = true,
+  })
 end
 
 local function create_ft_autocommand(ft, maps)

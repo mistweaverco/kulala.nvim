@@ -14,6 +14,7 @@ local PARSER = require("kulala.parser.request")
 local REPORT = require("kulala.ui.report")
 local UI_utils = require("kulala.ui.utils")
 local WINBAR = require("kulala.ui.winbar")
+local WS_INPUT = require("kulala.ui.ws_input")
 
 local M = {}
 
@@ -76,6 +77,7 @@ local function set_current_response_by_id(db, response_id)
 end
 
 M.close_kulala_buffer = function()
+  WS_INPUT.close()
   local buf = get_kulala_buffer()
   if buf then vim.api.nvim_buf_delete(buf, { force = true }) end
 end
@@ -121,6 +123,28 @@ local open_kulala_buffer = function(filetype)
   return buf
 end
 
+local function is_ws_method(method)
+  method = (method or ""):upper()
+  return method == "WS" or method == "WSS" or method == "WEBSOCKET"
+end
+
+local function ws_prompt_active()
+  local WEBSOCKET = require("kulala.cmd.websocket")
+  return WEBSOCKET.is_active() and is_ws_method(get_current_response().method)
+end
+
+local function restore_readonly_buffer(buf)
+  WS_INPUT.close()
+  vim.bo[buf].buftype = "nofile"
+  vim.bo[buf].modifiable = true
+  vim.bo[buf].readonly = false
+end
+
+local function lock_buffer_readonly(buf)
+  vim.bo[buf].modifiable = false
+  vim.bo[buf].readonly = true
+end
+
 local function set_buffer_contents(buf, contents, filetype)
   local lines = vim.split(contents, "\n")
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
@@ -159,6 +183,7 @@ local function open_kulala_window(buf)
       row = math.floor(((vim.o.lines - height) / 2) - 1),
       col = math.floor((vim.o.columns - width) / 2),
       style = "minimal",
+      zindex = 50,
     }
   else
     -- INFO:
@@ -227,8 +252,10 @@ local function show(contents, filetype, mode)
   if MARKDOWN_VIEWS[mode] then contents = require("kulala.ui.markdown").normalize_headings(contents) end
   local buf = open_kulala_buffer(buf_ft)
 
+  restore_readonly_buffer(buf)
   set_buffer_contents(buf, contents, buf_ft)
   if mode ~= "report" then REPORT.set_response_summary(buf) end
+  lock_buffer_readonly(buf)
 
   local win = open_kulala_window(buf)
   local lnum = mode == "report" and vim.api.nvim_buf_line_count(buf) or 4
@@ -263,36 +290,90 @@ local function format_body()
   return r.body, get_ft_from_kulala_core(r)
 end
 
-local function update_filter()
-  local filter = vim.api.nvim_get_current_line()
-  if not filter:find("JQ Filter") then return end
+local function ws_live_body_and_ft()
+  local WEBSOCKET = require("kulala.cmd.websocket")
+  if not WEBSOCKET.response then return "", "text" end
+  WEBSOCKET.refresh_display()
+  return WEBSOCKET.response.body or "", get_ft_from_kulala_core(WEBSOCKET.response)
+end
 
-  filter = vim.trim(filter:sub(12))
-  Ext_processing.jq(filter, get_current_response())
-  M.show_body()
+---Update the live WebSocket body in place (no full view re-open).
+M.refresh_ws_body_if_visible = function()
+  if not ws_prompt_active() then return end
+  local buf = get_kulala_buffer()
+  if not buf then return end
+  local body, ft = ws_live_body_and_ft()
+  vim.bo[buf].modifiable = true
+  vim.bo[buf].readonly = false
+  set_buffer_contents(buf, body, ft)
+  lock_buffer_readonly(buf)
+end
+
+---Resolve the WebSocket response table that owns `_ws_messages` / jq source.
+---@param response Response
+---@return Response|nil
+local function ws_filter_response(response)
+  if not is_ws_method(response.method) then return nil end
+  local WEBSOCKET = require("kulala.cmd.websocket")
+  if WEBSOCKET.response and WEBSOCKET.response.id == response.id then return WEBSOCKET.response end
+  if type(response._ws_messages) == "table" then return response end
+  return nil
 end
 
 M.toggle_filter = function()
-  local buf = get_kulala_buffer()
-  local row = 4
+  local response = get_current_response()
+  local cwd = response.file and vim.fn.fnamemodify(response.file, ":h") or nil
 
-  if vim.api.nvim_buf_get_lines(buf, row, row + 1, false)[1]:find("JQ Filter") then
-    return vim.api.nvim_buf_set_lines(buf, row - 1, row + 1, false, {})
-  end
+  vim.ui.input({ prompt = "JQ Filter: ", default = response.filter or "" }, function(filter)
+    if filter == nil then return end
 
-  local filter = { "JQ Filter: " .. (get_current_response().filter or ""), "" }
+    filter = vim.trim(filter)
+    local ws = ws_filter_response(response)
+    if ws then
+      ws.filter = filter ~= "" and filter or nil
+      if response ~= ws then response.filter = ws.filter end
+      require("kulala.cmd.websocket").refresh_display(ws)
+      if ws_prompt_active() then
+        M.refresh_ws_body_if_visible()
+      else
+        M.show_body()
+      end
+      return
+    end
 
-  vim.api.nvim_buf_set_lines(buf, row, row, false, filter)
+    if filter == "" then
+      response.filter = nil
+      if type(response.body_raw) == "string" and response.body_raw ~= "" then
+        local KULALA_CORE = require("kulala.cmd.kulala_core_bridge")
+        local restored, _ = KULALA_CORE.apply_jq_filter({
+          rawBody = response.body_raw,
+          filter = ".",
+          contentType = response._kulala_media_type or "application/json",
+        }, cwd)
+        if restored then
+          response.body = restored.text
+          response.json = vim.json.decode(restored.text) or {}
+          if restored.body_type then response._kulala_body_type = restored.body_type end
+          if restored.media_type then response._kulala_media_type = restored.media_type end
+        else
+          response.body = response.body_raw
+        end
+      end
+      M.show_body()
+      return
+    end
 
-  UI_utils.highlight_range(buf, 0, { row, 0 }, { row, 12 }, "Question")
-  UI_utils.highlight_range(buf, 0, { row, 10 }, { row, -1 }, "Special")
+    if Ext_processing.jq(filter, response, cwd) then M.show_body() end
+  end)
 end
 
 local function parse_report_line(line)
   return tonumber(line:match("^## Line (%d+)") or line:match("^%s*|%s*(%d+)%s*|") or line:match("^%s*(%d+)"))
 end
 
-local function jump_to_response()
+M.jump_to_response = function()
+  local WEBSOCKET = require("kulala.cmd.websocket")
+  local response = get_current_response()
   local responses = DB.global_update().responses
   local win = vim.fn.bufwinid(get_current_response().buf)
 
@@ -315,8 +396,11 @@ local function jump_to_response()
     vim.api.nvim_set_current_win(win)
     vim.api.nvim_win_set_cursor(win, { get_current_response().line, 0 })
 
-    win = get_kulala_window()
-    if vim.api.nvim_win_get_config(win).relative == "editor" then vim.api.nvim_win_close(win, true) end
+    local kulala_win = get_kulala_window()
+    if kulala_win and vim.api.nvim_win_is_valid(kulala_win) then
+      if WEBSOCKET.is_active() and is_ws_method(response.method) then return end
+      if vim.api.nvim_win_get_config(kulala_win).relative == "editor" then vim.api.nvim_win_close(kulala_win, true) end
+    end
   end
 end
 
@@ -326,9 +410,13 @@ M.show_headers = function()
 end
 
 M.show_body = function()
-  local body, ft = format_body()
+  local body, ft
+  if ws_prompt_active() then
+    body, ft = ws_live_body_and_ft()
+  else
+    body, ft = format_body()
+  end
   show(body, ft, "body")
-  if get_current_response().filter then M.toggle_filter() end
 end
 
 M.show_headers_body = function()
@@ -560,13 +648,7 @@ M.jump_prev = function()
 end
 
 M.keymap_enter = function()
-  if get_current_response().method == "WS" then
-    require("kulala.cmd.websocket").send()
-  elseif vim.api.nvim_get_current_line():find("JQ Filter") then
-    update_filter()
-  else
-    jump_to_response()
-  end
+  M.jump_to_response()
 end
 
 M.interrupt_requests = function()
@@ -702,5 +784,6 @@ M.get_kulala_buffer = get_kulala_buffer
 M.get_kulala_window = get_kulala_window
 M.get_current_response = get_current_response
 M.get_current_response_pos = get_current_response_pos
+M.open_ws_message = WS_INPUT.on_send_keymap
 
 return M

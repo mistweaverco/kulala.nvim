@@ -409,6 +409,7 @@ local function save_response(request_status, parsed_request)
   local line = parsed_request.show_icon_line_number or 0
   local id = request_response_id(buf, parsed_request)
   local body_from_snapshot = type(request_status._kulala_body_snapshot) == "string"
+  local raw_from_snapshot = type(request_status._kulala_raw_body_snapshot) == "string"
   local headers_from_snapshot = type(request_status._kulala_headers_snapshot) == "string"
 
   local responses = DB.global_update().responses
@@ -432,8 +433,16 @@ local function save_response(request_status, parsed_request)
       existing.duration = request_status.duration or existing.duration
       existing.errors = request_status.errors or existing.errors
       existing.stats = request_status.stdout or existing.stats
-      existing.body_raw = FS.read_file(GLOBALS.BODY_FILE) or ""
-      existing.body = truncate_body(existing)
+      if ws_response.body_raw ~= "" then
+        existing.body_raw = ws_response.body_raw
+      elseif existing.body_raw == "" then
+        existing.body_raw = FS.read_file(GLOBALS.BODY_FILE) or ""
+      end
+      if ws_response.body ~= "" then
+        existing.body = ws_response.body
+      else
+        existing.body = truncate_body(existing)
+      end
       existing.json = Json.parse(existing.body) or {}
       existing = set_request_stats(existing)
       existing.status = existing.code == 0
@@ -470,10 +479,11 @@ local function save_response(request_status, parsed_request)
     status = false,
     time = vim.fn.localtime(),
     duration = request_status.duration or 0,
-    body_raw = body_from_snapshot and request_status._kulala_body_snapshot or (FS.read_file(GLOBALS.BODY_FILE) or ""),
+    body_raw = raw_from_snapshot and request_status._kulala_raw_body_snapshot
+      or (body_from_snapshot and request_status._kulala_body_snapshot or (FS.read_file(GLOBALS.BODY_FILE) or "")),
     body = "",
     json = {},
-    filter = nil,
+    filter = type(request_status._kulala_jq_filter) == "string" and request_status._kulala_jq_filter or nil,
     headers = headers_from_snapshot and request_status._kulala_headers_snapshot
       or (FS.read_file(GLOBALS.HEADERS_FILE) or ""),
     headers_tbl = INT_PROCESSING.get_headers(headers_from_snapshot and request_status._kulala_headers_snapshot or nil)
@@ -624,6 +634,17 @@ local function kulala_core_body_text(body)
   return ""
 end
 
+---Prefer jq-filtered body when kulala-core returned `filteredBody`.
+---@param item table|nil
+---@return string text
+---@return table|nil body_obj
+local function kulala_core_display_body(item)
+  if type(item) ~= "table" then return "", nil end
+  if type(item.filteredBody) == "table" then return kulala_core_body_text(item.filteredBody), item.filteredBody end
+  if type(item.body) == "table" then return kulala_core_body_text(item.body), item.body end
+  return kulala_core_body_text(item.body), nil
+end
+
 local function kulala_core_headers_text(headers)
   local lines = {}
   for k, v in pairs(headers or {}) do
@@ -634,7 +655,8 @@ local function kulala_core_headers_text(headers)
 end
 
 local function write_kulala_core_response_files(result)
-  FS.write_file(GLOBALS.BODY_FILE, kulala_core_body_text(result.body))
+  local display_text = kulala_core_display_body(result)
+  FS.write_file(GLOBALS.BODY_FILE, display_text)
   FS.write_file(GLOBALS.HEADERS_FILE, kulala_core_headers_text(result.headers))
 end
 
@@ -793,7 +815,8 @@ local function kulala_core_deliver_result(item, target, duration_wall, callback,
         duration = duration_ns,
         _kulala_body_type = type(item.body) == "table" and item.body.type or nil,
         _kulala_media_type = type(item.body) == "table" and item.body.mediaType or nil,
-        _kulala_body_snapshot = kulala_core_body_text(item.body),
+        _kulala_body_snapshot = kulala_core_display_body(item),
+        _kulala_raw_body_snapshot = type(item.rawBody) == "string" and item.rawBody or nil,
         _kulala_headers_snapshot = kulala_core_headers_text(item.headers),
         _kulala_script_console = console,
       }, target, callback, advance_queue, invoke_ui_callback)
@@ -828,7 +851,8 @@ local function kulala_core_deliver_result(item, target, duration_wall, callback,
       body_raw = "",
       body = "",
       json = {},
-      filter = nil,
+      _ws_messages = {},
+      filter = type(item.jqFilter) == "string" and item.jqFilter ~= "" and item.jqFilter or nil,
       headers = "",
       headers_tbl = {},
       cookies = {},
@@ -843,6 +867,7 @@ local function kulala_core_deliver_result(item, target, duration_wall, callback,
       line = target.show_icon_line_number or 0,
       buf = DB.get_current_buffer(),
       _kulala_core = true,
+      _kulala_media_type = "application/json",
     }
     target.body_computed = item.initialMessage or target.body
     WEBSOCKET.connect(target, response, function(success, duration)
@@ -870,9 +895,17 @@ local function kulala_core_deliver_result(item, target, duration_wall, callback,
     stdout = kulala_core_stats_stdout(item),
     errors = "",
     duration = duration_ns,
-    _kulala_body_type = type(item.body) == "table" and item.body.type or nil,
-    _kulala_media_type = type(item.body) == "table" and item.body.mediaType or nil,
-    _kulala_body_snapshot = kulala_core_body_text(item.body),
+    _kulala_body_type = (function()
+      local _, body_obj = kulala_core_display_body(item)
+      return body_obj and body_obj.type or (type(item.body) == "table" and item.body.type or nil)
+    end)(),
+    _kulala_media_type = (function()
+      local _, body_obj = kulala_core_display_body(item)
+      return body_obj and body_obj.mediaType or (type(item.body) == "table" and item.body.mediaType or nil)
+    end)(),
+    _kulala_body_snapshot = kulala_core_display_body(item),
+    _kulala_raw_body_snapshot = type(item.rawBody) == "string" and item.rawBody or nil,
+    _kulala_jq_filter = type(item.jqFilter) == "string" and item.jqFilter ~= "" and item.jqFilter or nil,
     _kulala_headers_snapshot = kulala_core_headers_text(item.headers),
     _kulala_script_console = console,
   }, target, callback, advance_queue, invoke_ui_callback)

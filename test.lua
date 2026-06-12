@@ -1,3 +1,1 @@
-vim.uv.timer_start(function()
-  print("Hello, World!")
-end, 2000)
+vim.cmd("e foo.http")

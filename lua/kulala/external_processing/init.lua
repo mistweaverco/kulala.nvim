@@ -1,5 +1,6 @@
 local DB = require("kulala.db")
 local Json = require("kulala.utils.json")
+local KULALA_CORE = require("kulala.cmd.kulala_core_bridge")
 local Logger = require("kulala.logger")
 local Shell = require("kulala.cmd.shell_utils")
 
@@ -54,19 +55,36 @@ end
 
 M.env_stdin_cmd_pre = M.env_stdin_cmd
 
-M.jq = function(filter, response)
-  if vim.tbl_keys(response.json) == 0 then return end
+---@param filter string
+---@param response Response
+---@param cwd string|nil
+---@param opts? { silent?: boolean }
+---@return boolean ok
+M.jq = function(filter, response, cwd, opts)
+  opts = opts or {}
+  if type(filter) ~= "string" or vim.trim(filter) == "" then return false end
+  local raw = response.body_raw
+  if type(raw) ~= "string" or raw == "" then return false end
 
-  local result = Shell.run(
-    { "jq", filter },
-    { sync = true, stdin = response.body_raw, err_msg = "Failed to filter with jq", abort_on_stderr = true }
-  )
+  local content_type = response._kulala_media_type or "application/json"
+  local filtered, err = KULALA_CORE.apply_jq_filter({
+    rawBody = raw,
+    filter = filter,
+    contentType = content_type,
+  }, cwd)
 
-  if not result or result.stdout == "" then return end
+  if not filtered then
+    if not opts.silent then Logger.error(tostring(err and err ~= "" and err or "Failed to filter with jq")) end
+    return false
+  end
+  if filtered.text == "" or vim.trim(filtered.text) == "null" then return false end
 
-  response.body = result.stdout
-  response.json = Json.parse(result.stdout, { verbose = false }) or response.json
+  response.body = filtered.text
+  response.json = Json.parse(filtered.text, { verbose = false }) or response.json
   response.filter = filter
+  if filtered.body_type then response._kulala_body_type = filtered.body_type end
+  if filtered.media_type then response._kulala_media_type = filtered.media_type end
+  return true
 end
 
 return M

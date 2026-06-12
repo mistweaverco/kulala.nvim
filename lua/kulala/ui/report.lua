@@ -10,14 +10,28 @@ local UI = setmetatable({}, {
   end,
 })
 
+local function with_buffer_write(buf, fn)
+  local modifiable = vim.bo[buf].modifiable
+  local readonly = vim.bo[buf].readonly
+  vim.bo[buf].modifiable = true
+  vim.bo[buf].readonly = false
+  local ok, err = pcall(fn)
+  vim.bo[buf].modifiable = modifiable
+  vim.bo[buf].readonly = readonly
+  if not ok then error(err) end
+end
+
 local function hide_response_summary()
   local buf = UI.get_kulala_buffer()
+  if not buf then return end
 
   local config = CONFIG.get().ui
   if not config.show_request_summary then return end
 
-  vim.fn.deletebufline(buf, 1, 4)
-  UI_utils.clear_highlights(buf)
+  with_buffer_write(buf, function()
+    vim.fn.deletebufline(buf, 1, 4)
+    UI_utils.clear_highlights(buf)
+  end)
 end
 
 local function set_response_summary(buf)
@@ -63,14 +77,16 @@ local function set_response_summary(buf)
     :flatten()
     :totable()
 
-  vim.api.nvim_buf_set_lines(buf, 0, 0, false, data)
-  UI_utils.highlight_range(
-    buf,
-    0,
-    0,
-    2,
-    response.status and config.report.successHighlight or config.report.errorHighlight
-  )
+  with_buffer_write(buf, function()
+    vim.api.nvim_buf_set_lines(buf, 0, 0, false, data)
+    UI_utils.highlight_range(
+      buf,
+      0,
+      0,
+      2,
+      response.status and config.report.successHighlight or config.report.errorHighlight
+    )
+  end)
 end
 
 ---@param response Response

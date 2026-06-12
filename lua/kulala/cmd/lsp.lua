@@ -9,6 +9,7 @@ local Logger = require("kulala.logger")
 local Ui = require("kulala.ui")
 
 local M = {}
+M.name = "kulala-core-lsp"
 
 local trigger_chars = { "@", "#", "-", ":", "{", "$", ">", "<", ".", "(", '"', "'" }
 
@@ -189,7 +190,7 @@ local function initialize(attached_buf)
     end
 
     return {
-      serverInfo = { name = "Kulala LSP", version = Globals.VERSION },
+      serverInfo = { name = M.name, version = Globals.BACKEND_VERSION },
       capabilities = capabilities,
     }
   end
@@ -319,6 +320,21 @@ M.start = function(buf, ft)
   M.start_lsp(buf, ft)
 end
 
+M.restart_all = function()
+  local clients = vim.lsp.get_clients { name = M.name }
+  for _, client in ipairs(clients) do
+    client:stop()
+  end
+  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+    if vim.api.nvim_buf_is_loaded(buf) then
+      local ft = vim.api.nvim_get_option_value("filetype", { buf = buf })
+      if Config.options.lsp.filetypes and vim.tbl_contains(Config.options.lsp.filetypes, ft) then
+        M.start_lsp(buf, ft)
+      end
+    end
+  end
+end
+
 function M.start_lsp(buf, ft)
   local server = new_server(buf)
 
@@ -331,7 +347,7 @@ function M.start_lsp(buf, ft)
   local actions = code_actions_http()
 
   local client_id = vim.lsp.start({
-    name = "kulala",
+    name = M.name,
     cmd = server,
     root_dir = ft,
     bufnr = buf,

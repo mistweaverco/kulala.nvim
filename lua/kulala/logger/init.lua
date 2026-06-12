@@ -58,8 +58,9 @@ M.error = function(message, lines_no)
   local debug = debug_level()
   if debug == 0 then return end
 
-  local lines = vim.split(message, "\n")
+  local lines = vim.split(tostring(message or ""), "\n")
   lines_no = debug > 3 and #lines or lines_no or 1
+  lines_no = math.min(lines_no, math.max(#lines, 1))
 
   local short_message = table.concat(lines, "\n", 1, lines_no)
   M.log(short_message, log_levels.ERROR)
