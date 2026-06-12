@@ -43,7 +43,6 @@ local function ensure_plugins_installed()
         local source_path = plugin.repo:sub(8)
         vim.fn.mkdir(package_path, "p")
         vim.fn.system { "cp", "-r", source_path .. "/.", package_path }
-        vim.fn.system { "git", "submodule", "update", "--init", "--recursive" }
         setup_plugin(plugin)
       else
         vim.system({
@@ -54,12 +53,9 @@ local function ensure_plugins_installed()
           plugin.repo,
           package_path,
         }, function(obj)
-          if obj.code == 0 then
-            vim.schedule(function()
-              vim.fn.system { "git", "submodule", "update", "--init", "--recursive" }
-              setup_plugin(plugin)
-            end)
-          end
+          if obj.code == 0 then vim.schedule(function()
+            setup_plugin(plugin)
+          end) end
         end)
       end
     else
