@@ -239,7 +239,6 @@ local function show(contents, filetype, mode)
   WINBAR.toggle_winbar_tab(buf, win, mode)
   CONFIG.options.default_view = mode
 
-  M.show_news_footer()
   show_progress()
 end
 
@@ -480,28 +479,6 @@ M.show_help = function()
     auto_size = true,
     auto_close = true,
     close_keymaps = { "q", "<esc>", "?" },
-  })
-end
-
-M.show_news_footer = function()
-  if CONFIG.get().disable_news_popup then return end
-
-  local msg
-
-  if Xmas.is_christmas_season() then
-    msg = Xmas.get_random_message()
-  elseif DB.settings.news_ver ~= GLOBALS.VERSION then
-    msg = "Check out the latest Kulala changes with `g?`"
-  else
-    return
-  end
-
-  Float.create_window_footer(msg, {
-    buf = get_kulala_buffer(),
-    win = get_kulala_window(),
-    name = "kulala://news_footer",
-    row_offset = 2,
-    auto_close = true,
   })
 end
 
