@@ -14,7 +14,6 @@ local PARSER = require("kulala.parser.request")
 local REPORT = require("kulala.ui.report")
 local UI_utils = require("kulala.ui.utils")
 local WINBAR = require("kulala.ui.winbar")
-local Xmas = require("kulala.ui.xmas")
 
 local M = {}
 
