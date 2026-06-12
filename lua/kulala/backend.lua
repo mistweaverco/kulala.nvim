@@ -1,6 +1,7 @@
 local Api = require("kulala.api")
 local Globals = require("kulala.globals")
 local Logger = require("kulala.logger")
+local Notify = require("kulala.ui.notify")
 local Parser = require("kulala.config.parser")
 local M = {}
 
@@ -80,56 +81,6 @@ local set_installed_version = function(version)
   if not f then error("Could not open version file for writing: " .. version_file) end
   f:write(version)
   f:close()
-end
-
----Create a progress callback handler that uses juu.progress if available, otherwise falls back to Logger.notify
----@param title string Title for the progress display
----@return function progress_callback A function that accepts {progress: number|nil, message: string}
----@return function finish_callback A function to call when progress is complete (optional message)
-local function create_progress_handler(title)
-  title = title or Globals.NAME .. " Setup"
-  local has_juu, juu_progress = pcall(require, "juu.progress")
-  local handle = nil
-
-  if has_juu and juu_progress and juu_progress.handle then
-    -- Create juu progress handle (with error handling)
-    local success, created_handle = pcall(juu_progress.handle.create, {
-      title = title,
-      message = "Starting...",
-      client = { name = title },
-      percentage = 0,
-      cancellable = false,
-    })
-    if success and created_handle then handle = created_handle end
-  end
-
-  local progress_callback = function(progress_data)
-    if handle then
-      -- Use juu.progress
-      local message = progress_data.message or "In progress..."
-      local report_data = { message = message }
-      -- Only include percentage if it's provided (not nil)
-      if progress_data.progress ~= nil then report_data.percentage = progress_data.progress end
-      handle:report(report_data)
-    else
-      -- Fallback to Logger.notify
-      Logger.notify(progress_data.message or "In progress...", Logger.LoggerLogLevels.info)
-    end
-  end
-
-  local finish_callback = function(message)
-    if handle then
-      if message then handle:report {
-        message = message,
-        percentage = 100,
-      } end
-      handle:finish()
-    else
-      if message then Logger.notify(message, Logger.LoggerLogLevels.info) end
-    end
-  end
-
-  return progress_callback, finish_callback
 end
 
 ---Download a file using curl with progress parsing
@@ -548,7 +499,8 @@ M.install = function(version, callback)
   local start_time = vim.fn.reltime()
 
   -- Create progress handlers for download and extraction
-  local download_progress, download_finish = create_progress_handler(Globals.KULALA_CORE_BINARY_NAME .. ": Downloading")
+  local download_progress, download_finish =
+    Notify.create_progress_handler(Globals.KULALA_CORE_BINARY_NAME .. ": Downloading")
 
   download_file_async(url, download_file_path, download_progress, function(download_success)
     -- Only proceed with extraction if download succeeded
