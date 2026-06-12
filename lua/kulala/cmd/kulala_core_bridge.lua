@@ -487,6 +487,42 @@ function M.http_request(opts, cwd)
   return nil, "invalid kulala-core http_request output"
 end
 
+---Apply a jq filter to a stored raw response body (no HTTP re-request).
+---@param opts { rawBody: string, filter: string, contentType?: string }
+---@param cwd string|nil
+---@return table|nil result `{ text, body_type?, media_type? }`
+---@return string|nil err
+function M.apply_jq_filter(opts, cwd)
+  M.require_enabled()
+  local response_format = CONFIG.get().response_format or {}
+  local payload = {
+    action = "apply_jq_filter",
+    rawBody = opts.rawBody,
+    filter = opts.filter,
+    contentType = opts.contentType,
+    responseFormat = {
+      indent = response_format.indent,
+      expand_tabs = response_format.expand_tabs,
+      sort_keys = response_format.sort_keys,
+    },
+  }
+  local job = M.invoke(payload, cwd)
+  local res = decode_action_response(job.stdout)
+  if res and res.success == true and type(res.filteredBody) == "table" then
+    return {
+      text = response_body_text(res.filteredBody),
+      body_type = res.filteredBody.type,
+      media_type = res.filteredBody.mediaType,
+    },
+      nil
+  end
+  if res and res.error then return nil, res.error end
+  if job.code ~= 0 then
+    return nil, vim.trim(job.stderr or "") ~= "" and vim.trim(job.stderr) or "kulala-core apply_jq_filter failed"
+  end
+  return nil, "invalid kulala-core apply_jq_filter output"
+end
+
 ---Start a long-lived WebSocket session (native kulala-core, replaces websocat).
 ---@param opts { url: string, body?: string, headers?: table }
 ---@param handlers { on_stdout: function, on_stderr: function, on_exit: function }

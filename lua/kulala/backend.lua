@@ -541,6 +541,8 @@ M.install = function(version, callback)
     Logger.notify(string.format("Backend installed successfully in %s!", time_str), Logger.LoggerLogLevels.info)
     -- Set the installed version after successful installation
     set_installed_version(version)
+    require("kulala.config").set_autocomands()
+    require("kulala.cmd.lsp").restart_all()
     if callback then callback() end
   end)
 end

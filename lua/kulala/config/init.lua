@@ -27,7 +27,7 @@ local function set_legacy_options()
   M.options = vim.tbl_deep_extend("keep", M.options, M.options.ui)
 end
 
-local set_autocomands = function()
+M.set_autocomands = function()
   vim.api.nvim_create_autocmd("FileType", {
     group = vim.api.nvim_create_augroup("Kulala filetype setup", { clear = true }),
     pattern = M.options.lsp.filetypes,
@@ -59,7 +59,7 @@ M.setup = function(config)
   set_legacy_options()
   Parser.setup()
   set_syntax_hl()
-  set_autocomands()
+  M.set_autocomands()
 
   if M.options.show_icons == "signcolumn" then pcall(set_signcolumn_icons) end
   M.options.global_keymaps, M.options.ft_keymaps = keymaps.setup_global_keymaps()
