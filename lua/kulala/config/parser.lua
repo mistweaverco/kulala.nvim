@@ -11,16 +11,16 @@ local target_parser_ext = vim.fn.has("win32") == 1 and "dll" or vim.fn.has("macu
 local parser_target_path = vim.fs.joinpath(parsers_dir, parser_name .. "." .. target_parser_ext)
 local query_target_dir = vim.fs.joinpath(queries_dir, parser_name)
 local site_dir = vim.fs.joinpath(vim.fn.stdpath("data"), "site")
-local parser_source_path = Fs.get_plugin_path { "..", "..", "tree-sitter-kulala-http" }
+
+-- Grammar lives in its own repo, fetched + built on demand: a git submodule here
+-- breaks blobless/partial clones (e.g. lazy.nvim), dirtying the worktree on update.
+local grammar_url = "https://github.com/mistweaverco/tree-sitter-kulala-http"
+local grammar_rev = "cb7a092a6e9923f611c34d0448a9084c9949c923"
+local parser_source_path = vim.fs.joinpath(vim.fn.stdpath("data"), "kulala", "tree-sitter-kulala-http")
 local parser_registered = false
 
-local function get_parser_ver()
-  local ts = Fs.read_json(parser_source_path .. "/tree-sitter.json") or {}
-  return ts.metadata and ts.metadata.version
-end
-
 local function is_parser_ver_current()
-  return require("kulala.db").settings.parser_ver == get_parser_ver()
+  return require("kulala.db").settings.parser_rev == grammar_rev
 end
 
 --- HACK:
@@ -32,8 +32,10 @@ local function ensure_site_rtp()
 end
 
 local function sync_queries()
+  local src = vim.fs.joinpath(parser_source_path, "queries", parser_name)
+  if not Fs.dir_exists(src) then return end
   Fs.ensure_dir_exists(queries_dir)
-  Fs.copy_dir_contents(vim.fs.joinpath(parser_source_path, "queries", parser_name), query_target_dir)
+  Fs.copy_dir_contents(src, query_target_dir)
 end
 
 local function load_parser()
@@ -64,16 +66,42 @@ M.register_parser = function()
 end
 
 local function save_parser_ver()
-  require("kulala.db").settings:write { parser_ver = get_parser_ver() }
+  require("kulala.db").settings:write { parser_rev = grammar_rev }
 end
 
-local function setup_tree_sitter()
+local function git(args, on_exit)
+  vim.system(vim.list_extend({ "git" }, args), { cwd = parser_source_path }, function(obj)
+    vim.schedule(function()
+      on_exit(obj.code == 0)
+    end)
+  end)
+end
+
+local function fetch_grammar(on_done)
+  Fs.ensure_dir_exists(parser_source_path)
+  local function fetch_checkout()
+    git({ "fetch", "--depth", "1", "origin", grammar_rev }, function(ok)
+      if not ok then return on_done(false) end
+      git({ "checkout", "--quiet", "FETCH_HEAD" }, on_done)
+    end)
+  end
+  if Fs.dir_exists(vim.fs.joinpath(parser_source_path, ".git")) then
+    fetch_checkout()
+  else
+    git({ "init", "--quiet" }, function(ok)
+      if not ok then return on_done(false) end
+      git({ "remote", "add", "origin", grammar_url }, function()
+        fetch_checkout()
+      end)
+    end)
+  end
+end
+
+local function build_parser()
   Fs.ensure_dir_exists(parsers_dir)
   sync_queries()
   local output_path = vim.fs.joinpath(parsers_dir, parser_name .. "." .. target_parser_ext)
-  vim.system({ "tree-sitter", "build", "-o", output_path }, {
-    cwd = parser_source_path,
-  }, function(obj)
+  vim.system({ "tree-sitter", "build", "-o", output_path }, { cwd = parser_source_path }, function(obj)
     if obj.code ~= 0 then
       vim.schedule(function()
         print("Failed to build tree-sitter parser: " .. (obj.stderr or ""))
@@ -86,6 +114,18 @@ local function setup_tree_sitter()
         if vim.bo.filetype == "http" then vim.cmd("edit!") end
       end)
     end
+  end)
+end
+
+local function setup_tree_sitter()
+  fetch_grammar(function(ok)
+    if not ok then
+      vim.schedule(function()
+        print("Failed to fetch kulala_http grammar (git is required)")
+      end)
+      return
+    end
+    build_parser()
   end)
 end
 
