@@ -5,7 +5,7 @@ CURRENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLUGINS=${PLUGINS:-"file://$CURRENT_DIR;$PLUGIN_NAME"}
 
 CURRENT_DATESTR=$(date +"%Y-%m-%d-%H-%M-%S")
-TMP_DIR=$(mktemp -t -d "tmp.nvim-isolation-${CURRENT_DATESTR}-XXXXXXXX")
+TMP_DIR=$(mktemp -d "${TMPDIR:-/tmp}/tmp.nvim-isolation-${CURRENT_DATESTR}.XXXXXX")
 
 ADDITIONAL_USER_SCRIPT="$1"
 

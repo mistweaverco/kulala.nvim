@@ -7,7 +7,7 @@ CURRENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLUGINS=${PLUGINS:-"https://github.com/nvim-mini/mini.test.git;mini.test file://$CURRENT_DIR;$PLUGIN_NAME"}
 
 CURRENT_DATESTR=$(date +"%Y-%m-%d-%H-%M-%S")
-TMP_DIR=$(mktemp -t -d "tmp.nvim-test-isolation-${CURRENT_DATESTR}-XXXXXXXX")
+TMP_DIR=$(mktemp -d "${TMPDIR:-/tmp}/tmp.nvim-test-isolation-${CURRENT_DATESTR}.XXXXXX")
 
 function cleanup {
   rm -rf "$TMP_DIR"
