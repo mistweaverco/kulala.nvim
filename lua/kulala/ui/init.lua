@@ -655,7 +655,7 @@ M.interrupt_requests = function()
   local current = get_current_response()
   if current and current.method == "WS" then return require("kulala.cmd.websocket").close() end
 
-  local acted = CMD.queue.interrupt_progressive()
+  local acted = CMD.queue:interrupt_progressive()
   if not acted then return end
 
   INLAY.clear("kulala.loading")
