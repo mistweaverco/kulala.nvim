@@ -27,6 +27,15 @@ It allows you to make HTTP requests from within Neovim.
 
 <p></p>
 
+# ••
+
+Kulala team loves feature requests and feedback,
+so if you have any ideas or suggestions, please let us know!  
+
+We'll be happy to implement them ❤️
+
+</div>
+
 ## Features
   
 - Protocols: HTTP, gRPC, GraphQL, WebSocket, Streaming
@@ -42,15 +51,6 @@ It allows you to make HTTP requests from within Neovim.
 - Built-in LSP completion
 - Scratchpad: for making requests
 - Compatibility with IntelliJ HTTP Client
-
-# ••
-
-Kulala team loves feature requests and feedback,
-so if you have any ideas or suggestions, please let us know!  
-
-We'll be happy to implement them ❤️
-
-</div>
 
 ## Install
 
