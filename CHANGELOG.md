@@ -1,8 +1,13 @@
-## 6.11.0 (2026-06-13)
+## <small>6.11.1 (2026-06-13)</small>
 
+* chore(docs): add demo webp ([cce06dc](https://github.com/mistweaverco/kulala/commit/cce06dc))
+* chore(docs, cleanup): Update documentation and remove unused files ([3209abf](https://github.com/mistweaverco/kulala/commit/3209abf))
 * feat(sessions): add session restore ([584716f](https://github.com/mistweaverco/kulala/commit/584716f))
 * fix(minit): fix scripts for mac and linux ([b069eb9](https://github.com/mistweaverco/kulala/commit/b069eb9))
 * fix(ui): ctrl+c error in queue method ([5421040](https://github.com/mistweaverco/kulala/commit/5421040))
+
+## 6.11.0 (2026-06-12)
+
 * fix(version): downgrade plugin version to 6.11.0 ([ab976c8](https://github.com/mistweaverco/kulala/commit/ab976c8))
 * chore(version): update version numbers ([f5a2852](https://github.com/mistweaverco/kulala/commit/f5a2852))
 * feat(ui, jq, lsp): refactor websockets, add jq filter, fix lsp restart ([6b178fc](https://github.com/mistweaverco/kulala/commit/6b178fc))
