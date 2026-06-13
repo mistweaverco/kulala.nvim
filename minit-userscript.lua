@@ -4,7 +4,7 @@ local kulala_api = require("kulala.api")
 kulala.setup()
 
 local contents = [[
-POST https://echo.getkulala.net/post HTTP/1.1
+POST https://echo.kulala.app/post HTTP/1.1
 Content-Type: application/json
 
 {
