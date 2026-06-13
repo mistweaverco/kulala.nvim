@@ -5,115 +5,71 @@ Table of Contents                      *kulala.requirements-table-of-contents*
 
 1. Requirements                             |kulala.requirements-requirements|
   - Neovim                           |kulala.requirements-requirements-neovim|
-  - cURL                               |kulala.requirements-requirements-curl|
-  - gRPCurl                         |kulala.requirements-requirements-grpcurl|
-  - Websocat                       |kulala.requirements-requirements-websocat|
-  - OpenSSL                         |kulala.requirements-requirements-openssl|
-  - jq                                   |kulala.requirements-requirements-jq|
-  - prettier                       |kulala.requirements-requirements-prettier|
-  - xmllint                         |kulala.requirements-requirements-xmllint|
-  - stylua                           |kulala.requirements-requirements-stylua|
-2. Optional Requirements           |kulala.requirements-optional-requirements|
+  - kulala-core                 |kulala.requirements-requirements-kulala-core|
+  - Syntax highlighting   |kulala.requirements-requirements-syntax-highlighting|
+2. Optional tools                   |kulala.requirements-optional-tools|
+3. Optional configuration      |kulala.requirements-optional-configuration|
 
 ==============================================================================
 1. Requirements                             *kulala.requirements-requirements*
 
-List of requirements for using kulala.
-
 
 NEOVIM                               *kulala.requirements-requirements-neovim*
 
-- Neovim https://github.com/neovim/neovim 0.10.0+
+- Neovim https://github.com/neovim/neovim 0.12+
 
 
-SYNTAX HIGHLIGHTING
+KULALA-CORE                       *kulala.requirements-requirements-kulala-core*
 
-- Treesitter for HTTP syntax https://github.com/nvim-treesitter/nvim-treesitter
+- kulala-core https://github.com/mistweaverco/kulala-core
 
+Kulala downloads and manages the kulala-core binary automatically on first use.
+HTTP, gRPC, WebSocket, GraphQL, scripting, and authentication are handled by
+kulala-core.
 
-CURL                                   *kulala.requirements-requirements-curl*
-
-- cURL https://curl.se/ (tested with 8.5.0)
-
-
-GRPCURL                             *kulala.requirements-requirements-grpcurl*
-
-- gRPCurl https://github.com/fullstorydev/grpcurl for GRPC requests
+You can optionally set `kulala_core.path` in your config to use a custom
+binary.
 
 
-WEBSOCAT                           *kulala.requirements-requirements-websocat*
+SYNTAX HIGHLIGHTING       *kulala.requirements-requirements-syntax-highlighting*
 
-- Websocat https://github.com/vi/websocat for WebSocket requests
+- Bundled `kulala_http` Tree-sitter parser (installed with the plugin)
 
-
-OPENSSL                             *kulala.requirements-requirements-openssl*
-
-- Required for JWT and PKCE signing (comes preinstalled with macOS and most Linux distributions and is part of git installation on Windows)
-
-
-JQ                                       *kulala.requirements-requirements-jq*
-
-- jq https://stedolan.github.io/jq/ (tested with 1.7)
-
-(Only required for formatted JSON responses)
-
-
-PRETTIER                           *kulala.requirements-requirements-prettier*
-
-- prettier https://prettier.io
-- prettierd https://github.com/fsouza/prettierd - preferred for better performance
-
-(Required for formatting HTML, JS, GraphQL)
-
-
-XMLLINT                             *kulala.requirements-requirements-xmllint*
-
-- xmllint https://packages.ubuntu.com/noble/libxml2-utils (tested with libxml v20914)
-
-(Only required for formatted XML/HTML responses and resolving XML request
-variables)
-
-
-STYLUA                               *kulala.requirements-requirements-stylua*
-
-- stylua https://github.com/JohnnyMorganz/StyLua
-
-(Required for Lua scripts)
+If you use Neovim `0.10.x`, you may need to recompile the parser with
+`:TSInstallFromGrammar kulala_http` after installing the Tree-sitter CLI.
 
 
 ==============================================================================
-2. Optional Requirements           *kulala.requirements-optional-requirements*
+2. Optional tools                   *kulala.requirements-optional-tools*
 
-To make things a lot easier, you can put this lua snippet somewhere in your
-configuration:
+These are only needed when you configure optional `contenttypes` formatters or
+path resolvers:
+
+- jq https://stedolan.github.io/jq/ — JSON formatting / JSONPath via external tools
+- prettier https://prettier.io — GraphQL, HTML, JavaScript formatting
+- xmllint — XML/HTML formatting and XPath resolution
+- stylua https://github.com/JohnnyMorganz/StyLua — Lua formatting
+- Node.js https://nodejs.org — JavaScript pre/post-request scripts
+
+
+==============================================================================
+3. Optional configuration      *kulala.requirements-optional-configuration*
+
+To make Neovim recognize `.http` files:
 
 >lua
     vim.filetype.add({
       extension = {
-        ['http'] = 'http',
+        http = "http",
+        rest = "rest",
       },
     })
 <
 
-This will make Neovim recognize files with the `.http` extension as HTTP files.
+For vim session restoration of request history, add `globals` to
+`sessionoptions`:
 
-Kulala.nvim comes with a parser compiled with the latest version of treesitter.
-
-If you have Neovim `0.10.x`, you might get an error `ABI version mismatch for
-kulala_http.so: supported between 13 and 14, found 15`.
-
-You need to install `tree-sitter CLI` and recompile the parser:
-
-1. Delete the existing parser at `nvim-treesitter/parser/kulala_http`
-2. Install the `tree-sitter CLI` (if not installed already):- from distribution repositories
-- or from https://github.com/tree-sitter/tree-sitter/tree/master/crates/cli
-
-
-3. Recompile the parser:- Open a `http` file in Neovim (this will load Kulala)
-- Run `:TSInstallFromGrammar kulala_http`
-
-
-
-Generated by panvimdoc <https://github.com/kdheepak/panvimdoc>
-
+>vim
+    set sessionoptions+=globals
+<
 vim:tw=78:ts=8:noet:ft=help:norl:

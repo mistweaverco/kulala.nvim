@@ -10,7 +10,6 @@ local GLOBALS = require("kulala.globals")
 local INLAY = require("kulala.inlay")
 local KEYMAPS = require("kulala.config.keymaps")
 local Logger = require("kulala.logger")
-local PARSER = require("kulala.parser.request")
 local REPORT = require("kulala.ui.report")
 local UI_utils = require("kulala.ui.utils")
 local WINBAR = require("kulala.ui.winbar")
@@ -429,8 +428,7 @@ end
 M.show_verbose = function()
   local r = get_current_response()
   local Verbose = require("kulala.ui.verbose")
-  local body = r._kulala_core and Verbose.format(r) or Verbose.format_legacy(r)
-  show(body, "markdown", "verbose")
+  show(Verbose.format(r), "markdown", "verbose")
 end
 
 M.show_stats = function()
@@ -579,8 +577,6 @@ M.show_news = function()
 
   local footer = vim.fn.bufnr("kulala://news_footer")
   if footer > -1 then vim.api.nvim_buf_delete(footer, { force = true }) end
-
-  DB.settings:write { news_ver = GLOBALS.VERSION }
 end
 
 M.scratchpad = function()
@@ -707,47 +703,15 @@ end
 M.copy = function()
   local Bridge = require("kulala.cmd.kulala_core_bridge")
 
-  if Bridge.enabled() then
-    local curl, err = Bridge.to_curl_at_cursor(nil, GLOBALS.NAME .. "/" .. GLOBALS.VERSION)
-    if curl then
-      vim.fn.setreg("+", curl)
-      Logger.info("Copied to clipboard")
-      return
-    end
-    if err then
-      if Bridge.is_preview_unsupported_err(err) then return Logger.warn(err) end
-      Logger.warn(err .. " — falling back to legacy copy")
-    end
+  if not Bridge.enabled() then return Logger.error("kulala-core is not available") end
+
+  local curl, err = Bridge.to_curl_at_cursor(nil, GLOBALS.NAME .. "/" .. GLOBALS.VERSION)
+  if not curl then
+    if err and Bridge.is_preview_unsupported_err(err) then return Logger.warn(err) end
+    return Logger.error(err or "Failed to copy request as curl")
   end
 
-  local request = PARSER.parse()
-  if not request then return Logger.error("No request found") end
-
-  local skip_flags = { "-o", "-D", "--cookie-jar", "-w", "--data-binary", "--data-urlencode" }
-  local previous_flag
-
-  local cmd = vim.iter(request.cmd):fold("", function(cmd, flag)
-    if not vim.tbl_contains(skip_flags, flag) and not vim.tbl_contains(skip_flags, previous_flag) then
-      flag = (flag:find("^%-") or not previous_flag) and flag or vim.fn.shellescape(flag)
-      cmd = cmd .. flag .. " "
-    end
-
-    if previous_flag == "--data-binary" or previous_flag == "--data-urlencode" then
-      local body_file_path = flag:sub(2)
-      local body = FS.read_file(body_file_path, true) or "[could not read file]"
-
-      local max_request_size = CONFIG.get().ui.max_request_size
-      local body_size = vim.fn.getfsize(body_file_path)
-
-      body = body_size > max_request_size and flag or body
-      cmd = ("%s%s %s "):format(cmd, previous_flag, vim.fn.shellescape(body))
-    end
-
-    previous_flag = flag
-    return cmd
-  end)
-
-  vim.fn.setreg("+", vim.trim(cmd))
+  vim.fn.setreg("+", curl)
   Logger.info("Copied to clipboard")
 end
 

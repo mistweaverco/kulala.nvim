@@ -143,28 +143,6 @@ function M.format(r)
   return Markdown.trim(table.concat(parts, "\n"))
 end
 
----Legacy curl backend: `errors` holds `-v` stderr; body is the response payload.
----@param r Response
----@return string
-function M.format_legacy(r)
-  local parts = {}
-  local method = r.method or "?"
-  local url = r.url or "?"
-  table.insert(parts, ("# %s %s\n"):format(Markdown.md_escape_cell(method), Markdown.md_escape_cell(url)))
-
-  local trace = Markdown.trim(r.errors or "")
-  if trace ~= "" then table.insert(parts, Markdown.format_connection_trace(trace)) end
-
-  local body = r.body or ""
-  if Markdown.trim(body) ~= "" and not body:match("^No response body") then
-    local content, lang = Markdown.get_body_and_guess_ft(r, body)
-    table.insert(parts, "## Response body\n")
-    table.insert(parts, Markdown.fenced(lang, content))
-  end
-
-  return Markdown.trim(table.concat(parts, "\n"))
-end
-
 -- Re-export shared view formatters for callers that still require verbose.
 M.format_headers_view = Markdown.format_headers_view
 M.format_body_view = Markdown.format_body_view

@@ -4,12 +4,12 @@
 
 # kulala.nvim
 
-[![Made with love](assets/badge-made-with-love.svg)](https://github.com/mistweaverco/kulala.nvim/graphs/contributors)
-[![Discord](assets/badge-discord.svg)](https://mistweaverco.com/discord)
+[![Made with love][badge-made-with-love]][contributors]
+[![Discord][badge-discord]][discord]
 
 [![Main status](https://img.shields.io/github/actions/workflow/status/mistweaverco/kulala.nvim/tests.yml?label=main&branch=main&style=for-the-badge)](https://github.com/mistweaverco/kulala.nvim/actions/workflows/tests.yml)
 
-[Requirements](https://neovim.getkulala.net/docs/getting-started/requirements) • [Install](#install) • [Usage](https://neovim.getkulala.net/docs/usage) • [HTTP File Spec](https://neovim.getkulala.net/docs/usage/http-file-spec) • [Kulala GH Action](https://github.com/mistweaverco/kulala-github-action)
+[Install](#install) • [Usage](https://kulala.app/usage) • [HTTP File Spec](https://kulala.app/usage/http-file-format)
 
 <p></p>
 
@@ -23,43 +23,31 @@ It allows you to make HTTP requests from within Neovim.
 
 <p></p>
 
-![demo](./assets/demo.gif)
+TBD DEMO webp
 
 <p></p>
 
 ## Features
   
-Protocols: HTTP, gRPC, GraphQL, WebSocket, Streaming
-
-Specs: HTTP File Spec and IntelliJ HTTP Client compliant
-
-Variables: Environment, Document, Request, Dynamic, Prompt, `http-client.env` files
-
-Importing and running requests from external `*.http` files
-
-Importing and saving request/response data to/from external files
-
-JS and Lua scripting: Pre-request, Post-request, Conditional, Inline, External
-
-Authentication: Basic, Bearer, Digest, NTLM, OAuth2, Negotiate, AWS, SSL
-
-Response formatting and live filtering
-
-Assertions, automated testing and reporting
-
-Built-in LSP completion and formatting
-
-Import/export to/from Postman, OpenAPI, Bruno
-
-CLI tooling and CI hooks
-
-Scratchpad: for making requests
-
-100% Compatibility with IntelliJ HTTP Client
+- Protocols: HTTP, gRPC, GraphQL, WebSocket, Streaming
+- Specs: HTTP File Spec and IntelliJ HTTP Client compliant
+- Variables: Environment, Document, Request, Dynamic, Prompt, `http-client.env` files
+- Importing and running requests from external `*.http` files
+- Importing and saving request/response data to/from external files
+- JavaScript (Jetbrains compatible) Pre-request, Post-request, Conditional, Inline, External
+  - TypeScript Pre-request, Post-request, Conditional, Inline, External
+- Authentication: Basic, Bearer, Digest, NTLM, OAuth2, Negotiate, AWS, SSL
+- Response formatting and live filtering
+- Assertions, automated testing and reporting
+- Built-in LSP completion
+- Scratchpad: for making requests
+- Compatibility with IntelliJ HTTP Client
 
 # ••
 
-Kulala team loves feature requests and feedback, so if you have any ideas or suggestions, please let us know!  
+Kulala team loves feature requests and feedback,
+so if you have any ideas or suggestions, please let us know!  
+
 We'll be happy to implement them ❤️
 
 </div>
@@ -67,9 +55,18 @@ We'll be happy to implement them ❤️
 ## Install
 
 > [!WARNING]
-> Requires Neovim 0.12+ and cURL.
+> Requires Neovim 0.12+, cURL, git and tree-sitter-cli .
 >
-> See [requirements](https://neovim.getkulala.net/docs/getting-started/requirements).
+> Only x86_64 and arm64 architectures on MacOS/Linux
+> and only x86_64 on Windows are supported by kulala-core.
+>
+> cURL is required for downloading the kulala-core backend.
+>
+> git is required for downloading the
+> kulala-http tree-sitter parser and queries.
+>
+> tree-sitter-cli is required for generating the parser
+> from the included grammar.
 
 Via [lazy.nvim](https://github.com/folke/lazy.nvim):
 
@@ -215,11 +212,6 @@ require("lazy").setup({
           "}",
         },
 
-        disable_news_popup = false,
-
-        -- enable/disable lua syntax highlighting
-        lua_syntax_hl = true,
-
         -- Settings for pickers used for Environment, Authentication and Requests Managers
         pickers = {
           snacks = {
@@ -238,8 +230,6 @@ require("lazy").setup({
             end,
           },
         },
-
-        grinch_mode = false, -- disable Xmas greetings
       },
 
       lsp = {
@@ -323,9 +313,11 @@ require("lazy").setup({
 ```
 
 > [!NOTE]
-> By default global keymaps are disabled, change to `global_keymaps = true` to get a complete set of key mappings for Kulala. Check the [keymaps documentation](https://neovim.getkulala.net/docs/getting-started/keymaps) for details.
+> By default global keymaps are disabled.
+> Change `global_keymaps = true` to
+> get a complete set of key mappings for Kulala.
 
-See complete [configuration options](https://neovim.getkulala.net/docs/getting-started/configuration-options) for more information.
+See complete [configuration](#configuration) for more information.
 
 ## Honorable mentions
 
@@ -333,7 +325,7 @@ See complete [configuration options](https://neovim.getkulala.net/docs/getting-s
 
 For getting this project started.
 
-The actual state of [rest.nvim](https://github.com/rest-nvim/rest.nvim)
+The actual state of [rest.nvim][rest-nvim]
 as archived kicked off the development of kulala.nvim.
 
 It's not archived anymore,
@@ -342,7 +334,7 @@ but the state of the project at the time was a great motivation
 ### curl.nvim
 
 If you want a uncomplicated scratchpad for making HTTP requests,
-check out [curl.nvim](https://github.com/oysandvik94/curl.nvim)
+check out [curl.nvim][curl-nvim].
 
 Different to this project,
 but also a great option if you just want to make quick
@@ -352,4 +344,8 @@ HTTP requests from within Neovim.
 
 [restnvim-unarchived-post]: https://github.com/rest-nvim/rest.nvim/issues/398#issue-2442747909
 [badge-discord]: https://mistweaverco.com/assets/badges/discord.svg
+[discord]: https://mistweaverco.com/discord
 [badge-made-with-love]: https://mistweaverco.com/assets/badges/discord.svg
+[contributors]: https://github.com/mistweaverco/kulala.nvim/graphs/contributors
+[rest-nvim]: https://github.com/rest-nvim/rest.nvim
+[curl-nvim]: https://github.com/oysandvik94/curl.nvim

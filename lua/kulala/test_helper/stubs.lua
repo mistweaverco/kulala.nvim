@@ -1,12 +1,10 @@
 local dynamic_vars = require("kulala.parser.dynamic_vars")
 local fs = require("kulala.utils.fs")
-local globals = require("kulala.globals")
 
 local h = require("kulala.test_helper.ui")
 
 local Jobstart = { id = "Jobstart", jobs = {} }
 local System = { id = "System", code = 0, signal = 0, pid = 0, closing = false, jobs = {}, log = {}, async = false }
-local Curl = { url_mappings = {}, paths = {}, requests = {}, requests_no = 0, last_request_body_path = "" }
 local Input = { variables = {} }
 local Output = { log = {} }
 local Notify = { messages = {} }
@@ -179,74 +177,6 @@ function Fs.file_exists(path)
   return Fs.paths_mappings[path] or Fs._file_exists(path)
 end
 
-function Curl.stub(opts)
-  Curl.url_mappings = vim.tbl_deep_extend("force", Curl.url_mappings, opts)
-  return Curl
-end
-
-local function parse_curl_cmd(cmd)
-  local curl_flags = {
-    ["-D"] = "headers_path",
-    ["-o"] = "body_path",
-    ["-w"] = "curl_format_path",
-    ["--cookie-jar"] = "cookies_path",
-    ["--data-binary"] = "request_body",
-  }
-
-  local flags = {}
-  local previous
-
-  for _, flag in ipairs(cmd) do
-    local flag_name = curl_flags[previous]
-    if flag_name then flags[flag_name] = flag end
-    previous = flag
-  end
-
-  return flags
-end
-
-function Curl.request(job)
-  local cmd = job.args.cmd
-  local url = vim.split(cmd[#cmd], "?")[1]
-  local mappings = vim.tbl_deep_extend("force", Curl.url_mappings["*"] or {}, Curl.url_mappings[url] or {})
-  local _
-
-  if not mappings then return end
-
-  if job.id == "Jobstart" then
-    job.opts.on_stdout = mappings.stats
-    job.opts.on_stderr = mappings.errors
-  else
-    job.code = mappings.code or 0
-    job.stdout = mappings.stdout or mappings.stats or ""
-    job.stderr = mappings.errors or ""
-  end
-
-  local curl_flags = parse_curl_cmd(cmd)
-
-  _ = (mappings.headers and curl_flags.headers_path) and fs.write_file(curl_flags.headers_path, mappings.headers)
-  _ = (mappings.body and curl_flags.body_path) and fs.write_file(curl_flags.body_path, mappings.body)
-  _ = (mappings.cookies and curl_flags.body_path) and fs.write_file(globals.COOKIES_JAR_FILE, mappings.cookies)
-
-  vim.list_extend(Curl.paths, { curl_flags.headers_path, curl_flags.body_path })
-
-  Curl.last_request_body_path = (curl_flags["request_body"] or ""):sub(2)
-  Curl.requests_no = Curl.requests_no + 1
-  vim.list_extend(Curl.requests, { url })
-end
-
-function Curl.reset()
-  Curl.requests_no = 0
-  Curl.requests = {}
-
-  vim.iter(Curl.paths):each(function(path)
-    vim.uv.fs_unlink(path)
-  end)
-
-  Curl.paths = {}
-  Curl.url_mappings = {}
-end
-
 function Jobstart.stub(cmd, opts)
   Jobstart.cmd = cmd
   Jobstart.opts = opts
@@ -371,16 +301,6 @@ function KulalaCore.reset()
   KulalaCore.run_mappings = {}
 end
 
----Mirror curl.stub URL mappings for kulala-core run responses.
----@param curl_mappings table
-function KulalaCore.mirror_curl_stub(curl_mappings)
-  local core = {}
-  for url, mapping in pairs(curl_mappings) do
-    if url ~= "*" then core[url] = mapping end
-  end
-  return KulalaCore.stub(core)
-end
-
 function KulalaCore.is_invocation(cmd)
   return job_cmd_match(cmd, { "kulala-core" })
 end
@@ -391,7 +311,7 @@ function KulalaCore.handle(system)
   local payload = vim.json.decode(stdin:match("^(.-)\n?$") or stdin) or {}
   local action = payload.action
 
-  if action == "parse" or action == "environments" then
+  if action == "parse" or action == "environments" or action == "from_curl" then
     local done = false
     System._system(system.args.cmd, system.args.opts, function(completed)
       system.code = completed.code
@@ -402,34 +322,6 @@ function KulalaCore.handle(system)
     vim.wait(60000, function()
       return done
     end, 20)
-    return
-  end
-
-  if action == "from_curl" then
-    local CURL = require("kulala.parser.curl")
-    local spec = CURL.parse(payload.curl or "")
-    if spec then
-      local lines = { "# " .. (payload.curl or "") }
-      local url = spec.method .. " " .. spec.url
-      if spec.http_version and spec.http_version ~= "" then url = url .. " " .. spec.http_version end
-      table.insert(lines, url)
-      for k, v in pairs(spec.headers or {}) do
-        table.insert(lines, k .. ": " .. v)
-      end
-      if spec.cookie and spec.cookie ~= "" then table.insert(lines, "Cookie: " .. spec.cookie) end
-      if spec.body and #spec.body > 0 then
-        table.insert(lines, "")
-        vim.iter(vim.split(spec.body, "\n")):each(function(l)
-          table.insert(lines, l)
-        end)
-      end
-      system.code = 0
-      system.stdout = vim.json.encode { ok = true, lines = lines }
-    else
-      system.code = 0
-      system.stdout = vim.json.encode { ok = false, error = "Failed to parse curl command" }
-    end
-    system.stderr = ""
     return
   end
 
@@ -640,7 +532,6 @@ function System.wait(_, timeout, predicate)
 end
 
 return {
-  Curl = Curl,
   Jobstart = Jobstart,
   System = System,
   KulalaCore = KulalaCore,
