@@ -25,6 +25,11 @@ local M = {
     -- Optional override for download url
     download_url = "https://github.com/mistweaverco/kulala-core/releases/download/%s/%s",
   },
+  -- Restore request history and UI after sourcing a vim session (:h 'sessionoptions' globals).
+  session = {
+    restore = true,
+  },
+
   -- dev, test, prod, can be anything
   -- see: https://learn.microsoft.com/en-us/aspnet/core/test/http-files?view=aspnetcore-8.0#environment-files
   default_env = "default",

@@ -64,6 +64,8 @@ M.setup = function(config)
   if M.options.show_icons == "signcolumn" then pcall(set_signcolumn_icons) end
   M.options.global_keymaps, M.options.ft_keymaps = keymaps.setup_global_keymaps()
 
+  require("kulala.vim-sessions").setup()
+
   M.options.initialized = true
 
   return M.options
