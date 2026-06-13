@@ -23,7 +23,7 @@ It allows you to make HTTP requests from within Neovim.
 
 <p></p>
 
-TBD DEMO webp
+<img width="1330" height="959" alt="demo" src="https://github.com/user-attachments/assets/a7b3b01f-0115-44dc-94d2-8abd4db6fb60" />
 
 <p></p>
 
