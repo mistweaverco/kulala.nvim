@@ -143,11 +143,6 @@ local M = {
       "}",
     },
 
-    disable_news_popup = false,
-
-    -- enable/disable lua syntax highlighting
-    lua_syntax_hl = true,
-
     -- Settings for pickers used for Environment, Authentication and Requests Managers
     pickers = {
       snacks = {
@@ -166,8 +161,6 @@ local M = {
         end,
       },
     },
-
-    grinch_mode = false, -- disable Xmas greetings
   },
 
   lsp = {

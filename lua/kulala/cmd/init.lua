@@ -328,20 +328,9 @@ end
 
 local function modify_grpc_response(response)
   if response.method ~= "GRPC" then return response end
-  if response._kulala_core then
-    local content_type = response.errors == "" and "application/json" or "kulala/grpc_error"
-    add_content_type_header(response, content_type)
-    return response
-  end
-
-  response.body_raw = response.stats
-  response.stats = ""
-
-  FS.write_file(GLOBALS.BODY_FILE, response.body_raw)
 
   local content_type = response.errors == "" and "application/json" or "kulala/grpc_error"
   add_content_type_header(response, content_type)
-
   return response
 end
 
@@ -349,11 +338,7 @@ local function set_request_stats(response)
   response.stats = Json.parse(tostring(response.stats)) or {}
   response.response_code = tonumber(response.stats.response_code) or response.code
   -- kulala-core already applies # @kulala-expect-status-code; do not re-fail 4xx/5xx here.
-  if response._kulala_core then
-    response.status = response.code == 0
-  else
-    response.status = response.code == 0 and response.response_code < 400
-  end
+  response.status = response.code == 0
   response.assert_status = response.status and response.assert_status
 
   return response

@@ -66,10 +66,7 @@
 ---@field max_request_size number
 ---@field report KulalaDefaultConfigUiReport
 ---@field scratchpad_default_contents string[]
----@field disable_news_popup boolean
----@field lua_syntax_hl boolean
 ---@field pickers KulalaDefaultConfigUiPickers
----@field grinch_mode boolean
 
 ---@class KulalaDefaultConfigLsp
 ---@field enable boolean

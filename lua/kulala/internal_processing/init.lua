@@ -172,25 +172,6 @@ M.env_json_key = function(cmd, response)
   DB.update().env[kv[1]] = value
 end
 
-M.prompt_var = function(metadata_value, secret)
-  local input = secret and vim.fn.inputsecret or vim.fn.input
-  local kv = vim.split(metadata_value, " ")
-
-  local var_name = kv[1]
-  local prompt = table.concat(kv, " ", 2)
-  prompt = prompt == "" and "Enter value for variable [" .. var_name .. "]: " or prompt
-
-  local status, value = pcall(input, prompt)
-  if not status or not value or value == "" then return false end
-
-  DB.update().env[var_name] = value
-  return true
-end
-
-M.delay = function(ms)
-  vim.wait(ms)
-end
-
 M.get_cookies = get_cookies_as_table
 M.get_headers = get_last_headers_as_table
 

@@ -3,9 +3,7 @@ local DB = require("kulala.db")
 local DOCUMENT_PARSER = require("kulala.parser.document")
 local ENV_PARSER = require("kulala.parser.env")
 local FS = require("kulala.utils.fs")
-local GLOBALS = require("kulala.globals")
 local GRAPHQL_PARSER = require("kulala.parser.graphql")
-local Logger = require("kulala.logger")
 local PARSER_UTILS = require("kulala.parser.utils")
 local STRING_UTILS = require("kulala.utils.string")
 local StringVariablesParser = require("kulala.parser.string_variables_parser")
@@ -48,27 +46,8 @@ local M = {}
 ---@field cmd string[] -- The command to execute the request
 ---@field body_temp_file string -- The path to the temporary file containing the body
 ---
----@field curl CurlCommand -- The curl command
----@field grpc GrpcCommand|nil -- The gRPC command
----
 ---@field file string -- The file path of the document
 ---@field ft string -- The filetype of the document
-
----@class CurlCommand
----@field flags table<string, string> -- flags
-
----@class GrpcCommand
----@field address string|nil -- host:port, can be omitted if proto|proto-set is provided
----@field command string|nil -- describe|list
----@field symbol string|nil
----   service.method or service/method; optional when `command` is set
----@field flags table<string, string> -- import-path|proto|proto-set|plaintext
-local default_grpc_command = {
-  address = nil,
-  command = nil,
-  symbol = nil,
-  flags = {},
-}
 
 ---@type Request
 ---@diagnostic disable-next-line: missing-fields
@@ -78,41 +57,7 @@ local default_request = {
   ft = "text",
   cmd = {},
   body_temp_file = "",
-  curl = { flags = {} },
 }
-
-local function process_grpc_flags(request, flag, value)
-  if flag:match("global") then
-    return Logger.warn("The `grpc-global-` flags are deprecated.  Please use `KULALA_SHARED` blocks.")
-  end
-
-  value = flag:match("import%-path") and FS.get_file_path(value) or value
-  request.grpc = request.grpc or vim.deepcopy(default_grpc_command)
-
-  local last_flag = request.grpc.flags[#request.grpc.flags] or {}
-
-  if value ~= "" and last_flag[1] == flag and last_flag[2] == "" then
-    request.grpc.flags[#request.grpc.flags][2] = value
-  else
-    table.insert(request.grpc.flags, { flag, value })
-  end
-end
-
-local function process_curl_flags(request, flag, value)
-  if flag:match("global") then
-    return Logger.warn("The `curl-global-` flags are deprecated.  Please use `KULALA_SHARED` blocks.")
-  end
-
-  request.curl.flags[flag] = value
-end
-
----@param request Request
-local function parse_metadata(request)
-  for _, metadata in ipairs(request.metadata) do
-    if metadata.name:find("^curl%-") then process_curl_flags(request, metadata.name:sub(6), metadata.value) end
-    if metadata.name:find("^grpc%-") then process_grpc_flags(request, metadata.name:sub(6), metadata.value) end
-  end
-end
 
 -- Reserved Characters: ! # $ & ' ( ) * + , / : ; = ? @ [ ]
 -- https://stackoverflow.com/questions/1547899/which-characters-make-a-url-invalid/1547940#1547940
@@ -247,10 +192,7 @@ local process_variables = function(request, silent)
 end
 
 local function set_variables(request)
-  local variables = process_variables(request)
-  parse_metadata(request)
-
-  return variables
+  return process_variables(request)
 end
 
 local function set_headers(request, env)
@@ -330,9 +272,6 @@ M.parse = function(requests, document_request)
   request.type = "rest"
   process_graphql(request)
 
-  local json = vim.json.encode(request)
-  FS.write_file(GLOBALS.REQUEST_FILE, json, false)
-
   if empty_request then return nil, "empty" end
 
   if request.method == "GRPC" then
@@ -355,6 +294,5 @@ M.parse = function(requests, document_request)
 end
 
 M.process_variables = process_variables
-M.parse_metadata = parse_metadata
 
 return M
