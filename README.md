@@ -79,11 +79,15 @@ Via [lazy.nvim](https://github.com/folke/lazy.nvim):
 require("lazy").setup({
   {
     "mistweaverco/kulala.nvim",
+    -- Load before session save/restore so VimLeavePre and SessionLoadPost hooks are registered.
+    event = { "SessionLoadPost", "VimLeavePre" },
     keys = {
       { "<leader>Rs", desc = "Send request" },
       { "<leader>Ra", desc = "Send all requests" },
       { "<leader>Rb", desc = "Open scratchpad" },
     },
+    -- See opts.lsp.enforce_external_script_naming_convention
+    -- to restrict LSP capabilities to *.http, *.http.js, *.http.ts and *.http.lua files.
     ft = {"http", "rest", "javascript", "lua"},
     opts = {
       kulala_core = {
@@ -108,6 +112,11 @@ require("lazy").setup({
         data_dir = nil,
         -- Optional override for download url
         download_url = "https://github.com/mistweaverco/kulala-core/releases/download/%s/%s",
+      },
+      -- Restore request history and UI after sourcing a vim session.
+      -- Requires `set sessionoptions+=globals` in your Neovim config.
+      session = {
+        restore = true,
       },
       -- dev, test, prod, can be anything
       -- see: https://learn.microsoft.com/en-us/aspnet/core/test/http-files?view=aspnetcore-8.0#environment-files
