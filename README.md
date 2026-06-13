@@ -39,7 +39,6 @@ We'll be happy to implement them ❤️
 ## Features
   
 - Protocols: HTTP, gRPC, GraphQL, WebSocket, Streaming
-- Specs: HTTP File Spec and IntelliJ HTTP Client compliant
 - Variables: Environment, Document, Request, Dynamic, Prompt, `http-client.env` files
 - Importing and running requests from external `*.http` files
 - Importing and saving request/response data to/from external files
