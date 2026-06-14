@@ -344,7 +344,7 @@ HTTP requests from within Neovim.
 [restnvim-unarchived-post]: https://github.com/rest-nvim/rest.nvim/issues/398#issue-2442747909
 [badge-discord]: https://mistweaverco.com/assets/badges/discord.svg
 [discord]: https://mistweaverco.com/discord
-[badge-made-with-love]: https://mistweaverco.com/assets/badges/discord.svg
+[badge-made-with-love]: https://mistweaverco.com/assets/badges/made-with-love.svg
 [contributors]: https://github.com/mistweaverco/kulala.nvim/graphs/contributors
 [rest-nvim]: https://github.com/rest-nvim/rest.nvim
 [curl-nvim]: https://github.com/oysandvik94/curl.nvim
