@@ -376,12 +376,57 @@ function KulalaCore.handle(system)
       end)
     end
     local method_upper = (method or ""):upper()
-    if method_upper == "GRPC" or method_upper == "WS" or method_upper == "WSS" then
-      system.code = 0
-      system.stdout = vim.json.encode {
-        ok = false,
-        error = method_upper .. " requests cannot be shown as curl or HTTP inspect preview",
-      }
+    if method_upper == "WS" or method_upper == "WSS" then
+      method_upper = "WEBSOCKET"
+    end
+    if method_upper == "GRPC" then
+      local grpc_flags = {}
+      local grpc_address, grpc_symbol
+      for i = block_start, #lines_tbl do
+        local l = lines_tbl[i] or ""
+        if l:match("^# @grpc%-import%-path%s+") then
+          table.insert(grpc_flags, "-import-path " .. vim.trim(l:gsub("^# @grpc%-import%-path%s+", "")))
+        elseif l:match("^# @grpc%-proto%s+") then
+          table.insert(grpc_flags, "-proto " .. vim.trim(l:gsub("^# @grpc%-proto%s+", "")))
+        elseif l:match("^GRPC%s+") then
+          local target = vim.trim(l:gsub("^GRPC%s+", ""))
+          grpc_address = target:match("^(%S+)")
+          grpc_symbol = target:match("%s+(%S+)$")
+        end
+      end
+      local body = vim.trim(table.concat(body_lines, "\n"))
+      local cmd = "grpcurl " .. table.concat(grpc_flags, " ")
+      for k, v in pairs(headers) do
+        cmd = cmd .. (" -H '%s: %s'"):format(k, v)
+      end
+      if body ~= "" then cmd = cmd .. (" -d '%s'"):format(body) end
+      cmd = cmd .. (" '%s'"):format(grpc_address or "")
+      if grpc_symbol then cmd = cmd .. (" '%s'"):format(grpc_symbol) end
+      if action == "inspect_request" then
+        system.code = 0
+        system.stdout = vim.json.encode { ok = true, lines = { cmd } }
+      else
+        system.code = 0
+        system.stdout = vim.json.encode { ok = true, curl = cmd }
+      end
+      system.stderr = ""
+      return
+    end
+    if method_upper == "WEBSOCKET" then
+      local ws_url = (url or ""):match("^(%S+)")
+      local body = vim.trim(table.concat(body_lines, "\n"))
+      local cmd = ("websocat '%s' --text"):format(ws_url or "")
+      for k, v in pairs(headers) do
+        cmd = cmd .. (" -H '%s: %s'"):format(k, v)
+      end
+      if body ~= "" then cmd = ("printf '%%s' '%s' | %s"):format(body, cmd) end
+      if action == "inspect_request" then
+        system.code = 0
+        system.stdout = vim.json.encode { ok = true, lines = { cmd } }
+      else
+        system.code = 0
+        system.stdout = vim.json.encode { ok = true, curl = cmd }
+      end
       system.stderr = ""
       return
     end
