@@ -1,6 +1,20 @@
+## 6.13.0 (2026-06-16)
+
+* chore(version): bump backend to 0.22.1 ([0d2ae95](https://github.com/mistweaverco/kulala/commit/0d2ae95))
+* chore(version): update versions and pnpm-lock/workspace ([b5883e2](https://github.com/mistweaverco/kulala/commit/b5883e2))
+* feat: support luarocks/rocks.nvim ([ee1437a](https://github.com/mistweaverco/kulala/commit/ee1437a))
+
+## 6.12.0 (2026-06-16)
+
+* feat(grpc): add reflection support ([9945d57](https://github.com/mistweaverco/kulala/commit/9945d57))
+* fix(docs): badge ([bf50254](https://github.com/mistweaverco/kulala/commit/bf50254))
+* chore(docs): fix readme layout ([a92d5d6](https://github.com/mistweaverco/kulala/commit/a92d5d6))
+* chore(docs): update README.md ([2fc8ab5](https://github.com/mistweaverco/kulala/commit/2fc8ab5))
+
 ## <small>6.11.1 (2026-06-13)</small>
 
 * chore(docs): add demo webp ([cce06dc](https://github.com/mistweaverco/kulala/commit/cce06dc))
+* chore(docs): update changelog ([e8df30b](https://github.com/mistweaverco/kulala/commit/e8df30b))
 * chore(docs, cleanup): Update documentation and remove unused files ([3209abf](https://github.com/mistweaverco/kulala/commit/3209abf))
 * feat(sessions): add session restore ([584716f](https://github.com/mistweaverco/kulala/commit/584716f))
 * fix(minit): fix scripts for mac and linux ([b069eb9](https://github.com/mistweaverco/kulala/commit/b069eb9))
