@@ -1,0 +1,2 @@
+allowBuilds:
+  tree-sitter-cli: true
