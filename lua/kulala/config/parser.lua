@@ -17,16 +17,21 @@ local site_dir = vim.fs.joinpath(vim.fn.stdpath("data"), "site")
 local parser_source_path = vim.fs.joinpath(vim.fn.stdpath("data"), "kulala.nvim", "tree-sitter-kulala-http")
 local parser_registered = false
 
-local function is_parser_ver_current()
-  return require("kulala.db").settings.parser_rev == Globals.TREESITTER_VERSION
-end
-
 local function has_kulala_queries()
   return #vim.api.nvim_get_runtime_file(vim.fs.joinpath("queries", parser_name, "*.scm"), true) > 0
 end
 
 local function has_kulala_parser()
   return #vim.api.nvim_get_runtime_file(vim.fs.joinpath("parser", parser_name .. "." .. target_parser_ext), true) > 0
+end
+
+local function is_parser_ver_current()
+  local current_version = require("kulala.db").settings.parser_rev
+  if current_version == nil and has_kulala_parser() then
+    -- The parser is managed externally.
+    return true
+  end
+  return current_version == Globals.TREESITTER_VERSION
 end
 
 --- HACK:
