@@ -376,9 +376,7 @@ function KulalaCore.handle(system)
       end)
     end
     local method_upper = (method or ""):upper()
-    if method_upper == "WS" or method_upper == "WSS" then
-      method_upper = "WEBSOCKET"
-    end
+    if method_upper == "WS" or method_upper == "WSS" then method_upper = "WEBSOCKET" end
     if method_upper == "GRPC" then
       local grpc_flags = {}
       local grpc_address, grpc_symbol
