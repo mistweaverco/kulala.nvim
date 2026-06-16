@@ -106,6 +106,7 @@ local open_kulala_buffer = function(filetype)
       filetype = "kulala_ui",
       buftype = "nofile",
       syntax = filetype,
+      shiftwidth = 2,
     })
 
     vim.iter(bo):each(function(key, value)
