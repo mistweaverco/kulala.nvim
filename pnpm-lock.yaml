@@ -210,6 +210,9 @@ importers:
       conventional-changelog:
         specifier: 7.2.0
         version: 7.2.0(conventional-commits-filter@5.0.0)
+      tree-sitter-cli:
+        specifier: 0.26.9
+        version: 0.26.9
 
 packages:
 
@@ -312,6 +315,11 @@ packages:
 
   spdx-license-ids@3.0.23:
     resolution: {integrity: sha512-CWLcCCH7VLu13TgOH+r8p1O/Znwhqv/dbb6lqWy67G+pT1kHmeD/+V36AVb/vq8QMIQwVShJ6Ssl5FPh0fuSdw==}
+
+  tree-sitter-cli@0.26.9:
+    resolution: {integrity: sha512-7l+U1RmazPVe+yA/JiX80GFOILnL/j24GbawamIzNQC8UlINrcyECbaWGaG1wuq4j/m0DQTx7Uu4r0iW9Ao1BQ==}
+    engines: {node: '>=12.0.0'}
+    hasBin: true
 
   uglify-js@3.19.3:
     resolution: {integrity: sha512-v3Xu+yuwBXisp6QYTcH4UbH+xYJXqnq2m/LtQVWKWzYc1iehYnLixoQDN9FH6/j9/oybfd6W9Ghwkl8+UMKTKQ==}
@@ -428,6 +436,8 @@ snapshots:
       spdx-license-ids: 3.0.23
 
   spdx-license-ids@3.0.23: {}
+
+  tree-sitter-cli@0.26.9: {}
 
   uglify-js@3.19.3:
     optional: true

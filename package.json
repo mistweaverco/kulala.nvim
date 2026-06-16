@@ -17,6 +17,7 @@
   },
   "type": "module",
   "devDependencies": {
-    "conventional-changelog": "7.2.0"
+    "conventional-changelog": "7.2.0",
+    "tree-sitter-cli": "0.26.9"
   }
 }
