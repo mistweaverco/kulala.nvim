@@ -8,8 +8,8 @@
 [![Discord][badge-discord]][discord]
 [![Development status][badge-development-status]][development-status]
 [![Our manifesto][badge-our-manifesto]][our-manifesto]
-[![AI Policty][badge-ai-policy]][ai-policy]
 [![Status of tests][badge-test-status]][link-test-status]
+[![AI Policty][badge-ai-policy]][ai-policy]
 
 [Install](#install) •
 [Usage](https://kulala.app/usage) •
@@ -29,7 +29,7 @@ It allows you to make HTTP requests from within Neovim.
 
 ![demo][demo-image]
 
-# Other tools 🔧 from the Kulala 🐼 family 🧑‍🧑‍🧒‍🧒
+# Other tools 🔧 from the Kulala 🐼 family 🌈
 
 [Kulala CLI][kulala-cli] •
 [Kulala Formatter (and converter)][kulala-fmt] •
