@@ -232,6 +232,11 @@ function M.connect(request, response, callback, opts)
 
   local _, core_cwd = KULALA_CORE.resolve_document_paths(0, request.file)
 
+  ---kulala-core resolves URL/headers/body; nvim must not substitute locally.
+  local connect_url = request._kulala_final_url or request._kulala_sent_url or request.url or ""
+  local connect_body = request.body_computed or request.body
+  local connect_headers = request.headers or {}
+
   local function handler(event)
     return function(system, data)
       vim.schedule(function()
@@ -252,9 +257,9 @@ function M.connect(request, response, callback, opts)
 
   local status, result = xpcall(function()
     return KULALA_CORE.websocket_start({
-      url = request.url,
-      body = request.body_computed or request.body,
-      headers = request.headers,
+      url = connect_url,
+      body = connect_body,
+      headers = connect_headers,
     }, {
       on_stdout = handler("on_stdout"),
       on_stderr = handler("on_stderr"),

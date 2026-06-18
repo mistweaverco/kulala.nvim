@@ -1,20 +1,11 @@
 local Config = require("kulala.config")
-local Env = require("kulala.parser.env")
 local Float = require("kulala.ui.float")
-local Parser = require("kulala.parser.document")
-local StringVariablesParser = require("kulala.parser.string_variables_parser")
+local KULALA_CORE = require("kulala.cmd.kulala_core_bridge")
 
 local M = {}
 
-local show_variable_info_text = function()
+local function cursor_inside_variable_template()
   local line = vim.api.nvim_get_current_line()
-  local env = Env.get_env() or {}
-
-  local request = Parser.get_document() or {}
-  local variables = vim.tbl_extend("force", request.variables, env)
-
-  -- get variable under cursor
-  -- a variable is a string that starts with two {{ and ends with two }}
   local cursor = vim.api.nvim_win_get_cursor(0)
   local start_col, end_col = cursor[2], cursor[2]
 
@@ -26,13 +17,15 @@ local show_variable_info_text = function()
     end_col = end_col + 1
   end
 
-  if start_col == 0 or end_col == #line then return end
+  if start_col == 0 or end_col == #line then return false end
+  return line:sub(start_col, start_col + 1) == "{{" and line:sub(end_col - 1, end_col) == "}}"
+end
 
-  local variable = line:sub(start_col + 1, end_col - 1)
-  local computed_variable = "{{" .. variable .. "}}"
-  local variable_value = StringVariablesParser.parse(computed_variable, variables, env, true)
-
-  return Float.create(variable_value, { relative = "cursor", border = "rounded", auto_size = true }).win
+local function hover_plaintext_value(hover)
+  if type(hover) ~= "table" or type(hover.contents) ~= "table" then return nil end
+  local contents = hover.contents
+  if contents.kind ~= "plaintext" or type(contents.value) ~= "string" then return nil end
+  return contents.value
 end
 
 local function hide_float(win, timer)
@@ -62,7 +55,17 @@ M.setup = function()
 
         vim.schedule(function()
           timer = vim.fn.timer_start(1000, function()
-            float_win_id = show_variable_info_text()
+            if not cursor_inside_variable_template() then return end
+            KULALA_CORE.lsp_hover_async(0, function(hover, err)
+              if err or not hover then return end
+              local value = hover_plaintext_value(hover)
+              if not value or value == "" then return end
+              float_win_id = Float.create(value, {
+                relative = "cursor",
+                border = "rounded",
+                auto_size = true,
+              }).win
+            end)
           end)
         end)
       end,
