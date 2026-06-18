@@ -599,13 +599,18 @@ end
 ---@param target DocumentRequest
 local function kulala_core_apply_sent_request(item, target)
   local sent = item.request
-  if type(sent) ~= "table" then return end
+  if type(sent) ~= "table" and type(item.url) ~= "string" then return end
 
-  if type(sent.method) == "string" and sent.method ~= "" then target.method = sent.method end
-  if type(sent.url) == "string" and vim.trim(sent.url) ~= "" then target._kulala_sent_url = sent.url end
-  if type(sent.headers) == "table" then target.headers = sent.headers end
-  if type(sent.body) == "string" then target.body = sent.body end
-  if type(item.url) == "string" and vim.trim(item.url) ~= "" then target._kulala_final_url = item.url end
+  if type(sent) == "table" then
+    if type(sent.method) == "string" and sent.method ~= "" then target.method = sent.method end
+    if type(sent.url) == "string" and vim.trim(sent.url) ~= "" then target._kulala_sent_url = sent.url end
+    if type(sent.headers) == "table" then target.headers = sent.headers end
+    if type(sent.body) == "string" then target.body = sent.body end
+  end
+  if type(item.url) == "string" and vim.trim(item.url) ~= "" then
+    target._kulala_final_url = item.url
+    target.url = item.url
+  end
 end
 
 local function kulala_core_body_text(body)
