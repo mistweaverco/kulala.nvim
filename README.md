@@ -6,10 +6,14 @@
 
 [![Made with love][badge-made-with-love]][contributors]
 [![Discord][badge-discord]][discord]
+[![Development status][badge-development-status]][development-status]
+[![Our manifesto][badge-our-manifesto]][our-manifesto]
+[![AI Policty][badge-ai-policy]][ai-policy]
+[![Status of tests][badge-test-status]][link-test-status]
 
-[![Main status](https://img.shields.io/github/actions/workflow/status/mistweaverco/kulala.nvim/tests.yml?label=main&branch=main&style=for-the-badge)](https://github.com/mistweaverco/kulala.nvim/actions/workflows/tests.yml)
-
-[Install](#install) • [Usage](https://kulala.app/usage) • [HTTP File Spec](https://kulala.app/usage/http-file-format)
+[Install](#install) •
+[Usage](https://kulala.app/usage) •
+[HTTP File Spec](https://kulala.app/usage/http-file-format)
 
 <p></p>
 
@@ -23,16 +27,18 @@ It allows you to make HTTP requests from within Neovim.
 
 <p></p>
 
-<img width="1330" height="959" alt="demo" src="https://github.com/user-attachments/assets/a7b3b01f-0115-44dc-94d2-8abd4db6fb60" />
+![demo][demo-image]
 
-<p></p>
+# Other tools 🔧 from the Kulala 🐼 family 🧑‍🧑‍🧒‍🧒
 
-# ••
+[Kulala CLI][kulala-cli] •
+[Kulala Formatter (and converter)][kulala-fmt] •
+[Kulala Desktop][kulala-desktop] •
+[Kulala for Visual Studio Code][kulala.vscode] •
+[Kulala Core][kulala-core]
+[Kulala Github Action][kulala-github-action]
 
-Kulala team loves feature requests and feedback,
-so if you have any ideas or suggestions, please let us know!  
-
-We'll be happy to implement them ❤️
+---
 
 </div>
 
@@ -346,5 +352,20 @@ HTTP requests from within Neovim.
 [discord]: https://mistweaverco.com/discord
 [badge-made-with-love]: https://mistweaverco.com/assets/badges/made-with-love.svg
 [contributors]: https://github.com/mistweaverco/kulala.nvim/graphs/contributors
+[badge-test-status]: https://img.shields.io/github/actions/workflow/status/mistweaverco/kulala.nvim/tests.yml?label=main&branch=main&style=for-the-badge
+[link-test-status]: https://github.com/mistweaverco/kulala.nvim/actions/workflows/tests.yml
 [rest-nvim]: https://github.com/rest-nvim/rest.nvim
 [curl-nvim]: https://github.com/oysandvik94/curl.nvim
+[kulala-cli]: https://github.com/mistweaverco/kulala-cli
+[kulala-fmt]: https://github.com/mistweaverco/kulala-fmt
+[kulala-desktop]: https://github.com/mistweaverco/kulala-desktop
+[kulala.vscode]: https://github.com/mistweaverco/kulala.vscode
+[kulala-core]: https://github.com/mistweaverco/kulala-core
+[kulala-github-action]: https://github.com/mistweaverco/kulala-github-action
+[demo-image]: https://github.com/user-attachments/assets/a7b3b01f-0115-44dc-94d2-8abd4db6fb60
+[badge-development-status]: https://mistweaverco.com/assets/badges/development-status.svg
+[development-status]: https://mistweaverco.com/roadmap?filter=kulala.nvim
+[badge-ai-policy]: https://mistweaverco.com/assets/badges/ai-policy.svg
+[ai-policy]: https://mistweaverco.com/ai-policy
+[badge-our-manifesto]: https://mistweaverco.com/assets/badges/our-manifesto.svg
+[our-manifesto]: https://mistweaverco.com/manifesto
