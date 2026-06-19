@@ -213,16 +213,24 @@ end
 
 ---@param first table|nil
 ---@return boolean
-local function is_prompt_item(first)
-  if type(first) ~= "table" then return false end
-  if first.prompt == true then return true end
+local function is_prompt_item(item)
+  if type(item) ~= "table" then return false end
+  if item.prompt == true then return true end
   if
-    type(first.promptId) == "string"
-    and first.promptId ~= ""
-    and type(first.promptType) == "string"
-    and first.promptType ~= ""
+    type(item.promptId) == "string"
+    and item.promptId ~= ""
+    and type(item.promptType) == "string"
+    and item.promptType ~= ""
   then
     return true
+  end
+  return false
+end
+
+local function wrapper_has_prompt(wrapper)
+  if not wrapper or wrapper.type ~= "responses" or type(wrapper.data) ~= "table" then return false end
+  for _, item in ipairs(wrapper.data) do
+    if is_prompt_item(item) then return true end
   end
   return false
 end
@@ -292,8 +300,7 @@ end
 ---@return string|nil err
 local function run_result_from_job(job)
   local wrapper = M.try_decode_wrapper(job.stdout)
-  local first = wrapper and wrapper.data and wrapper.data[1]
-  local is_prompt = wrapper and wrapper.type == "responses" and is_prompt_item(first)
+  local is_prompt = wrapper_has_prompt(wrapper)
 
   if job.code ~= 0 and not is_prompt then
     local err = vim.trim(job.stderr or "")

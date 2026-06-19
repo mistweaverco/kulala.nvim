@@ -664,20 +664,52 @@ local function kulala_core_stats_stdout(result)
 end
 
 ---Matches kulala-core KulalaPromptResponse (`prompt` or oauth/custom identifiers).
----@param first table|nil
+---@param item table|nil
 ---@return boolean
-local function kulala_core_result_is_prompt(first)
-  if type(first) ~= "table" then return false end
-  if first.prompt == true then return true end
+local function kulala_core_result_is_prompt(item)
+  if type(item) ~= "table" then return false end
+  if item.prompt == true then return true end
   if
-    type(first.promptId) == "string"
-    and first.promptId ~= ""
-    and type(first.promptType) == "string"
-    and first.promptType ~= ""
+    type(item.promptId) == "string"
+    and item.promptId ~= ""
+    and type(item.promptType) == "string"
+    and item.promptType ~= ""
   then
     return true
   end
   return false
+end
+
+---@param data table[]
+---@return table|nil
+local function kulala_core_find_first_prompt(data)
+  for _, item in ipairs(data) do
+    if kulala_core_result_is_prompt(item) then return item end
+  end
+  return nil
+end
+
+---@param data table[]
+---@return table[]
+local function kulala_core_completed_before_prompt(data)
+  for i, item in ipairs(data) do
+    if kulala_core_result_is_prompt(item) then
+      if i <= 1 then return {} end
+      local out = {}
+      for j = 1, i - 1 do
+        out[j] = data[j]
+      end
+      return out
+    end
+  end
+  return {}
+end
+
+---@param item table
+---@return string|nil
+local function kulala_core_prompt_block_name(item)
+  if type(item.blockName) == "string" and vim.trim(item.blockName) ~= "" then return vim.trim(item.blockName) end
+  return nil
 end
 
 ---Queue tasks run inside `vim.schedule`; calling `input()` there often returns immediately without a prompt.
@@ -928,7 +960,16 @@ local process_request_kulala_core
 ---@param retry_depth number
 ---@param start_time number
 ---@param core_cwd string|nil
-local function finish_kulala_core_wrapper(wrapper, parsed_request, callback, retry_depth, start_time, core_cwd)
+---@param run_opts KulalaCoreRunOpts|nil
+local function finish_kulala_core_wrapper(
+  wrapper,
+  parsed_request,
+  callback,
+  retry_depth,
+  start_time,
+  core_cwd,
+  run_opts
+)
   local duration_wall = vim.uv.hrtime() - start_time
 
   if not wrapper or type(wrapper) ~= "table" then
@@ -954,8 +995,7 @@ local function finish_kulala_core_wrapper(wrapper, parsed_request, callback, ret
   end
 
   local data = wrapper.data or {}
-  local first = data[1]
-  if not first then
+  if #data == 0 then
     handle_response({
       code = 1,
       errors = "kulala-core returned no result",
@@ -965,11 +1005,19 @@ local function finish_kulala_core_wrapper(wrapper, parsed_request, callback, ret
     return
   end
 
-  if kulala_core_result_is_prompt(first) then
-    if type(first.message) == "string" and vim.trim(first.message) ~= "" then
-      vim.notify(vim.trim(first.message), vim.log.levels.INFO)
+  local prompt_item = kulala_core_find_first_prompt(data)
+  if prompt_item then
+    local completed_before = kulala_core_completed_before_prompt(data)
+    if #completed_before > 0 then
+      kulala_core_deliver_run_results(
+        { type = "responses", data = completed_before },
+        parsed_request,
+        duration_wall,
+        callback
+      )
     end
-    local inputs = kulala_core_collect_prompt_inputs(first)
+
+    local inputs = kulala_core_collect_prompt_inputs(prompt_item)
     if not inputs then
       handle_response({
         code = 1,
@@ -979,7 +1027,7 @@ local function finish_kulala_core_wrapper(wrapper, parsed_request, callback, ret
       }, parsed_request, callback)
       return
     end
-    if not first.promptId or first.promptId == "" then
+    if not prompt_item.promptId or prompt_item.promptId == "" then
       handle_response({
         code = 1,
         errors = "kulala-core prompt missing promptId",
@@ -991,7 +1039,7 @@ local function finish_kulala_core_wrapper(wrapper, parsed_request, callback, ret
 
     KULALA_CORE.continue_async(
       {
-        promptId = first.promptId,
+        promptId = prompt_item.promptId,
         inputs = inputs,
       },
       core_cwd,
@@ -1017,9 +1065,13 @@ local function finish_kulala_core_wrapper(wrapper, parsed_request, callback, ret
             }, parsed_request, callback)
             return
           end
-          local done_msg = type(cont_first.message) == "string" and vim.trim(cont_first.message) or ""
-          if done_msg ~= "" then vim.notify(done_msg, vim.log.levels.INFO) end
-          process_request_kulala_core(parsed_request, callback, retry_depth + 1)
+
+          local retry_run_opts = vim.deepcopy(run_opts or parsed_request._kulala_replay_run_opts or {})
+          local block_name = kulala_core_prompt_block_name(prompt_item)
+          if #completed_before > 0 and block_name then
+            retry_run_opts.limit = { { filter = "name", name = block_name } }
+          end
+          process_request_kulala_core(parsed_request, callback, retry_depth + 1, retry_run_opts)
         end)
       end
     )
@@ -1061,7 +1113,7 @@ process_request_kulala_core = function(parsed_request, callback, retry_depth, ru
         }, parsed_request, callback)
         return
       end
-      finish_kulala_core_wrapper(wrapper, parsed_request, callback, retry_depth, start_time, core_cwd)
+      finish_kulala_core_wrapper(wrapper, parsed_request, callback, retry_depth, start_time, core_cwd, run_opts)
     end)
   end)
 end
