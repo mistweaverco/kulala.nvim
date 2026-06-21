@@ -516,6 +516,7 @@ Possible values:
 - `"above"`, `"right"`, `"below"`, `"left"`
 - `"vertical"` (alias for `"right"`)
 - `"horizontal"` (alias for `"below"`)
+- Function returning any of `"above"`, `"right"`, `"below"`, `"left"`
 
 Default: `"right"`
 

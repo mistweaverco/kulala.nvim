@@ -50,7 +50,7 @@
 
 ---@class KulalaDefaultConfigUi
 ---@field display_mode "split"|"float"
----@field split_direction "above"|"right"|"below"|"left"|"vertical"|"horizontal"
+---@field split_direction "above"|"right"|"below"|"left"|"vertical"|"horizontal"|fun(): "above"|"right"|"below"|"left"
 ---@field win_opts kulala.ui.win_config
 ---@field default_view "body"|"headers"|"headers_body"|"verbose"|"report"|fun(response: Response)
 ---@field winbar boolean
