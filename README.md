@@ -137,7 +137,7 @@ require("lazy").setup({
       ui = {
         -- display mode: possible values: "split", "float"
         display_mode = "split",
-        -- split direction: possible values: "above", "right", "below", "left"
+        -- split direction: possible values: "above", "right", "below", "left", fun(): "above"|"right"|"below"|"left"
         split_direction = "right",
         -- window options to override win_config: width/height/split/vertical.., buffer/window options
         win_opts = { bo = {}, wo = {} }, ---@type kulala.ui.win_config

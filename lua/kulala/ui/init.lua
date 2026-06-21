@@ -193,7 +193,7 @@ local function open_kulala_window(buf)
     local split = config.split_direction == "vertical" and "right"
       or config.split_direction == "horizontal" and "below"
       or config.split_direction
-    win_config = { split = split, win = request_win }
+    win_config = { split = type(split) == "function" and split() or split, win = request_win }
   end
 
   win_config = vim.tbl_extend("force", win_config, win_opts)
