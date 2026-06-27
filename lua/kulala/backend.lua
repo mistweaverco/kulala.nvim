@@ -89,8 +89,9 @@ end
 ---@param progress_callback function|nil Optional callback for progress updates: {progress: number, message: string}
 ---@param callback function|nil Optional callback to run after download completes (receives success: boolean)
 local function download_via_wget(url, output_path, progress_callback, callback)
+  local config = require("kulala.config").get()
   local cmd = {
-    "wget",
+    config.kulala_core.download_tool,
     "--quiet",
     "--show-progress",
     "--progress=dot:giga",
@@ -153,11 +154,12 @@ end
 ---@param progress_callback function|nil Optional callback for progress updates: {progress: number, message: string}
 ---@param callback function|nil Optional callback to run after download completes (receives success: boolean)
 local function download_via_curl(url, output_path, progress_callback, callback)
+  local config = require("kulala.config").get()
   -- Use curl with simple progress bar (#) that outputs to stderr
   -- Format: %{url_effective}\n%{size_download}\n%{size_total}\n%{speed_download}\n%{time_total}
   -- We'll parse this to show percentage
   local cmd = {
-    "curl",
+    config.kulala_core.download_tool,
     "-fL",
     "-#", -- Simple progress bar (easier to parse than --progress-bar)
     "--write-out",
@@ -414,12 +416,14 @@ end
 ---@param progress_callback function|nil Optional callback for progress updates: {progress: number, message: string}
 ---@param callback function|nil Optional callback to run after download completes (receives success: boolean)
 local function download_file_async(url, output_path, progress_callback, callback)
+  local config = require("kulala.config").get()
+  local download_tool = config.kulala_core.download_tool or "curl"
+  -- check if download_tool has "curl" or "wget" in it
   local downloader
-  -- Check if curl is available
-  if vim.fn.executable("curl") == 1 then
+  if download_tool:match("curl") and vim.fn.executable(download_tool) == 1 then
     downloader = "curl"
   else
-    if vim.fn.executable("wget") == 1 then
+    if download_tool:match("wget") and vim.fn.executable(download_tool) == 1 then
       downloader = "wget"
     else
       Logger.error("Neither curl nor wget is available. Please install one of these tools to download the backend.")
