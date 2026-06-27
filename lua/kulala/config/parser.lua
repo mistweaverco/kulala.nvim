@@ -103,10 +103,11 @@ local function fetch_grammar(on_done)
 end
 
 local function build_parser(finish_progress_handler)
+  local config = require("kulala.config").get()
   Fs.ensure_dir_exists(parsers_dir)
   sync_queries()
   local output_path = vim.fs.joinpath(parsers_dir, parser_name .. "." .. target_parser_ext)
-  vim.system({ "tree-sitter", "build", "-o", output_path }, { cwd = parser_source_path }, function(obj)
+  vim.system({ config.treesitter.cli_path, "build", "-o", output_path }, { cwd = parser_source_path }, function(obj)
     if obj.code ~= 0 then
       vim.schedule(function()
         finish_progress_handler("Failed to build tree-sitter parser: " .. (obj.stderr or ""), false)
@@ -144,6 +145,8 @@ M.is_up_to_date = function()
 end
 
 M.setup = function()
+  local config = require("kulala.config").get()
+  if not config.treesitter.enable then return end
   if not M.is_up_to_date() then
     setup_tree_sitter()
     return

@@ -30,6 +30,16 @@ local M = {
     restore = true,
   },
 
+  treesitter = {
+    -- enable/disable kulala.nvim own
+    -- handling of tree-sitter parser and queries for HTTP scripts
+    -- like downloading, building, and installing the parser and queries.
+    enable = true,
+    -- path to tree-sitter CLI, if not in PATH
+    -- if enable is false, this is not used
+    cli_path = "tree-sitter",
+  },
+
   -- dev, test, prod, can be anything
   -- see: https://learn.microsoft.com/en-us/aspnet/core/test/http-files?view=aspnetcore-8.0#environment-files
   default_env = "default",
