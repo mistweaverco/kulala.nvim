@@ -906,6 +906,48 @@ function M.lsp_diagnostics_async(bufnr, on_done)
   end)
 end
 
+---@param bufnr? integer
+---@param lsp_params? table|nil `textDocument/inlayHint` params (uses `range` when set)
+---@return table[]|nil hints InlayHint[]
+---@return string|nil err
+function M.lsp_inlay_hints(bufnr, lsp_params)
+  M.require_enabled()
+  local payload, cwd = buffer_payload(bufnr)
+  if not payload then return nil, "invalid buffer" end
+  payload.action = "lsp_inlay_hints"
+  payload.env = require("kulala.parser.env").get_current_env() or "default"
+  if type(lsp_params) == "table" and type(lsp_params.range) == "table" then payload.range = lsp_params.range end
+  local job = M.invoke(payload, cwd)
+  local res = decode_action_response(job.stdout)
+  if type(res) == "table" then return res, nil end
+  if job.code ~= 0 then
+    return nil, vim.trim(job.stderr or "") ~= "" and vim.trim(job.stderr) or "kulala-core lsp_inlay_hints failed"
+  end
+  return nil, "invalid kulala-core lsp_inlay_hints output"
+end
+
+---@param bufnr? integer
+---@param lsp_params? table|nil `textDocument/inlayHint` params (uses `range` when set)
+---@param on_done fun(res: table[]|nil, err: string|nil)
+function M.lsp_inlay_hints_async(bufnr, lsp_params, on_done)
+  M.require_enabled()
+  local payload, cwd = buffer_payload(bufnr)
+  if not payload then return invalid_buffer_async(on_done) end
+  payload.action = "lsp_inlay_hints"
+  payload.env = require("kulala.parser.env").get_current_env() or "default"
+  if type(lsp_params) == "table" and type(lsp_params.range) == "table" then payload.range = lsp_params.range end
+  M.invoke_async(payload, cwd, function(job)
+    local res, err = decode_job_stdout(job)
+    if type(res) ~= "table" then
+      res = nil
+      err = err or "invalid kulala-core lsp_inlay_hints output"
+    end
+    vim.schedule(function()
+      on_done(res, err)
+    end)
+  end)
+end
+
 ---@param curl string
 ---@return string[]|nil lines
 ---@return string|nil err

@@ -164,18 +164,27 @@ local function folding()
   return ranges
 end
 
+local function inlay_hints_enabled()
+  return Config.options.lsp.inlay_hints == true
+end
+
+local function with_inlay_hint_capability(capabilities)
+  if inlay_hints_enabled() then capabilities.inlayHintProvider = true end
+  return capabilities
+end
+
 local function initialize(attached_buf)
   return function(params)
     local ft = params.rootPath:sub(2)
     local capabilities
 
     if Fs.is_http_script_file(ft, attached_buf) then
-      capabilities = {
+      capabilities = with_inlay_hint_capability {
         completionProvider = { triggerCharacters = trigger_chars },
         hoverProvider = true,
       }
     elseif ft == "http" or ft == "rest" then
-      capabilities = {
+      capabilities = with_inlay_hint_capability {
         codeActionProvider = true,
         documentSymbolProvider = true,
         hoverProvider = true,
@@ -287,6 +296,17 @@ local function new_server(attached_buf)
           return
         end
 
+        if method == "textDocument/inlayHint" then
+          Bridge.lsp_inlay_hints_async(state.current_buffer, params, function(res, err)
+            if not res then
+              Logger.debug("kulala-core lsp_inlay_hints failed: " .. tostring(err))
+              res = {}
+            end
+            handler(nil, res)
+          end)
+          return
+        end
+
         if handlers[method] then handler(nil, handlers[method](params)) end
       end, debug.traceback)
 
@@ -353,6 +373,7 @@ function M.start_lsp(buf, ft)
     bufnr = buf,
     on_attach = function(client, bufnr)
       if ft == "http" or ft == "rest" then Diagnostics.setup(bufnr) end
+      if inlay_hints_enabled() and vim.lsp.inlay_hint then vim.lsp.inlay_hint.enable(true, { bufnr = bufnr }) end
       if Config.options.lsp.on_attach then Config.options.lsp.on_attach(client, bufnr) end
     end,
     commands = vim.iter(actions):fold({}, function(acc, action)
