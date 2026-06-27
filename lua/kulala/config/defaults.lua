@@ -200,10 +200,6 @@ local M = {
     keymaps = false, -- disabled by default, as Kulala relies on default Neovim LSP keymaps
 
     on_attach = nil, -- function called when Kulala LSP attaches to the buffer
-
-    ---Enable LSP inlay hints for resolved `{{variable}}` references (requires Neovim 0.10+).
-    ---@type boolean
-    inlay_hints = false,
   },
 
   -- enable/disable debug mode
