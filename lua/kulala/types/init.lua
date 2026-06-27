@@ -75,7 +75,6 @@
 ---@field enforce_external_script_naming_convention boolean
 ---@field keymaps boolean|table
 ---@field on_attach fun(client: table, buf: number)|nil
----@field inlay_hints boolean
 
 ---@class KulalaDefaultConfig
 ---@field kulala_core KulalaDefaultConfigKulalaCore

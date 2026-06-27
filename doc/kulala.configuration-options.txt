@@ -977,28 +977,6 @@ LSP.ON_ATTACH
 Function called when Kulala LSP attaches to the buffer
 
 
-LSP.INLAY_HINTS
-
-Enable LSP inlay hints for resolved `{{variable}}` references.
-Requires Neovim 0.10+ with built-in inlay hint support.
-Disabled by default.
-
->lua
-    {
-      lsp = {
-        enable = true,
-        filetypes = { "http", "rest", "javascript", "typescript", "lua" },
-        enforce_external_script_naming_convention = true,
-        keymaps = false,
-        inlay_hints = false,
-        on_attach = function(client, bufnr)
-          -- custom on_attach function
-        end,
-      },
-    }
-<
-
-
 KEYMAPS           *kulala.configuration-options-configuration-options-keymaps*
 
 
