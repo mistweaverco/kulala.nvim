@@ -543,17 +543,37 @@ end
 
 ---@param line string
 ---@param end_col0 integer 0-based index after the last typed character
+---@param new_text string
+---@param label? string
 ---@return integer start_col0 0-based start of the completion prefix
----@return integer prefix_len
-local function completion_prefix_range(line, end_col0)
+local function completion_replace_range(line, end_col0, new_text, label)
   end_col0 = math.max(0, math.min(end_col0, #line))
   local before = end_col0 > 0 and line:sub(1, end_col0) or ""
+
+  local function longest_suffix_prefix_match(candidate)
+    local max_len = math.min(#before, #candidate)
+    for len = max_len, 1, -1 do
+      local suffix = before:sub(#before - len + 1)
+      if candidate:sub(1, len) == suffix then return len end
+    end
+    return 0
+  end
+
+  local match_len = longest_suffix_prefix_match(new_text)
+  if match_len == 0 and type(label) == "string" and label ~= new_text then
+    match_len = longest_suffix_prefix_match(label)
+  end
+  if match_len > 0 then return end_col0 - match_len end
+
+  local template_prefix = before:match("{{([^}]*)$")
+  if template_prefix ~= nil then return end_col0 - #template_prefix end
+
   -- Include `$` (not a Vim keyword char); avoid matching only `kul` after `$`.
-  local prefix = before:match("([%w$%.]+)$") or ""
-  return end_col0 - #prefix, #prefix
+  local word = before:match("([%w$%.]+)$") or ""
+  return end_col0 - #word
 end
 
----Neovim/cmp strip a shared prefix from `insertText` but treat `$` as non-keyword, breaking `$kulala.*`.
+---blink.cmp workaround for `$kulala.*` plus fallback textEdit when kulala-core did not set one.
 ---@param items table[]
 ---@param bufnr integer
 ---@param position table LSP position (`line`/`character`, 0-based)
@@ -574,8 +594,6 @@ function M.apply_completion_text_edits(items, bufnr, position)
   end
   if type(end_col0) ~= "number" then return end
 
-  local start_col0 = completion_prefix_range(line, end_col0)
-
   local plain_text = vim.lsp.protocol.InsertTextFormat.PlainText
 
   for _, item in ipairs(items) do
@@ -584,6 +602,13 @@ function M.apply_completion_text_edits(items, bufnr, position)
 
     -- blink.cmp + vim.snippet.expand strip a prefix that excludes `$` (e.g. `$kul` → `.prompt`).
     if type(item.label) == "string" and item.label:match("^%$kulala") then item.insertTextFormat = plain_text end
+
+    if item.textEdit then
+      item.insertText = nil
+      goto continue
+    end
+
+    local start_col0 = completion_replace_range(line, end_col0, new_text, item.label)
 
     item.textEdit = {
       range = {
