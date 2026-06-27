@@ -114,6 +114,8 @@ require("lazy").setup({
         data_dir = nil,
         -- Optional override for download url
         download_url = "https://github.com/mistweaverco/kulala-core/releases/download/%s/%s",
+        -- "curl" or "wget" or full path to "curl" or "wget" executable.
+        download_tool = "curl",
       },
       -- Restore request history and UI after sourcing a vim session.
       -- Requires `set sessionoptions+=globals` in your Neovim config.

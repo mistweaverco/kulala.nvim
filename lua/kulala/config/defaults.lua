@@ -24,6 +24,7 @@ local M = {
     data_dir = nil,
     -- Optional override for download url
     download_url = "https://github.com/mistweaverco/kulala-core/releases/download/%s/%s",
+    download_tool = "curl", -- or "wget"
   },
   -- Restore request history and UI after sourcing a vim session (:h 'sessionoptions' globals).
   session = {
