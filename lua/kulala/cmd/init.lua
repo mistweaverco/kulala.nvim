@@ -844,6 +844,12 @@ local function kulala_core_deliver_result(item, target, duration_wall, callback,
       }, target, callback, advance_queue, invoke_ui_callback)
       return
     end
+    if type(item.request) == "table" then
+      kulala_core_apply_sent_request(item, target)
+    end
+    if type(item.verboseTrace) == "string" and item.verboseTrace ~= "" then
+      target._kulala_verbose_trace = item.verboseTrace
+    end
     handle_response_impl({
       code = 1,
       errors = item.error or "request failed",
