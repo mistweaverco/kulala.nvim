@@ -542,13 +542,39 @@ local function valid_bufnr(bufnr)
 end
 
 ---@param line string
----@param end_col0 integer 0-based index after the last typed character
+---@param end_col integer 1-based column after the last typed character (Vim/LSP end)
 ---@param new_text string
 ---@param label? string
----@return integer start_col0 0-based start of the completion prefix
-local function completion_replace_range(line, end_col0, new_text, label)
-  end_col0 = math.max(0, math.min(end_col0, #line))
-  local before = end_col0 > 0 and line:sub(1, end_col0) or ""
+---@return integer start_col 0-based LSP start of replaced range
+---@return integer end_col 0-based LSP exclusive end of replaced range
+---@return string|nil closing_suffix appended when `{{` is not closed yet
+local function completion_replace_range(line, end_col, new_text, label)
+  end_col = math.max(0, math.min(end_col, #line))
+  local before = end_col > 0 and line:sub(1, end_col) or ""
+
+  local open_col1 = nil
+  local search_from = 1
+  while true do
+    local next_open = before:find("{{", search_from, true)
+    if not next_open then break end
+    open_col1 = next_open
+    search_from = next_open + 1
+  end
+
+  if open_col1 then
+    local inner_start = open_col1 + 2
+    local close_col1 = line:find("}}", inner_start, true)
+    if close_col1 then
+      local replace_end = math.max(inner_start, math.min(end_col, close_col1 - 1))
+      return inner_start - 1, replace_end, nil
+    end
+
+    local typed = before:sub(inner_start)
+    if not typed:find("}", 1, true) then
+      local replace_end = math.max(inner_start, end_col)
+      return inner_start - 1, replace_end, "}}"
+    end
+  end
 
   local function longest_suffix_prefix_match(candidate)
     local max_len = math.min(#before, #candidate)
@@ -563,14 +589,14 @@ local function completion_replace_range(line, end_col0, new_text, label)
   if match_len == 0 and type(label) == "string" and label ~= new_text then
     match_len = longest_suffix_prefix_match(label)
   end
-  if match_len > 0 then return end_col0 - match_len end
+  if match_len > 0 then return end_col - match_len, end_col, nil end
 
   local template_prefix = before:match("{{([^}]*)$")
-  if template_prefix ~= nil then return end_col0 - #template_prefix end
+  if template_prefix ~= nil then return end_col - #template_prefix, end_col, "}}" end
 
   -- Include `$` (not a Vim keyword char); avoid matching only `kul` after `$`.
   local word = before:match("([%w$%.]+)$") or ""
-  return end_col0 - #word
+  return end_col - #word, end_col, nil
 end
 
 ---blink.cmp workaround for `$kulala.*` plus fallback textEdit when kulala-core did not set one.
@@ -608,12 +634,13 @@ function M.apply_completion_text_edits(items, bufnr, position)
       goto continue
     end
 
-    local start_col0 = completion_replace_range(line, end_col0, new_text, item.label)
+    local start_col0, end_col0_edit, closing_suffix = completion_replace_range(line, end_col0, new_text, item.label)
+    if closing_suffix then new_text = new_text .. closing_suffix end
 
     item.textEdit = {
       range = {
         start = { line = line0, character = start_col0 },
-        ["end"] = { line = line0, character = end_col0 },
+        ["end"] = { line = line0, character = end_col0_edit },
       },
       newText = new_text,
     }
