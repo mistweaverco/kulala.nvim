@@ -563,7 +563,24 @@ local function completion_replace_range(line, end_col, new_text, label)
 
   if open_col1 then
     local inner_start = open_col1 + 2
-    local close_col1 = line:find("}}", inner_start, true)
+
+    local function find_template_close(from)
+      local i = from
+      while i < #line do
+        if line:sub(i, i + 1) == "{{" then
+          local nested_close = find_template_close(i + 2)
+          if not nested_close then return nil end
+          i = nested_close + 2
+        elseif line:sub(i, i + 1) == "}}" then
+          return i
+        else
+          i = i + 1
+        end
+      end
+      return nil
+    end
+
+    local close_col1 = find_template_close(inner_start)
     if close_col1 then
       local replace_end = math.max(inner_start, math.min(end_col, close_col1 - 1))
       return inner_start - 1, replace_end, nil
@@ -571,7 +588,16 @@ local function completion_replace_range(line, end_col, new_text, label)
 
     local typed = before:sub(inner_start)
     if not typed:find("}", 1, true) then
-      local replace_end = math.max(inner_start, end_col)
+      local function template_var_replace_end(from, limit)
+        local i = from
+        while i <= limit do
+          local ch = line:sub(i, i)
+          if not ch:match("[%w%$%.%[%]%*%-]") then break end
+          i = i + 1
+        end
+        return math.max(from, i - 1)
+      end
+      local replace_end = template_var_replace_end(inner_start, end_col)
       return inner_start - 1, replace_end, "}}"
     end
   end
