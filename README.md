@@ -101,7 +101,7 @@ require("lazy").setup({
         path = nil,
         -- Subprocess timeout (ms) for kulala-core.
         -- Default is 60000 (1 minute).
-        -- nil disables the vim.system timeout.
+        -- 0 disables the vim.system timeout.
         timeout = 60000,
         -- Optional override for kulala-core persistence
         -- (cookies, OAuth, prompts).
