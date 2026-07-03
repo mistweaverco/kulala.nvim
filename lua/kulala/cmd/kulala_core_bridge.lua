@@ -81,10 +81,11 @@ local function env_with_data_dir()
 end
 
 ---Subprocess timeout (ms). Uses `kulala_core.timeout`, else 1 minute.
----@return number|nil nil disables vim.system timeout (not recommended)
+---@return number|nil 0 disables vim.system timeout (not recommended)
 local function invoke_timeout_ms()
   local t = CONFIG.get().kulala_core.timeout
   if t == nil then return 60000 end
+  if t == 0 then return nil end
   if type(t) == "number" and t > 0 then return t end
   return nil
 end
