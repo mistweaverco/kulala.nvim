@@ -552,7 +552,7 @@ M.show_help = function()
   )
 
   vim.iter(keymaps):each(function(keymap, value)
-    table.insert(help, ("  - %s: `%s`"):format(keymap, value[1]))
+    if value then table.insert(help, ("  - %s: `%s`"):format(keymap, value[1])) end
   end)
 
   Float.create(help, {
