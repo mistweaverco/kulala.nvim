@@ -17,7 +17,7 @@
 
 <p></p>
 
-A fully-featured 🤏 HTTP/GraphQL/gRPC/Websocket-client 🐼
+A fully-featured ⚡️ HTTP/GraphQL/gRPC/Websocket-client 🐼
 interface 🖥️ for Neovim ❤️,
 that supports the Jetbrains .http spec (with full scripting support).
 
