@@ -12,7 +12,7 @@ local Logger = require("kulala.logger")
 local M = {}
 
 local template = {
-  ["$schema"] = "https://raw.githubusercontent.com/mistweaverco/kulala.nvim/main/schemas/http-client.env.schema.json",
+  ["$schema"] = "https://kulala.app/http-client.env.schema.json",
   ["$kulalaShared"] = {
     ["$kulalaDefaultHeaders"] = {},
   },
@@ -22,21 +22,20 @@ local template = {
   prod = {},
 }
 
----@class kulala.env_catalog_cache
----@field key string|nil
----@field http_client_env table|nil
----@field http_client_env_shared table|nil
----@field loading boolean
----@field loading_key string|nil
+---@class kulala.env_catalog_cache_entry
+---@field http_client_env table
+---@field http_client_env_shared table
+
+---@class kulala.env_catalog_inflight
 ---@field waiters fun(http_client_env: table|nil, err: string|nil)[]
 
+---@class kulala.env_catalog_cache
+---@field entries table<string, kulala.env_catalog_cache_entry>
+---@field inflight table<string, kulala.env_catalog_inflight>
+
 local catalog_cache = {
-  key = nil,
-  http_client_env = nil,
-  http_client_env_shared = nil,
-  loading = false,
-  loading_key = nil,
-  waiters = {},
+  entries = {},
+  inflight = {},
 }
 
 local ENV_FILE_NAMES = {
@@ -73,9 +72,8 @@ local function env_catalog_cache_key(cwd)
 end
 
 function M.invalidate_cache()
-  catalog_cache.key = nil
-  catalog_cache.http_client_env = nil
-  catalog_cache.http_client_env_shared = nil
+  catalog_cache.entries = {}
+  catalog_cache.inflight = {}
 end
 
 local function create_env_file()
@@ -91,9 +89,10 @@ local function create_env_file()
   return path
 end
 
+---@param start_dir string
 ---@return table http_client_env
 ---@return table http_client_env_shared
-local function read_http_client_env_from_disk()
+local function read_http_client_env_from_disk(start_dir)
   local http_client_env = {}
   local http_client_env_shared = {}
 
@@ -104,14 +103,14 @@ local function read_http_client_env_from_disk()
     vim.tbl_deep_extend("force", dst, kulala_shared)
   end
 
-  vim.iter(Fs.find_files_in_parent_dirs("http-client.env.json") or {}):rev():each(function(file)
+  vim.iter(find_env_files_upward("http-client.env.json", start_dir) or {}):rev():each(function(file)
     local f = Fs.read_json(file) or {}
     merge_kulala_shared(http_client_env_shared, f["$kulalaShared"])
     f["$kulalaShared"], f["$schema"] = nil, nil
     http_client_env = vim.tbl_deep_extend("force", http_client_env, f)
   end)
 
-  vim.iter(Fs.find_files_in_parent_dirs("http-client.private.env.json") or {}):rev():each(function(file)
+  vim.iter(find_env_files_upward("http-client.private.env.json", start_dir) or {}):rev():each(function(file)
     local f = Fs.read_json(file) or {}
     merge_kulala_shared(http_client_env_shared, f["$kulalaShared"])
     f["$kulalaShared"], f["$schema"] = nil, nil
@@ -121,24 +120,28 @@ local function read_http_client_env_from_disk()
   return http_client_env, http_client_env_shared
 end
 
----@param core_catalog table|nil
----@param disk_env table
----@param disk_shared table
+---@param core_catalog table
 ---@return table|nil http_client_env
 ---@return table http_client_env_shared
-local function merge_catalogs(core_catalog, disk_env, disk_shared)
-  local http_client_env = (core_catalog and core_catalog.environments) or {}
+local function catalog_from_core(core_catalog)
+  local http_client_env = vim.deepcopy(core_catalog.environments or {})
   local http_client_env_shared = {}
-  if core_catalog and type(core_catalog["$kulalaShared"]) == "table" then
+  if type(core_catalog["$kulalaShared"]) == "table" then
     http_client_env_shared = vim.deepcopy(core_catalog["$kulalaShared"])
     http_client_env_shared["$kulalaDefaultHeaders"] = nil
   end
 
-  http_client_env = vim.tbl_deep_extend("force", vim.deepcopy(http_client_env), disk_env)
-  http_client_env_shared = vim.tbl_deep_extend("force", vim.deepcopy(http_client_env_shared), disk_shared)
-
   if next(http_client_env) == nil then return nil, http_client_env_shared end
   return http_client_env, http_client_env_shared
+end
+
+---@param disk_env table
+---@param disk_shared table
+---@return table|nil http_client_env
+---@return table http_client_env_shared
+local function catalog_from_disk(disk_env, disk_shared)
+  if next(disk_env) == nil then return nil, disk_shared end
+  return disk_env, disk_shared
 end
 
 ---@param http_client_env table
@@ -152,82 +155,91 @@ end
 ---@param http_client_env table|nil
 ---@param http_client_env_shared table|nil
 local function finish_catalog_load(cache_key, http_client_env, http_client_env_shared)
+  local inflight = catalog_cache.inflight[cache_key]
+  if not inflight then return end
+
+  catalog_cache.inflight[cache_key] = nil
+
   if http_client_env then
-    catalog_cache.key = cache_key
-    catalog_cache.http_client_env = http_client_env
-    catalog_cache.http_client_env_shared = http_client_env_shared or {}
-    store_catalog_in_db(http_client_env, catalog_cache.http_client_env_shared)
+    catalog_cache.entries[cache_key] = {
+      http_client_env = http_client_env,
+      http_client_env_shared = http_client_env_shared or {},
+    }
+    store_catalog_in_db(http_client_env, catalog_cache.entries[cache_key].http_client_env_shared)
   end
 
-  catalog_cache.loading = false
-  catalog_cache.loading_key = nil
-
-  local waiters = catalog_cache.waiters
-  catalog_cache.waiters = {}
-  for _, cb in ipairs(waiters) do
+  for _, cb in ipairs(inflight.waiters) do
     cb(http_client_env, http_client_env and nil or "No environment found")
   end
 end
 
----@param force? boolean
----@param on_done fun(http_client_env: table|nil, err: string|nil)
-local function refresh_environment_catalog_async(force, on_done)
-  local _, cwd = KULALA_CORE.resolve_document_paths(0, nil)
-  cwd = cwd or vim.loop.cwd()
-  local cache_key = env_catalog_cache_key(cwd)
+---@param cwd string
+---@return string
+local function resolve_cache_key(cwd)
+  return env_catalog_cache_key(cwd)
+end
 
-  if not force and catalog_cache.key == cache_key and catalog_cache.http_client_env then
+---@param force? boolean
+---@param cwd string
+---@param on_done fun(http_client_env: table|nil, err: string|nil)
+local function refresh_environment_catalog_async(force, cwd, on_done)
+  local cache_key = resolve_cache_key(cwd)
+
+  local cached = catalog_cache.entries[cache_key]
+  if not force and cached and cached.http_client_env then
     vim.schedule(function()
-      store_catalog_in_db(catalog_cache.http_client_env, catalog_cache.http_client_env_shared or {})
-      on_done(catalog_cache.http_client_env, nil)
+      store_catalog_in_db(cached.http_client_env, cached.http_client_env_shared or {})
+      on_done(cached.http_client_env, nil)
     end)
     return
   end
 
-  if catalog_cache.loading and catalog_cache.loading_key == cache_key then
-    table.insert(catalog_cache.waiters, on_done)
+  local inflight = catalog_cache.inflight[cache_key]
+  if inflight then
+    table.insert(inflight.waiters, on_done)
     return
   end
 
-  catalog_cache.loading = true
-  catalog_cache.loading_key = cache_key
-  catalog_cache.waiters = { on_done }
+  catalog_cache.inflight[cache_key] = { waiters = { on_done } }
 
   Logger.info("Loading environments…")
 
-  local disk_env, disk_shared = read_http_client_env_from_disk()
-
-  local function finish(core_catalog)
-    local http_client_env, http_client_env_shared = merge_catalogs(core_catalog, disk_env, disk_shared)
+  local function finish_with_disk()
+    local disk_env, disk_shared = read_http_client_env_from_disk(cwd)
+    local http_client_env, http_client_env_shared = catalog_from_disk(disk_env, disk_shared)
     finish_catalog_load(cache_key, http_client_env, http_client_env_shared)
   end
 
   if KULALA_CORE.enabled() then
     KULALA_CORE.list_environments_async(cwd, function(catalog, err)
       if err and not catalog then
-        -- Fall back to disk-only when core fails
-        local http_client_env, http_client_env_shared = merge_catalogs(nil, disk_env, disk_shared)
-        if http_client_env then
-          finish_catalog_load(cache_key, http_client_env, http_client_env_shared)
-        else
-          finish_catalog_load(cache_key, nil, nil)
-          Logger.warn(err)
-        end
+        finish_with_disk()
+        if not catalog_cache.entries[cache_key] then Logger.warn(err) end
         return
       end
-      finish(catalog)
+      local http_client_env, http_client_env_shared = catalog_from_core(catalog)
+      finish_catalog_load(cache_key, http_client_env, http_client_env_shared)
     end)
   else
     vim.schedule(function()
-      finish(nil)
+      finish_with_disk()
     end)
   end
+end
+
+---@param cwd string|nil
+---@return string
+local function resolve_cwd(cwd)
+  if type(cwd) == "string" and cwd ~= "" then return cwd end
+  local bufnr = vim.api.nvim_get_current_buf()
+  local _, resolved = KULALA_CORE.resolve_document_paths(bufnr, nil)
+  return resolved or vim.loop.cwd()
 end
 
 ---@param force? boolean
 ---@param on_done fun(http_client_env: table|nil, err: string|nil)
 function M.refresh_async(force, on_done)
-  refresh_environment_catalog_async(force, on_done)
+  refresh_environment_catalog_async(force, resolve_cwd(nil), on_done)
 end
 
 local function get_env_names(http_client_env)
@@ -239,8 +251,11 @@ local function get_env_names(http_client_env)
   return envs
 end
 
-local function get_env_file()
-  return Fs.find_file_in_parent_dirs("http-client.env.json")
+---@param cwd string
+---@return string|nil
+local function get_env_file(cwd)
+  local files = find_env_files_upward("http-client.env.json", cwd)
+  return files and files[1] or nil
 end
 
 local function select_env(env)
@@ -258,7 +273,7 @@ local function set_buffer(buf, content)
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, content)
 end
 
-local function open_snacks(http_client_env)
+local function open_snacks(http_client_env, cwd)
   local items = vim.iter(get_env_names(http_client_env)):fold({}, function(acc, name)
     local env_data = http_client_env[name] or {}
 
@@ -267,7 +282,7 @@ local function open_snacks(http_client_env)
       label = name,
       data = env_data,
       content = env_data,
-      file = get_env_file() or "",
+      file = get_env_file(cwd) or "",
     })
     return acc
   end)
@@ -385,10 +400,10 @@ local function open_selector(http_client_env)
   end)
 end
 
-local function open_picker(http_client_env)
+local function open_picker(http_client_env, cwd)
   if has_snacks then
     if snacks_picker.config.get().ui_select then
-      open_snacks(http_client_env)
+      open_snacks(http_client_env, cwd)
     else
       open_selector(http_client_env)
     end
@@ -401,7 +416,6 @@ local function open_picker(http_client_env)
   end
 end
 
----@param opts? { force?: boolean }
 local env_cache_augroup = vim.api.nvim_create_augroup("kulala_env_catalog_cache", { clear = true })
 vim.api.nvim_create_autocmd({ "BufWritePost" }, {
   group = env_cache_augroup,
@@ -414,7 +428,8 @@ vim.api.nvim_create_autocmd({ "BufWritePost" }, {
 ---@param opts? { force?: boolean }
 M.open = function(opts)
   opts = opts or {}
-  refresh_environment_catalog_async(opts.force, function(http_client_env, err)
+  local cwd = resolve_cwd(nil)
+  refresh_environment_catalog_async(opts.force, cwd, function(http_client_env, err)
     if not http_client_env then
       if err and err ~= "No environment found" then Logger.error(err, 1) end
       create_env_file()
@@ -422,8 +437,17 @@ M.open = function(opts)
       http_client_env = DB.find_unique("http_client_env")
       if not http_client_env then return Logger.error("No environment found") end
     end
-    open_picker(http_client_env)
+    open_picker(http_client_env, cwd)
   end)
 end
+
+M._test = {
+  catalog_cache = catalog_cache,
+  env_catalog_cache_key = env_catalog_cache_key,
+  find_env_files_upward = find_env_files_upward,
+  read_http_client_env_from_disk = read_http_client_env_from_disk,
+  refresh_environment_catalog_async = refresh_environment_catalog_async,
+  resolve_cache_key = resolve_cache_key,
+}
 
 return M
