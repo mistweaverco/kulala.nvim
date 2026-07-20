@@ -11,14 +11,14 @@
   "devEngines": {
     "packageManager": {
       "name": "pnpm",
-      "version": "11.3.0",
+      "version": "11.15.1",
       "onFail": "download"
     }
   },
   "type": "module",
   "devDependencies": {
-    "conventional-changelog": "7.2.0",
-    "tree-sitter-cli": "0.26.9"
-  },
-  "packageManager": "pnpm@11.7.0"
+    "conventional-changelog": "8.1.0",
+    "conventional-changelog-conventionalcommits": "10.2.1",
+    "tree-sitter-cli": "0.26.11"
+  }
 }

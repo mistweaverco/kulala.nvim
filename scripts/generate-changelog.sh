@@ -1,13 +1,24 @@
 #!/usr/bin/env bash
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+CONFIG_FILE="$ROOT_DIR/.conventional-changelog.config.mjs"
+
+cd "$ROOT_DIR"
+
 # Fetch latest version from git tags and strip the leading 'v' if present
 VERSION=${VERSION:-$(git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//')}
-CHANGELOG_FILE="CHANGELOG.md"
-TEMP_CONFIG=$(mktemp --suffix=".json")
-echo "{\"version\": \"$VERSION\", \"date\": \"$(date +%Y-%m-%d)\"}" > "$TEMP_CONFIG"
+SOURCE_FILE="CHANGELOG.md"
+
+TEMP_CONTEXT=$(mktemp --suffix=".json")
+cat <<EOF > "$TEMP_CONTEXT"
+{
+  "version": "$VERSION",
+  "date": "$(date +%Y-%m-%d)"
+}
+EOF
 
 echo "Generating changelog for version: ${VERSION}"
-echo "Using PKG_VERSION: ${PKG_VERSION}"
 
 should_workaround_detached_head=""
 if [[ -n "$CI" ]]; then
@@ -30,14 +41,15 @@ if [[ -n "$should_workaround_detached_head" ]]; then
 fi
 
 ./node_modules/.bin/conventional-changelog \
-  -i "$CHANGELOG_FILE" \
+  -i "$SOURCE_FILE" \
   -s \
   -r 0 \
   -u \
-  -k "$TEMP_CONFIG" \
-  -c "$TEMP_CONFIG"
+  -c "$TEMP_CONTEXT" \
+  -n "$CONFIG_FILE"
 
-rm "$TEMP_CONFIG"
+# Cleanup both files
+rm "$TEMP_CONTEXT"
 
 if [[ -n "$tag_was_deleted" ]]; then
   # Restore the tag to its original target (do not retag HEAD).
@@ -48,7 +60,7 @@ if [[ -n "$tag_was_deleted" ]]; then
   fi
 fi
 
-if [[ ! -f "${CHANGELOG_FILE}" ]]; then
-  echo "ERROR: ${CHANGELOG_FILE} not found"
+if [[ ! -f "${SOURCE_FILE}" ]]; then
+  echo "ERROR: ${SOURCE_FILE} not found"
   exit 1
 fi
