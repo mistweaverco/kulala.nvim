@@ -1,11 +1,12 @@
-## [6.21.1](https://github.com/mistweaverco/kulala.nvim/compare/v6.21.0...v6.21.1) (2026-07-20)
+## [6.21.2](https://github.com/mistweaverco/kulala.nvim/compare/v6.21.1...v6.21.2) (2026-07-21)
 
 ### Bug Fixes
 
 * **docs:** change emoji in README.md ([a9e17ae](https://github.com/mistweaverco/kulala.nvim/commit/a9e17ae0236e886371671a7a9f01f070201a9cc1))
 * **env_manager:** fix env_manager cache showing stale info ([9c03fdb](https://github.com/mistweaverco/kulala.nvim/commit/9c03fdb84c8df3df8d410e8f974b4061e19c3292))
+* **graphql:** context with preambles ([74e35fa](https://github.com/mistweaverco/kulala.nvim/commit/74e35fa31b86c39cf9c8e9000ab0321ccac1011b))
 * **lsp:** client-reference in docs ([6c0ef6e](https://github.com/mistweaverco/kulala.nvim/commit/6c0ef6e6b00a0c4c384579345197ad11f59c03e4))
-* **scripts:** update deps and fix changelog generation ([3c484c3](https://github.com/mistweaverco/kulala.nvim/commit/3c484c3141f5f95c47218e748ad558257a30c0ad))
+* **scripts:** update deps and fix changelog generation ([207922b](https://github.com/mistweaverco/kulala.nvim/commit/207922b12a7fe198a81ece11608b91a68503f76f))
 * **show_help:** ignore keymaps set to false ([91cf892](https://github.com/mistweaverco/kulala.nvim/commit/91cf892008c773ce74ac392c4c12ddff775b7619))
 
 ## [6.21.0](https://github.com/mistweaverco/kulala.nvim/compare/v6.20.7...v6.21.0) (2026-07-07)
