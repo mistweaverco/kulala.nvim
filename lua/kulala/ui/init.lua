@@ -153,6 +153,43 @@ local function set_buffer_contents(buf, contents, filetype)
   pcall(vim.treesitter.start, buf, filetype)
 end
 
+---Body view: keep ft as `kulala_ui`, but parse only the response body as json/xml/html
+---so treesitter features (e.g. incremental selection) work despite the request summary.
+---@param buf integer
+---@param lang string
+local function apply_body_treesitter(buf, lang)
+  if type(lang) ~= "string" or lang == "" or lang == "text" then return end
+
+  -- Make get_parser(buf) resolve to the body language while ft stays kulala_ui.
+  vim.treesitter.language.register(lang, "kulala_ui")
+  pcall(vim.treesitter.stop, buf)
+  pcall(vim.treesitter.start, buf, lang)
+
+  if not CONFIG.get().ui.show_request_summary then return end
+
+  local ok, parser = pcall(vim.treesitter.get_parser, buf, lang)
+  if not ok or not parser then return end
+
+  local start_row = 4 -- request summary is always 4 lines when enabled
+  local line_count = vim.api.nvim_buf_line_count(buf)
+  if line_count <= start_row then return end
+
+  -- Range4: { start_row, start_col, end_row, end_col } (end exclusive by row when col is 0)
+  pcall(function()
+    parser:set_included_regions { { { start_row, 0, line_count, 0 } } }
+    parser:parse(true)
+  end)
+end
+
+---Restore default kulala_ui → markdown mapping after body view overrode it.
+---@param buf integer
+---@param filetype string
+local function restore_ui_treesitter(buf, filetype)
+  vim.treesitter.language.register("markdown", "kulala_ui")
+  pcall(vim.treesitter.stop, buf)
+  pcall(vim.treesitter.start, buf, filetype)
+end
+
 local function open_kulala_window(buf)
   local config = CONFIG.get()
   local win_config
@@ -254,6 +291,12 @@ local function show(contents, filetype, mode)
   restore_readonly_buffer(buf)
   set_buffer_contents(buf, contents, buf_ft)
   if mode ~= "report" then REPORT.set_response_summary(buf) end
+  if mode == "body" then
+    apply_body_treesitter(buf, buf_ft)
+  else
+    -- Body view may have remapped kulala_ui → json/xml/html; put markdown back.
+    restore_ui_treesitter(buf, buf_ft)
+  end
   lock_buffer_readonly(buf)
 
   local win = open_kulala_window(buf)
@@ -267,18 +310,11 @@ local function show(contents, filetype, mode)
   show_progress()
 end
 
----Prefer kulala-core `body.type` for JSON; otherwise resolve via `mediaType` or
----response headers.
+---Prefer kulala-core `body.type` / `mediaType` for response body language.
 ---@param r Response
 ---@return string ft type to determine syntax highlighting
 local function get_ft_from_kulala_core(r)
-  if not r._kulala_core or not r._kulala_body_type then return "text" end
-  if r._kulala_body_type == "json" then return "json" end
-  if type(r._kulala_media_type) == "string" and r._kulala_media_type ~= "" then
-    if r._kulala_media_type:find("json") then return "json" end
-    if r._kulala_media_type:find("xml") then return "xml" end
-  end
-  return "text"
+  return require("kulala.ui.markdown").get_body_ft(r._kulala_media_type, r._kulala_body_type)
 end
 
 ---Resolve body text and syntax filetype (formatting is done in kulala-core).

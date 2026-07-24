@@ -212,14 +212,17 @@ function M.fenced(lang, body, prettify)
   return fence .. lang .. "\n" .. body .. "\n" .. fence .. "\n"
 end
 
----Resolve content-type config from kulala-core hints and response headers (not the verbose-view override).
+---Resolve treesitter/fence language from kulala-core body hints.
 ---@param media_type string|nil kulala-core `body.mediaType`
----@param kulala_body_type string|nil `"json"` | `"text"` | `"xml"`
----@return string content type for fence language (e.g. "json", "text")
+---@param kulala_body_type string|nil `"json"` | `"text"` | `"binary"`
+---@return string language name (e.g. "json", "xml", "html", "text")
 function M.get_body_ft(media_type, kulala_body_type)
   if kulala_body_type == "json" then return "json" end
   if type(media_type) == "string" and media_type ~= "" then
-    if media_type:find("xml", 1, true) then return "xml" end
+    local mt = media_type:lower()
+    if mt:find("json", 1, true) then return "json" end
+    if mt:find("xml", 1, true) then return "xml" end
+    if mt:find("html", 1, true) then return "html" end
   end
   return "text"
 end

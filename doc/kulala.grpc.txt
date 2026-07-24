@@ -50,6 +50,12 @@ For example:
 
     ###
 
+    # Override SSL server name / :authority when tunneling via localhost
+    # @grpc-authority real.example.com
+    GRPC localhost:443 helloworld.Greeter/SayHello
+
+    ###
+
     # @grpc-v
     GRPC localhost:50051 list
     # service.method is optional when using a command list|describe
@@ -66,6 +72,11 @@ FLAGS
 
 Flags can be set through metadata either locally per request or globally per
 buffer, if included in the `Shared` block.
+
+`-authority` / `# @grpc-authority` sets the SSL server name and `:authority`
+pseudo-header (same as grpcurl `-authority`). Use this when an SSH tunnel
+forwards a remote service to `localhost` but the certificate is issued for
+the real hostname.
 
 
 VARIABLES
