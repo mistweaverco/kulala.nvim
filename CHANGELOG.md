@@ -1,4 +1,10 @@
-## [6.21.2](https://github.com/mistweaverco/kulala.nvim/compare/v6.21.1...v6.21.2) (2026-07-21)
+## [6.23.0](https://github.com/mistweaverco/kulala.nvim/compare/v6.22.0...v6.23.0) (2026-07-27)
+
+### Features
+
+* **websockets:** enable in/out support ([e4e8615](https://github.com/mistweaverco/kulala.nvim/commit/e4e8615dc07d9423f3dd52ad5af962db09d26a52))
+
+## [6.22.0](https://github.com/mistweaverco/kulala.nvim/compare/v6.21.2...v6.22.0) (2026-07-24)
 
 ### Bug Fixes
 
@@ -8,6 +14,7 @@
 * **lsp:** client-reference in docs ([6c0ef6e](https://github.com/mistweaverco/kulala.nvim/commit/6c0ef6e6b00a0c4c384579345197ad11f59c03e4))
 * **scripts:** update deps and fix changelog generation ([207922b](https://github.com/mistweaverco/kulala.nvim/commit/207922b12a7fe198a81ece11608b91a68503f76f))
 * **show_help:** ignore keymaps set to false ([91cf892](https://github.com/mistweaverco/kulala.nvim/commit/91cf892008c773ce74ac392c4c12ddff775b7619))
+* **ui:** body-view, comments in http files ([5c2234e](https://github.com/mistweaverco/kulala.nvim/commit/5c2234e1a0ae8a95911231682c52be2a13fcc117))
 
 ## [6.21.0](https://github.com/mistweaverco/kulala.nvim/compare/v6.20.7...v6.21.0) (2026-07-07)
 
