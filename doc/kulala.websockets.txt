@@ -31,9 +31,10 @@ If there is a body in the request, it will be sent upon connection to the
 server.
 
 
-RECEIVING MESSAGES
+MESSAGES
 
-Received messages will be displayed in the buffer, prefixed with `=>`.
+Incoming messages are prefixed with `<--` and outgoing messages with `-->`.
+Both are shown in chronological order in the body view.
 
 
 SENDING MESSAGES

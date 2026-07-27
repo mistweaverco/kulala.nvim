@@ -17,10 +17,15 @@ local function parse_ws_line(data)
   return nil
 end
 
----@param messages string[]
+---@class WsStreamMessage
+---@field direction "in"|"out"
+---@field data string
+
+---@param messages WsStreamMessage[]
 local function build_ws_jq_source(messages)
   local items = {}
-  for _, raw in ipairs(messages) do
+  for _, msg in ipairs(messages) do
+    local raw = msg.data
     local ok, parsed = pcall(vim.json.decode, raw)
     if ok and parsed ~= nil then
       table.insert(items, parsed)
@@ -32,13 +37,14 @@ local function build_ws_jq_source(messages)
 end
 
 ---JSON objects only (skip plain-text server greetings) for jq input.
----@param messages string[]
+---@param messages WsStreamMessage[]
 ---@param initial_message? string sent on connect, used until JSON messages arrive
 ---@return string jq_input
 ---@return boolean has_objects
 local function build_ws_jq_object_source(messages, initial_message)
   local objects = {}
-  for _, raw in ipairs(messages) do
+  for _, msg in ipairs(messages) do
+    local raw = msg.data
     local ok, parsed = pcall(vim.json.decode, raw)
     if ok and type(parsed) == "table" and not vim.islist(parsed) then table.insert(objects, parsed) end
   end
@@ -92,13 +98,22 @@ local function is_empty_jq_display(text)
   return trimmed == "" or trimmed == "null"
 end
 
----@param messages string[]
+---@param messages WsStreamMessage[]
 local function build_ws_display_stream(messages)
   if #messages == 0 then return "" end
-  local lines = vim.tbl_map(function(raw)
-    return "=> " .. raw
+  local lines = vim.tbl_map(function(msg)
+    local prefix = msg.direction == "out" and "-->" or "<--"
+    return prefix .. " " .. msg.data
   end, messages)
   return table.concat(lines, "\n")
+end
+
+---@param target Response
+---@param direction "in"|"out"
+---@param data string
+local function append_ws_message(target, direction, data)
+  target._ws_messages = target._ws_messages or {}
+  table.insert(target._ws_messages, { direction = direction, data = data })
 end
 
 ---@param target? Response when omitted, uses the active `M.response`
@@ -158,8 +173,11 @@ M.on_stdout = function(_, data, callback)
   for line in data:gmatch("[^\n]+") do
     local msg = parse_ws_line(line)
     if msg and msg.type == "message" and msg.data then
-      M.response._ws_messages = M.response._ws_messages or {}
-      table.insert(M.response._ws_messages, msg.data)
+      append_ws_message(M.response, "in", msg.data)
+      M.refresh_display()
+      notify_ui(callback, true, { refresh_only = true })
+    elseif msg and msg.type == "sent" and msg.data then
+      append_ws_message(M.response, "out", msg.data)
       M.refresh_display()
       notify_ui(callback, true, { refresh_only = true })
     elseif msg and msg.type == "closed" then
