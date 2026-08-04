@@ -55,6 +55,8 @@ M.get_bin_name = function()
 end
 
 M.get_bin_path = function()
+  local config = require("kulala.config").get()
+  if config.kulala_core.path and config.kulala_core.path ~= "" then return config.kulala_core.path end
   return join_paths(M.get_bin_dir(), M.get_bin_name())
 end
 
