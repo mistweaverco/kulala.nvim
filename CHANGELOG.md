@@ -1,8 +1,12 @@
-## [6.23.0](https://github.com/mistweaverco/kulala.nvim/compare/v6.22.0...v6.23.0) (2026-07-27)
+## [6.23.1](https://github.com/mistweaverco/kulala.nvim/compare/v6.23.0...v6.23.1) (2026-08-04)
 
 ### Features
 
 * **websockets:** enable in/out support ([e4e8615](https://github.com/mistweaverco/kulala.nvim/commit/e4e8615dc07d9423f3dd52ad5af962db09d26a52))
+
+### Bug Fixes
+
+* **backend:** try resolve binary path from config first ([58233e1](https://github.com/mistweaverco/kulala.nvim/commit/58233e176c0f020ffb796cbadc73ad9d5f1e7486))
 
 ## [6.22.0](https://github.com/mistweaverco/kulala.nvim/compare/v6.21.2...v6.22.0) (2026-07-24)
 
