@@ -1,3 +1,15 @@
+## [6.24.0](https://github.com/mistweaverco/kulala.nvim/compare/v6.23.2...v6.24.0) (2026-08-10)
+
+### Features
+
+* **openapi:** add openapi explorer support ([69d27b9](https://github.com/mistweaverco/kulala.nvim/commit/69d27b98f145c29d743b71d48fdbe4b8b98000a0))
+
+## [6.23.2](https://github.com/mistweaverco/kulala.nvim/compare/v6.23.1...v6.23.2) (2026-08-04)
+
+### Bug Fixes
+
+* **scripts:** allow require/import in scripts ([7c10bd7](https://github.com/mistweaverco/kulala.nvim/commit/7c10bd7b56f11dca25e5e948f817ca4eee1cb669))
+
 ## [6.23.1](https://github.com/mistweaverco/kulala.nvim/compare/v6.23.0...v6.23.1) (2026-08-04)
 
 ### Features
