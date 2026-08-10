@@ -800,6 +800,38 @@ local function kulala_core_run_targets(parsed_request)
   return { parsed_request }
 end
 
+---@param console table|nil kulala-core scriptConsole
+---@return string
+local function kulala_core_script_console_messages(console)
+  if type(console) ~= "table" then return "" end
+  local lines = {}
+  for _, entry in ipairs(console) do
+    if type(entry) == "table" then
+      local msg = entry.message or entry["message"]
+      if type(msg) == "string" and msg ~= "" then
+        table.insert(lines, msg)
+      elseif msg ~= nil then
+        table.insert(lines, tostring(msg))
+      end
+    end
+  end
+  return table.concat(lines, "\n")
+end
+
+---Body text for skip/abort: prefer core body, else join script logs + footer.
+---@param item table
+---@param console table|nil
+---@param footer string
+---@return string
+local function kulala_core_control_flow_body(item, console, footer)
+  local display = kulala_core_display_body(item)
+  if display ~= "" then return display end
+  local logs = kulala_core_script_console_messages(console)
+  if logs ~= "" and footer ~= "" then return logs .. "\n\n" .. footer end
+  if logs ~= "" then return logs end
+  return footer
+end
+
 ---@param item table kulala-core result entry
 ---@param targets DocumentRequest[]
 ---@param index number 1-based index in the batch
@@ -822,8 +854,20 @@ local function kulala_core_deliver_result(item, target, duration_wall, callback,
   save_replay_snapshot(target)
 
   if item.success == true and item.skipped == true then
-    if advance_queue ~= false then M.queue:run_next() end
-    if invoke_ui_callback ~= false then callback(true, duration_wall, INLAY.icon_line_for_request(target), nil) end
+    local console = kulala_core_script_console(item)
+    target._kulala_script_console = console
+    local body = kulala_core_control_flow_body(item, console, "Request skipped by script")
+    handle_response_impl({
+      code = 0,
+      stdout = "",
+      errors = "",
+      duration = duration_wall,
+      _kulala_body_type = "text",
+      _kulala_media_type = "text/plain",
+      _kulala_body_snapshot = body,
+      _kulala_headers_snapshot = "Content-Type: text/plain\n\n",
+      _kulala_script_console = console,
+    }, target, callback, advance_queue, invoke_ui_callback)
     return
   end
 
@@ -860,11 +904,17 @@ local function kulala_core_deliver_result(item, target, duration_wall, callback,
     if type(item.verboseTrace) == "string" and item.verboseTrace ~= "" then
       target._kulala_verbose_trace = item.verboseTrace
     end
+    local err = item.error or "request failed"
+    local body = kulala_core_control_flow_body(item, console, err)
     handle_response_impl({
       code = 1,
-      errors = item.error or "request failed",
+      errors = body,
       stdout = "",
       duration = duration_wall,
+      _kulala_body_type = "text",
+      _kulala_media_type = "text/plain",
+      _kulala_body_snapshot = body,
+      _kulala_headers_snapshot = "Content-Type: text/plain\n\n",
       _kulala_script_console = console,
     }, target, callback, advance_queue, invoke_ui_callback)
     return

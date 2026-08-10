@@ -231,7 +231,6 @@ local function run_operation(state, operation_key)
   local result, err =
     KULALA_CORE.openapi_run_operation(state.http_bufnr, operation_key, state.parent_line, 1, overrides)
   if not result then return Logger.error(err or "Failed to run OpenAPI operation") end
-  if result.success ~= true then return Logger.error(result.error or err or "Request failed") end
 
   DB.set_current_buffer(state.http_bufnr)
   local db = DB.global_update()
@@ -241,10 +240,8 @@ local function run_operation(state, operation_key)
   CMD.deliver_core_result(result, target, function(success, duration, icon_linenr, response_id)
     local elapsed_ms = success and UI_utils.pretty_ms(duration) or nil
     INLAY.show(state.http_bufnr, success and "done" or "error", icon_linenr, elapsed_ms)
-    if success then
-      UI.advance_to_response(response_id, previous_response_pos)
-      UI.open_default_view()
-    end
+    UI.advance_to_response(response_id, previous_response_pos)
+    UI.open_default_view()
   end)
 end
 

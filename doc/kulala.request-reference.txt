@@ -16,6 +16,7 @@ Table of Contents                 *kulala.request-reference-table-of-contents*
   - request.url.getRaw|kulala.request-reference-scripts-request-reference-request.url.getraw|
   - request.url.tryGetSubstituted|kulala.request-reference-scripts-request-reference-request.url.trygetsubstituted|
   - request.skip|kulala.request-reference-scripts-request-reference-request.skip|
+  - request.abort|kulala.request-reference-scripts-request-reference-request.abort|
   - request.replay|kulala.request-reference-scripts-request-reference-request.replay|
   - request.iteration|kulala.request-reference-scripts-request-reference-request.iteration|
 
@@ -218,17 +219,36 @@ Returns the request URL with variables substituted.
 
 REQUEST.SKIP *kulala.request-reference-scripts-request-reference-request.skip*
 
-Skips the current request and moves to the next one. Useful for conditional
-requests, see below.
+Skips the current request without sending HTTP and moves to the next one.
+Soft skip: the run continues (does not trigger |halt_on_error|). Pre-request
+scripts only. Alias of `$kulala.request.skip()`.
+
+`client.log` output before skip is shown in the response script console.
 
 >javascript
+    client.log("skipping");
     request.skip();
+    // or: $kulala.request.skip();
+<
+
+
+REQUEST.ABORT *kulala.request-reference-scripts-request-reference-request.abort*
+
+Aborts the current request without sending HTTP, as a failure. Pre-request
+scripts only. Unlike skip, this is an error and respects |halt_on_error|.
+Alias of `$kulala.request.abort(message?)`.
+
+>javascript
+    client.log("missing token");
+    request.abort("missing token");
+    // or: $kulala.request.abort("missing token");
 <
 
 
 REQUEST.REPLAY*kulala.request-reference-scripts-request-reference-request.replay*
 
 Replays the current request. Useful for conditional requests, see below.
+Alias of `$kulala.request.replay()`.
 
 >javascript
     request.replay();
