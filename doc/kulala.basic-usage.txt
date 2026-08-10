@@ -67,7 +67,8 @@ KULALA LSP AND FORMATTER
 Kulala includes a built-in in-process LSP server that provides the following
 features:
 
-- Autocompletion: HTTP syntax, metadata, commands, variables, requests, GraphQL
+- Autocompletion: HTTP syntax, metadata, commands, variables, requests, GraphQL,
+  OpenAPI directives
     schema and Kulala API.
 - Symbols information: symbols search and symbols outline - `<leader>cs`,
     `<leader>cS`.

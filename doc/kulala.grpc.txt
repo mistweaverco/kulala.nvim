@@ -10,7 +10,7 @@ Table of Contents                              *kulala.grpc-table-of-contents*
 1. gRPC                                                     *kulala.grpc-grpc*
 
 You can make gRPC requests in Kulala just as you would make HTTP requests.
-Requests are executed by kulala-core — no separate `grpcurl` installation is
+Requests are executed by kulala-core - no separate `grpcurl` installation is
 required.
 
 

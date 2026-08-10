@@ -23,6 +23,7 @@ local M = {}
 ---
 ---@field body string
 ---@field body_display string
+---@field body_computed string|nil
 ---@field inlined_files string[]
 ---
 ---@field start_line number
@@ -36,6 +37,21 @@ local M = {}
 ---@field name string|nil
 ---@field file string|nil -- The file the request was imported from, used for run()
 ---@field nested_requests DocumentRequest[] -- The nested requests, used for run()
+---
+---@field _kulala_core boolean|nil
+---@field _kulala_block_name string|nil
+---@field _kulala_unsupported_protocol boolean|nil
+---@field _kulala_run_expander boolean|nil
+---@field _kulala_sent_url string|nil
+---@field _kulala_final_url string|nil
+---@field _kulala_script_console table[]|nil
+---@field _kulala_limit_line number|nil
+---@field _kulala_replay_run_opts table|nil
+---@field _kulala_batch_targets DocumentRequest[]|nil
+---@field _kulala_redirect_chain table[]|nil
+---@field _kulala_verbose_trace string|nil
+---@field _kulala_body_type string|nil
+---@field _kulala_media_type string|nil
 
 ---@alias DocumentVariables table<string, string|number|boolean>
 
@@ -379,7 +395,7 @@ end
 ---or requests specified by `run` at specified line number
 ---@param requests DocumentRequest[]
 ---@param linenr? number|nil
----@return DocumentRequest[]|nil
+---@return DocumentRequest[]
 M.get_request_at = function(requests, linenr)
   local status, result = xpcall(function()
     if not linenr then return expand_nested_requests(requests[1]) end

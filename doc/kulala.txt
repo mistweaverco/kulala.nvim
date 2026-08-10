@@ -47,6 +47,7 @@ USAGE - LEARN ABOUT THE MOST IMPORTANT KULALA.NVIM FEATURES!
 - Automatic response formatting.txt |kulala.automatic-response-formatting.txt|
 - Testing and reporting.txt |kulala.testing-and-reporting.txt|
 - Graphql.txt |kulala.graphql.txt|
+- Openapi.txt |kulala.openapi.txt|
 - Grpc.txt |kulala.grpc.txt|
 - Websockets.txt |kulala.websockets.txt|
 - Streaming and transfer chunked.txt |kulala.streaming-and-transfer-chunked.txt|

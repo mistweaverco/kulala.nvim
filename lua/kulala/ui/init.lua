@@ -17,10 +17,6 @@ local WS_INPUT = require("kulala.ui.ws_input")
 
 local M = {}
 
----@class kulala.ui.win_config: vim.api.keyset.win_config
----@field bo table<string, any> Buffer options
----@field wo table<string, any> Window options
-
 local is_initialized = function()
   return CONFIG.get().initialized
 end
@@ -73,6 +69,17 @@ local function set_current_response_by_id(db, response_id)
     end
   end
   return false
+end
+
+---Show the response for a completed request (by id, or the newest entry after `previous_response_pos`).
+---@param response_id? string
+---@param previous_response_pos? number
+M.advance_to_response = function(response_id, previous_response_pos)
+  local db = DB.global_update()
+  if set_current_response_by_id(db, response_id) then return end
+  local prev = previous_response_pos or db.previous_response_pos or 0
+  local first_new = math.max(1, prev + 1)
+  set_current_response(math.min(first_new, #db.responses))
 end
 
 M.close_kulala_buffer = function()
@@ -176,6 +183,7 @@ local function apply_body_treesitter(buf, lang)
 
   -- Range4: { start_row, start_col, end_row, end_col } (end exclusive by row when col is 0)
   pcall(function()
+    ---@diagnostic disable-next-line: invisible
     parser:set_included_regions { { { start_row, 0, line_count, 0 } } }
     parser:parse(true)
   end)

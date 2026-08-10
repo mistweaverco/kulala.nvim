@@ -10,7 +10,7 @@ Table of Contents                        *kulala.websockets-table-of-contents*
 1. Websockets                                   *kulala.websockets-websockets*
 
 You can make persistent connections to a WebSocket server in Kulala just as you
-would make HTTP requests. Connections are handled natively by kulala-core — no
+would make HTTP requests. Connections are handled natively by kulala-core - no
 separate `websocat` installation is required.
 
 

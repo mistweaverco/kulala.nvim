@@ -383,7 +383,7 @@ value as an object with two keys:
 
 "Value" (parameter value)
 
-"Use" — The scope for using the parameter. It has three possible values:
+"Use" - The scope for using the parameter. It has three possible values:
 
 - "Use": "Everywhere" (in any request)
 - "Use": "In Auth Request" (use in authentication requests only)
@@ -409,7 +409,7 @@ For example:
 <
 
 If you need to set custom curl flags for authentication requests, e.g.
-`--insecure` to skip secure connection verification — use `# @curl-insecure` in
+`--insecure` to skip secure connection verification - use `# @curl-insecure` in
 your `.http` file `Shared` block.
 
 

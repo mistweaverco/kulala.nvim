@@ -75,6 +75,7 @@ M.set = function(config)
   M.options = vim.tbl_deep_extend("force", M.options, config or {})
 end
 
+---@return KulalaDefaultConfig
 M.get = function()
   return M.options
 end

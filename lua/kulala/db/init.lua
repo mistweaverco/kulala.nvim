@@ -56,7 +56,7 @@ M.data = nil
 ---@field responses Response[] -- history of responses
 ---@field current_response_pos number -- index of current response shown in UI
 ---@field previous_response_pos number -- index of previous response shown in UI
----@field replay Request|nil -- previous request stored for replay
+---@field replay DocumentRequest|nil -- previous request stored for replay
 M.global_data = {
   responses = {},
   current_response_pos = 0,

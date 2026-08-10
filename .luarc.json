@@ -6,7 +6,13 @@
     "std",
     "read_globals",
     "stds",
-    "globals"
+    "globals",
+    "describe",
+    "it",
+    "before_each",
+    "after_each",
+    "assert",
+    "pending"
   ],
   "runtime.settings.path": [
     "?.lua",

@@ -249,6 +249,31 @@ local M = {
   ]]
 
   kulala_keymaps_prefix = "",
+
+  openapi_panel = {
+    --- Split placement for the explorer buffer (same values as `split_direction`).
+    split = "right",
+    signs = { folded = ">", expanded = "v" },
+    keymaps = {
+      toggle_fold = "<Tab>",
+      toggle_fold_alt = "za",
+      run = "<CR>",
+      edit = "e",
+      close = "q",
+    },
+    highlights = {
+      section = "Title",
+      operation = "Function",
+      parameter = "Identifier",
+      response = "Number",
+      schema = "Type",
+      try_it_out = "String",
+      description = "Comment",
+      badge = "Comment",
+      sign = "Special",
+      value = "Constant",
+    },
+  },
 }
 
 return M

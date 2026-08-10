@@ -52,7 +52,8 @@ end
 
 ---@param message string
 ---@param lines_no number|nil -- no of error lines to show
-M.error = function(message, lines_no)
+---@param opts { report?: boolean }|nil
+M.error = function(message, lines_no, opts)
   if is_headless then return end
 
   local debug = debug_level()
@@ -64,6 +65,10 @@ M.error = function(message, lines_no)
 
   local short_message = table.concat(lines, "\n", 1, lines_no)
   M.log(short_message, log_levels.ERROR)
+
+  if opts and opts.report and require("kulala.config").get().generate_bug_report then
+    require("kulala.logger.bug_report").generate_bug_report(message)
+  end
 end
 
 M.debug = function(message, opts)

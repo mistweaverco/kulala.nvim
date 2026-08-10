@@ -1,0 +1,526 @@
+local CMD = require("kulala.cmd")
+local CONFIG = require("kulala.config")
+local DB = require("kulala.db")
+local GLOBALS = require("kulala.globals")
+local Highlight = require("kulala.ui.openapi_panel.highlight")
+local INLAY = require("kulala.inlay")
+local KULALA_CORE = require("kulala.cmd.kulala_core_bridge")
+local Logger = require("kulala.logger")
+local Render = require("kulala.ui.openapi_panel.render")
+local UI = require("kulala.ui")
+local UI_utils = require("kulala.ui.utils")
+
+local M = {}
+
+---@class kulala.openapi_panel.state
+---@field bufnr integer
+---@field winnr integer|nil
+---@field http_bufnr integer
+---@field parent_line integer
+---@field parent_request DocumentRequest|nil
+---@field openapi table
+---@field folds table<string, boolean>
+---@field line_map table[]
+---@field tree table[]
+---@field try_values table<string, table<string, string>>
+
+local instance ---@type kulala.openapi_panel.state|nil
+
+local function panel_signs()
+  local signs = CONFIG.get().openapi_panel and CONFIG.get().openapi_panel.signs
+  if type(signs) == "table" then return signs end
+  return { folded = ">", expanded = "v" }
+end
+
+---Normalize JSON-decoded option lists (arrays or map-like tables).
+---@param options any
+---@return string[]|nil
+local function option_list(options)
+  if type(options) ~= "table" then return nil end
+  local list = {}
+  if vim.islist(options) then
+    for _, v in ipairs(options) do
+      if type(v) == "string" and v ~= "" then table.insert(list, v) end
+    end
+  else
+    for _, v in pairs(options) do
+      if type(v) == "string" and v ~= "" then table.insert(list, v) end
+    end
+    table.sort(list)
+  end
+  if #list == 0 then return nil end
+  return list
+end
+
+---When the cursor is on a description line, resolve the parent editable node.
+---@param state kulala.openapi_panel.state
+---@param item table|nil
+---@return table|nil
+local function editable_item(state, item)
+  if not item then return nil end
+  if item.kind == "tryItOut" then return item end
+  if item.kind == "text" and item.parentId then
+    for _, node in ipairs(state.line_map) do
+      if node.id == item.parentId and node.kind == "tryItOut" then return node end
+    end
+  end
+  return nil
+end
+
+local function explorer_split_direction()
+  local config = CONFIG.get()
+  local panel = config.openapi_panel or {}
+  local split = panel.split
+  if split == nil then
+    local ui = config.ui or {}
+    split = ui.split_direction == "vertical" and "right"
+      or ui.split_direction == "horizontal" and "below"
+      or ui.split_direction
+  end
+  if type(split) == "function" then return split() end
+  return split or "right"
+end
+
+local function get_explorer_buffer()
+  local buf = vim.fn.bufnr(GLOBALS.OPENAPI_EXPLORER_ID)
+  return buf > 0 and buf
+end
+
+local function get_explorer_window()
+  local buf = get_explorer_buffer()
+  if not buf then return nil end
+  local win = vim.fn.win_findbuf(buf)[1]
+  if win and win > 0 then return win end
+  return nil
+end
+
+---@param bufnr integer
+---@param http_bufnr integer
+---@return integer winnr
+local function open_explorer_window(bufnr, http_bufnr)
+  local existing = get_explorer_window()
+  if existing then return existing end
+
+  local config = CONFIG.get()
+  local panel = config.openapi_panel or {}
+  local request_win = vim.fn.win_findbuf(http_bufnr)[1]
+  if not request_win or request_win == 0 then request_win = vim.api.nvim_get_current_win() end
+
+  local win_opts = vim.deepcopy(panel.win_opts or config.ui.win_opts or {})
+  local wo = win_opts.wo or {}
+  win_opts.bo = nil
+  win_opts.wo = nil
+
+  local win = vim.api.nvim_open_win(
+    bufnr,
+    false,
+    vim.tbl_extend("force", {
+      split = explorer_split_direction(),
+      win = request_win,
+    }, win_opts)
+  )
+
+  wo = vim.tbl_extend("keep", wo, {
+    number = false,
+    relativenumber = false,
+    wrap = true,
+    signcolumn = "yes:1",
+  })
+
+  vim.iter(wo):each(function(key, value)
+    pcall(vim.api.nvim_set_option_value, key, value, { win = win, scope = "local" })
+  end)
+
+  return win
+end
+
+local function default_folds(tree)
+  local folds = {}
+  local function walk(nodes)
+    for _, node in ipairs(nodes or {}) do
+      if node.id ~= "root" and node.children and #node.children > 0 then folds[node.id] = true end
+      if node.children then walk(node.children) end
+    end
+  end
+  walk(tree)
+  return folds
+end
+
+local function seed_try_values(tree)
+  local values = {}
+  local function walk(nodes)
+    for _, node in ipairs(nodes or {}) do
+      if node.kind == "tryItOut" and node.operationKey and node.paramName then
+        values[node.operationKey] = values[node.operationKey] or {}
+        if values[node.operationKey][node.paramName] == nil then
+          values[node.operationKey][node.paramName] = node.defaultValue or ""
+        end
+      end
+      if node.children then walk(node.children) end
+    end
+  end
+  walk(tree)
+  return values
+end
+
+local function active_window(state)
+  if state.winnr and vim.api.nvim_win_is_valid(state.winnr) then return state.winnr end
+  local win = get_explorer_window()
+  if win then state.winnr = win end
+  return win
+end
+
+local function item_under_cursor(state)
+  local win = active_window(state)
+  if not win then return nil end
+  local row = vim.api.nvim_win_get_cursor(win)[1]
+  return state.line_map[row]
+end
+
+local function paint(state)
+  if not vim.api.nvim_buf_is_valid(state.bufnr) then return end
+  local lines, line_map = Render.build_lines(state.tree, state.folds, state.try_values, panel_signs())
+  state.line_map = line_map
+  vim.api.nvim_set_option_value("modifiable", true, { buf = state.bufnr })
+  vim.api.nvim_buf_set_lines(state.bufnr, 0, -1, false, lines)
+  vim.api.nvim_set_option_value("modifiable", false, { buf = state.bufnr })
+  Highlight.apply(state.bufnr, lines, line_map)
+end
+
+local function toggle_fold(state)
+  local item = item_under_cursor(state)
+  if not item or not item.id then return end
+  if item.children == nil or #item.children == 0 then return end
+  state.folds[item.id] = state.folds[item.id] ~= true
+  paint(state)
+end
+
+---@param state kulala.openapi_panel.state
+---@param operation_key string
+---@return table<string, string>|nil
+local function overrides_for_operation(state, operation_key)
+  local vals = state.try_values[operation_key]
+  if not vals or vim.tbl_isempty(vals) then return nil end
+  return vals
+end
+
+---@param parent DocumentRequest
+---@param operation_key string
+---@param result table
+---@return DocumentRequest
+local function operation_target(parent, operation_key, result)
+  local target = vim.deepcopy(parent)
+  local block_name
+  if type(result.blockName) == "string" and result.blockName ~= "" then
+    block_name = result.blockName
+  else
+    local safe = operation_key:gsub("[^%w]+", "_")
+    block_name = (parent.name and parent.name ~= "" and (parent.name .. "::") or "") .. safe
+  end
+  target._kulala_block_name = block_name
+  target.name = block_name
+  return target
+end
+
+local function run_operation(state, operation_key)
+  if not state.parent_request then return Logger.error("No parent OpenAPI request") end
+  operation_key = operation_key or (item_under_cursor(state) or {}).operationKey
+  if not operation_key then return Logger.warn("Select an operation to run") end
+
+  local overrides = overrides_for_operation(state, operation_key)
+  local result, err =
+    KULALA_CORE.openapi_run_operation(state.http_bufnr, operation_key, state.parent_line, 1, overrides)
+  if not result then return Logger.error(err or "Failed to run OpenAPI operation") end
+  if result.success ~= true then return Logger.error(result.error or err or "Request failed") end
+
+  DB.set_current_buffer(state.http_bufnr)
+  local db = DB.global_update()
+  local previous_response_pos = #db.responses
+  db.previous_response_pos = previous_response_pos
+  local target = operation_target(state.parent_request, operation_key, result)
+  CMD.deliver_core_result(result, target, function(success, duration, icon_linenr, response_id)
+    local elapsed_ms = success and UI_utils.pretty_ms(duration) or nil
+    INLAY.show(state.http_bufnr, success and "done" or "error", icon_linenr, elapsed_ms)
+    if success then
+      UI.advance_to_response(response_id, previous_response_pos)
+      UI.open_default_view()
+    end
+  end)
+end
+
+---@param options string[]
+---@param current string
+---@param prompt string
+---@param on_done fun(value: string)
+local function edit_multi_select(options, current, prompt, on_done)
+  local NONE = "(none)"
+  ---@type table<string, boolean>
+  local selected = {}
+  for part in vim.gsplit(current or "", ",", true) do
+    local trimmed = vim.trim(part)
+    if trimmed ~= "" and trimmed ~= NONE then selected[trimmed] = true end
+  end
+
+  local function commit(picked)
+    ---@type table<string, boolean>
+    local set = {}
+    local clear = false
+    for _, v in ipairs(picked or {}) do
+      if v == NONE then
+        clear = true
+      elseif type(v) == "string" and v ~= "" then
+        set[v] = true
+      end
+    end
+    -- Explicit "(none)" with no other picks → empty (optional params).
+    if clear and vim.tbl_isempty(set) then
+      on_done("")
+      return
+    end
+    local list = {}
+    for _, opt in ipairs(options) do
+      if set[opt] then table.insert(list, opt) end
+    end
+    on_done(table.concat(list, ","))
+  end
+
+  -- Prefer fzf-lua native multi-select (one shot; avoids reopen/focus loss).
+  -- fzf always returns the highlighted row when nothing is Tab-marked, so we
+  -- expose an explicit "(none)" entry for optional empty selections.
+  local ok_fzf, fzf = pcall(require, "fzf-lua")
+  if ok_fzf and type(fzf.fzf_exec) == "function" then
+    local ordered = { NONE }
+    for _, opt in ipairs(options) do
+      if selected[opt] then table.insert(ordered, opt) end
+    end
+    for _, opt in ipairs(options) do
+      if not selected[opt] then table.insert(ordered, opt) end
+    end
+    fzf.fzf_exec(ordered, {
+      prompt = prompt .. " (Tab multi, Enter confirm, pick (none) for empty) ",
+      fzf_opts = {
+        ["--multi"] = true,
+        ["--bind"] = "tab:toggle+down,shift-tab:toggle+up,ctrl-d:deselect-all",
+      },
+      actions = {
+        ["default"] = function(sel)
+          commit(sel or {})
+        end,
+      },
+    })
+    return
+  end
+
+  -- Focused float checklist: stays open while toggling (no picker reopen).
+  local Float = require("kulala.ui.float")
+  local lines = {
+    prompt,
+    "Space/Tab toggle · Enter confirm (none checked = empty) · q cancel",
+    "",
+  }
+  for _, opt in ipairs(options) do
+    table.insert(lines, (selected[opt] and "[x] " or "[ ] ") .. opt)
+  end
+
+  local float = Float.create(lines, {
+    name = "kulala://openapi-multiselect",
+    title = " Multi select ",
+    focusable = true,
+    relative = "editor",
+    border = "rounded",
+    width = math.min(60, vim.o.columns - 4),
+    height = math.min(#lines + 2, math.max(8, vim.o.lines - 6)),
+    row = math.floor((vim.o.lines - math.min(#lines + 2, math.max(8, vim.o.lines - 6))) / 2),
+    col = math.floor((vim.o.columns - math.min(60, vim.o.columns - 4)) / 2),
+    bo = { buftype = "nofile", bufhidden = "wipe", swapfile = false, modifiable = false },
+    wo = { number = false, relativenumber = false, cursorline = true, wrap = false },
+  })
+
+  local function option_row(lnum)
+    return lnum >= 4 and lnum - 3 or nil
+  end
+
+  local function redraw()
+    local out = {
+      prompt,
+      "Space/Tab toggle · Enter confirm (none checked = empty) · q cancel",
+      "",
+    }
+    for _, opt in ipairs(options) do
+      table.insert(out, (selected[opt] and "[x] " or "[ ] ") .. opt)
+    end
+    vim.bo[float.buf].modifiable = true
+    vim.api.nvim_buf_set_lines(float.buf, 0, -1, false, out)
+    vim.bo[float.buf].modifiable = false
+  end
+
+  local function toggle_at_cursor()
+    local lnum = vim.api.nvim_win_get_cursor(float.win)[1]
+    local idx = option_row(lnum)
+    if not idx or not options[idx] then return end
+    local opt = options[idx]
+    selected[opt] = not selected[opt]
+    redraw()
+    vim.api.nvim_win_set_cursor(float.win, { lnum, 0 })
+  end
+
+  local function map(lhs, fn)
+    vim.keymap.set("n", lhs, fn, { buffer = float.buf, silent = true, nowait = true })
+  end
+
+  map("<Space>", toggle_at_cursor)
+  map("<Tab>", toggle_at_cursor)
+  map("<CR>", function()
+    float.close()
+    local list = {}
+    for _, opt in ipairs(options) do
+      if selected[opt] then table.insert(list, opt) end
+    end
+    on_done(table.concat(list, ","))
+  end)
+  map("q", function()
+    float.close()
+  end)
+  map("<Esc>", function()
+    float.close()
+  end)
+
+  -- Start on first option row.
+  vim.api.nvim_win_set_cursor(float.win, { math.min(4, #lines), 0 })
+  vim.api.nvim_set_current_win(float.win)
+end
+
+local function edit_try_it_out(state)
+  local item = editable_item(state, item_under_cursor(state))
+  if not item or not item.operationKey or not item.paramName then
+    return Logger.warn("Select a Try it out field to edit")
+  end
+
+  state.try_values[item.operationKey] = state.try_values[item.operationKey] or {}
+  local current = state.try_values[item.operationKey][item.paramName] or item.defaultValue or ""
+
+  local prompt = item.paramName == "__body__" and "Request body (JSON): "
+    or item.paramName == "__accept__" and "Accept (media type): "
+    or (item.title .. ": ")
+
+  local options = option_list(item.options)
+  if options then
+    local multi = item.inputType == "multiSelect"
+      or (type(item.badge) == "string" and item.badge:find("array", 1, true))
+    if multi then
+      edit_multi_select(options, current, prompt, function(value)
+        state.try_values[item.operationKey][item.paramName] = value
+        paint(state)
+      end)
+      return
+    end
+
+    vim.ui.select(options, {
+      prompt = prompt,
+      format_item = function(choice)
+        return choice
+      end,
+    }, function(choice)
+      if not choice then return end
+      state.try_values[item.operationKey][item.paramName] = choice
+      paint(state)
+    end)
+    return
+  end
+
+  local new_value = vim.fn.input(prompt, current)
+  if new_value == nil then return end
+  state.try_values[item.operationKey][item.paramName] = new_value
+  paint(state)
+end
+
+local function apply_keymaps(state)
+  local maps = CONFIG.get().openapi_panel and CONFIG.get().openapi_panel.keymaps or {}
+  local function map(key, fn)
+    if type(key) == "string" and key ~= "" then
+      vim.keymap.set("n", key, fn, { buffer = state.bufnr, silent = true })
+    end
+  end
+  map(maps.toggle_fold or "<Tab>", function()
+    toggle_fold(state)
+  end)
+  map(maps.toggle_fold_alt or "za", function()
+    toggle_fold(state)
+  end)
+  map(maps.run or "<CR>", function()
+    local item = item_under_cursor(state)
+    if item and item.kind == "operation" and item.operationKey then
+      run_operation(state, item.operationKey)
+    elseif item and item.kind == "tryItOut" and item.operationKey then
+      run_operation(state, item.operationKey)
+    else
+      Logger.warn("Select an operation (or Try it out field) and press Enter to run")
+    end
+  end)
+  map(maps.edit or "e", function()
+    edit_try_it_out(state)
+  end)
+  map(maps.close or "q", function()
+    M.close()
+  end)
+end
+
+local function ensure_explorer_buffer()
+  local bufnr = get_explorer_buffer()
+  if bufnr then return bufnr end
+
+  bufnr = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_buf_set_name(bufnr, GLOBALS.OPENAPI_EXPLORER_ID)
+  vim.api.nvim_set_option_value("filetype", "kulala_openapi", { buf = bufnr })
+  vim.api.nvim_set_option_value("buftype", "nofile", { buf = bufnr })
+  vim.api.nvim_set_option_value("bufhidden", "hide", { buf = bufnr })
+  vim.api.nvim_set_option_value("swapfile", false, { buf = bufnr })
+  return bufnr
+end
+
+---@param openapi table
+---@param parent_request DocumentRequest|nil
+---@param http_bufnr integer|nil
+function M.open(openapi, parent_request, http_bufnr)
+  Highlight.setup()
+  http_bufnr = http_bufnr or DB.get_current_buffer() or vim.api.nvim_get_current_buf()
+  local tree = openapi.tree or {}
+  if #tree == 0 then return Logger.error("OpenAPI explorer tree is empty") end
+
+  local bufnr = ensure_explorer_buffer()
+
+  if not instance or instance.bufnr ~= bufnr then
+    instance = {
+      bufnr = bufnr,
+      winnr = nil,
+      http_bufnr = http_bufnr,
+      parent_line = parent_request and parent_request.start_line or vim.api.nvim_win_get_cursor(0)[1],
+      parent_request = parent_request,
+      openapi = openapi,
+      folds = default_folds(tree),
+      line_map = {},
+      tree = tree,
+      try_values = seed_try_values(tree),
+    }
+    apply_keymaps(instance)
+  else
+    instance.openapi = openapi
+    instance.tree = tree
+    instance.parent_request = parent_request
+    instance.http_bufnr = http_bufnr
+    instance.parent_line = parent_request and parent_request.start_line or instance.parent_line
+    instance.folds = default_folds(tree)
+    instance.try_values = vim.tbl_deep_extend("force", seed_try_values(tree), instance.try_values or {})
+  end
+
+  instance.winnr = open_explorer_window(bufnr, http_bufnr)
+  paint(instance)
+end
+
+function M.close()
+  local win = instance and instance.winnr or get_explorer_window()
+  if win and vim.api.nvim_win_is_valid(win) then pcall(vim.api.nvim_win_close, win, true) end
+  if instance then instance.winnr = nil end
+end
+
+return M

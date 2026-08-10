@@ -511,6 +511,7 @@ end
 
 local function process_response(request_status, parsed_request, callback)
   local response = save_response(request_status, parsed_request)
+  request_status._kulala_response_id = response.id
 
   process_metadata(parsed_request, response)
   process_internal(parsed_request)
@@ -550,6 +551,7 @@ local function process_errors(request, request_status, processing_errors)
     or request_status.errors
 
   local response = save_response(request_status, request)
+  request_status._kulala_response_id = response.id
   apply_script_console_to_response(request_status, request, response)
 end
 
@@ -585,6 +587,8 @@ end
 
 local handle_response = vim.schedule_wrap(handle_response_impl)
 
+---@param request DocumentRequest
+---@return DocumentRequest|"empty"|"skipped"|nil
 local function parse_request(request)
   if not request._kulala_core then
     Logger.error("Request is not configured for kulala-core", 1)
@@ -823,6 +827,14 @@ local function kulala_core_deliver_result(item, target, duration_wall, callback,
     return
   end
 
+  if item.success == true and item.openapiUi == true and type(item.openapi) == "table" then
+    local OPENAPI_PANEL = require("kulala.ui.openapi_panel")
+    OPENAPI_PANEL.open(item.openapi, target, DB.get_current_buffer())
+    if advance_queue ~= false then M.queue:run_next() end
+    if invoke_ui_callback ~= false then callback(true, duration_wall, INLAY.icon_line_for_request(target), nil) end
+    return
+  end
+
   if item.success ~= true then
     local console = kulala_core_script_console(item)
     target._kulala_script_console = console
@@ -953,12 +965,9 @@ local function kulala_core_deliver_run_results(wrapper, parsed_request, duration
   end
 end
 
----@param parsed_request DocumentRequest
----@param callback function
----@param retry_depth number|nil
 local process_request_kulala_core
 
----@param wrapper table
+---@param wrapper table|nil
 ---@param parsed_request DocumentRequest
 ---@param callback function
 ---@param retry_depth number
@@ -1087,7 +1096,8 @@ end
 
 ---@param parsed_request DocumentRequest
 ---@param callback function
----@param retry_depth number|nil after `continue`, re-run run (cap recursion)
+---@param retry_depth? number
+---@param run_opts? KulalaCoreRunOpts
 process_request_kulala_core = function(parsed_request, callback, retry_depth, run_opts)
   retry_depth = retry_depth or 0
   if run_opts then parsed_request._kulala_replay_run_opts = run_opts end
@@ -1132,7 +1142,7 @@ function process_request(request, callback, run_opts)
   local parsed_request = parse_request(request)
 
   if parsed_request == "empty" or parsed_request == "skipped" then return M.queue:run_next() end
-  if not parsed_request then
+  if type(parsed_request) ~= "table" then
     callback(false, 0, request.start_line)
     return config.halt_on_error and M.queue:reset() or M.queue:run_next()
   end
@@ -1222,6 +1232,15 @@ M.run_parser = function(requests, line_nr, callback, run_opts)
   end
 
   M.queue:run_next()
+end
+
+---Deliver a single kulala-core result item (e.g. OpenAPI operation run) into the response UI.
+---@param item table
+---@param target DocumentRequest
+---@param callback? function
+function M.deliver_core_result(item, target, callback)
+  callback = callback or function() end
+  kulala_core_deliver_result(item, target, 0, callback, false, true)
 end
 
 return M

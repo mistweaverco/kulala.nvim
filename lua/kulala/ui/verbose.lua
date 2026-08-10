@@ -26,7 +26,7 @@ local function format_hop(hop, index, title)
   local parts = {}
   table.insert(
     parts,
-    ("## %s %d — HTTP %s\n"):format(title, index, Markdown.md_escape_cell(tostring(hop.status or "?")))
+    ("## %s %d - HTTP %s\n"):format(title, index, Markdown.md_escape_cell(tostring(hop.status or "?")))
   )
   if hop.url then table.insert(parts, ("**URL:** %s\n"):format(Markdown.md_escape_cell(hop.url))) end
 
@@ -106,7 +106,7 @@ function M.format(r)
     end
   end
 
-  table.insert(parts, ("## Response — HTTP %s\n"):format(Markdown.md_escape_cell(tostring(r.response_code or "?"))))
+  table.insert(parts, ("## Response - HTTP %s\n"):format(Markdown.md_escape_cell(tostring(r.response_code or "?"))))
 
   local response_headers = Markdown.response_headers_source(r)
   if response_headers then

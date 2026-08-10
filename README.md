@@ -44,7 +44,7 @@ It allows you to make HTTP requests from within Neovim.
 
 ## Features
   
-- Protocols: HTTP, gRPC, GraphQL, WebSocket, Streaming
+- Protocols: HTTP, gRPC, GraphQL, OpenAPI/Swagger explorer, WebSocket, Streaming
 - Variables: Environment, Document, Request, Dynamic, Prompt, `http-client.env` files
 - Importing and running requests from external `*.http` files
 - Importing and saving request/response data to/from external files

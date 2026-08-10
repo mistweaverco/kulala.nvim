@@ -22,7 +22,7 @@ Table of Contents                              *kulala.NEWS-table-of-contents*
 VERSION 6.11.1                        *kulala.NEWS-kulala-news-version-6.11.1*
 
 
-FEATURE: SESSION RESTORATION — RESTORE REQUEST HISTORY AND UI AFTER SOURCING A
+FEATURE: SESSION RESTORATION - RESTORE REQUEST HISTORY AND UI AFTER SOURCING A
 VIM SESSION. REQUIRES `SET SESSIONOPTIONS+=GLOBALS`. SEE
 |kulala.configuration-options.txt|
 
@@ -245,7 +245,7 @@ FEATURE: EXPORT REQUESTS TO POSTMAN  |kulala.import-export.txt|
 VERSION 5.3.0                          *kulala.NEWS-kulala-news-version-5.3.0*
 
 
-FEATURE: SCRIPTING REQUEST.ITERATION() — CURRENT COUNT OF REPLAYS
+FEATURE: SCRIPTING REQUEST.ITERATION() - CURRENT COUNT OF REPLAYS
 |kulala.lua-scripts.txt|  |kulala.request-reference.txt|
 
 
@@ -259,7 +259,7 @@ ENHANCEMENT: SUPPORT @CURL-DATA-URLENCODE FLAG
 ENHANCEMENT: SUPPORT SSL CONFIGURATION IN HTTP-CLIENT.PRIVATE.ENV.JSON FILES
 
 
-ENHANCEMENT: OAUTH2 — ADD BASIC AUTHORIZATION SUPPORT FOR CLIENT CREDENTIALS
+ENHANCEMENT: OAUTH2 - ADD BASIC AUTHORIZATION SUPPORT FOR CLIENT CREDENTIALS
 GRANT TYPE
 
 
@@ -275,7 +275,7 @@ ENHANCEMENT: ALLOW RUN TO RUN REQUESTS FROM THE SAME FILE
 VERSION 5.2.0                          *kulala.NEWS-kulala-news-version-5.2.0*
 
 
-ENHANCEMENT: KULALA LSP — AUTOCOMPLETION, SYMBOLS SEARCH AND OUTLINE, CODE
+ENHANCEMENT: KULALA LSP - AUTOCOMPLETION, SYMBOLS SEARCH AND OUTLINE, CODE
 ACTIONS, HOVER  |kulala.basic-usage.txt|
 
 
@@ -348,9 +348,9 @@ FEATURE: CONDITIONAL REQUESTS WITH REQUEST.SKIP() AND REQUEST.REPLAY()
 
 ENHANCEMENT: NEW CONFIG OPTIONS  |kulala.configuration-options.txt|
 
-- `halt_on_error` — stop on first error when running multiple requests
-- `show_request_summary` — show request summary in response view
-- `debug` — enable|disable|set log level
+- `halt_on_error` - stop on first error when running multiple requests
+- `show_request_summary` - show request summary in response view
+- `debug` - enable|disable|set log level
 
 
 VERSION 5.0.0                          *kulala.NEWS-kulala-news-version-5.0.0*

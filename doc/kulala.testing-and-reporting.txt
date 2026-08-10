@@ -126,11 +126,11 @@ of your HTTP requests and test assertions.
       }
 <
 
-- `halt_on_error` — halt or continue when running multiple requests and a failure is encountered (not enabled by default; set explicitly to use)
-- `ui.show_request_summary` — shows/hides request summary at the top of the output window
-- `ui.report.show_script_output` — shows/hides script output; `on_error` shows output only on failure
-- `ui.report.show_asserts_output` — shows/hides assert output; `failed_only` shows only failed asserts
-- `ui.report.show_summary` — shows/hides the summary of test results
+- `halt_on_error` - halt or continue when running multiple requests and a failure is encountered (not enabled by default; set explicitly to use)
+- `ui.show_request_summary` - shows/hides request summary at the top of the output window
+- `ui.report.show_script_output` - shows/hides script output; `on_error` shows output only on failure
+- `ui.report.show_asserts_output` - shows/hides assert output; `failed_only` shows only failed asserts
+- `ui.report.show_summary` - shows/hides the summary of test results
 
 ==============================================================================
 2. Links                                  *kulala.testing-and-reporting-links*

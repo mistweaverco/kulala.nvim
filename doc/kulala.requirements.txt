@@ -45,11 +45,11 @@ If you use Neovim `0.10.x`, you may need to recompile the parser with
 These are only needed when you configure optional `contenttypes` formatters or
 path resolvers:
 
-- jq https://stedolan.github.io/jq/ — JSON formatting / JSONPath via external tools
-- prettier https://prettier.io — GraphQL, HTML, JavaScript formatting
-- xmllint — XML/HTML formatting and XPath resolution
-- stylua https://github.com/JohnnyMorganz/StyLua — Lua formatting
-- Node.js https://nodejs.org — JavaScript pre/post-request scripts
+- jq https://stedolan.github.io/jq/ - JSON formatting / JSONPath via external tools
+- prettier https://prettier.io - GraphQL, HTML, JavaScript formatting
+- xmllint - XML/HTML formatting and XPath resolution
+- stylua https://github.com/JohnnyMorganz/StyLua - Lua formatting
+- Node.js https://nodejs.org - JavaScript pre/post-request scripts
 
 
 ==============================================================================

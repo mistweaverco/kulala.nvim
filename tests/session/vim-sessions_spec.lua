@@ -38,6 +38,7 @@ describe("vim-sessions", function()
 
   it("saves and restores response history", function()
     DB.global_data.responses = {
+      ---@diagnostic disable-next-line: missing-fields
       {
         id = "1:10",
         body = "hello",

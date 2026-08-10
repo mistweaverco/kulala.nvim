@@ -94,10 +94,10 @@ end
 ---@return string|nil, table stats
 local function format_assert_output(response, show_asserts)
   local results = response.assert_output and response.assert_output.results or {}
-  if #results == 0 then return nil end
+  local stats = { total = 0, success = 0, failed = 0 }
+  if #results == 0 then return nil, stats end
 
   local parts = { "#### Asserts\n" }
-  local stats = { total = 0, success = 0, failed = 0 }
   local test_suite = nil
 
   vim.iter(results):each(function(assert)
@@ -180,7 +180,7 @@ local function generate_requests_report()
   vim.iter(db.responses):skip(db.previous_response_pos):each(function(response)
     table.insert(
       parts,
-      ("## Line %s — HTTP %s\n"):format(
+      ("## Line %s - HTTP %s\n"):format(
         Markdown.md_escape_cell(tostring(response.line)),
         Markdown.md_escape_cell(tostring(response.response_code or "?"))
       )

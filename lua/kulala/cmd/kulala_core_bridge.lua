@@ -212,7 +212,7 @@ function M.invoke(payload, cwd)
   return completed or { code = 124, stdout = "", stderr = "kulala-core subprocess timed out" }
 end
 
----@param first table|nil
+---@param item table|nil
 ---@return boolean
 local function is_prompt_item(item)
   if type(item) ~= "table" then return false end
@@ -437,6 +437,18 @@ function M.crypto(op, args, cwd)
   return nil, "invalid kulala-core crypto output"
 end
 
+---@param body table|string|nil
+---@return string
+local function response_body_text(body)
+  if type(body) == "table" and body.type == "json" then
+    if type(body.formatted) == "string" then return body.formatted end
+    return vim.json.encode(body.content) or ""
+  end
+  if type(body) == "table" and body.type == "text" then return body.content or "" end
+  if type(body) == "string" then return body end
+  return ""
+end
+
 ---@param opts {
 ---   url: string,
 ---   method?: string,
@@ -449,16 +461,6 @@ end
 ---@param cwd string|nil
 ---@return table|nil result { status, headers, body, url }
 ---@return string|nil err
-local function response_body_text(body)
-  if type(body) == "table" and body.type == "json" then
-    if type(body.formatted) == "string" then return body.formatted end
-    return vim.json.encode(body.content) or ""
-  end
-  if type(body) == "table" and body.type == "text" then return body.content or "" end
-  if type(body) == "string" then return body end
-  return ""
-end
-
 function M.http_request(opts, cwd)
   M.require_enabled()
   local response_format = CONFIG.get().response_format or {}
@@ -531,11 +533,6 @@ function M.apply_jq_filter(opts, cwd)
   return nil, "invalid kulala-core apply_jq_filter output"
 end
 
----Start a long-lived WebSocket session (native kulala-core, replaces websocat).
----@param opts { url: string, body?: string, headers?: table }
----@param handlers { on_stdout: function, on_stderr: function, on_exit: function }
----@param cwd string|nil
----@return vim.SystemObj|nil
 ---@param bufnr? integer
 ---@return boolean
 local function valid_bufnr(bufnr)
@@ -759,6 +756,85 @@ function M.graphql_introspect(bufnr)
     return nil, vim.trim(job.stderr or "") ~= "" and vim.trim(job.stderr) or "kulala-core graphql_introspect failed"
   end
   return nil, "invalid kulala-core graphql_introspect output"
+end
+
+---@param cache_key string|nil When omitted, clears all cached OpenAPI schemas.
+---@return boolean ok
+---@return string|nil err
+---@return table|nil result { cleared, keys? }
+function M.clear_openapi_schema(cache_key)
+  M.require_enabled()
+  local payload = { action = "clear_openapi_schema" }
+  if type(cache_key) == "string" and cache_key ~= "" then payload.cacheKey = cache_key end
+  local job = M.invoke(payload, nil)
+  local res = decode_action_response(job.stdout)
+  if res and res.success == true then return true, nil, res end
+  if res and res.error then return false, res.error, nil end
+  if job.code ~= 0 then
+    return false,
+      vim.trim(job.stderr or "") ~= "" and vim.trim(job.stderr) or "kulala-core clear_openapi_schema failed",
+      nil
+  end
+  return false, "invalid kulala-core clear_openapi_schema output", nil
+end
+
+---Load OpenAPI spec and return explorer tree for block at cursor.
+---@param bufnr? integer
+---@param line? integer 1-based line (defaults to cursor)
+---@param column? integer 1-based column
+---@return table|nil result { ok, openapi? }
+---@return string|nil err
+function M.openapi_load(bufnr, line, column)
+  M.require_enabled()
+  local payload, cwd = cursor_request_payload(bufnr)
+  if not payload then return nil, "invalid buffer" end
+  if type(line) == "number" then payload.line = line end
+  if type(column) == "number" then payload.column = column end
+  payload.action = "openapi_load"
+  payload.env = require("kulala.parser.env").get_current_env() or "default"
+  local job = M.invoke(payload, cwd)
+  local res = decode_action_response(job.stdout)
+  if res and res.ok == true and type(res.openapi) == "table" then return res, nil end
+  if res and res.error then return res, res.error end
+  if job.code ~= 0 then
+    return nil, vim.trim(job.stderr or "") ~= "" and vim.trim(job.stderr) or "kulala-core openapi_load failed"
+  end
+  return nil, "invalid kulala-core openapi_load output"
+end
+
+---Run one OpenAPI operation with scripts inherited from parent block.
+---@param bufnr? integer HTTP buffer
+---@param operation_key string e.g. `GET /pets`
+---@param line? integer 1-based line on openapi block
+---@param column? integer 1-based column
+---@return table|nil item kulala-core run result item
+---@return string|nil err
+function M.openapi_run_operation(bufnr, operation_key, line, column, parameter_overrides)
+  M.require_enabled()
+  local payload, cwd = buffer_payload(bufnr)
+  if not payload then return nil, "invalid buffer" end
+  payload.action = "openapi_run_operation"
+  payload.operationKey = operation_key
+  payload.env = require("kulala.parser.env").get_current_env() or "default"
+  if type(parameter_overrides) == "table" and not vim.tbl_isempty(parameter_overrides) then
+    payload.parameterOverrides = parameter_overrides
+  end
+  if type(line) == "number" then
+    payload.line = line
+    payload.column = column or 1
+  else
+    local pos = vim.api.nvim_win_get_cursor(0)
+    payload.line = pos[1]
+    payload.column = pos[2]
+  end
+  local job = M.invoke(payload, cwd)
+  local res = decode_action_response(job.stdout)
+  if res and res.success == true then return res, nil end
+  if res and res.error then return res, res.error end
+  if job.code ~= 0 then
+    return nil, vim.trim(job.stderr or "") ~= "" and vim.trim(job.stderr) or "kulala-core openapi_run_operation failed"
+  end
+  return nil, "invalid kulala-core openapi_run_operation output"
 end
 
 ---@param on_done fun(res: table|nil, err: string|nil)
@@ -1017,6 +1093,11 @@ function M.from_curl(curl)
   return nil, "invalid kulala-core from_curl output"
 end
 
+---Start a long-lived WebSocket session (native kulala-core, replaces websocat).
+---@param opts { url: string, body?: string, headers?: table }
+---@param handlers { on_stdout: function, on_stderr: function, on_exit: function }
+---@param cwd string|nil
+---@return vim.SystemObj|nil
 function M.websocket_start(opts, handlers, cwd)
   M.require_enabled()
   local exe = M.executable_path()

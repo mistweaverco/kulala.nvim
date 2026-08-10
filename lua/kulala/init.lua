@@ -7,6 +7,7 @@ local GLOBALS = require("kulala.globals")
 local Graphql = require("kulala.graphql")
 local KulalaCore = require("kulala.cmd.kulala_core_bridge")
 local Logger = require("kulala.logger")
+local Openapi = require("kulala.openapi")
 local UI = require("kulala.ui")
 
 local M = {}
@@ -99,6 +100,21 @@ end
 
 M.clear_graphql_schema_cache = function(host)
   Graphql.clear_schema_cache(host)
+end
+
+M.open_openapi_explorer = function()
+  local res, err = Openapi.load_at_cursor()
+  if not res or not res.openapi then return Logger.error(err or "Failed to load OpenAPI spec") end
+  local DOCUMENT = require("kulala.parser.document")
+  local requests = DOCUMENT.get_document()
+  local line = vim.api.nvim_win_get_cursor(0)[1]
+  local at = DOCUMENT.get_request_at(requests, line)
+  local parent = at and at[1]
+  require("kulala.ui.openapi_panel").open(res.openapi, parent)
+end
+
+M.clear_openapi_schema_cache = function(cache_key)
+  Openapi.clear_schema_cache(cache_key)
 end
 
 M.scratchpad = function()

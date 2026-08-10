@@ -60,6 +60,20 @@ local function code_actions_http()
       end,
     },
     {
+      group = "OpenAPI",
+      title = "Open OpenAPI explorer",
+      command = "open_openapi_explorer",
+      fn = Kulala.open_openapi_explorer,
+    },
+    {
+      group = "OpenAPI",
+      title = "Clear OpenAPI schema cache",
+      command = "clear_openapi_schema_cache",
+      fn = function()
+        Kulala.clear_openapi_schema_cache()
+      end,
+    },
+    {
       group = "Environment",
       title = "Clear globals",
       command = "clear_globals",
