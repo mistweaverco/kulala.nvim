@@ -11,7 +11,14 @@ describe("script_console_notify", function()
     vim.notify = function(message, level, opts)
       table.insert(calls, { message = message, level = level, opts = opts })
     end
-    require("kulala").setup(require("kulala.test_helper.kulala_core").config())
+    local base = require("kulala.test_helper.kulala_core").config()
+    CONFIG.setup(vim.tbl_extend("force", base, {
+      script_console_notify = {
+        notify = function(message, level, opts)
+          vim.notify(message, level, opts)
+        end,
+      },
+    }))
   end)
 
   after_each(function()
@@ -19,13 +26,13 @@ describe("script_console_notify", function()
   end)
 
   it("forwards console and client.log lines to vim.notify by default", function()
-    NOTIFY.emit({
+    NOTIFY.emit {
       { level = "log", message = "hello from client.log" },
       { level = "info", message = "info line" },
       { level = "warn", message = "warn line" },
       { level = "error", message = "error line" },
       { level = "debug", message = "debug line" },
-    })
+    }
 
     assert.are.equal(5, #calls)
     assert.are.equal("hello from client.log", calls[1].message)
@@ -37,11 +44,11 @@ describe("script_console_notify", function()
   end)
 
   it("does not notify test or assert structured lines", function()
-    NOTIFY.emit({
+    NOTIFY.emit {
       { level = "log", message = "plain", kind = "log" },
       { level = "log", message = "passed test", kind = "test", status = "pass" },
       { level = "error", message = "failed assert", kind = "assert", status = "fail" },
-    })
+    }
 
     assert.are.equal(1, #calls)
     assert.are.equal("plain", calls[1].message)
@@ -49,7 +56,7 @@ describe("script_console_notify", function()
 
   it("can be disabled via config", function()
     CONFIG.setup { script_console_notify = false }
-    NOTIFY.emit({ { level = "log", message = "silent" } })
+    NOTIFY.emit { { level = "log", message = "silent" } }
     assert.are.equal(0, #calls)
   end)
 
@@ -62,7 +69,7 @@ describe("script_console_notify", function()
         end,
       },
     }
-    NOTIFY.emit({ { level = "error", message = "custom" } })
+    NOTIFY.emit { { level = "error", message = "custom" } }
     assert.are.equal(0, #calls)
     assert.are.equal(1, #custom_calls)
     assert.are.equal("custom", custom_calls[1].message)

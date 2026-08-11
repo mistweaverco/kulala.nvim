@@ -60,9 +60,11 @@ function M.merge_try_values(old_values, tree)
 
   for op_key, params in pairs(old_values) do
     if type(params) == "table" then
-      merged[op_key] = merged[op_key] or {}
       for param_name, value in pairs(params) do
-        if valid[op_key .. "\0" .. param_name] then merged[op_key][param_name] = value end
+        if valid[op_key .. "\0" .. param_name] then
+          merged[op_key] = merged[op_key] or {}
+          merged[op_key][param_name] = value
+        end
       end
     end
   end
