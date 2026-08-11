@@ -127,6 +127,9 @@ local M = {
     -- used by `Copy as Curl` command to determine whether to inline request body
     max_request_size = 2048,
 
+    -- Display image response bodies inline via Kitty graphics / iTerm2 protocols
+    show_images = true,
+
     report = {
       -- possible values: true | false | "on_error"
       show_script_output = true,

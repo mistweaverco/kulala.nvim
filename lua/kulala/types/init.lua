@@ -78,6 +78,7 @@
 ---@field show_request_summary boolean
 ---@field max_response_size number
 ---@field max_request_size number
+---@field show_images boolean
 ---@field report KulalaDefaultConfigUiReport
 ---@field scratchpad_default_contents string[]
 ---@field pickers KulalaDefaultConfigUiPickers

@@ -20,6 +20,10 @@ M.setup = function(config)
     return
   end
   Augroups.setup()
+  -- Rerun lualine-setup,
+  -- to have possible lazy-loaded `kulala` available
+  local ok, lualine = pcall(require, "lualine")
+  if ok and lualine then lualine.setup() end
 end
 
 M.open = function()

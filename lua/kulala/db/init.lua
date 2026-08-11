@@ -39,8 +39,10 @@ M.data = nil
 ---@field script_post_output string
 ---@field script_console table[]|nil -- raw kulala-core `scriptConsole` (preferred for UI formatting)
 ---@field _kulala_core boolean|nil -- response produced via kulala-core executable
----@field _kulala_body_type string|nil -- kulala-core body discriminator: `"json"` | `"text"` (from runner)
----@field _kulala_media_type string|nil -- kulala-core primary MIME type for text bodies (e.g. `application/xml`)
+---@field _kulala_body_type string|nil -- kulala-core body discriminator: `"json"` | `"text"` | `"binary"` (from runner)
+---@field _kulala_media_type string|nil -- kulala-core primary MIME type (e.g. `application/xml`, `image/png`)
+---@field _kulala_binary table|nil -- binary body metadata `{ content, encoding, byteLength, mediaType?, path?, note? }`
+---@field _kulala_image_path string|nil -- temp file path for image response body
 ---@field _kulala_redirect_chain table[]|nil -- kulala-core redirect hops
 ---@field _kulala_verbose_trace string|nil -- kulala-core curl `-v` stderr for the final hop
 ---

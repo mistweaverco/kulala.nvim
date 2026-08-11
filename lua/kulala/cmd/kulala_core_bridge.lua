@@ -445,6 +445,22 @@ local function response_body_text(body)
     return vim.json.encode(body.content) or ""
   end
   if type(body) == "table" and body.type == "text" then return body.content or "" end
+  if type(body) == "table" and body.type == "binary" then
+    local media_type = body.mediaType or "application/octet-stream"
+    local bytes = tonumber(body.byteLength) or 0
+    local size
+    if bytes < 1024 then
+      size = ("%d B"):format(bytes)
+    elseif bytes < 1024 * 1024 then
+      size = ("%.1f KB"):format(bytes / 1024)
+    else
+      size = ("%.1f MB"):format(bytes / (1024 * 1024))
+    end
+    if type(media_type) == "string" and media_type:lower():find("^image/", 1, false) then
+      return ("Image response (%s, %s)"):format(media_type, size)
+    end
+    return ("Binary response body (%s, %s)"):format(media_type, size)
+  end
   if type(body) == "string" then return body end
   return ""
 end
@@ -531,6 +547,37 @@ function M.apply_jq_filter(opts, cwd)
     return nil, vim.trim(job.stderr or "") ~= "" and vim.trim(job.stderr) or "kulala-core apply_jq_filter failed"
   end
   return nil, "invalid kulala-core apply_jq_filter output"
+end
+
+---Convert an image body to PNG for terminal graphics protocols.
+---@param opts { content: string, mediaType?: string, target?: "png" }
+---@param cwd string|nil
+---@return table|nil result `{ content, mediaType, byteLength, convertedFrom? }`
+---@return string|nil err
+function M.convert_image(opts, cwd)
+  M.require_enabled()
+  local payload = {
+    action = "convert_image",
+    content = opts.content,
+    mediaType = opts.mediaType,
+    target = opts.target or "png",
+  }
+  local job = M.invoke(payload, cwd)
+  local res = decode_action_response(job.stdout)
+  if res and res.success == true and type(res.content) == "string" then
+    return {
+      content = res.content,
+      mediaType = res.mediaType or "image/png",
+      byteLength = res.byteLength or 0,
+      convertedFrom = res.convertedFrom,
+    },
+      nil
+  end
+  if res and res.error then return nil, res.error end
+  if job.code ~= 0 then
+    return nil, vim.trim(job.stderr or "") ~= "" and vim.trim(job.stderr) or "kulala-core convert_image failed"
+  end
+  return nil, "invalid kulala-core convert_image output"
 end
 
 ---@param bufnr? integer

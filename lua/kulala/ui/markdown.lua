@@ -218,6 +218,7 @@ end
 ---@return string language name (e.g. "json", "xml", "html", "text")
 function M.get_body_ft(media_type, kulala_body_type)
   if kulala_body_type == "json" then return "json" end
+  if kulala_body_type == "binary" then return "text" end
   if type(media_type) == "string" and media_type ~= "" then
     local mt = media_type:lower()
     if mt:find("json", 1, true) then return "json" end

@@ -381,6 +381,15 @@ local function request_response_id(buf, request)
 end
 
 local function truncate_body(response)
+  if response._kulala_body_type == "binary" then
+    if type(response._kulala_binary) == "table" and type(response._kulala_binary.note) == "string" then
+      local note = response._kulala_binary.note
+      if response._kulala_image_path then note = note .. "\nPath: " .. response._kulala_image_path end
+      return note
+    end
+    return response.body_raw ~= "" and response.body_raw or "Binary response body"
+  end
+
   local max_size = CONFIG.get().ui.max_response_size
 
   if vim.fn.getfsize(GLOBALS.BODY_FILE) > max_size then
@@ -491,6 +500,8 @@ local function save_response(request_status, parsed_request)
     _kulala_verbose_trace = parsed_request._kulala_verbose_trace,
     _kulala_body_type = request_status._kulala_body_type,
     _kulala_media_type = request_status._kulala_media_type,
+    _kulala_binary = request_status._kulala_binary,
+    _kulala_image_path = request_status._kulala_image_path,
   }
 
   parsed_request._kulala_redirect_chain = nil
@@ -503,8 +514,10 @@ local function save_response(request_status, parsed_request)
   response.json = Json.parse(response.body) or {}
   response.errors = inject_payload(response.errors, parsed_request)
 
-  if #response.body == 0 and response.method ~= "GRPC" then response.headers = "Content-Type: text/plain" end
-  if #response.body == 0 then response.body = "No response body (check Verbose output)" end
+  if response._kulala_body_type ~= "binary" then
+    if #response.body == 0 and response.method ~= "GRPC" then response.headers = "Content-Type: text/plain" end
+    if #response.body == 0 then response.body = "No response body (check Verbose output)" end
+  end
 
   table.insert(responses, response)
 
@@ -621,6 +634,38 @@ local function kulala_core_apply_sent_request(item, target)
   end
 end
 
+local function format_byte_size(bytes)
+  bytes = tonumber(bytes) or 0
+  if bytes < 1024 then return ("%d B"):format(bytes) end
+  if bytes < 1024 * 1024 then return ("%.1f KB"):format(bytes / 1024) end
+  return ("%.1f MB"):format(bytes / (1024 * 1024))
+end
+
+local function media_type_extension(media_type)
+  local mt = (media_type or ""):lower()
+  if mt == "image/png" then return ".png" end
+  if mt == "image/jpeg" or mt == "image/jpg" then return ".jpg" end
+  if mt == "image/gif" then return ".gif" end
+  if mt == "image/webp" then return ".webp" end
+  if mt == "image/bmp" then return ".bmp" end
+  if mt == "image/svg+xml" then return ".svg" end
+  if mt:find("^image/") then return ".img" end
+  return ".bin"
+end
+
+---@param body table
+---@return string
+local function binary_body_note(body)
+  local media_type = body.mediaType or "application/octet-stream"
+  local size = format_byte_size(body.byteLength)
+  if type(media_type) == "string" and media_type:lower():find("^image/", 1, false) then
+    return ("Image response (%s, %s)"):format(media_type, size)
+  end
+  return ("Binary response body (%s, %s)"):format(media_type, size)
+end
+
+---@param body table|string|nil
+---@return string
 local function kulala_core_body_text(body)
   if type(body) == "table" and body.type == "json" then
     if type(body.formatted) == "string" then return body.formatted end
@@ -628,6 +673,7 @@ local function kulala_core_body_text(body)
     return encoded or vim.inspect(body.content)
   end
   if type(body) == "table" and body.type == "text" then return body.content or "" end
+  if type(body) == "table" and body.type == "binary" then return binary_body_note(body) end
   if type(body) == "string" then return body end
   return ""
 end
@@ -643,6 +689,18 @@ local function kulala_core_display_body(item)
   return kulala_core_body_text(item.body), nil
 end
 
+---@param body_obj table
+---@return string|nil path
+local function write_binary_temp_file(body_obj)
+  if type(body_obj) ~= "table" or body_obj.type ~= "binary" or body_obj.encoding ~= "base64" then return nil end
+  if type(body_obj.content) ~= "string" or body_obj.content == "" then return nil end
+  local ok, decoded = pcall(vim.base64.decode, body_obj.content)
+  if not ok or type(decoded) ~= "string" then return nil end
+  local path = vim.fn.tempname() .. media_type_extension(body_obj.mediaType)
+  if not FS.write_file(path, decoded, false, true) then return nil end
+  return path
+end
+
 local function kulala_core_headers_text(headers)
   local lines = {}
   for k, v in pairs(headers or {}) do
@@ -652,10 +710,42 @@ local function kulala_core_headers_text(headers)
   return table.concat(lines, "\n") .. "\n\n"
 end
 
+---@param result table
+---@return table|nil binary_meta `{ content, encoding, byteLength, mediaType?, path? }`
 local function write_kulala_core_response_files(result)
-  local display_text = kulala_core_display_body(result)
-  FS.write_file(GLOBALS.BODY_FILE, display_text)
+  local display_text, body_obj = kulala_core_display_body(result)
+  local binary_meta = nil
+
+  if type(body_obj) == "table" and body_obj.type == "binary" and body_obj.encoding == "base64" then
+    local ok, decoded = pcall(vim.base64.decode, body_obj.content)
+    if ok and type(decoded) == "string" then
+      FS.write_file(GLOBALS.BODY_FILE, decoded, false, true)
+    else
+      FS.write_file(GLOBALS.BODY_FILE, display_text)
+    end
+    local path = write_binary_temp_file(body_obj)
+    binary_meta = {
+      content = body_obj.content,
+      encoding = body_obj.encoding,
+      byteLength = body_obj.byteLength,
+      mediaType = body_obj.mediaType,
+      path = path,
+      note = display_text,
+    }
+  else
+    FS.write_file(GLOBALS.BODY_FILE, display_text)
+  end
+
   FS.write_file(GLOBALS.HEADERS_FILE, kulala_core_headers_text(result.headers))
+  return binary_meta
+end
+
+---@param binary_meta table|nil
+---@return table|nil
+---@return string|nil
+local function binary_fields_from_meta(binary_meta)
+  if type(binary_meta) ~= "table" then return nil, nil end
+  return binary_meta, binary_meta.path
 end
 
 local function kulala_core_stats_stdout(result)
@@ -890,7 +980,8 @@ local function kulala_core_deliver_result(item, target, duration_wall, callback,
     target._kulala_script_console = console
     if item.httpCompleted == true and type(item.status) == "number" then
       kulala_core_apply_sent_request(item, target)
-      write_kulala_core_response_files(item)
+      local binary_meta = write_kulala_core_response_files(item)
+      local binary, image_path = binary_fields_from_meta(binary_meta)
       local duration_ns = math.floor((item.timings and item.timings.total or 0) * 1e6)
       handle_response_impl({
         code = 1,
@@ -903,6 +994,8 @@ local function kulala_core_deliver_result(item, target, duration_wall, callback,
         _kulala_raw_body_snapshot = type(item.rawBody) == "string" and item.rawBody or nil,
         _kulala_headers_snapshot = kulala_core_headers_text(item.headers),
         _kulala_script_console = console,
+        _kulala_binary = binary,
+        _kulala_image_path = image_path,
       }, target, callback, advance_queue, invoke_ui_callback)
       return
     end
@@ -976,7 +1069,8 @@ local function kulala_core_deliver_result(item, target, duration_wall, callback,
     return
   end
 
-  write_kulala_core_response_files(item)
+  local binary_meta = write_kulala_core_response_files(item)
+  local binary, image_path = binary_fields_from_meta(binary_meta)
   local duration_ns = math.floor((item.timings and item.timings.total or 0) * 1e6)
 
   local console = kulala_core_script_console(item)
@@ -1003,6 +1097,8 @@ local function kulala_core_deliver_result(item, target, duration_wall, callback,
     _kulala_jq_filter = type(item.jqFilter) == "string" and item.jqFilter ~= "" and item.jqFilter or nil,
     _kulala_headers_snapshot = kulala_core_headers_text(item.headers),
     _kulala_script_console = console,
+    _kulala_binary = binary,
+    _kulala_image_path = image_path,
   }, target, callback, advance_queue, invoke_ui_callback)
 end
 

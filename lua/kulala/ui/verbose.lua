@@ -14,6 +14,16 @@ local function format_hop_body(body)
     return vim.inspect(body.content), "text"
   end
   if body.type == "text" and body.content then return Markdown.fenced("text", body.content), "text" end
+  if body.type == "binary" then
+    local media_type = body.mediaType or "application/octet-stream"
+    local bytes = tonumber(body.byteLength) or 0
+    local size = bytes < 1024 and ("%d B"):format(bytes)
+      or bytes < 1024 * 1024 and ("%.1f KB"):format(bytes / 1024)
+      or ("%.1f MB"):format(bytes / (1024 * 1024))
+    local note = media_type:lower():find("^image/", 1, false) and ("Image response (%s, %s)"):format(media_type, size)
+      or ("Binary response body (%s, %s)"):format(media_type, size)
+    return Markdown.fenced("text", note), "text"
+  end
   return "", "text"
 end
 

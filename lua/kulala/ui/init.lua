@@ -85,7 +85,10 @@ end
 M.close_kulala_buffer = function()
   WS_INPUT.close()
   local buf = get_kulala_buffer()
-  if buf then vim.api.nvim_buf_delete(buf, { force = true }) end
+  if buf then
+    pcall(require("kulala.ui.image").clear, buf)
+    vim.api.nvim_buf_delete(buf, { force = true })
+  end
 end
 
 -- Create an autocmd to delete the buffer when the window is closed
@@ -96,6 +99,7 @@ local function set_maps_autocommands(buf)
     group = vim.api.nvim_create_augroup("kulala_window_closed", { clear = true }),
     buffer = buf,
     callback = function()
+      pcall(require("kulala.ui.image").clear, buf)
       if vim.fn.bufexists(buf) > 0 then vim.api.nvim_buf_delete(buf, { force = true }) end
     end,
   })
@@ -300,6 +304,9 @@ local function show(contents, filetype, mode)
   if MARKDOWN_VIEWS[mode] then contents = require("kulala.ui.markdown").normalize_headings(contents) end
   local buf = open_kulala_buffer(buf_ft)
 
+  local Image = require("kulala.ui.image")
+  Image.clear(buf)
+
   restore_readonly_buffer(buf)
   set_buffer_contents(buf, contents, buf_ft)
   if mode ~= "report" then REPORT.set_response_summary(buf) end
@@ -318,6 +325,33 @@ local function show(contents, filetype, mode)
 
   WINBAR.toggle_winbar_tab(buf, win, mode)
   CONFIG.options.default_view = mode
+
+  if mode == "body" and CONFIG.get().ui.show_images ~= false then
+    local response = get_current_response()
+    local media = response and response._kulala_media_type
+    local path = response and response._kulala_image_path
+    if
+      response
+      and response._kulala_body_type == "binary"
+      and type(media) == "string"
+      and media:lower():find("^image/", 1, false)
+      and type(path) == "string"
+      and path ~= ""
+    then
+      vim.schedule(function()
+        if not vim.api.nvim_buf_is_valid(buf) then return end
+        -- Blank anchor line below the note so fallback (WezTerm) does not cover the path text.
+        restore_readonly_buffer(buf)
+        local last = vim.api.nvim_buf_line_count(buf)
+        vim.api.nvim_buf_set_lines(buf, last, last, false, { "" })
+        lock_buffer_readonly(buf)
+        Image.show(buf, path, {
+          binary = response._kulala_binary,
+          pos = { vim.api.nvim_buf_line_count(buf), 0 },
+        })
+      end)
+    end
+  end
 
   show_progress()
 end
