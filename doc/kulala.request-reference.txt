@@ -221,13 +221,16 @@ REQUEST.SKIP *kulala.request-reference-scripts-request-reference-request.skip*
 
 Skips the current request without sending HTTP and moves to the next one.
 Soft skip: the run continues (does not trigger |halt_on_error|). Pre-request
-scripts only. Alias of `$kulala.request.skip()`.
+scripts only. Alias of `$kulala.request.skip(message?)`.
+
+An optional message is shown at info level in the script console and response
+body (without duplicating `client.log` output).
 
 `client.log` output before skip is shown in the response script console.
 
 >javascript
-    client.log("skipping");
-    request.skip();
+    client.log("before skip");
+    request.skip("not applicable in dev");
     // or: $kulala.request.skip();
 <
 
@@ -238,8 +241,12 @@ Aborts the current request without sending HTTP, as a failure. Pre-request
 scripts only. Unlike skip, this is an error and respects |halt_on_error|.
 Alias of `$kulala.request.abort(message?)`.
 
+An optional message is shown at error level in the script console and response
+body. When |kulala.configuration-options-configuration-options-script-console-notify| is enabled, the message is not duplicated in
+the Kulala error log.
+
 >javascript
-    client.log("missing token");
+    client.log("before abort");
     request.abort("missing token");
     // or: $kulala.request.abort("missing token");
 <

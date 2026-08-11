@@ -7,6 +7,7 @@ Table of Contents                          *kulala.overview-table-of-contents*
   - Pre-request                 |kulala.overview-scripts-overview-pre-request|
   - Post-request               |kulala.overview-scripts-overview-post-request|
   - Print Variables         |kulala.overview-scripts-overview-print-variables|
+  - Script console notify |kulala.overview-scripts-overview-script-console-notify|
 
 ==============================================================================
 1. Scripts overview                         *kulala.overview-scripts-overview*
@@ -287,12 +288,29 @@ title="./pre-request-example.http"
     %}
 <
 
-If you add `console.log` to script, the output will be displayed in the `Script
-Output` panel, when you have enabled the following configuration.
+If you add `console.log` or `client.log` to a script, the output is shown in
+the Script Output pane (enable it via `default_winbar_panes` or the winbar).
+
+By default, plain log lines are also forwarded to |vim.notify()| when
+|kulala.configuration-options-configuration-options-script-console-notify| is enabled. Structured `client.test` and `client.assert`
+output appears in Script Output only.
 
 >lua
     opts = {
       default_winbar_panes = { "body", "headers", "headers_body", "script_output" },
+      script_console_notify = true,
     }
 <
+
+
+SCRIPT CONSOLE NOTIFY   *kulala.overview-scripts-overview-script-console-notify*
+
+`client.log`, `console.log`, `request.skip(message?)`, and
+`request.abort(message?)` emit lines to the script console. With
+|kulala.configuration-options-configuration-options-script-console-notify| enabled (default), log/skip/abort messages also appear
+as Neovim notifications; skip uses info level, abort uses error level.
+
+Set `script_console_notify = false` to keep output in the response UI only.
+See |kulala.configuration-options-configuration-options-script-console-notify|.
+
 vim:tw=78:ts=8:noet:ft=help:norl:

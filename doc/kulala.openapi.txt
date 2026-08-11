@@ -6,6 +6,7 @@ Table of Contents                           *kulala.openapi-table-of-contents*
 1. OpenAPI                                            |kulala.openapi-openapi|
   - Directive                              |kulala.openapi-openapi-directive|
   - Explorer UI                         |kulala.openapi-openapi-explorer-ui|
+  - Parent scripts                 |kulala.openapi-openapi-parent-scripts|
   - Local spec files               |kulala.openapi-openapi-local-spec-files|
   - Try it out                         |kulala.openapi-openapi-try-it-out|
   - LSP completions               |kulala.openapi-openapi-lsp-completions|
@@ -23,6 +24,9 @@ DIRECTIVE                              *kulala.openapi-openapi-directive*
 
 Mark a request block with `# @kulala-openapi-explorer`. The request line points
 at the spec URL or a local file path.
+
+The legacy `# @kulala-openapi-json` directive is no longer supported; use
+`@kulala-openapi-explorer` instead.
 
 Add `# @kulala-openapi-no-cache` on the same block to skip schema caching and
 reload the spec from source every time the explorer opens.
@@ -68,6 +72,21 @@ Operation runs use the standard Kulala response UI. Pre/post-request scripts
 from the parent OpenAPI block (and shared blocks) run for each request.
 
 
+PARENT SCRIPTS                     *kulala.openapi-openapi-parent-scripts*
+
+Pre-request and post-request scripts on the parent OpenAPI block (and shared
+blocks) run when:
+
+- The explorer is opened (spec load)
+- The explorer is refreshed (`R` in the explorer, or
+  |kulala.public-methods-open-openapi-explorer| after clearing cache)
+- An operation is run from Try it out
+
+Use `request.skip(message?)` or `request.abort(message?)` in pre-request
+scripts to control spec load or individual operations. See
+|kulala.request-reference.txt|.
+
+
 LSP COMPLETIONS                   *kulala.openapi-openapi-lsp-completions*
 
 After an OpenAPI spec is loaded and cached (by running the `@kulala-openapi-explorer`
@@ -86,11 +105,13 @@ The explorer opens as a split buffer (`kulala://openapi-explorer`) so the
 response UI can appear alongside it.
 
 Default keymaps (override via `openapi_panel_keymaps` in your Kulala config,
-same style as `kulala_keymaps`):
+same style as `kulala_keymaps`; see
+|kulala.configuration-options-configuration-options-openapi-panel|):
 
 - `<Tab>` or `za` - toggle fold
 - `e` - edit Try it out field under cursor
-- `R` - refresh the spec from source (keeps Try it out values and folds when possible)
+- `R` - refresh the spec from source (clears cache for this spec; keeps Try it
+  out values and folds when possible)
 - `<CR>` - run the selected operation (with Try it out values)
 - `q` - close the explorer
 

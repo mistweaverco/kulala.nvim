@@ -46,10 +46,13 @@ It allows you to make HTTP requests from within Neovim.
   
 - Protocols: HTTP, gRPC, GraphQL, OpenAPI/Swagger explorer, WebSocket, Streaming
 - Variables: Environment, Document, Request, Dynamic, Prompt, `http-client.env` files
+- `$kulalaShared` / `$kulalaDefaultHeaders` in `http-client.env.json` for shared vars and default HTTP headers
 - Importing and running requests from external `*.http` files
 - Importing and saving request/response data to/from external files
 - JavaScript (Jetbrains compatible) Pre-request, Post-request, Conditional, Inline, External
   - TypeScript Pre-request, Post-request, Conditional, Inline, External
+  - `request.skip(message?)`, `request.abort(message?)`, `request.replay()` control flow
+  - `$kulala.client.global.headers` for persisted default headers (also via env files)
 - Authentication: Basic, Bearer, Digest, NTLM, OAuth2, Negotiate, AWS, SSL
 - Response formatting and live filtering
 - Assertions, automated testing and reporting
@@ -325,6 +328,39 @@ require("lazy").setup({
       ]]
 
       kulala_keymaps_prefix = "",
+
+      -- Forward script console output (`console.*`, `client.log`, skip/abort messages)
+      -- to vim.notify. Set to false to disable.
+      script_console_notify = true,
+      --[[
+        {
+          title = "kulala",
+          notify = function(message, level, opts, entry)
+            vim.notify(message, level, opts)
+          end,
+        }
+      ]]
+
+      -- OpenAPI explorer panel keymaps (see docs or lua/kulala/config/keymaps.lua)
+      openapi_panel_keymaps = true,
+
+      -- OpenAPI explorer split, fold signs, and highlight groups
+      openapi_panel = {
+        split = "right",
+        signs = { folded = ">", expanded = "v" },
+        highlights = {
+          section = "Title",
+          operation = "Function",
+          parameter = "Identifier",
+          response = "Number",
+          schema = "Type",
+          try_it_out = "String",
+          description = "Comment",
+          badge = "Comment",
+          sign = "Special",
+          value = "Constant",
+        },
+      },
     },
   },
 })

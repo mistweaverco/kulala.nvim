@@ -6,6 +6,7 @@ Table of Contents                           *kulala.keymaps-table-of-contents*
 1. Keymaps                                            |kulala.keymaps-keymaps|
   - Global Keymaps                     |kulala.keymaps-keymaps-global-keymaps|
   - Kulala Keymaps                     |kulala.keymaps-keymaps-kulala-keymaps|
+  - OpenAPI panel keymaps   |kulala.keymaps-keymaps-openapi-panel-keymaps|
 
 ==============================================================================
 1. Keymaps                                            *kulala.keymaps-keymaps*
@@ -77,6 +78,27 @@ CUSTOM KULALA KEYMAPS
       kulala_keymaps = {
         ["Show verbose"] = false -- set false to disable
       }
+    }
+<
+
+
+OPENAPI PANEL KEYMAPS       *kulala.keymaps-keymaps-openapi-panel-keymaps*
+
+Set to `true` to enable default keymaps in the OpenAPI explorer buffer
+(`kulala://openapi-explorer`). Override individual mappings the same way as
+|kulala.keymaps-keymaps-kulala-keymaps|.
+
+Default is `true`. See |kulala.default-keymaps.txt| for the default bindings.
+
+
+CUSTOM OPENAPI PANEL KEYMAPS
+
+>lua
+    {
+      openapi_panel_keymaps = {
+        ["Run"] = { "<CR>", function() require("kulala.ui.openapi_panel").run() end },
+        ["Refresh"] = false, -- disable refresh on `R`
+      },
     }
 <
 

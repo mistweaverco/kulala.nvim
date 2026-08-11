@@ -7,6 +7,8 @@ Table of Contents             *kulala.configuration-options-table-of-contents*
   - UI Options |kulala.configuration-options-configuration-options-ui-options|
   - LSP               |kulala.configuration-options-configuration-options-lsp|
   - Keymaps       |kulala.configuration-options-configuration-options-keymaps|
+  - Script console notify |kulala.configuration-options-configuration-options-script-console-notify|
+  - OpenAPI panel |kulala.configuration-options-configuration-options-openapi-panel|
 
 ==============================================================================
 1. Configuration Options  *kulala.configuration-options-configuration-options*
@@ -62,6 +64,12 @@ See `lua/kulala/config/defaults.lua` for the complete default table. Example
       global_keymaps_prefix = "<leader>R",
       kulala_keymaps = true,
       kulala_keymaps_prefix = "",
+      script_console_notify = true,
+      openapi_panel_keymaps = true,
+      openapi_panel = {
+        split = "right",
+        signs = { folded = ">", expanded = "v" },
+      },
     }
 <
 
@@ -1034,6 +1042,82 @@ Prefix for kulala keymaps
 >lua
     {
       kulala_keymaps_prefix = "",
+    }
+<
+
+
+SCRIPT CONSOLE NOTIFY *kulala.configuration-options-configuration-options-script-console-notify*
+
+Forward script console output to |vim.notify()|: `client.log`, `console.log`,
+`request.skip(message?)` (info), and `request.abort(message?)` (error).
+
+Skipped and aborted requests still show script output in the response body /
+Script Output pane. When enabled, abort/skip messages are not duplicated in the
+Kulala error log if they already appear in the script console.
+
+Possible values:
+
+- `true` (default) - notify in interactive Neovim sessions
+- `false` - disable notifications
+- Table - customize title or handler:
+
+>lua
+    script_console_notify = {
+      enabled = true,
+      title = "kulala",
+      notify = function(message, level, opts, entry)
+        vim.notify(message, level, opts)
+      end,
+    }
+<
+
+Structured `client.test` and `client.assert` lines are shown in the Script
+Output pane only (not forwarded to |vim.notify()|).
+
+
+OPENAPI_PANEL       *kulala.configuration-options-configuration-options-openapi-panel*
+
+Options for the OpenAPI explorer split buffer. See |kulala.openapi.txt|.
+
+>lua
+    openapi_panel = {
+      -- Split placement (same values as `ui.split_direction`)
+      split = "right",
+      signs = { folded = ">", expanded = "v" },
+      highlights = {
+        section = "Title",
+        operation = "Function",
+        parameter = "Identifier",
+        response = "Number",
+        schema = "Type",
+        try_it_out = "String",
+        description = "Comment",
+        badge = "Comment",
+        sign = "Special",
+        value = "Constant",
+      },
+    }
+<
+
+`win_opts` from `ui.win_opts` is merged when opening the explorer window.
+
+
+OPENAPI_PANEL_KEYMAPS
+
+Set to `true` to enable default keymaps in the OpenAPI explorer buffer.
+
+Check |kulala.keymaps-keymaps-openapi-panel-keymaps| and
+|kulala.default-keymaps.txt| for details.
+
+Default: `true`
+
+Example:
+
+>lua
+    {
+      openapi_panel_keymaps = {
+        ["Refresh"] = { "R", function() require("kulala.ui.openapi_panel").refresh() end },
+      },
     }
 <
 

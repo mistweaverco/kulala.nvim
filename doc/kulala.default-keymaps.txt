@@ -87,6 +87,21 @@ KULALA UI KEYMAPS
 <
 
 
+OPENAPI EXPLORER KEYMAPS
+
+Available when the OpenAPI explorer split is open. Enable with
+`openapi_panel_keymaps = true` (default).
+
+>lua
+      ["Toggle fold"] = { "<Tab>", function() require("kulala.ui.openapi_panel").toggle_fold() end, },
+      ["Toggle fold (za)"] = { "za", function() require("kulala.ui.openapi_panel").toggle_fold() end, prefix = false, },
+      ["Run"] = { "<CR>", function() require("kulala.ui.openapi_panel").run() end, prefix = false, },
+      ["Edit try it out"] = { "e", function() require("kulala.ui.openapi_panel").edit() end, },
+      ["Refresh"] = { "R", function() require("kulala.ui.openapi_panel").refresh() end, },
+      ["Close"] = { "q", function() require("kulala.ui.openapi_panel").close() end, },
+<
+
+
 KULALA LSP KEYMAPS
 
 >lua

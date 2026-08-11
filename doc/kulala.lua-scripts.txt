@@ -154,7 +154,7 @@ PRE-REQUEST                       *kulala.lua-scripts-lua-scripts-pre-request*
       client.global.BONOBO = "baz" -- set global variable
     
       if not request.environment.Auth == "Foo" then
-        request.skip() -- skip the request
+        request.skip("Auth check failed") -- skip the request
       end
     
     %}
