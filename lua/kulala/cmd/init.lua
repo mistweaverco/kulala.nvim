@@ -13,6 +13,7 @@ local Json = require("kulala.utils.json")
 local KULALA_CORE = require("kulala.cmd.kulala_core_bridge")
 local Logger = require("kulala.logger")
 local Markdown = require("kulala.ui.markdown")
+local SCRIPT_CONSOLE_NOTIFY = require("kulala.script_console_notify")
 local UI_utils = require("kulala.ui.utils")
 
 local M = {}
@@ -298,6 +299,7 @@ local function apply_script_console_to_response(request_status, request, respons
     return
   end
   response.script_console = lines
+  SCRIPT_CONSOLE_NOTIFY.emit(lines)
   local request_file = (response.file and response.file ~= "") and response.file
     or (response.buf_name and response.buf_name ~= "") and response.buf_name
     or nil
@@ -538,21 +540,23 @@ local function process_errors(request, request_status, processing_errors)
     request_status.errors = ("%s\nRequest timed out (%s ms)"):format(request_status.errors or "", tostring(t))
   end
 
-  local message = ("Errors in request %s at line: %s\n%s"):format(
-    request.url,
-    request.show_icon_line_number or "-",
-    request_status.errors or ""
-  )
-
-  Logger.error(message, 2)
-  if processing_errors then Logger.error(processing_errors, 2, { report = true }) end
-
   request_status.errors = processing_errors and request_status.errors .. "\n" .. processing_errors
     or request_status.errors
 
   local response = save_response(request_status, request)
   request_status._kulala_response_id = response.id
   apply_script_console_to_response(request_status, request, response)
+
+  local skip_logger = request_status._kulala_aborted == true and SCRIPT_CONSOLE_NOTIFY.enabled()
+  if not skip_logger then
+    local message = ("Errors in request %s at line: %s\n%s"):format(
+      request.url,
+      request.show_icon_line_number or "-",
+      request_status.errors or ""
+    )
+    Logger.error(message, 2)
+    if processing_errors then Logger.error(processing_errors, 2, { report = true }) end
+  end
 end
 
 ---@param advance_queue? boolean when false, do not advance the request queue (multi-response batch)
@@ -856,7 +860,9 @@ local function kulala_core_deliver_result(item, target, duration_wall, callback,
   if item.success == true and item.skipped == true then
     local console = kulala_core_script_console(item)
     target._kulala_script_console = console
-    local body = kulala_core_control_flow_body(item, console, "Request skipped by script")
+    local footer = (type(item.message) == "string" and item.message ~= "") and item.message
+      or "Request skipped by script"
+    local body = kulala_core_control_flow_body(item, console, footer)
     handle_response_impl({
       code = 0,
       stdout = "",
@@ -916,6 +922,7 @@ local function kulala_core_deliver_result(item, target, duration_wall, callback,
       _kulala_body_snapshot = body,
       _kulala_headers_snapshot = "Content-Type: text/plain\n\n",
       _kulala_script_console = console,
+      _kulala_aborted = item.aborted == true,
     }, target, callback, advance_queue, invoke_ui_callback)
     return
   end

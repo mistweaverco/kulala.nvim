@@ -4,8 +4,10 @@ local DB = require("kulala.db")
 local GLOBALS = require("kulala.globals")
 local Highlight = require("kulala.ui.openapi_panel.highlight")
 local INLAY = require("kulala.inlay")
+local KEYMAPS = require("kulala.config.keymaps")
 local KULALA_CORE = require("kulala.cmd.kulala_core_bridge")
 local Logger = require("kulala.logger")
+local PanelState = require("kulala.ui.openapi_panel.state")
 local Render = require("kulala.ui.openapi_panel.render")
 local UI = require("kulala.ui")
 local UI_utils = require("kulala.ui.utils")
@@ -135,32 +137,55 @@ local function open_explorer_window(bufnr, http_bufnr)
 end
 
 local function default_folds(tree)
-  local folds = {}
-  local function walk(nodes)
-    for _, node in ipairs(nodes or {}) do
-      if node.id ~= "root" and node.children and #node.children > 0 then folds[node.id] = true end
-      if node.children then walk(node.children) end
-    end
-  end
-  walk(tree)
-  return folds
+  return PanelState.default_folds(tree)
 end
 
 local function seed_try_values(tree)
-  local values = {}
-  local function walk(nodes)
-    for _, node in ipairs(nodes or {}) do
-      if node.kind == "tryItOut" and node.operationKey and node.paramName then
-        values[node.operationKey] = values[node.operationKey] or {}
-        if values[node.operationKey][node.paramName] == nil then
-          values[node.operationKey][node.paramName] = node.defaultValue or ""
-        end
-      end
-      if node.children then walk(node.children) end
-    end
-  end
-  walk(tree)
-  return values
+  return PanelState.seed_try_values(tree)
+end
+
+local function merge_folds(old_folds, tree)
+  return PanelState.merge_folds(old_folds, tree)
+end
+
+local function merge_try_values(old_values, tree)
+  return PanelState.merge_try_values(old_values, tree)
+end
+
+---@param state kulala.openapi_panel.state
+---@param openapi table
+local function apply_openapi_payload(state, openapi)
+  local tree = openapi.tree or {}
+  if #tree == 0 then return false, "OpenAPI explorer tree is empty" end
+  state.openapi = openapi
+  state.tree = tree
+  state.folds = merge_folds(state.folds, tree)
+  state.try_values = merge_try_values(state.try_values, tree)
+  return true
+end
+
+local function paint(state)
+  if not vim.api.nvim_buf_is_valid(state.bufnr) then return end
+  local lines, line_map = Render.build_lines(state.tree, state.folds, state.try_values, panel_signs())
+  state.line_map = line_map
+  vim.api.nvim_set_option_value("modifiable", true, { buf = state.bufnr })
+  vim.api.nvim_buf_set_lines(state.bufnr, 0, -1, false, lines)
+  vim.api.nvim_set_option_value("modifiable", false, { buf = state.bufnr })
+  Highlight.apply(state.bufnr, lines, line_map)
+end
+
+local function refresh(state)
+  if not state.parent_request then return Logger.error("No parent OpenAPI request") end
+
+  local cache_key = state.openapi and state.openapi.cacheKey
+  if type(cache_key) == "string" and cache_key ~= "" then KULALA_CORE.clear_openapi_schema(cache_key) end
+
+  local res, err = KULALA_CORE.openapi_load(state.http_bufnr, state.parent_line, 1)
+  if not res or not res.openapi then return Logger.error(err or "Failed to refresh OpenAPI spec") end
+
+  local ok, apply_err = apply_openapi_payload(state, res.openapi)
+  if not ok then return Logger.error(apply_err or "Failed to refresh OpenAPI explorer") end
+  paint(state)
 end
 
 local function active_window(state)
@@ -175,16 +200,6 @@ local function item_under_cursor(state)
   if not win then return nil end
   local row = vim.api.nvim_win_get_cursor(win)[1]
   return state.line_map[row]
-end
-
-local function paint(state)
-  if not vim.api.nvim_buf_is_valid(state.bufnr) then return end
-  local lines, line_map = Render.build_lines(state.tree, state.folds, state.try_values, panel_signs())
-  state.line_map = line_map
-  vim.api.nvim_set_option_value("modifiable", true, { buf = state.bufnr })
-  vim.api.nvim_buf_set_lines(state.bufnr, 0, -1, false, lines)
-  vim.api.nvim_set_option_value("modifiable", false, { buf = state.bufnr })
-  Highlight.apply(state.bufnr, lines, line_map)
 end
 
 local function toggle_fold(state)
@@ -432,34 +447,31 @@ local function edit_try_it_out(state)
 end
 
 local function apply_keymaps(state)
-  local maps = CONFIG.get().openapi_panel and CONFIG.get().openapi_panel.keymaps or {}
-  local function map(key, fn)
-    if type(key) == "string" and key ~= "" then
-      vim.keymap.set("n", key, fn, { buffer = state.bufnr, silent = true })
-    end
+  KEYMAPS.setup_openapi_panel_keymaps(state.bufnr)
+end
+
+function M.toggle_fold()
+  if instance then toggle_fold(instance) end
+end
+
+function M.run()
+  if not instance then return end
+  local item = item_under_cursor(instance)
+  if item and item.kind == "operation" and item.operationKey then
+    run_operation(instance, item.operationKey)
+  elseif item and item.kind == "tryItOut" and item.operationKey then
+    run_operation(instance, item.operationKey)
+  else
+    Logger.warn("Select an operation (or Try it out field) and press Enter to run")
   end
-  map(maps.toggle_fold or "<Tab>", function()
-    toggle_fold(state)
-  end)
-  map(maps.toggle_fold_alt or "za", function()
-    toggle_fold(state)
-  end)
-  map(maps.run or "<CR>", function()
-    local item = item_under_cursor(state)
-    if item and item.kind == "operation" and item.operationKey then
-      run_operation(state, item.operationKey)
-    elseif item and item.kind == "tryItOut" and item.operationKey then
-      run_operation(state, item.operationKey)
-    else
-      Logger.warn("Select an operation (or Try it out field) and press Enter to run")
-    end
-  end)
-  map(maps.edit or "e", function()
-    edit_try_it_out(state)
-  end)
-  map(maps.close or "q", function()
-    M.close()
-  end)
+end
+
+function M.edit()
+  if instance then edit_try_it_out(instance) end
+end
+
+function M.refresh()
+  if instance then refresh(instance) end
 end
 
 local function ensure_explorer_buffer()
@@ -506,12 +518,18 @@ function M.open(openapi, parent_request, http_bufnr)
     instance.parent_request = parent_request
     instance.http_bufnr = http_bufnr
     instance.parent_line = parent_request and parent_request.start_line or instance.parent_line
-    instance.folds = default_folds(tree)
-    instance.try_values = vim.tbl_deep_extend("force", seed_try_values(tree), instance.try_values or {})
+    instance.folds = merge_folds(instance.folds, tree)
+    instance.try_values = merge_try_values(instance.try_values, tree)
   end
 
   instance.winnr = open_explorer_window(bufnr, http_bufnr)
+  if instance.winnr and vim.api.nvim_win_is_valid(instance.winnr) then vim.api.nvim_set_current_win(instance.winnr) end
   paint(instance)
+end
+
+---@return integer|nil Explorer window, when the OpenAPI panel is open.
+function M.get_window()
+  return get_explorer_window()
 end
 
 function M.close()

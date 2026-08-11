@@ -205,7 +205,11 @@ local function open_kulala_window(buf)
   local win = get_kulala_window()
   if win then return win end
 
-  local request_win = vim.fn.win_findbuf(DB.get_current_buffer())[1] or vim.api.nvim_get_current_win()
+  local OPENAPI_PANEL = require("kulala.ui.openapi_panel")
+  local explorer_win = OPENAPI_PANEL.get_window()
+  local request_win = explorer_win and vim.api.nvim_win_is_valid(explorer_win) and explorer_win
+    or vim.fn.win_findbuf(DB.get_current_buffer())[1]
+    or vim.api.nvim_get_current_win()
 
   local win_opts = vim.deepcopy(config.ui.win_opts or {})
   local wo = win_opts.wo or {}

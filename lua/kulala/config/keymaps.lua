@@ -289,6 +289,47 @@ M.default_kulala_keymaps = {
   },
 }
 
+M.default_openapi_panel_keymaps = {
+  ["Toggle fold"] = {
+    "<Tab>",
+    function()
+      require("kulala.ui.openapi_panel").toggle_fold()
+    end,
+  },
+  ["Toggle fold (za)"] = {
+    "za",
+    function()
+      require("kulala.ui.openapi_panel").toggle_fold()
+    end,
+    prefix = false,
+  },
+  ["Run"] = {
+    "<CR>",
+    function()
+      require("kulala.ui.openapi_panel").run()
+    end,
+    prefix = false,
+  },
+  ["Edit try it out"] = {
+    "e",
+    function()
+      require("kulala.ui.openapi_panel").edit()
+    end,
+  },
+  ["Refresh"] = {
+    "R",
+    function()
+      require("kulala.ui.openapi_panel").refresh()
+    end,
+  },
+  ["Close"] = {
+    "q",
+    function()
+      require("kulala.ui.openapi_panel").close()
+    end,
+  },
+}
+
 M.default_lsp_keymaps = {
   ["<leader>ls"] = { vim.lsp.buf.document_symbol, desc = "Search Symbols" },
   ["<leader>lv"] = {
@@ -412,6 +453,34 @@ end
 
 M.setup_kulala_keymaps = function(buf)
   local keymaps = M.get_kulala_keymaps() or {}
+
+  vim.iter(keymaps):each(function(name, map)
+    if map then
+      map.desc = map.desc or name
+      set_keymap(map, buf)
+    end
+  end)
+
+  return keymaps
+end
+
+M.get_openapi_panel_keymaps = function()
+  local config = require("kulala.config")
+  local config_keymaps = config.options.openapi_panel_keymaps
+
+  if config_keymaps == nil then return end
+  if config_keymaps == false then return end
+
+  local default_keymaps = vim.deepcopy(M.default_openapi_panel_keymaps)
+
+  config_keymaps = type(config_keymaps) == "table" and vim.tbl_extend("force", default_keymaps, config_keymaps)
+    or default_keymaps
+
+  return config_keymaps
+end
+
+M.setup_openapi_panel_keymaps = function(buf)
+  local keymaps = M.get_openapi_panel_keymaps() or {}
 
   vim.iter(keymaps):each(function(name, map)
     if map then

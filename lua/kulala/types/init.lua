@@ -89,6 +89,11 @@
 ---@field keymaps boolean|table
 ---@field on_attach fun(client: table, buf: number)|nil
 
+---@class KulalaScriptConsoleNotifyConfig
+---@field enabled? boolean When false, script console output is not forwarded to vim.notify
+---@field title? string Notify title (default: "kulala")
+---@field notify? fun(message: string, level: integer, opts: table, entry: table) Custom notify handler
+
 ---@class KulalaDefaultConfig
 ---@field kulala_core KulalaDefaultConfigKulalaCore
 ---@field session KulalaDefaultConfigSession
@@ -104,6 +109,8 @@
 ---@field global_keymaps_prefix string
 ---@field kulala_keymaps boolean|table
 ---@field kulala_keymaps_prefix string
+---@field openapi_panel_keymaps boolean|table
+---@field script_console_notify boolean|KulalaScriptConsoleNotifyConfig
 ---@field openapi_panel? table
 ---@field initialized? boolean
 ---@field halt_on_error? boolean

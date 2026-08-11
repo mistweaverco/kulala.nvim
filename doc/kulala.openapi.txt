@@ -21,15 +21,18 @@ handled by kulala-core so the same feature can be reused in other Kulala tools.
 
 DIRECTIVE                              *kulala.openapi-openapi-directive*
 
-Mark a request block with `# @kulala-openapi-json`. The request line points at
-the spec URL or a local file path.
+Mark a request block with `# @kulala-openapi-explorer`. The request line points
+at the spec URL or a local file path.
+
+Add `# @kulala-openapi-no-cache` on the same block to skip schema caching and
+reload the spec from source every time the explorer opens.
 
 title="echo-openapi.http"
 
 >http
     ### echo-openapi
 
-    # @kulala-openapi-json
+    # @kulala-openapi-explorer
 
     GET https://echo.kulala.app/openapi.json HTTP/1.1
 <
@@ -37,6 +40,10 @@ title="echo-openapi.http"
 Running this block loads the spec (remote HTTP GET or local file read), runs
 attached pre/post-request scripts, and opens the OpenAPI explorer instead of the
 standard Kulala response buffer.
+
+Headers on the parent HTTP block apply to spec load and to each operation run.
+Operation-specific headers from the explorer (parameters, Accept, etc.) override
+headers with the same name.
 
 
 TRY IT OUT                             *kulala.openapi-openapi-try-it-out*
@@ -63,7 +70,7 @@ from the parent OpenAPI block (and shared blocks) run for each request.
 
 LSP COMPLETIONS                   *kulala.openapi-openapi-lsp-completions*
 
-After an OpenAPI spec is loaded and cached (by running the `@kulala-openapi-json`
+After an OpenAPI spec is loaded and cached (by running the `@kulala-openapi-explorer`
 block or opening the explorer), kulala-core offers completions in other requests
 in the same file:
 
@@ -78,8 +85,12 @@ EXPLORER UI                         *kulala.openapi-openapi-explorer-ui*
 The explorer opens as a split buffer (`kulala://openapi-explorer`) so the
 response UI can appear alongside it.
 
+Default keymaps (override via `openapi_panel_keymaps` in your Kulala config,
+same style as `kulala_keymaps`):
+
 - `<Tab>` or `za` - toggle fold
 - `e` - edit Try it out field under cursor
+- `R` - refresh the spec from source (keeps Try it out values and folds when possible)
 - `<CR>` - run the selected operation (with Try it out values)
 - `q` - close the explorer
 
@@ -100,7 +111,7 @@ title="local-spec.http"
 >http
     ### local-spec
 
-    # @kulala-openapi-json
+    # @kulala-openapi-explorer
 
     GET ./openapi.yaml HTTP/1.1
 <

@@ -80,3 +80,64 @@ describe("openapi panel render", function()
     end, lines)[1])
   end)
 end)
+
+describe("openapi panel state", function()
+  local PanelState = require("kulala.ui.openapi_panel.state")
+
+  local sample_tree = {
+    {
+      id = "root",
+      kind = "section",
+      title = "API",
+      children = {
+        {
+          id = "tag:pets",
+          kind = "section",
+          title = "pets",
+          children = {
+            {
+              id = "op:GET /pets",
+              kind = "operation",
+              title = "GET /pets",
+              operationKey = "GET /pets",
+              children = {
+                {
+                  id = "section:GET /pets:tryItOut",
+                  kind = "section",
+                  title = "Try it out",
+                  children = {
+                    {
+                      id = "try:GET /pets:limit",
+                      kind = "tryItOut",
+                      title = "limit",
+                      operationKey = "GET /pets",
+                      paramName = "limit",
+                      defaultValue = "10",
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  }
+
+  it("merge_folds keeps previous fold state for matching node ids", function()
+    local merged = PanelState.merge_folds({ ["tag:pets"] = false, ["missing:id"] = true }, sample_tree)
+    assert.is_false(merged["tag:pets"])
+    assert.is_nil(merged["missing:id"])
+    assert.is_true(merged["section:GET /pets:tryItOut"])
+  end)
+
+  it("merge_try_values keeps edited values for still-present fields", function()
+    local merged = PanelState.merge_try_values({
+      ["GET /pets"] = { limit = "25", removed = "x" },
+      ["GET /gone"] = { q = "1" },
+    }, sample_tree)
+    assert.are.equal("25", merged["GET /pets"].limit)
+    assert.is_nil(merged["GET /pets"].removed)
+    assert.is_nil(merged["GET /gone"])
+  end)
+end)

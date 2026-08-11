@@ -250,17 +250,34 @@ local M = {
 
   kulala_keymaps_prefix = "",
 
+  -- OpenAPI explorer panel keymaps; override with custom keymaps as required
+  -- (see docs or lua/kulala/config/keymaps.lua)
+  ---@type boolean|table
+  openapi_panel_keymaps = true,
+  --[[
+    {
+      ["Run"] = { "<CR>", function() require("kulala.ui.openapi_panel").run() end, },
+    }
+  ]]
+
+  -- Forward script console output (`console.*`, `client.log`) to vim.notify.
+  -- Set to false to disable. Use a table to customize title or handler.
+  ---@type boolean|KulalaScriptConsoleNotifyConfig
+  script_console_notify = true,
+  --[[
+    {
+      enabled = true,
+      title = "kulala",
+      notify = function(message, level, opts, entry)
+        vim.notify(message, level, opts)
+      end,
+    }
+  ]]
+
   openapi_panel = {
     --- Split placement for the explorer buffer (same values as `split_direction`).
     split = "right",
     signs = { folded = ">", expanded = "v" },
-    keymaps = {
-      toggle_fold = "<Tab>",
-      toggle_fold_alt = "za",
-      run = "<CR>",
-      edit = "e",
-      close = "q",
-    },
     highlights = {
       section = "Title",
       operation = "Function",
