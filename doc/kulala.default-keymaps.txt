@@ -97,6 +97,8 @@ Available when the OpenAPI explorer split is open. Enable with
       ["Toggle fold (za)"] = { "za", function() require("kulala.ui.openapi_panel").toggle_fold() end, prefix = false, },
       ["Run"] = { "<CR>", function() require("kulala.ui.openapi_panel").run() end, prefix = false, },
       ["Edit try it out"] = { "e", function() require("kulala.ui.openapi_panel").edit() end, },
+      ["Load from file"] = { "f", function() require("kulala.ui.openapi_panel").load_from_file() end, },
+      ["Yank as HTTP"] = { "Y", function() require("kulala.ui.openapi_panel").yank() end, prefix = false, },
       ["Refresh"] = { "R", function() require("kulala.ui.openapi_panel").refresh() end, },
       ["Close"] = { "q", function() require("kulala.ui.openapi_panel").close() end, },
 <

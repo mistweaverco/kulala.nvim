@@ -884,6 +884,41 @@ function M.openapi_run_operation(bufnr, operation_key, line, column, parameter_o
   return nil, "invalid kulala-core openapi_run_operation output"
 end
 
+---Serialize one OpenAPI operation as a standalone `.http` block.
+---@param bufnr? integer HTTP buffer
+---@param operation_key string e.g. `GET /pets`
+---@param line? integer 1-based line on openapi block
+---@param column? integer 1-based column
+---@return string|nil content
+---@return string|nil err
+function M.openapi_to_http(bufnr, operation_key, line, column, parameter_overrides)
+  M.require_enabled()
+  local payload, cwd = buffer_payload(bufnr)
+  if not payload then return nil, "invalid buffer" end
+  payload.action = "openapi_to_http"
+  payload.operationKey = operation_key
+  payload.env = require("kulala.parser.env").get_current_env() or "default"
+  if type(parameter_overrides) == "table" and not vim.tbl_isempty(parameter_overrides) then
+    payload.parameterOverrides = parameter_overrides
+  end
+  if type(line) == "number" then
+    payload.line = line
+    payload.column = column or 1
+  else
+    local pos = vim.api.nvim_win_get_cursor(0)
+    payload.line = pos[1]
+    payload.column = pos[2]
+  end
+  local job = M.invoke(payload, cwd)
+  local res = decode_action_response(job.stdout)
+  if res and res.ok == true and type(res.content) == "string" then return res.content, nil end
+  if res and res.error then return nil, res.error end
+  if job.code ~= 0 then
+    return nil, vim.trim(job.stderr or "") ~= "" and vim.trim(job.stderr) or "kulala-core openapi_to_http failed"
+  end
+  return nil, "invalid kulala-core openapi_to_http output"
+end
+
 ---@param on_done fun(res: table|nil, err: string|nil)
 local function invalid_buffer_async(on_done)
   vim.schedule(function()

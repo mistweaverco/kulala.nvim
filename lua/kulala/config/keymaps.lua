@@ -316,6 +316,19 @@ M.default_openapi_panel_keymaps = {
       require("kulala.ui.openapi_panel").edit()
     end,
   },
+  ["Load from file"] = {
+    "f",
+    function()
+      require("kulala.ui.openapi_panel").load_from_file()
+    end,
+  },
+  ["Yank as HTTP"] = {
+    "Y",
+    function()
+      require("kulala.ui.openapi_panel").yank()
+    end,
+    prefix = false,
+  },
   ["Refresh"] = {
     "R",
     function()

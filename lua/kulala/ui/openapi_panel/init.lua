@@ -8,6 +8,7 @@ local KEYMAPS = require("kulala.config.keymaps")
 local KULALA_CORE = require("kulala.cmd.kulala_core_bridge")
 local Logger = require("kulala.logger")
 local PanelState = require("kulala.ui.openapi_panel.state")
+local PickFile = require("kulala.ui.pick_file")
 local Render = require("kulala.ui.openapi_panel.render")
 local UI = require("kulala.ui")
 local UI_utils = require("kulala.ui.utils")
@@ -402,6 +403,117 @@ local function edit_multi_select(options, current, prompt, on_done)
   vim.api.nvim_set_current_win(float.win)
 end
 
+---@param s string
+---@return string
+local function encode_edit_name_part(s)
+  return (s:gsub("[^%w._-]", function(c)
+    return string.format("%%%02X", string.byte(c))
+  end))
+end
+
+---@param item table
+---@return string
+local function edit_buf_name(item)
+  return GLOBALS.OPENAPI_EDIT_ID
+    .. "/"
+    .. encode_edit_name_part(item.operationKey)
+    .. "/"
+    .. encode_edit_name_part(item.paramName)
+end
+
+---@param name string
+---@return integer|nil
+local function buf_with_name(name)
+  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+    if vim.api.nvim_buf_is_valid(buf) and vim.api.nvim_buf_get_name(buf) == name then return buf end
+  end
+end
+
+---@param buf integer
+local function show_edit_buf(buf)
+  local wins = vim.fn.win_findbuf(buf)
+  if wins and wins[1] then
+    vim.api.nvim_set_current_win(wins[1])
+    return
+  end
+  vim.cmd("tab sbuffer " .. buf)
+end
+
+---@param item table
+---@param current string
+---@return string
+local function edit_filetype(item, current)
+  if item.paramName == "__body__" then
+    local trimmed = vim.trim(current)
+    if trimmed:sub(1, 1) == "<" then return "xml" end
+    return "json"
+  end
+  return ""
+end
+
+---@param buf integer
+---@param item table
+---@param current string
+local function fill_edit_buf(buf, item, current)
+  local lines = vim.split(current, "\n", { plain = true })
+  if #lines == 0 then lines = { "" } end
+  vim.api.nvim_set_option_value("modifiable", true, { buf = buf })
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+  vim.api.nvim_set_option_value("modified", false, { buf = buf })
+  local ft = edit_filetype(item, current)
+  if ft ~= "" then vim.api.nvim_set_option_value("filetype", ft, { buf = buf }) end
+end
+
+---@param buf integer
+---@param item table
+local function setup_edit_buf(buf, item)
+  vim.api.nvim_set_option_value("buftype", "acwrite", { buf = buf })
+  vim.api.nvim_set_option_value("bufhidden", "hide", { buf = buf })
+  vim.api.nvim_set_option_value("swapfile", false, { buf = buf })
+  vim.api.nvim_set_option_value("buflisted", true, { buf = buf })
+  vim.b[buf].kulala_openapi_edit = {
+    operation_key = item.operationKey,
+    param_name = item.paramName,
+  }
+
+  vim.api.nvim_create_autocmd("BufWriteCmd", {
+    buffer = buf,
+    desc = "Kulala: apply OpenAPI Try it out value",
+    callback = function()
+      if not instance then return Logger.warn("OpenAPI explorer is not open") end
+      local meta = vim.b[buf].kulala_openapi_edit
+      if type(meta) ~= "table" or not meta.operation_key or not meta.param_name then return end
+      local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+      local value = table.concat(lines, "\n")
+      instance.try_values[meta.operation_key] = instance.try_values[meta.operation_key] or {}
+      instance.try_values[meta.operation_key][meta.param_name] = value
+      paint(instance)
+      vim.api.nvim_set_option_value("modified", false, { buf = buf })
+      Logger.info("Updated Try it out value")
+    end,
+  })
+end
+
+---@param item table
+---@param current string
+local function open_try_it_out_tab(item, current)
+  local name = edit_buf_name(item)
+  local existing = buf_with_name(name)
+  if existing then
+    if not vim.api.nvim_get_option_value("modified", { buf = existing }) then fill_edit_buf(existing, item, current) end
+    show_edit_buf(existing)
+    pcall(vim.api.nvim_set_option_value, "winbar", " OpenAPI · " .. (item.title or item.paramName), { win = 0 })
+    return
+  end
+
+  vim.cmd("tabnew")
+  local buf = vim.api.nvim_get_current_buf()
+  pcall(vim.api.nvim_buf_set_name, buf, name)
+  setup_edit_buf(buf, item)
+  fill_edit_buf(buf, item, current)
+  pcall(vim.api.nvim_set_option_value, "winbar", " OpenAPI · " .. (item.title or item.paramName), { win = 0 })
+end
+
 local function edit_try_it_out(state)
   local item = editable_item(state, item_under_cursor(state))
   if not item or not item.operationKey or not item.paramName then
@@ -440,10 +552,66 @@ local function edit_try_it_out(state)
     return
   end
 
-  local new_value = vim.fn.input(prompt, current)
-  if new_value == nil then return end
-  state.try_values[item.operationKey][item.paramName] = new_value
-  paint(state)
+  open_try_it_out_tab(item, current)
+end
+
+---@param bufnr integer
+---@return string
+local function buffer_dir(bufnr)
+  local name = vim.api.nvim_buf_get_name(bufnr)
+  if name == "" then return vim.fn.getcwd() end
+  return vim.fn.fnamemodify(name, ":p:h")
+end
+
+local function load_from_file(state)
+  local item = editable_item(state, item_under_cursor(state))
+  if not item or not item.operationKey or not item.paramName then
+    return Logger.warn("Select a Try it out field to load a file")
+  end
+
+  local options = option_list(item.options)
+  if options then return Logger.warn("Use e to pick an enum value") end
+
+  PickFile.pick_file({
+    prompt = "Load Try it out from file",
+    cwd = buffer_dir(state.http_bufnr),
+  }, function(path)
+    if not path then return end
+    local content = require("kulala.utils.fs").read_file(path)
+    if not content then return Logger.error("Failed to read file: " .. path) end
+    state.try_values[item.operationKey] = state.try_values[item.operationKey] or {}
+    state.try_values[item.operationKey][item.paramName] = content
+    paint(state)
+  end)
+end
+
+---@param state kulala.openapi_panel.state
+---@return string|nil
+local function operation_key_under_cursor(state)
+  local item = item_under_cursor(state)
+  if item and type(item.operationKey) == "string" and item.operationKey ~= "" then return item.operationKey end
+  if item and item.parentId then
+    for _, node in ipairs(state.line_map) do
+      if node.id == item.parentId and type(node.operationKey) == "string" and node.operationKey ~= "" then
+        return node.operationKey
+      end
+    end
+  end
+  return nil
+end
+
+local function yank_operation(state)
+  local operation_key = operation_key_under_cursor(state)
+  if not operation_key then return Logger.warn("Select an operation (or Try it out field) to yank as HTTP") end
+  if not KULALA_CORE.enabled() then return Logger.error("kulala-core is required to yank OpenAPI operations") end
+
+  local overrides = overrides_for_operation(state, operation_key)
+  local content, err = KULALA_CORE.openapi_to_http(state.http_bufnr, operation_key, state.parent_line, 1, overrides)
+  if not content then return Logger.error(err or "Failed to convert OpenAPI operation to HTTP") end
+
+  vim.fn.setreg("+", content)
+  vim.fn.setreg('"', content)
+  Logger.info("Copied HTTP request")
 end
 
 local function apply_keymaps(state)
@@ -456,18 +624,21 @@ end
 
 function M.run()
   if not instance then return end
-  local item = item_under_cursor(instance)
-  if item and item.kind == "operation" and item.operationKey then
-    run_operation(instance, item.operationKey)
-  elseif item and item.kind == "tryItOut" and item.operationKey then
-    run_operation(instance, item.operationKey)
-  else
-    Logger.warn("Select an operation (or Try it out field) and press Enter to run")
-  end
+  local operation_key = operation_key_under_cursor(instance)
+  if not operation_key then return Logger.warn("Select an operation (or Try it out field) and press Enter to run") end
+  run_operation(instance, operation_key)
 end
 
 function M.edit()
   if instance then edit_try_it_out(instance) end
+end
+
+function M.load_from_file()
+  if instance then load_from_file(instance) end
+end
+
+function M.yank()
+  if instance then yank_operation(instance) end
 end
 
 function M.refresh()

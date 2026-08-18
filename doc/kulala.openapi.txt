@@ -55,11 +55,16 @@ TRY IT OUT                             *kulala.openapi-openapi-try-it-out*
 Each operation includes a **Try it out** section with editable parameter and
 body values (defaults from the spec).
 
-- `e` - edit the field under the cursor (enum fields open a picker; array enums
-  open a multi-select: fzf-lua with Tab to toggle when available, otherwise a
-  focused checklist float). For optional arrays, choose `(none)` (or leave all
-  unchecked) to send no value.
+- `e` - edit the field under the cursor. Free-text and request body fields open
+  in a new tab; `:w` writes the buffer back into the explorer. Enum fields open
+  a picker; array enums open a multi-select: fzf-lua with Tab to toggle when
+  available, otherwise a focused checklist float. For optional arrays, choose
+  `(none)` (or leave all unchecked) to send no value.
+- `f` - load file contents into the Try it out field under the cursor
+  (free-text and request body fields; enum fields still use `e`)
 - `<CR>` - run the operation using current Try it out values
+- `Y` - yank the operation under the cursor as a standalone `.http` request
+  (current Try it out values, parent headers; no explorer operator or scripts)
 
 **Accept (media type)** appears under **Try it out** and under each response
 that declares content types (same as Swagger UI). Press `e` to pick a value;
@@ -109,7 +114,9 @@ same style as `kulala_keymaps`; see
 |kulala.configuration-options-configuration-options-openapi-panel|):
 
 - `<Tab>` or `za` - toggle fold
-- `e` - edit Try it out field under cursor
+- `e` - edit Try it out field under cursor (new tab for text/body; `:w` applies)
+- `f` - load file contents into the Try it out field under cursor
+- `Y` - yank the selected operation as a standalone `.http` request
 - `R` - refresh the spec from source (clears cache for this spec; keeps Try it
   out values and folds when possible)
 - `<CR>` - run the selected operation (with Try it out values)
