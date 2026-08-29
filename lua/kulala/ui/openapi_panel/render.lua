@@ -55,6 +55,8 @@ local function walk_tree(nodes, folds, try_values, depth, lines, line_map, signs
       line = indent .. sign .. " " .. node.title .. badge
     end
 
+    line = line:gsub("[\r\n]+", " ")
+
     table.insert(lines, line)
     table.insert(line_map, node)
 
